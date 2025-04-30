@@ -49,15 +49,7 @@ builder.Services
 // Add API versioning
 builder.Services.AddProblemDetails();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddApiVersioning(options =>
-{
-    options.DefaultApiVersion = new ApiVersion(1, 0);
-    options.AssumeDefaultVersionWhenUnspecified = true;
-    options.ReportApiVersions = true;
-    options.ApiVersionReader = ApiVersionReader.Combine(
-        new HeaderApiVersionReader("X-API-Version")
-    );
-});
+builder.Services.AddApiVersioning();
 
 builder.Services.AddAsyncApiSchemaGeneration(options =>
 {
@@ -116,11 +108,6 @@ app.UseRateLimiter();
 
 app.UseMiddleware<GlobalExceptionHandler>();
 
-app.MapHealthChecks("/api/health", new HealthCheckOptions
-{
-    ResponseWriter = WriteHealthCheckResponse
-});
-
 // Enable Swagger UI
 app.UseSwagger();
 app.MapAsyncApiDocuments();
@@ -140,34 +127,36 @@ app
     .UseAuthentication()
     .UseAuthorization();
 
-var v1Api = app.NewVersionedApi("v1Api");
-var v1Base = v1Api.MapGroup("api");
+var api = app.NewVersionedApi("api");
+var v1 = api.MapGroup("api/users/v{version:apiVersion}")
+    .HasApiVersion(1.0);
+v1.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = WriteHealthCheckResponse
+});
 
-v1Base.MapGet("details", GetUserDetails.HandleAsync)
+
+v1.MapGet("details", GetUserDetails.HandleAsync)
     .RequireAuthorization()
-    .HasApiVersion(1.0)
     .WithDescription("Get the current authenticated users details")
     .Produces<ApiResponse<UserAccountDTO>>(200)
     .ProducesProblem(401);
 
-v1Base.MapPut("details", UpdateUserDetailsEndpoint.HandleAsync)
+v1.MapPut("details", UpdateUserDetailsEndpoint.HandleAsync)
     .RequireAuthorization()
-    .HasApiVersion(1.0)
     .WithDescription("Update the user details")
     .Produces<ApiResponse<string>>(200)
     .ProducesProblem(401);
 
-v1Base.MapPost("login", LoginEndpoint.HandleAsync)
+v1.MapPost("login", LoginEndpoint.HandleAsync)
     .AllowAnonymous()
-    .HasApiVersion(1.0)
     .WithDescription("Login")
     .Produces<ApiResponse<LoginResponse>>(200)
     .ProducesProblem(401)
     .ProducesProblem(404);
 
-v1Base.MapPost("register", RegisterUserEndpoint.HandleAsync)
+v1.MapPost("register", RegisterUserEndpoint.HandleAsync)
     .AllowAnonymous()
-    .HasApiVersion(1.0)
     .WithDescription("RegisterUser as a new user")
     .Produces<ApiResponse<RegisterResponse>>(200)
     .ProducesProblem(400);
