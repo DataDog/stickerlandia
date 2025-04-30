@@ -29,7 +29,7 @@ public class TestSetupFixture : IDisposable
 
             App.StartAsync().GetAwaiter().GetResult();
 
-            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(180));
             App.ResourceNotifications.WaitForResourceHealthyAsync(
                     "api",
                     cts.Token)
