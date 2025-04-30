@@ -1,0 +1,50 @@
+name: Rust
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        run_as:
+          - ASPNET
+          - AZURE_FUNCTIONS
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+      - name: Run Unit Tests
+        shell: bash
+        env:
+          RUNAS: ${{ matrix.run_as }}
+        run: |
+          cd user-management/tests/Stickerlandia.UserManagement.UnitTest
+          dotnet test
+      - name: Start Aspire Host
+        shell: bash
+        env:
+          RUNAS: ${{ matrix.run_as }}
+        run: |
+          cd user-management/src/Stickerlandia.UserManagement.Aspire
+          dotnet run &>runlog.txt &
+          sleep 10
+          cat runlog.txt
+      - name: Run Integration Tests
+        shell: bash
+        env:
+          RUNAS: ${{ matrix.run_as }}
+        run: |
+          cd user-management/tests/Stickerlandia.UserManagement.IntegrationTest
+          dotnet test

@@ -341,3 +341,4 @@ terraform.rc
 **/.cursor/*
 
 **/infra/tmp/*
+**/runlog.txt

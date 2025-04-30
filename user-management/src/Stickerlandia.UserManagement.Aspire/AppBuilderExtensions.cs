@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Stickerlandia.UserManagement.Aspire;
 
-public static class ServiceBusExtensions
+public static class AppBuilderExtensions
 {
     public static IResourceBuilder<AzureServiceBusQueueResource> WithTestCommands(
         this IResourceBuilder<AzureServiceBusQueueResource> builder)

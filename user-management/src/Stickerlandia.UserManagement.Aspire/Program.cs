@@ -15,7 +15,7 @@ var container = database.AddContainer("Users", "/emailAddress");
 
 var serviceBus = builder.AddAzureServiceBus("messaging")
     .RunAsEmulator(c => c
-        .WithLifetime(ContainerLifetime.Persistent));
+        .WithLifetime(ContainerLifetime.Persistent).WithHostPort(60001));
 
 serviceBus
     .AddServiceBusQueue("users-stickerClaimed-v1", "users.stickerClaimed.v1")
