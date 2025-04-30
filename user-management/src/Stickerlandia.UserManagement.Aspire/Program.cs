@@ -24,30 +24,32 @@ serviceBus
 serviceBus
     .AddServiceBusQueue("users-userRegistered-v1", "users.userRegistered.v1");
 
-var functions = builder.AddAzureFunctionsProject<Projects.Stickerlandia_UserManagement_FunctionApp>("functions")
-    .WithEnvironment("ConnectionStrings__cosmosdb", cosmos)
-    .WithReference(serviceBus)
-    .WaitFor(serviceBus)
-    .WithReference(cosmos)
-    .WaitFor(cosmos)
-    .WithExternalHttpEndpoints();
-
-builder.AddProject<Projects.Stickerlandia_UserManagement_FunctionApp>("user-management-api")
-    .WithReference(functions)
-    .WithReference(cosmos)
-    .WithEnvironment("ConnectionStrings__cosmosdb", cosmos)
-    .WithEnvironment("Auth__Issuer", "https://stickerlandia.com")
-    .WithEnvironment("Auth__Audience", "https://stickerlandia.com")
-    .WithEnvironment("Auth__Key", "This is a super secret key that should not be used in production'")
-    .WaitFor(functions);
+// var functions = builder.AddAzureFunctionsProject<Projects.Stickerlandia_UserManagement_FunctionApp>("functions")
+//     .WithEnvironment("ConnectionStrings__cosmosdb", cosmos)
+//     .WithReference(serviceBus)
+//     .WaitFor(serviceBus)
+//     .WithReference(cosmos)
+//     .WaitFor(cosmos)
+//     .WithExternalHttpEndpoints();
+//
+// builder.AddProject<Projects.Stickerlandia_UserManagement_FunctionApp>("user-management-api")
+//     .WithReference(functions)
+//     .WithReference(cosmos)
+//     .WithEnvironment("ConnectionStrings__cosmosdb", cosmos)
+//     .WithEnvironment("Auth__Issuer", "https://stickerlandia.com")
+//     .WithEnvironment("Auth__Audience", "https://stickerlandia.com")
+//     .WithEnvironment("Auth__Key", "This is a super secret key that should not be used in production'")
+//     .WaitFor(functions);
 
 var webApp = builder.AddProject<Projects.Stickerlandia_UserManagement_AspNet>("aspnetapp")
     .WithReference(cosmos)
+    .WithReference(serviceBus)
     .WithEnvironment("messaging", serviceBus)
     .WithEnvironment("ConnectionStrings__cosmosdb", cosmos)
     .WithEnvironment("Auth__Issuer", "https://stickerlandia.com")
     .WithEnvironment("Auth__Audience", "https://stickerlandia.com")
     .WithEnvironment("Auth__Key", "This is a super secret key that should not be used in production'")
-    .WaitFor(cosmos);
+    .WaitFor(cosmos)
+    .WaitFor(serviceBus);
 
 builder.Build().Run();

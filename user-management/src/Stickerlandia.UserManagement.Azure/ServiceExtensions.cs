@@ -67,7 +67,7 @@ public static class ServiceExtensions
                 };
                 clientOptions.ConnectionMode = ConnectionMode.Gateway;
             });
-        
+        builder.Services.AddSingleton<IMessagingWorker, ServiceBusStickerClaimedWorker>();
         builder.Services.AddSingleton(new ServiceBusClient(builder.Configuration["messaging"]));
 
         builder.Services.AddSingleton<DatabaseBootstrapper>();

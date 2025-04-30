@@ -7,7 +7,7 @@ namespace Stickerlandia.UserManagement.AspNet;
 [HttpPost("/login")]
 [AllowAnonymous]
 public class LoginEndpoint(LoginCommandHandler loginCommandHandler)
-    : Endpoint<LoginCommand, LoginResponse?>
+    : Endpoint<LoginCommand, ApiResponse<LoginResponse>?>
 {
     public override async Task<LoginResponse?> HandleAsync(
         LoginCommand request,
@@ -15,7 +15,7 @@ public class LoginEndpoint(LoginCommandHandler loginCommandHandler)
     {
         var loginResponse = await loginCommandHandler.Handle(request);
             
-        Response = loginResponse;
+        Response = new ApiResponse<LoginResponse>(loginResponse);
         return loginResponse;
     }
 }

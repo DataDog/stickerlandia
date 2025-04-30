@@ -8,7 +8,7 @@ namespace Stickerlandia.UserManagement.AspNet;
 [HttpPost("/register")]
 [AllowAnonymous]
 public class RegisterUserEndpoint(RegisterCommandHandler registerCommandHandler)
-    : Endpoint<RegisterUserCommand, RegisterResponse?>
+    : Endpoint<RegisterUserCommand, ApiResponse<RegisterResponse>?>
 {
     public override async Task<RegisterResponse?> HandleAsync(
         RegisterUserCommand request,
@@ -16,7 +16,7 @@ public class RegisterUserEndpoint(RegisterCommandHandler registerCommandHandler)
     {
         var registerResponse = await registerCommandHandler.Handle(request, AccountType.User, ct);
 
-        Response = registerResponse;
+        Response = new ApiResponse<RegisterResponse>(registerResponse);
         return registerResponse;
     }
 }

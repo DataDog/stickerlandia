@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using Azure.Messaging.ServiceBus;
 using FastEndpoints;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -16,6 +17,7 @@ using Stickerlandia.UserManagement.Core;
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
 builder.Services.AddLogging();
+
 var logger = Log.Logger = new LoggerConfiguration()
         .MinimumLevel.Information()
         .MinimumLevel.Override("Microsoft", LogEventLevel.Error)
@@ -41,6 +43,7 @@ builder.Services
     .AddStickerlandiaUserManagement()
     .AddHealthChecks();
 builder.Services.AddHostedService<OutboxWorker>();
+builder.Services.AddHostedService<StickerClaimedWorker>();
 
 builder.Services.AddCors(options =>
 {

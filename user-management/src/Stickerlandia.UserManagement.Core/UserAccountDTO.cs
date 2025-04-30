@@ -2,6 +2,8 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
+using System.Text.Json.Serialization;
+
 namespace Stickerlandia.UserManagement.Core;
 
 public record UserAccountDTO
@@ -15,13 +17,18 @@ public record UserAccountDTO
         ClaimedStickerCount = userAccount.ClaimedStickerCount;
     }
 
+    [JsonPropertyName("accountId")]
     public string AccountId { get; set; }
-
+    
+    [JsonPropertyName("emailAddress")]
     public string EmailAddress { get; set; }
-
+    
+    [JsonPropertyName("firstName")]
     public string FirstName { get; set; }
-
+    
+    [JsonPropertyName("lastName")]
     public string LastName { get; set; }
 
+    [JsonPropertyName("claimedStickerCount")]
     public int ClaimedStickerCount { get; set; }
 }

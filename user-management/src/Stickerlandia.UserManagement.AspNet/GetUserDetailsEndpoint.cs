@@ -14,7 +14,7 @@ public class GetUserDetailsRequest
 [HttpGet("/details")]
 [Authorize]
 public class GetUserDetails(GetUserDetailsQueryHandler handler)
-    : Endpoint<GetUserDetailsRequest, UserAccountDTO?>
+    : Endpoint<GetUserDetailsRequest, ApiResponse<UserAccountDTO>?>
 {
     public override async Task<UserAccountDTO?> HandleAsync(
         GetUserDetailsRequest req,
@@ -22,7 +22,7 @@ public class GetUserDetails(GetUserDetailsQueryHandler handler)
     {
         var result = await handler.Handle(new GetUserDetailsQuery(req.Authorization));
         
-        Response = result;
+        Response = new ApiResponse<UserAccountDTO>(result);
         return result;
     }
 }
