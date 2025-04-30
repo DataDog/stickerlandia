@@ -62,6 +62,7 @@ public static class AppBuilderExtensions
             .WithEnvironment("Auth__Issuer", "https://stickerlandia.com")
             .WithEnvironment("Auth__Audience", "https://stickerlandia.com")
             .WithEnvironment("Auth__Key", "This is a super secret key that should not be used in production'")
+            .WithEndpoint(5139, 7071)
             .WaitFor(messagingResource)
             .WaitFor(databaseResource)
             .WithExternalHttpEndpoints();
