@@ -19,8 +19,9 @@ serviceBus
     .AddServiceBusQueue("users-stickerClaimed-v1", "users.stickerClaimed.v1")
     .WithTestCommands();
 
-serviceBus
+var topic = serviceBus
     .AddServiceBusTopic("users-userRegistered-v1", "users.userRegistered.v1");
+topic.AddServiceBusSubscription("noop");
 
 var runAs = Environment.GetEnvironmentVariable("RUN_AS") ?? "ASPNET";
 

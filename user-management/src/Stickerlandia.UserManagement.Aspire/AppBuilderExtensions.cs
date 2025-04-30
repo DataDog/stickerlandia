@@ -40,7 +40,7 @@ public static class AppBuilderExtensions
         var webApp = builder.AddProject<Projects.Stickerlandia_UserManagement_AspNet>("api")
             .WithReference(databaseResource)
             .WithReference(messagingResource)
-            .WithEnvironment("messaging", messagingResource)
+            .WithEnvironment("ConnectionStrings__messaging", messagingResource)
             .WithEnvironment("ConnectionStrings__cosmosdb", databaseResource)
             .WithEnvironment("Auth__Issuer", "https://stickerlandia.com")
             .WithEnvironment("Auth__Audience", "https://stickerlandia.com")
@@ -58,19 +58,21 @@ public static class AppBuilderExtensions
     {
         var functions = builder.AddAzureFunctionsProject<Projects.Stickerlandia_UserManagement_FunctionApp>("api")
             .WithEnvironment("ConnectionStrings__cosmosdb", databaseResource)
-            .WithReference(messagingResource)
+            .WithEnvironment("ConnectionStrings__messaging", messagingResource)
+            .WithEnvironment("Auth__Issuer", "https://stickerlandia.com")
+            .WithEnvironment("Auth__Audience", "https://stickerlandia.com")
+            .WithEnvironment("Auth__Key", "This is a super secret key that should not be used in production'")
             .WaitFor(messagingResource)
-            .WithReference(databaseResource)
             .WaitFor(databaseResource)
             .WithExternalHttpEndpoints();
 
         builder.AddProject<Projects.Stickerlandia_UserManagement_FunctionApp>("function-app")
-            .WithReference(functions)
-            .WithReference(databaseResource)
             .WithEnvironment("ConnectionStrings__cosmosdb", databaseResource)
+            .WithEnvironment("ConnectionStrings__messaging", messagingResource)
             .WithEnvironment("Auth__Issuer", "https://stickerlandia.com")
             .WithEnvironment("Auth__Audience", "https://stickerlandia.com")
             .WithEnvironment("Auth__Key", "This is a super secret key that should not be used in production'")
+            .WithReference(functions)
             .WaitFor(functions);
 
         return builder;

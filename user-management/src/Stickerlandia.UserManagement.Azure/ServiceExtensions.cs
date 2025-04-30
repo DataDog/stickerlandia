@@ -67,7 +67,7 @@ public static class ServiceExtensions
     private static IServiceCollection AddServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton<IMessagingWorker, ServiceBusStickerClaimedWorker>();
-        services.AddSingleton(new ServiceBusClient(configuration["messaging"]));
+        services.AddSingleton(new ServiceBusClient(configuration["ConnectionStrings:messaging"]));
 
         // RegisterUser the CosmosDB repository implementation
         services.AddSingleton<IUsers, CosmosDbUserRepository>();

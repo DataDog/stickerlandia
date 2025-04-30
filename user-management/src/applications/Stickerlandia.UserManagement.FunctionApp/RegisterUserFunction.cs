@@ -15,7 +15,7 @@ public class RegisterUserFunction(RegisterCommandHandler registerCommandHandler)
 {
     [Function("RegisterUser")]
     public async Task<HttpResponseData> RunAsync(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "register")]
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "users/v1/register")]
         HttpRequestData req)
     {
         // Deserialize request

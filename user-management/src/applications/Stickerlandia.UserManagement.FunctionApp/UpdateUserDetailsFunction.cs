@@ -17,7 +17,7 @@ public class UpdateUserDetailsFunction(UpdateUserDetailsHandler updateHandler, I
 {
     [Function("UpdateUserDetails")]
     public async Task<HttpResponseData> RunAsync(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "details")]
+        [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "users/v1/details")]
         HttpRequestData req)
     {
         // Get auth header

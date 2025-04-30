@@ -16,7 +16,7 @@ public class GetUserDetailsFunction(GetUserDetailsQueryHandler handler, IAuthSer
 {
     [Function("GetUserDetails")]
     public async Task<HttpResponseData> RunAsync(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "details")]
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "users/v1/details")]
         HttpRequestData req)
     {
         // Get auth header

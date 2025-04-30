@@ -14,7 +14,7 @@ public class HealthCheckFunction(ILogger<HealthCheckFunction> logger)
     private readonly ILogger<HealthCheckFunction> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     [Function("HealthCheck")]
-    public async Task<HttpResponseData> RunAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "health")] HttpRequestData req)
+    public async Task<HttpResponseData> RunAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "users/v1/health")] HttpRequestData req)
     {
         _logger.LogInformation("Processing health check");
 

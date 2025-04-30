@@ -23,7 +23,7 @@ public class HandleStickerClaimedFunction
 
     [Function(nameof(HandleStickerClaimedFunction))]
     public async Task Run(
-        [ServiceBusTrigger("users.stickerClaimed.v1", Connection = "messaging")]
+        [ServiceBusTrigger("users.stickerClaimed.v1", Connection = "ConnectionStrings:messaging")]
         ServiceBusReceivedMessage message,
         ServiceBusMessageActions messageActions)
     {

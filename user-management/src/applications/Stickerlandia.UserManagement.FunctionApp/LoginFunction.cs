@@ -17,7 +17,7 @@ public class LoginFunction(
 {
     [Function("Login")]
     public async Task<HttpResponseData> RunAsync(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "login")]
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "users/v1/login")]
         HttpRequestData req)
     {
         logger.LogInformation("Processing login request");
