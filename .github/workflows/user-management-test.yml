@@ -8,9 +8,25 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  unit-test:
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+      - name: Run Unit Tests
+        shell: bash
+        run: |
+          cd user-management/tests/Stickerlandia.UserManagement.UnitTest
+          dotnet test
 
+  integration-test:
+    runs-on: ubuntu-latest
+    needs: unit-test
     strategy:
       matrix:
         run_as:
@@ -26,13 +42,6 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "9.0.x"
-      - name: Run Unit Tests
-        shell: bash
-        env:
-          RUNAS: ${{ matrix.run_as }}
-        run: |
-          cd user-management/tests/Stickerlandia.UserManagement.UnitTest
-          dotnet test
       - name: Run Integration Tests
         shell: bash
         env:
