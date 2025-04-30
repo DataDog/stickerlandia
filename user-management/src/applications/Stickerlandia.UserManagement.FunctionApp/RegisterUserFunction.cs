@@ -7,13 +7,13 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using System.Text.Json;
 using Stickerlandia.UserManagement.Core;
-using Stickerlandia.UserManagement.Core.Register;
+using Stickerlandia.UserManagement.Core.RegisterUser;
 
 namespace Stickerlandia.UserManagement.FunctionApp;
 
 public class RegisterUserFunction(RegisterCommandHandler registerCommandHandler)
 {
-    [Function("Register")]
+    [Function("RegisterUser")]
     public async Task<HttpResponseData> RunAsync(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "register")]
         HttpRequestData req)

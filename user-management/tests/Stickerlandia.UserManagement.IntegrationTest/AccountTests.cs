@@ -35,6 +35,26 @@ namespace Stickerlandia.UserManagement.IntegrationTest
         }
         
         [Fact]
+        public async Task UserShouldBeAbleToRegisterAndThenUpdateDetails()
+        {
+            // Arrange
+            var emailAddress = $"{Guid.NewGuid()}@test.com";
+            var password = $"{Guid.NewGuid()}!A23";
+            
+            // Act
+            var registerResult = await _driver.RegisterUser(emailAddress, password);
+            var loginResponse = await _driver.Login(emailAddress, password);
+            
+            await _driver.UpdateUserDetails(loginResponse!.AuthToken, "James", "Eastham");
+            
+            var userDetails = await _driver.GetUserAccount(loginResponse!.AuthToken);
+            
+            // Assert
+            userDetails.FirstName.Should().Be("James");
+            userDetails.LastName.Should().Be("Eastham");
+        }
+        
+        [Fact]
         public async Task WhenStickerIsClaimedUsersStickerCountShouldIncrement()
         {
             // Arrange

@@ -5,18 +5,19 @@
 using System.Net;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
+using System.Text.Json;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.Auth;
-using Stickerlandia.UserManagement.Core.GetUserDetails;
-
+using Stickerlandia.UserManagement.Core.RegisterUser;
+using Stickerlandia.UserManagement.Core.UpdateUserDetails;
 
 namespace Stickerlandia.UserManagement.FunctionApp;
 
-public class GetUserDetailsFunction(GetUserDetailsQueryHandler handler, IAuthService authService)
+public class UpdateUserDetailsFunction(UpdateUserDetailsHandler updateHandler, IAuthService authService)
 {
-    [Function("GetUserDetails")]
+    [Function("UpdateUserDetails")]
     public async Task<HttpResponseData> RunAsync(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "details")]
+        [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "details")]
         HttpRequestData req)
     {
         // Get auth header
@@ -29,9 +30,18 @@ public class GetUserDetailsFunction(GetUserDetailsQueryHandler handler, IAuthSer
         
         var authorizedUser = authService.ValidateAuthToken(authHeader);
         
-        var result = await handler.Handle(new GetUserDetailsQuery(authorizedUser!.AccountId!));
+        // Deserialize request
+        var registerUserRequest = await JsonSerializer.DeserializeAsync<UpdateUserDetailsRequest>(req.Body);
+        
+        if (registerUserRequest == null)
+        {
+            return await new ApiResponse<RegisterUserCommand?>(false, null, "Invalid login request").WriteResponse(req, HttpStatusCode.BadRequest);
+        }
+        
+        registerUserRequest.AccountId = authorizedUser!.AccountId;
+        await updateHandler.Handle(registerUserRequest);
 
         // Return successful response with token
-        return await new ApiResponse<UserAccountDTO>(result).WriteResponse(req, HttpStatusCode.OK);
+        return await new ApiResponse<string>("OK").WriteResponse(req, HttpStatusCode.OK);
     }
 }

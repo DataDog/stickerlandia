@@ -4,11 +4,11 @@
 
 using System.Diagnostics;
 
-namespace Stickerlandia.UserManagement.Core.Register;
+namespace Stickerlandia.UserManagement.Core.RegisterUser;
 
-public class RegisterCommandHandler(IUserAccountRepository userAccountRepository)
+public class RegisterCommandHandler(IUsers users)
 {
-    public async Task<RegisterResponse> Handle(RegisterUserCommand command, AccountType accountType, CancellationToken token = default)
+    public async Task<RegisterResponse> Handle(RegisterUserCommand command, AccountType accountType)
     {
         try
         {
@@ -18,22 +18,17 @@ public class RegisterCommandHandler(IUserAccountRepository userAccountRepository
             }
             
             // Check if email exists before creating account
-            var emailExists = await userAccountRepository.DoesEmailExistAsync(command.EmailAddress);
+            var emailExists = await users.DoesEmailExistAsync(command.EmailAddress);
             if (emailExists) throw new UserExistsException();
 
-            UserAccount? userAccount = null;
-
-            if (accountType == AccountType.Staff && !command.EmailAddress.EndsWith("@plantbasedpizza.com"))
-                throw new InvalidUserException("Not a valid staff email");
-
             // Use async version for better performance
-            userAccount = await UserAccount.CreateAsync(command.EmailAddress, command.Password, command.FirstName, command.LastName, accountType);
+            var userAccount = await UserAccount.Register(command.EmailAddress, command.Password, command.FirstName, command.LastName, accountType);
 
-            await userAccountRepository.CreateAccount(userAccount);
+            await users.Add(userAccount);
 
             return new RegisterResponse
             {
-                AccountId = userAccount.Id
+                AccountId = userAccount.Id.Value,
             };
         }
         catch (UserExistsException ex)

@@ -4,4 +4,4 @@
 
 namespace Stickerlandia.UserManagement.Core.GetUserDetails;
 
-public record GetUserDetailsQuery(string AuthHeader);
+public record GetUserDetailsQuery(AccountId AccountId);

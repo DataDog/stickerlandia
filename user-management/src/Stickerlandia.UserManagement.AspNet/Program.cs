@@ -17,7 +17,7 @@ using Stickerlandia.UserManagement.AspNet.Configurations;
 using Stickerlandia.UserManagement.AspNet.Middlewares;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.Login;
-using Stickerlandia.UserManagement.Core.Register;
+using Stickerlandia.UserManagement.Core.RegisterUser;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
@@ -150,6 +150,13 @@ v1Base.MapGet("details", GetUserDetails.HandleAsync)
     .Produces<ApiResponse<UserAccountDTO>>(200)
     .ProducesProblem(401);
 
+v1Base.MapPut("details", UpdateUserDetailsEndpoint.HandleAsync)
+    .RequireAuthorization()
+    .HasApiVersion(1.0)
+    .WithDescription("Update the user details")
+    .Produces<ApiResponse<string>>(200)
+    .ProducesProblem(401);
+
 v1Base.MapPost("login", LoginEndpoint.HandleAsync)
     .AllowAnonymous()
     .HasApiVersion(1.0)
@@ -161,7 +168,7 @@ v1Base.MapPost("login", LoginEndpoint.HandleAsync)
 v1Base.MapPost("register", RegisterUserEndpoint.HandleAsync)
     .AllowAnonymous()
     .HasApiVersion(1.0)
-    .WithDescription("Register as a new user")
+    .WithDescription("RegisterUser as a new user")
     .Produces<ApiResponse<RegisterResponse>>(200)
     .ProducesProblem(400);
 

@@ -1,6 +1,5 @@
 ﻿using Microsoft.Azure.Cosmos;
 using Stickerlandia.UserManagement.Core;
-using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 using Stickerlandia.UserManagement.Core.Outbox;
 
@@ -54,7 +53,7 @@ internal class CosmosDbOutboxItem : OutboxItem
     public string DocumentType => "OutboxItem";
 }
 
-public class CosmosDbUserRepository : IUserAccountRepository, IOutbox
+public class CosmosDbUserRepository : IUsers, IOutbox
 {
     private readonly ILogger<CosmosDbUserRepository> _logger;
     private readonly Container _usersContainer;
@@ -62,7 +61,6 @@ public class CosmosDbUserRepository : IUserAccountRepository, IOutbox
     
     private const string DatabaseId = "Stickerlandia";
     private const string ContainerId = "Users";
-    private readonly ConcurrentDictionary<string, UserAccount> _userCache = new();
 
     public CosmosDbUserRepository(CosmosClient cosmosClient, ILogger<CosmosDbUserRepository> logger)
     {
@@ -71,7 +69,7 @@ public class CosmosDbUserRepository : IUserAccountRepository, IOutbox
         _isEmulator = cosmosClient.Endpoint.Host.Contains("localhost");
     }
 
-    public async Task<UserAccount> CreateAccount(UserAccount userAccount)
+    public async Task<UserAccount> Add(UserAccount userAccount)
     {
         try
         {
@@ -101,7 +99,7 @@ public class CosmosDbUserRepository : IUserAccountRepository, IOutbox
     private async Task CreateWithSeparateInserts(UserAccount userAccount)
     {
         await _usersContainer.CreateItemAsync(new CosmosDbUserAccount(
-            userAccount.Id,
+            userAccount.Id.Value,
             userAccount.EmailAddress,
             userAccount.Password,
             userAccount.FirstName,
@@ -129,7 +127,7 @@ public class CosmosDbUserRepository : IUserAccountRepository, IOutbox
         var batch = _usersContainer.CreateTransactionalBatch(new PartitionKey(userAccount.EmailAddress));
 
         batch.CreateItem(new CosmosDbUserAccount(
-            userAccount.Id,
+            userAccount.Id.Value,
             userAccount.EmailAddress,
             userAccount.Password,
             userAccount.FirstName,
@@ -181,7 +179,7 @@ public class CosmosDbUserRepository : IUserAccountRepository, IOutbox
     private async Task UpdateWithSeparateOperations(UserAccount userAccount)
     {
         await _usersContainer.ReplaceItemAsync(new CosmosDbUserAccount(
-            userAccount.Id,
+            userAccount.Id.Value,
             userAccount.EmailAddress,
             userAccount.Password,
             userAccount.FirstName,
@@ -189,7 +187,7 @@ public class CosmosDbUserRepository : IUserAccountRepository, IOutbox
             userAccount.ClaimedStickerCount,
             userAccount.DateCreated,
             userAccount.AccountTier,
-            userAccount.AccountType), userAccount.Id);
+            userAccount.AccountType), userAccount.Id.Value);
 
         foreach (var evt in userAccount.DomainEvents)
         {
@@ -209,8 +207,8 @@ public class CosmosDbUserRepository : IUserAccountRepository, IOutbox
         var batch = _usersContainer.CreateTransactionalBatch(new PartitionKey(userAccount.EmailAddress));
 
         // Replace the existing user account document
-        batch.ReplaceItem(userAccount.Id, new CosmosDbUserAccount(
-            userAccount.Id,
+        batch.ReplaceItem(userAccount.Id.Value, new CosmosDbUserAccount(
+            userAccount.Id.Value,
             userAccount.EmailAddress,
             userAccount.Password,
             userAccount.FirstName,
@@ -239,78 +237,12 @@ public class CosmosDbUserRepository : IUserAccountRepository, IOutbox
             throw new DatabaseFailureException($"Failed to update account with outbox event: {response.StatusCode} - {response.ErrorMessage}");
     }
 
-    public async Task<UserAccount> ValidateCredentials(string emailAddress, string password)
-    {
-        try
-        {
-            // Query for user by email address
-            var passwordHash = UserAccount.HashPassword(password);
-            var query = new QueryDefinition("SELECT * FROM c WHERE c.emailAddress = @email AND c.password = @password")
-                .WithParameter("@email", emailAddress)
-                .WithParameter("@password", passwordHash);
-
-            using var iterator = _usersContainer.GetItemQueryIterator<CosmosDbUserAccount>(query);
-
-            if (iterator.HasMoreResults)
-            {
-                var response = await iterator.ReadNextAsync();
-                var user = response.FirstOrDefault();
-
-                if (user != null)
-                    return UserAccount.From(user.id, user.emailAddress, user.PasswordHash, user.FirstName,
-                        user.LastName,
-                        user.ClaimedStickerCount, user.DateCreated,
-                        user.AccountTier, user.AccountType);
-            }
-
-            throw new LoginFailedException();
-        }
-        catch (CosmosException)
-        {
-            throw new LoginFailedException();
-        }
-    }
-
-    public async Task SeedInitialUser()
-    {
-        try
-        {
-            // Check if any users exist
-            var countQuery = new QueryDefinition("SELECT VALUE COUNT(1) FROM c");
-            using var countIterator = _usersContainer.GetItemQueryIterator<int>(countQuery);
-
-            if (countIterator.HasMoreResults)
-            {
-                var response = await countIterator.ReadNextAsync();
-                var count = response.FirstOrDefault();
-
-                if (count > 0)
-                    // Users already exist, no seeding needed
-                    return;
-            }
-
-            // Create a default admin user
-            var adminUser = await UserAccount.CreateAsync(
-                "admin@stickerlandia.com",
-                "Admin123!",
-                "Admin",
-                "User",
-                AccountType.Staff);
-
-            await CreateAccount(adminUser);
-        }
-        catch (CosmosException ex)
-        {
-            throw new DatabaseFailureException("Failed to seed initial user", ex);
-        }
-    }
-
-    public async Task<UserAccount?> GetAccountByIdAsync(string accountId)
+    public async Task<UserAccount?> WithIdAsync(AccountId accountId)
     {
         try
         {
             var query = new QueryDefinition("SELECT * FROM c WHERE c.id = @id")
-                .WithParameter("@id", accountId);
+                .WithParameter("@id", accountId.Value);
 
             using var iterator = _usersContainer.GetItemQueryIterator<CosmosDbUserAccount>(query);
 
@@ -321,14 +253,13 @@ public class CosmosDbUserRepository : IUserAccountRepository, IOutbox
 
                 if (user != null)
                 {
-                    var account = UserAccount.From(user.id, user.emailAddress, user.PasswordHash,
+                    var account = UserAccount.From(new AccountId(user.id), user.emailAddress, user.PasswordHash,
                         user.FirstName,
                         user.LastName,
                         user.ClaimedStickerCount,
                         user.DateCreated,
                         user.AccountTier, user.AccountType);
-                    // Cache the result
-                    _userCache.TryAdd(accountId, account);
+
                     return account;
                 }
             }
@@ -341,14 +272,8 @@ public class CosmosDbUserRepository : IUserAccountRepository, IOutbox
         }
     }
 
-    public async Task<UserAccount?> GetAccountByEmailAsync(string emailAddress)
+    public async Task<UserAccount?> WithEmailAsync(string emailAddress)
     {
-        // Check cache first (iterating because we cache by ID but are searching by email)
-        var cachedUser =
-            _userCache.Values.FirstOrDefault(u =>
-                u.EmailAddress.Equals(emailAddress, StringComparison.OrdinalIgnoreCase));
-        if (cachedUser != null) return cachedUser;
-
         try
         {
             var query = new QueryDefinition("SELECT * FROM c WHERE c.emailAddress = @email")
@@ -363,12 +288,11 @@ public class CosmosDbUserRepository : IUserAccountRepository, IOutbox
 
                 if (user != null)
                 {
-                    var account = UserAccount.From(user.id, user.emailAddress, user.PasswordHash, user.FirstName,
+                    var account = UserAccount.From(new AccountId(user.id), user.emailAddress, user.PasswordHash, user.FirstName,
                         user.LastName,
                         user.ClaimedStickerCount, user.DateCreated,
                         user.AccountTier, user.AccountType);
-                    // Cache the result
-                    _userCache.TryAdd(account.Id, account);
+
                     return account;
                 }
             }
@@ -383,10 +307,6 @@ public class CosmosDbUserRepository : IUserAccountRepository, IOutbox
 
     public async Task<bool> DoesEmailExistAsync(string emailAddress)
     {
-        // Check cache first
-        if (_userCache.Values.Any(u => u.EmailAddress.Equals(emailAddress, StringComparison.OrdinalIgnoreCase)))
-            return true;
-
         try
         {
             var query = new QueryDefinition("SELECT VALUE COUNT(1) FROM c WHERE c.emailAddress = @email")
@@ -408,41 +328,6 @@ public class CosmosDbUserRepository : IUserAccountRepository, IOutbox
         {
             return false;
         }
-    }
-
-    public async Task PreloadFrequentUsersAsync()
-    {
-        try
-        {
-            // Query for frequently active users (e.g., staff accounts)
-            var query = new QueryDefinition("SELECT * FROM c WHERE c.accountType = 'Staff'");
-            using var iterator = _usersContainer.GetItemQueryIterator<CosmosDbUserAccount>(query);
-
-            while (iterator.HasMoreResults)
-            {
-                var response = await iterator.ReadNextAsync();
-                foreach (var user in response)
-                {
-                    var account = UserAccount.From(user.id, user.emailAddress, user.PasswordHash, user.FirstName,
-                        user.LastName, 
-                        user.ClaimedStickerCount, DateTime.UtcNow,
-                        user.AccountTier, user.AccountType);
-                    _userCache.TryAdd(account.Id, account);
-                }
-
-                ;
-            }
-        }
-        catch (CosmosException ex)
-        {
-            throw new DatabaseFailureException("Failed to preload frequent users", ex);
-        }
-    }
-
-    public Task InvalidateCacheForUserAsync(string accountId)
-    {
-        _userCache.TryRemove(accountId, out _);
-        return Task.CompletedTask;
     }
 
     public async Task<List<OutboxItem>> GetUnprocessedItemsAsync(int maxCount = 100)

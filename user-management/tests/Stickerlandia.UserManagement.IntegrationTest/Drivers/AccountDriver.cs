@@ -39,6 +39,26 @@ public class AccountDriver
             : null;
     }
 
+    public async Task<string?> UpdateUserDetails(string authToken, string firstName, string lastName)
+    {
+        var requestBody = JsonSerializer.Serialize(new
+        {
+            firstName,
+            lastName,
+        });
+
+        var request = new HttpRequestMessage(HttpMethod.Put, new Uri($"{BaseUrl}/details"));
+        request.Headers.Add("Authorization", $"Bearer {authToken}");
+        request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
+
+        var response = await _httpClient.SendAsync(request);
+        var responseBody = await response.Content.ReadAsStringAsync();
+
+        return response.IsSuccessStatusCode
+            ? JsonSerializer.Deserialize<ApiResponse<string>>(responseBody)?.Data
+            : null;
+    }
+
     public async Task<LoginResponse?> Login(string emailAddress, string password)
     {
         var requestBody = JsonSerializer.Serialize(new

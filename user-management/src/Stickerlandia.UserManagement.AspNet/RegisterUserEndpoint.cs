@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Stickerlandia.UserManagement.Core;
-using Stickerlandia.UserManagement.Core.Register;
+using Stickerlandia.UserManagement.Core.RegisterUser;
 
 namespace Stickerlandia.UserManagement.AspNet;
 
@@ -8,10 +8,9 @@ public static class RegisterUserEndpoint
 {
     public static async Task<ApiResponse<RegisterResponse>> HandleAsync(
         [FromServices] RegisterCommandHandler registerCommandHandler,
-        RegisterUserCommand request,
-        CancellationToken ct)
+        RegisterUserCommand request)
     {
-        var registerResponse = await registerCommandHandler.Handle(request, AccountType.User, ct);
+        var registerResponse = await registerCommandHandler.Handle(request, AccountType.User);
         
         return new ApiResponse<RegisterResponse>(registerResponse);
     }

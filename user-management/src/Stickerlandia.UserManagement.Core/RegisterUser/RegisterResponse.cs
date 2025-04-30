@@ -4,7 +4,7 @@
 
 using System.Text.Json.Serialization;
 
-namespace Stickerlandia.UserManagement.Core.Register;
+namespace Stickerlandia.UserManagement.Core.RegisterUser;
 
 public class RegisterResponse
 {

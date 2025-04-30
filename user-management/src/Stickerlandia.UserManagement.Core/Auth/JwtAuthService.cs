@@ -34,7 +34,7 @@ public class JwtAuthService : IAuthService
 
         var claims = new[]
         {
-            new Claim(JwtRegisteredClaimNames.Sub, account.Id),
+            new Claim(JwtRegisteredClaimNames.Sub, account.Id.Value),
             new Claim(JwtRegisteredClaimNames.Email, account.EmailAddress),
             new Claim(UserTypeClaimName, account.AsAuthenticatedRole()),
             new Claim(UserTierClaimName, account.AccountTier.ToString()),
@@ -100,7 +100,7 @@ public class JwtAuthService : IAuthService
 
             return new AuthorizedUserDetails
             {
-                AccountId = accountIdClaim.Value,
+                AccountId = new AccountId(accountIdClaim.Value),
                 Role = roleClaim.Value,
                 UserTier = userTierClaim.Value
             };

@@ -7,7 +7,7 @@ using Stickerlandia.UserManagement.Core.Auth;
 
 namespace Stickerlandia.UserManagement.Core.Login;
 
-public class LoginCommandHandler(IUserAccountRepository userAccountRepository, IAuthService authService)
+public class LoginCommandHandler(IUsers users, IAuthService authService)
 {
     public async Task<LoginResponse> Handle(LoginCommand request)
     {
@@ -18,7 +18,7 @@ public class LoginCommandHandler(IUserAccountRepository userAccountRepository, I
                 throw new ArgumentException("Invalid LoginCommand");
             }
             
-            var account = await userAccountRepository.GetAccountByEmailAsync(request.EmailAddress);
+            var account = await users.WithEmailAsync(request.EmailAddress);
 
             if (account == null) throw new LoginFailedException("Invalid password");
 

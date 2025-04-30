@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace Stickerlandia.UserManagement.Core.Auth;
 
-public class AccountDetailsHandler(IUserAccountRepository userAccountRepository, IAuthService authService)
+public class AccountDetailsHandler(IUsers users, IAuthService authService)
 {
     public async Task<UserAccountDTO> GetAccountByAuthToken(string authToken)
     {
@@ -24,7 +24,7 @@ public class AccountDetailsHandler(IUserAccountRepository userAccountRepository,
                 throw new InvalidUserException("Invalid auth token");
             }
 
-            var account = await userAccountRepository.GetAccountByIdAsync(authenticatedUser.AccountId);
+            var account = await users.WithIdAsync(authenticatedUser.AccountId!);
 
             if (account == null)
             {

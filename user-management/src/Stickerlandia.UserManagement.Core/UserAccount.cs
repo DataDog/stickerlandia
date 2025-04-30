@@ -5,15 +5,39 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using Stickerlandia.UserManagement.Core.RegisterUser;
+using Stickerlandia.UserManagement.Core.UpdateUserDetails;
 
 namespace Stickerlandia.UserManagement.Core;
+
+public record AccountId
+{
+    public string Value { get; init; }
+
+    public AccountId(string value)
+    {
+        // This allows the AccountId property to be used if an email is passed in, where it should be hashed
+        // for use as an identifier. Or if an already hashed Id is passed in, it will be used as is.
+        if (UserAccount.IsValidEmail(value))
+        {
+            using var sha256 = SHA256.Create();
+            var emailBytes = Encoding.UTF8.GetBytes(value.ToLowerInvariant());
+            var hashBytes = sha256.ComputeHash(emailBytes);
+
+            // Convert to hex string
+            Value = Convert.ToHexString(hashBytes);
+        }
+        else
+        {
+            Value = value;
+        }
+    }
+}
 
 public enum AccountType
 {
     User,
-    Staff,
-    Admin,
-    Driver
+    Admin
 }
 
 public enum AccountTier
@@ -28,11 +52,11 @@ public class UserAccount
 
     public UserAccount()
     {
-        this._domainEvents = new List<DomainEvent>();
+        _domainEvents = new List<DomainEvent>();
     }
 
     // Async version for better performance in web contexts
-    public static async Task<UserAccount> CreateAsync(string emailAddress, string password, string firstName,
+    public static async Task<UserAccount> Register(string emailAddress, string password, string firstName,
         string lastName, AccountType accountType)
     {
         // Validate inputs in parallel for better performance
@@ -47,7 +71,7 @@ public class UserAccount
 
         var userAccount = new UserAccount
         {
-            Id = Guid.NewGuid().ToString(),
+            Id = new AccountId(emailAddress),
             EmailAddress = emailAddress,
             Password = HashPassword(password),
             AccountType = accountType,
@@ -56,14 +80,14 @@ public class UserAccount
             FirstName = firstName,
             LastName = lastName
         };
-        
+
         userAccount._domainEvents.Add(new UserRegisteredEvent(userAccount));
 
         return userAccount;
     }
 
     public static UserAccount From(
-        string id,
+        AccountId id,
         string emailAddress,
         string passwordHash,
         string firstName,
@@ -87,7 +111,7 @@ public class UserAccount
         };
     }
 
-    public string Id { get; private set; } = string.Empty;
+    public AccountId Id { get; private set; }
 
     public string EmailAddress { get; private set; } = string.Empty;
 
@@ -104,10 +128,12 @@ public class UserAccount
     public AccountTier AccountTier { get; private set; }
 
     public AccountType AccountType { get; private set; }
-    
+
     public IReadOnlyCollection<DomainEvent> DomainEvents => _domainEvents;
-    
+
     public int ClaimedStickerCount { get; private set; }
+
+    internal bool Changed { get; private set; } = false;
 
     public string AsAuthenticatedRole()
     {
@@ -115,12 +141,8 @@ public class UserAccount
         {
             case AccountType.Admin:
                 return "admin";
-            case AccountType.Staff:
-                return "staff";
-            case AccountType.Driver:
-                return "driver";
             case AccountType.User:
-                return "user";
+                break;
         }
 
         return "user";
@@ -165,12 +187,29 @@ public class UserAccount
         return true;
     }
 
-    public void StickerOrdered(string stickerId)
+    public void StickerOrdered()
     {
         ClaimedStickerCount++;
     }
-    
-    private static bool IsValidEmail(string email)
+
+    public void UpdateUserDetails(string newFirstName, string newLastName)
+    {
+        if (!string.IsNullOrEmpty(newFirstName) && newFirstName != FirstName)
+        {
+            FirstName = newFirstName;
+            Changed = true;
+        }
+
+        if (!string.IsNullOrEmpty(newLastName) &&newLastName != LastName)
+        {
+            LastName = newLastName;
+            Changed = true;
+        }
+
+        if (Changed) _domainEvents.Add(new UserDetailsUpdatedEvent(this));
+    }
+
+    internal static bool IsValidEmail(string email)
     {
         if (string.IsNullOrWhiteSpace(email))
             return false;

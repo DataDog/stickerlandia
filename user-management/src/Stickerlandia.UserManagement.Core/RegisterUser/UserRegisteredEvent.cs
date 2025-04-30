@@ -5,7 +5,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Stickerlandia.UserManagement.Core;
+namespace Stickerlandia.UserManagement.Core.RegisterUser;
 
 public record UserRegisteredEvent : DomainEvent
 {
@@ -13,7 +13,7 @@ public record UserRegisteredEvent : DomainEvent
     
     public UserRegisteredEvent(UserAccount account)
     {
-        AccountId = account.Id;
+        AccountId = account.Id.Value;
     }
     
     [JsonPropertyName("eventName")]

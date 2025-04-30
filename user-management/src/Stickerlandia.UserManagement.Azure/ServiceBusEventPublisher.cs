@@ -9,6 +9,7 @@ using Datadog.Trace;
 using Microsoft.Extensions.Logging;
 using Saunter.Attributes;
 using Stickerlandia.UserManagement.Core;
+using Stickerlandia.UserManagement.Core.RegisterUser;
 
 namespace Stickerlandia.UserManagement.Azure;
 

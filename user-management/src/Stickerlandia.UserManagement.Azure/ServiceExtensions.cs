@@ -69,8 +69,8 @@ public static class ServiceExtensions
         services.AddSingleton<IMessagingWorker, ServiceBusStickerClaimedWorker>();
         services.AddSingleton(new ServiceBusClient(configuration["messaging"]));
 
-        // Register the CosmosDB repository implementation
-        services.AddSingleton<IUserAccountRepository, CosmosDbUserRepository>();
+        // RegisterUser the CosmosDB repository implementation
+        services.AddSingleton<IUsers, CosmosDbUserRepository>();
         services.AddSingleton<IOutbox, CosmosDbUserRepository>();
         services.AddSingleton<IUserEventPublisher, ServiceBusEventPublisher>();
 

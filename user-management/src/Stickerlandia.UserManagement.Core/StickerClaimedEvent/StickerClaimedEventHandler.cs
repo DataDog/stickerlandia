@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace Stickerlandia.UserManagement.Core.StickerClaimedEvent;
 
-public class StickerClaimedEventHandler(IUserAccountRepository userAccountRepository)
+public class StickerClaimedEventHandler(IUsers users)
 {
     public async Task Handle(StickerClaimedEventV1 eventV1)
     {
@@ -17,16 +17,16 @@ public class StickerClaimedEventHandler(IUserAccountRepository userAccountReposi
                 throw new ArgumentException("Invalid StickerClaimedEventV1");
             }
 
-            var account = await userAccountRepository.GetAccountByIdAsync(eventV1.AccountId);
+            var account = await users.WithIdAsync(new AccountId(eventV1.AccountId));
 
             if (account is null)
             {
                 return;
             }
             
-            account.StickerOrdered(eventV1.StickerId);
+            account.StickerOrdered();
 
-            await userAccountRepository.UpdateAccount(account);
+            await users.UpdateAccount(account);
         }
         catch (Exception ex)
         {
