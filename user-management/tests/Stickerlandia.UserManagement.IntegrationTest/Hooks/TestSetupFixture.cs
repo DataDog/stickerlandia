@@ -30,13 +30,14 @@ public class TestSetupFixture : IDisposable
             App = builder.BuildAsync().GetAwaiter().GetResult();
 
             App.StartAsync().GetAwaiter().GetResult();
-            HttpClient = App.CreateHttpClient("api");
             
             var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
             App.ResourceNotifications.WaitForResourceHealthyAsync(
                     "api",
                     cts.Token)
                 .GetAwaiter().GetResult();
+            
+            HttpClient = App.CreateHttpClient("api");
         }
         else
         {

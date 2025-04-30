@@ -2,7 +2,7 @@
   "profiles": {
     "Stickerlandia.UserManagement.FunctionApp": {
       "commandName": "Project",
-      "commandLineArgs": "--port 5139",
+      "commandLineArgs": "--port 7071",
       "launchBrowser": false
     }
   }

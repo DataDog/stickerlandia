@@ -62,19 +62,10 @@ public static class AppBuilderExtensions
             .WithEnvironment("Auth__Issuer", "https://stickerlandia.com")
             .WithEnvironment("Auth__Audience", "https://stickerlandia.com")
             .WithEnvironment("Auth__Key", "This is a super secret key that should not be used in production'")
-            .WithEndpoint(5139, 7071)
+            .WithArgs("--port 5139")
             .WaitFor(messagingResource)
             .WaitFor(databaseResource)
             .WithExternalHttpEndpoints();
-
-        builder.AddProject<Projects.Stickerlandia_UserManagement_FunctionApp>("function-app")
-            .WithEnvironment("ConnectionStrings__cosmosdb", databaseResource)
-            .WithEnvironment("ConnectionStrings__messaging", messagingResource)
-            .WithEnvironment("Auth__Issuer", "https://stickerlandia.com")
-            .WithEnvironment("Auth__Audience", "https://stickerlandia.com")
-            .WithEnvironment("Auth__Key", "This is a super secret key that should not be used in production'")
-            .WithReference(functions)
-            .WaitFor(functions);
 
         return builder;
     }
