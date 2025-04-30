@@ -1,0 +1,160 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": "AWS::Serverless-2016-10-31",
+  "Description": "An AWS Serverless Application. This template is partially managed by Amazon.Lambda.Annotations (v1.3.0.0).",
+  "Resources": {
+    "StickerlandiaUserManagementLambdaFunctionsDefaultGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ]
+      },
+      "Properties": {
+        "Runtime": "dotnet8",
+        "CodeUri": ".",
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "Stickerlandia.UserManagement.Lambda::Stickerlandia.UserManagement.Lambda.Functions_Default_Generated::Default",
+        "Events": {
+          "RootGet": {
+            "Type": "HttpApi",
+            "Properties": {
+              "Path": "/",
+              "Method": "GET"
+            }
+          }
+        }
+      }
+    },
+    "StickerlandiaUserManagementLambdaFunctionsAddGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ]
+      },
+      "Properties": {
+        "Runtime": "dotnet8",
+        "CodeUri": ".",
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "Stickerlandia.UserManagement.Lambda::Stickerlandia.UserManagement.Lambda.Functions_Add_Generated::Add",
+        "Events": {
+          "RootGet": {
+            "Type": "HttpApi",
+            "Properties": {
+              "Path": "/add/{x}/{y}",
+              "Method": "GET"
+            }
+          }
+        }
+      }
+    },
+    "StickerlandiaUserManagementLambdaFunctionsSubtractGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ]
+      },
+      "Properties": {
+        "Runtime": "dotnet8",
+        "CodeUri": ".",
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "Stickerlandia.UserManagement.Lambda::Stickerlandia.UserManagement.Lambda.Functions_Subtract_Generated::Subtract",
+        "Events": {
+          "RootGet": {
+            "Type": "HttpApi",
+            "Properties": {
+              "Path": "/subtract/{x}/{y}",
+              "Method": "GET"
+            }
+          }
+        }
+      }
+    },
+    "StickerlandiaUserManagementLambdaFunctionsMultiplyGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ]
+      },
+      "Properties": {
+        "Runtime": "dotnet8",
+        "CodeUri": ".",
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "Stickerlandia.UserManagement.Lambda::Stickerlandia.UserManagement.Lambda.Functions_Multiply_Generated::Multiply",
+        "Events": {
+          "RootGet": {
+            "Type": "HttpApi",
+            "Properties": {
+              "Path": "/multiply/{x}/{y}",
+              "Method": "GET"
+            }
+          }
+        }
+      }
+    },
+    "StickerlandiaUserManagementLambdaFunctionsDivideGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootGet"
+        ]
+      },
+      "Properties": {
+        "Runtime": "dotnet8",
+        "CodeUri": ".",
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "Stickerlandia.UserManagement.Lambda::Stickerlandia.UserManagement.Lambda.Functions_Divide_Generated::Divide",
+        "Events": {
+          "RootGet": {
+            "Type": "HttpApi",
+            "Properties": {
+              "Path": "/divide/{x}/{y}",
+              "Method": "GET"
+            }
+          }
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "ApiURL": {
+      "Description": "API endpoint URL for Prod environment",
+      "Value": {
+        "Fn::Sub": "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
+      }
+    }
+  }
+}

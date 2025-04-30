@@ -1,0 +1,99 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "application", "application", "{3582F79E-2187-4CCD-836D-48EE30BC64A8}"
+	ProjectSection(SolutionItems) = preProject
+		docker-compose.yml = docker-compose.yml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{FE220876-2B87-4095-8BD2-039049503C72}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.IntegrationTest", "tests\Stickerlandia.UserManagement.IntegrationTest\Stickerlandia.UserManagement.IntegrationTest.csproj", "{4DDC795B-2EA4-4123-B631-F0D8CAA99BA6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.UnitTest", "tests\Stickerlandia.UserManagement.UnitTest\Stickerlandia.UserManagement.UnitTest.csproj", "{7BD95F13-FE66-43A0-A48A-8D5903E37F7D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.AspNet", "src\Stickerlandia.UserManagement.AspNet\Stickerlandia.UserManagement.AspNet.csproj", "{488873C6-4BFA-4D6E-9364-D672C15EA2D9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.Core", "src\Stickerlandia.UserManagement.Core\Stickerlandia.UserManagement.Core.csproj", "{A93481EC-FDED-4740-902D-B5D911402CBA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.Azure", "src\Stickerlandia.UserManagement.Azure\Stickerlandia.UserManagement.Azure.csproj", "{1F6841EA-97F0-4079-967A-42F816E4FD1F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.FunctionApp", "src\applications\Stickerlandia.UserManagement.FunctionApp\Stickerlandia.UserManagement.FunctionApp.csproj", "{ABDA3664-3B8A-40A5-8038-5150E660B11E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.Aspire", "src\Stickerlandia.UserManagement.Aspire\Stickerlandia.UserManagement.Aspire.csproj", "{E481765C-9B3F-4F5E-B351-076415595A8B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.AWS", "src\Stickerlandia.UserManagement.AWS\Stickerlandia.UserManagement.AWS.csproj", "{9A175F6D-120D-4AF2-B407-B1499B70BE9E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "core", "core", "{FC9DDF76-8DAC-4498-8926-8883F984709C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "implementations", "implementations", "{496B0BAC-40B1-4322-AE86-80F054748C68}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.Agnostic", "src\Stickerlandia.UserManagement.Agnostic\Stickerlandia.UserManagement.Agnostic.csproj", "{295E8315-2CD2-4CD8-B7F4-21EF587B74A9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.Lambda", "src\Stickerlandia.UserManagement.Lambda\src\Stickerlandia.UserManagement.Lambda\Stickerlandia.UserManagement.Lambda.csproj", "{5C770F92-B6E7-4270-A041-A32F385DA6C4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4DDC795B-2EA4-4123-B631-F0D8CAA99BA6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4DDC795B-2EA4-4123-B631-F0D8CAA99BA6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4DDC795B-2EA4-4123-B631-F0D8CAA99BA6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4DDC795B-2EA4-4123-B631-F0D8CAA99BA6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7BD95F13-FE66-43A0-A48A-8D5903E37F7D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7BD95F13-FE66-43A0-A48A-8D5903E37F7D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7BD95F13-FE66-43A0-A48A-8D5903E37F7D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7BD95F13-FE66-43A0-A48A-8D5903E37F7D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{488873C6-4BFA-4D6E-9364-D672C15EA2D9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{488873C6-4BFA-4D6E-9364-D672C15EA2D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{488873C6-4BFA-4D6E-9364-D672C15EA2D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{488873C6-4BFA-4D6E-9364-D672C15EA2D9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A93481EC-FDED-4740-902D-B5D911402CBA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A93481EC-FDED-4740-902D-B5D911402CBA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A93481EC-FDED-4740-902D-B5D911402CBA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A93481EC-FDED-4740-902D-B5D911402CBA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1F6841EA-97F0-4079-967A-42F816E4FD1F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1F6841EA-97F0-4079-967A-42F816E4FD1F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1F6841EA-97F0-4079-967A-42F816E4FD1F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1F6841EA-97F0-4079-967A-42F816E4FD1F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ABDA3664-3B8A-40A5-8038-5150E660B11E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ABDA3664-3B8A-40A5-8038-5150E660B11E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ABDA3664-3B8A-40A5-8038-5150E660B11E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ABDA3664-3B8A-40A5-8038-5150E660B11E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E481765C-9B3F-4F5E-B351-076415595A8B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E481765C-9B3F-4F5E-B351-076415595A8B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E481765C-9B3F-4F5E-B351-076415595A8B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E481765C-9B3F-4F5E-B351-076415595A8B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9A175F6D-120D-4AF2-B407-B1499B70BE9E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9A175F6D-120D-4AF2-B407-B1499B70BE9E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9A175F6D-120D-4AF2-B407-B1499B70BE9E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9A175F6D-120D-4AF2-B407-B1499B70BE9E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{295E8315-2CD2-4CD8-B7F4-21EF587B74A9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{295E8315-2CD2-4CD8-B7F4-21EF587B74A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{295E8315-2CD2-4CD8-B7F4-21EF587B74A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{295E8315-2CD2-4CD8-B7F4-21EF587B74A9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5C770F92-B6E7-4270-A041-A32F385DA6C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5C770F92-B6E7-4270-A041-A32F385DA6C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5C770F92-B6E7-4270-A041-A32F385DA6C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5C770F92-B6E7-4270-A041-A32F385DA6C4}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{4DDC795B-2EA4-4123-B631-F0D8CAA99BA6} = {FE220876-2B87-4095-8BD2-039049503C72}
+		{7BD95F13-FE66-43A0-A48A-8D5903E37F7D} = {FE220876-2B87-4095-8BD2-039049503C72}
+		{488873C6-4BFA-4D6E-9364-D672C15EA2D9} = {3582F79E-2187-4CCD-836D-48EE30BC64A8}
+		{ABDA3664-3B8A-40A5-8038-5150E660B11E} = {3582F79E-2187-4CCD-836D-48EE30BC64A8}
+		{E481765C-9B3F-4F5E-B351-076415595A8B} = {3582F79E-2187-4CCD-836D-48EE30BC64A8}
+		{A93481EC-FDED-4740-902D-B5D911402CBA} = {FC9DDF76-8DAC-4498-8926-8883F984709C}
+		{9A175F6D-120D-4AF2-B407-B1499B70BE9E} = {496B0BAC-40B1-4322-AE86-80F054748C68}
+		{1F6841EA-97F0-4079-967A-42F816E4FD1F} = {496B0BAC-40B1-4322-AE86-80F054748C68}
+		{295E8315-2CD2-4CD8-B7F4-21EF587B74A9} = {496B0BAC-40B1-4322-AE86-80F054748C68}
+		{5C770F92-B6E7-4270-A041-A32F385DA6C4} = {3582F79E-2187-4CCD-836D-48EE30BC64A8}
+	EndGlobalSection
+EndGlobal
