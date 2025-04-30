@@ -14,11 +14,9 @@ public class TestSetupFixture : IDisposable
     public readonly IMessaging Messaging;
     public readonly HttpClient HttpClient;
     public readonly DistributedApplication? App;
-    
+
     public TestSetupFixture()
     {
-        Messaging = new AzureServiceBusMessaging(TestConstants.DefaultMessagingConnection);
-        
         var shouldTestAgainstRealResources = Environment.GetEnvironmentVariable("TEST_REAL_RESOURCES") == "true";
 
         if (!shouldTestAgainstRealResources)
@@ -30,18 +28,28 @@ public class TestSetupFixture : IDisposable
             App = builder.BuildAsync().GetAwaiter().GetResult();
 
             App.StartAsync().GetAwaiter().GetResult();
-            
+
             var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
             App.ResourceNotifications.WaitForResourceHealthyAsync(
                     "api",
                     cts.Token)
                 .GetAwaiter().GetResult();
-            
+
             HttpClient = App.CreateHttpClient("api");
+
+            var messagingConnectionString = App.GetConnectionStringAsync("messaging").GetAwaiter().GetResult();
+            
+            if (string.IsNullOrEmpty(messagingConnectionString))
+            {
+                throw new Exception("Messaging connection string is not set.");
+            }
+
+            Messaging = new AzureServiceBusMessaging(messagingConnectionString);
         }
         else
         {
-            HttpClient = new HttpClient();    
+            Messaging = new AzureServiceBusMessaging(TestConstants.DefaultMessagingConnection);
+            HttpClient = new HttpClient();
         }
     }
 
