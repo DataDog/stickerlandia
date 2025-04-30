@@ -368,13 +368,13 @@ namespace Stickerlandia.UserManagement.IntegrationTest
                 allowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?";
             }
             
-            var sb = new StringBuilder(length);
+            var randomStringBuilder = new StringBuilder(length);
             for (int i = 0; i < length; i++)
             {
-                sb.Append(allowedChars[_random.Next(allowedChars.Length)]);
+                randomStringBuilder.Append(allowedChars[_random.Next(allowedChars.Length)]);
             }
             
-            return sb.ToString();
+            return randomStringBuilder.ToString();
         }
 
         #endregion

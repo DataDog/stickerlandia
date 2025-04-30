@@ -6,13 +6,17 @@ namespace Stickerlandia.UserManagement.Core;
 
 public class LoginFailedException : Exception
 {
-    public LoginFailedException() 
+    public LoginFailedException()
         : base("Login failed due to invalid credentials")
     {
     }
-    
+
     public LoginFailedException(string message)
         : base(message)
+    {
+    }
+
+    public LoginFailedException(string message, Exception innerException) : base(message, innerException)
     {
     }
 }

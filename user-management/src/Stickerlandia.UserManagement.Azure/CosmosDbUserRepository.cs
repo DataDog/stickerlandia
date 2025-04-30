@@ -95,7 +95,7 @@ public class CosmosDbUserRepository : IUserAccountRepository, IOutbox
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to create account");
-            throw new Exception("Failed to create account", ex);
+            throw new DatabaseFailureException("Failed to create account", ex);
         }
     }
 
@@ -156,7 +156,7 @@ public class CosmosDbUserRepository : IUserAccountRepository, IOutbox
 
         if (response.IsSuccessStatusCode) return;
 
-        throw new Exception($"Failed to create account with outbox event: {response.StatusCode}");
+        throw new DatabaseFailureException($"Failed to create account with outbox event: {response.StatusCode}");
     }
 
     public async Task UpdateAccount(UserAccount userAccount)
@@ -175,7 +175,7 @@ public class CosmosDbUserRepository : IUserAccountRepository, IOutbox
         }
         catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
-            throw new Exception("User account not found", ex);
+            throw new DatabaseFailureException("User account not found", ex);
         }
     }
     
@@ -237,7 +237,7 @@ public class CosmosDbUserRepository : IUserAccountRepository, IOutbox
         using var response = await batch.ExecuteAsync();
 
         if (!response.IsSuccessStatusCode)
-            throw new Exception($"Failed to update account with outbox event: {response.StatusCode} - {response.ErrorMessage}");
+            throw new DatabaseFailureException($"Failed to update account with outbox event: {response.StatusCode} - {response.ErrorMessage}");
     }
 
     public async Task<UserAccount> ValidateCredentials(string emailAddress, string password)
@@ -302,7 +302,7 @@ public class CosmosDbUserRepository : IUserAccountRepository, IOutbox
         }
         catch (CosmosException ex)
         {
-            throw new Exception("Failed to seed initial user", ex);
+            throw new DatabaseFailureException("Failed to seed initial user", ex);
         }
     }
 
@@ -436,7 +436,7 @@ public class CosmosDbUserRepository : IUserAccountRepository, IOutbox
         }
         catch (CosmosException ex)
         {
-            throw new Exception("Failed to preload frequent users", ex);
+            throw new DatabaseFailureException("Failed to preload frequent users", ex);
         }
     }
 
@@ -496,7 +496,7 @@ public class CosmosDbUserRepository : IUserAccountRepository, IOutbox
         }
         catch (CosmosException ex)
         {
-            throw new Exception($"Failed to update outbox item with ID {outboxItem.ItemId}", ex);
+            throw new DatabaseFailureException($"Failed to update outbox item with ID {outboxItem.ItemId}", ex);
         }
     }
 }

@@ -6,10 +6,19 @@ namespace Stickerlandia.UserManagement.Core;
 
 public class InvalidUserException : Exception
 {
+    
+    public InvalidUserException() : base()
+    {
+    }
+    
     public InvalidUserException(string reason)
         : base($"Invalid user: {reason}")
     {
         Reason = reason;
+    }
+
+    public InvalidUserException(string message, Exception innerException) : base(message, innerException)
+    {
     }
     
     public string Reason { get; set; }

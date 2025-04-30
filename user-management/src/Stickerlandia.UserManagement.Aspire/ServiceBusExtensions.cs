@@ -20,7 +20,7 @@ public static class ServiceBusExtensions
             return new ServiceBusClient(connectionString);
         });
 
-        builder.WithCommand("SendSbMessage", "Send Service Bus message", executeCommand: async (c) =>
+        builder.WithCommand("SendSbMessage", "Send Service Bus message", async (c) =>
         {
             var sbClient = c.ServiceProvider.GetRequiredService<ServiceBusClient>();
             await sbClient.CreateSender(builder.Resource.QueueName)
@@ -28,6 +28,60 @@ public static class ServiceBusExtensions
 
             return new ExecuteCommandResult { Success = true };
         }, new CommandOptions());
+
+        return builder;
+    }
+
+    public static IDistributedApplicationBuilder WithContainerizedApp(
+        this IDistributedApplicationBuilder builder,
+        IResourceBuilder<IResourceWithConnectionString> databaseResource,
+        IResourceBuilder<IResourceWithConnectionString> messagingResource)
+    {
+        var webApp = builder.AddProject<Projects.Stickerlandia_UserManagement_AspNet>("aspnetapp")
+            .WithReference(databaseResource)
+            .WithReference(messagingResource)
+            .WithEnvironment("messaging", messagingResource)
+            .WithEnvironment("ConnectionStrings__cosmosdb", databaseResource)
+            .WithEnvironment("Auth__Issuer", "https://stickerlandia.com")
+            .WithEnvironment("Auth__Audience", "https://stickerlandia.com")
+            .WithEnvironment("Auth__Key", "This is a super secret key that should not be used in production'")
+            .WaitFor(databaseResource)
+            .WaitFor(messagingResource);
+
+        return builder;
+    }
+
+    public static IDistributedApplicationBuilder WithAzureFunctions(
+        this IDistributedApplicationBuilder builder,
+        IResourceBuilder<IResourceWithConnectionString> databaseResource,
+        IResourceBuilder<IResourceWithConnectionString> messagingResource)
+    {
+        var functions = builder.AddAzureFunctionsProject<Projects.Stickerlandia_UserManagement_FunctionApp>("functions")
+            .WithEnvironment("ConnectionStrings__cosmosdb", databaseResource)
+            .WithReference(messagingResource)
+            .WaitFor(messagingResource)
+            .WithReference(databaseResource)
+            .WaitFor(databaseResource)
+            .WithExternalHttpEndpoints();
+
+        builder.AddProject<Projects.Stickerlandia_UserManagement_FunctionApp>("user-management-api")
+            .WithReference(functions)
+            .WithReference(databaseResource)
+            .WithEnvironment("ConnectionStrings__cosmosdb", databaseResource)
+            .WithEnvironment("Auth__Issuer", "https://stickerlandia.com")
+            .WithEnvironment("Auth__Audience", "https://stickerlandia.com")
+            .WithEnvironment("Auth__Key", "This is a super secret key that should not be used in production'")
+            .WaitFor(functions);
+
+        return builder;
+    }
+
+    public static IDistributedApplicationBuilder WithAwsLambda(
+        this IDistributedApplicationBuilder builder,
+        IResourceBuilder<IResourceWithConnectionString> databaseResource,
+        IResourceBuilder<IResourceWithConnectionString> messagingResource)
+    {
+        //TODO: Implement AWS Lambda support
 
         return builder;
     }
