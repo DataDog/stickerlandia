@@ -19,6 +19,12 @@ resource "azurerm_storage_container" "functions_storage_container" {
   container_access_type = "private"
 }
 
+resource "azurerm_storage_container" "functions_flex_storage_container" {
+  name                  = "users-flex-container"
+  storage_account_id    = azurerm_storage_account.functions_storage_account.id
+  container_access_type = "private"
+}
+
 resource "azurerm_service_plan" "functions_app_service_plan" {
   name                = "stickerlandia-users-service-plan-${var.env}"
   resource_group_name = azurerm_resource_group.rg.name
@@ -29,7 +35,6 @@ resource "azurerm_service_plan" "functions_app_service_plan" {
 }
 
 locals {
-  archive_excluded_files_dirs = ["__pycache__", ".DS_Store", ".gitignore", ".venv", ".vscode", "local.settings.json"]
   environment_variables_base = {
     DD_API_KEY                 = var.dd_api_key
     DD_SITE = var.dd_site
@@ -37,6 +42,13 @@ locals {
     DD_SERVICE                 = "stickerlandia-users"
     DD_VERSION                 = "latest"
     WEBSITE_RUN_FROM_PACKAGE   = 1
+  }
+  environment_variables_flex_base = {
+    DD_API_KEY                 = var.dd_api_key
+    DD_SITE = var.dd_site
+    DD_ENV                     = var.env
+    DD_SERVICE                 = "stickerlandia-users"
+    DD_VERSION                 = "latest"
   }
   dotnet_tracer_home = "/home/site/wwwroot/datadog"
   environment_variables_dotnet = {
@@ -66,6 +78,11 @@ locals {
   }
   environment_variables = merge(
     local.environment_variables_base,
+    local.environment_variables_dotnet,
+    local.app_settings
+  )
+  flex_environment_variables = merge(
+    local.environment_variables_flex_base,
     local.environment_variables_dotnet,
     local.app_settings
   )
@@ -100,6 +117,45 @@ resource "azurerm_linux_function_app" "function_app" {
   app_settings = local.environment_variables
   tags = local.tags
 
+  lifecycle {
+    ignore_changes = [
+      tags["hidden-link: /app-insights-conn-string"],
+      tags["hidden-link: /app-insights-instrumentation-key"],
+      tags["hidden-link: /app-insights-resource-id"]
+    ]
+  }
+}
+
+resource "azurerm_service_plan" "flex_service_plan" {
+  name                = "stickerlandia-users-flex-${var.env}"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+  sku_name            = "FC1"
+  os_type             = "Linux"
+}
+
+resource "azurerm_function_app_flex_consumption" "flex_function_app" {
+  name                = "stickerlandia-users-flex-${var.env}"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+  service_plan_id     = azurerm_service_plan.flex_service_plan.id
+
+  storage_container_type      = "blobContainer"
+  storage_container_endpoint  = "${azurerm_storage_account.functions_storage_account.primary_blob_endpoint}${azurerm_storage_container.functions_flex_storage_container.name}"
+  storage_authentication_type = "StorageAccountConnectionString"
+  storage_access_key          = azurerm_storage_account.functions_storage_account.primary_access_key
+  runtime_name                = "dotnet-isolated"
+  runtime_version             = "8.0"
+  maximum_instance_count      = 40
+  instance_memory_in_mb       = 2048
+
+  app_settings = local.flex_environment_variables
+  tags = local.tags
+
+  site_config {
+    application_insights_connection_string = azurerm_application_insights.ai.connection_string
+    application_insights_key               = azurerm_application_insights.ai.instrumentation_key
+  }
   lifecycle {
     ignore_changes = [
       tags["hidden-link: /app-insights-conn-string"],
