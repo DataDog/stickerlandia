@@ -45,7 +45,7 @@ jobs:
       - name: Run Integration Tests
         shell: bash
         env:
-          RUNAS: ${{ matrix.run_as }}
+          RUN_AS: ${{ matrix.run_as }}
         run: |
           cd user-management/tests/Stickerlandia.UserManagement.IntegrationTest
           dotnet test
