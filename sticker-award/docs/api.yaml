@@ -3,96 +3,11 @@ info:
   title: Sticker Award Service
   version: v1
 paths:
-  /api/stickers:
+  /api/award/v1/users/{userId}/stickers:
     get:
       tags:
         - v1Api
-      description: Get stickers assigned to the current authenticated user
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserStickersResponseApiResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-    post:
-      tags:
-        - v1Api
-      description: Assign a new sticker to the current authenticated user
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AssignStickerCommand'
-        required: true
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StickerAssignmentResponseApiResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '401':
-          description: Unauthorized
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-  /api/stickers/{stickerId}:
-    delete:
-      tags:
-        - v1Api
-      description: Remove a sticker assignment from the current authenticated user
-      parameters:
-        - name: stickerId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: The ID of the sticker to remove
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StickerRemovalResponseApiResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '401':
-          description: Unauthorized
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '404':
-          description: Not Found
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-  /api/admin/stickers/user/{userId}:
-    get:
-      tags:
-        - v1Api
-        - AdminApi
-      description: Get stickers assigned to a specific user (admin only)
+      description: Get stickers assigned to a user (access controlled based on caller identity)
       parameters:
         - name: userId
           in: path
@@ -128,8 +43,7 @@ paths:
     post:
       tags:
         - v1Api
-        - AdminApi
-      description: Assign a sticker to a specific user (admin only)
+      description: Assign a new sticker to a user (access controlled based on caller identity)
       parameters:
         - name: userId
           in: path
@@ -174,12 +88,11 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
-  /api/admin/stickers/user/{userId}/{stickerId}:
+  /api/award/v1/users/{userId}/stickers/{stickerId}:
     delete:
       tags:
         - v1Api
-        - AdminApi
-      description: Remove a sticker assignment from a specific user (admin only)
+      description: Remove a sticker assignment from a user (access controlled based on caller identity)
       parameters:
         - name: userId
           in: path

@@ -12,10 +12,8 @@ In both cases these will be modelled in OpenAPI.
 
 ## Services
 
-### sticker-award
-
-The sticker award service tracks the assignment of particular stickers to particular users. It facilitates this via the following interfaces:
-
-* REST API - synchronous creation and read-back of stickers. Stickers can be read and manipulated for the current active user as identified by the caller's credentials, or, in the case of a user with admin credentials, the assignments of other users
-* Asynchronous API - the award service listens to `CertificationCompleted` events, in order to assign certificates to particular users based on meeting the criteria for particular stickers. Additionally the award service emits `StickerAssignedToUser` and `StickerRemovedFromUser` events when a user's sticker assignments are modified.
+| Service | Description | Documentation |
+|---------|-------------|---------------|
+| [User Management](./user-management/) | Manages user accounts, authentication, and profile information. Handles user registration, login, and JWT token issuance. | [API Docs](./user-management/docs/api.json) |
+| [Sticker Award](./sticker-award/) | Manages the assignment of stickers to users. Tracks which users have which stickers and handles assignment/removal based on criteria like certification completion. | [API Docs](./sticker-award/docs/api.json) |
 
