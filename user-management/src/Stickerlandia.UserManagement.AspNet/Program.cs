@@ -5,6 +5,8 @@ using Asp.Versioning;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.OpenApi.Models;
+using Saunter;
+using Saunter.AsyncApiSchema.v2;
 using Serilog;
 using Serilog.Events;
 using Serilog.Extensions.Logging;
@@ -56,6 +58,17 @@ builder.Services.AddApiVersioning(options =>
         new HeaderApiVersionReader("X-API-Version")
     );
 });
+
+builder.Services.AddAsyncApiSchemaGeneration(options =>
+{
+    options.AssemblyMarkerTypes = new[] { typeof(ServiceBusEventPublisher) };
+    options.Middleware.UiTitle = "Users API";
+    options.AsyncApi = new AsyncApiDocument
+    {
+        Info = new Info("Users Service", "1.0.0")
+    };
+});
+
 builder.Services.AddRateLimiter(options =>
 {
     options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
@@ -110,10 +123,13 @@ app.MapHealthChecks("/api/health", new HealthCheckOptions
 
 // Enable Swagger UI
 app.UseSwagger();
+app.MapAsyncApiDocuments();
+
 if (app.Environment.IsDevelopment())
+    app.MapAsyncApiUi();
     app.UseSwaggerUI(options =>
     {
-        var url = $"/swagger/v1/swagger.json";
+        var url = $"/swagger/v1/swagger.yaml";
         var name = "V1";
         options.SwaggerEndpoint(url, name);
     });

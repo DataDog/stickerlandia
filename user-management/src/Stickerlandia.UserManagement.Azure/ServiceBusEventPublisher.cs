@@ -5,12 +5,16 @@
 using Azure.Messaging.ServiceBus;
 using CloudNative.CloudEvents;
 using CloudNative.CloudEvents.SystemTextJson;
+using Saunter.Attributes;
 using Stickerlandia.UserManagement.Core;
 
 namespace Stickerlandia.UserManagement.Azure;
 
+[AsyncApi]
 public class ServiceBusEventPublisher(ServiceBusClient client) : IUserEventPublisher
 {
+    [Channel("users.userRegistered.v1")]
+    [PublishOperation(typeof(UserRegisteredEvent))]
     public async Task PublishUserRegisteredEventV1(UserRegisteredEvent userRegisteredEvent)
     {
         var cloudEvent = new CloudEvent(CloudEventsSpecVersion.V1_0)

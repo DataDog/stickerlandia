@@ -5,11 +5,13 @@
 using System.Text.Json;
 using Azure.Messaging.ServiceBus;
 using Microsoft.Extensions.Logging;
+using Saunter.Attributes;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.StickerClaimedEvent;
 
 namespace Stickerlandia.UserManagement.Azure;
 
+[AsyncApi]
 public class ServiceBusStickerClaimedWorker : IMessagingWorker
 {
     private readonly StickerClaimedEventHandler _eventHandler;
@@ -29,6 +31,8 @@ public class ServiceBusStickerClaimedWorker : IMessagingWorker
         _processor.ProcessErrorAsync += ProcessErrorAsync;
     }
     
+    [Channel("users.stickerClaimed.v1")]
+    [SubscribeOperation(typeof(StickerClaimedEventV1))]
     private async Task ProcessMessageAsync(ProcessMessageEventArgs args)
     {
         var messageBody = args.Message.Body.ToString();
