@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.Testing" Version="9.2.0" />
     <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.19.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
     <PackageReference Include="WireMock.Net" Version="1.7.4" />
@@ -30,6 +31,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Stickerlandia.UserManagement.Aspire\Stickerlandia.UserManagement.Aspire.csproj" />
 </ItemGroup>
 
 </Project>

@@ -6,7 +6,6 @@ var builder = DistributedApplication.CreateBuilder(args);
 var cosmos = builder.AddAzureCosmosDB("cosmos-db")
     .RunAsPreviewEmulator(options =>
     {
-        options.WithLifetime(ContainerLifetime.Persistent);
         options.WithDataExplorer();
     });
 
@@ -14,15 +13,14 @@ var database = cosmos.AddCosmosDatabase("Stickerlandia");
 var container = database.AddContainer("Users", "/emailAddress");
 
 var serviceBus = builder.AddAzureServiceBus("messaging")
-    .RunAsEmulator(c => c
-        .WithLifetime(ContainerLifetime.Persistent).WithHostPort(60001));
+    .RunAsEmulator(c => c.WithHostPort(60001));
 
 serviceBus
     .AddServiceBusQueue("users-stickerClaimed-v1", "users.stickerClaimed.v1")
     .WithTestCommands();
 
 serviceBus
-    .AddServiceBusQueue("users-userRegistered-v1", "users.userRegistered.v1");
+    .AddServiceBusTopic("users-userRegistered-v1", "users.userRegistered.v1");
 
 var runAs = Environment.GetEnvironmentVariable("RUN_AS") ?? "ASPNET";
 

@@ -33,15 +33,6 @@ jobs:
         run: |
           cd user-management/tests/Stickerlandia.UserManagement.UnitTest
           dotnet test
-      - name: Start Aspire Host
-        shell: bash
-        env:
-          RUNAS: ${{ matrix.run_as }}
-        run: |
-          cd user-management/src/Stickerlandia.UserManagement.Aspire
-          dotnet run &>runlog.txt &
-          sleep 120
-          cat runlog.txt
       - name: Run Integration Tests
         shell: bash
         env:
@@ -49,9 +40,3 @@ jobs:
         run: |
           cd user-management/tests/Stickerlandia.UserManagement.IntegrationTest
           dotnet test
-      - name: Print run log
-        shell: bash
-        if: always()
-        run: |
-          cd user-management/src/Stickerlandia.UserManagement.Aspire
-          cat runlog.txt

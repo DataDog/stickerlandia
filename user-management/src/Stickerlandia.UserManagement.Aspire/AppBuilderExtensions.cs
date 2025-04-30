@@ -37,7 +37,7 @@ public static class AppBuilderExtensions
         IResourceBuilder<IResourceWithConnectionString> databaseResource,
         IResourceBuilder<IResourceWithConnectionString> messagingResource)
     {
-        var webApp = builder.AddProject<Projects.Stickerlandia_UserManagement_AspNet>("aspnetapp")
+        var webApp = builder.AddProject<Projects.Stickerlandia_UserManagement_AspNet>("api")
             .WithReference(databaseResource)
             .WithReference(messagingResource)
             .WithEnvironment("messaging", messagingResource)
@@ -56,7 +56,7 @@ public static class AppBuilderExtensions
         IResourceBuilder<IResourceWithConnectionString> databaseResource,
         IResourceBuilder<IResourceWithConnectionString> messagingResource)
     {
-        var functions = builder.AddAzureFunctionsProject<Projects.Stickerlandia_UserManagement_FunctionApp>("functions")
+        var functions = builder.AddAzureFunctionsProject<Projects.Stickerlandia_UserManagement_FunctionApp>("api")
             .WithEnvironment("ConnectionStrings__cosmosdb", databaseResource)
             .WithReference(messagingResource)
             .WaitFor(messagingResource)
@@ -64,7 +64,7 @@ public static class AppBuilderExtensions
             .WaitFor(databaseResource)
             .WithExternalHttpEndpoints();
 
-        builder.AddProject<Projects.Stickerlandia_UserManagement_FunctionApp>("user-management-api")
+        builder.AddProject<Projects.Stickerlandia_UserManagement_FunctionApp>("function-app")
             .WithReference(functions)
             .WithReference(databaseResource)
             .WithEnvironment("ConnectionStrings__cosmosdb", databaseResource)
