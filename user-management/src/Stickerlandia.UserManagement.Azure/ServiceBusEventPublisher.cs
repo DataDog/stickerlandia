@@ -5,13 +5,15 @@
 using Azure.Messaging.ServiceBus;
 using CloudNative.CloudEvents;
 using CloudNative.CloudEvents.SystemTextJson;
+using Datadog.Trace;
+using Microsoft.Extensions.Logging;
 using Saunter.Attributes;
 using Stickerlandia.UserManagement.Core;
 
 namespace Stickerlandia.UserManagement.Azure;
 
 [AsyncApi]
-public class ServiceBusEventPublisher(ServiceBusClient client) : IUserEventPublisher
+public class ServiceBusEventPublisher(ILogger<ServiceBusEventPublisher> logger, ServiceBusClient client) : IUserEventPublisher
 {
     [Channel("users.userRegistered.v1")]
     [PublishOperation(typeof(UserRegisteredEvent))]
@@ -23,7 +25,7 @@ public class ServiceBusEventPublisher(ServiceBusClient client) : IUserEventPubli
             Source = new Uri("https://stickerlandia.com"),
             Type = userRegisteredEvent.EventName,
             Time = DateTime.UtcNow,
-            Data = userRegisteredEvent
+            Data = userRegisteredEvent,
         };
         
         await this.Publish(cloudEvent);
@@ -31,16 +33,41 @@ public class ServiceBusEventPublisher(ServiceBusClient client) : IUserEventPubli
 
     private async Task Publish(CloudEvent cloudEvent)
     {
-        var sender = client.CreateSender(cloudEvent.Type);
-        
-        var formatter = new JsonEventFormatter<UserRegisteredEvent>();
-        var data = formatter.EncodeBinaryModeEventData(cloudEvent);
-        
-        var serviceBusMessage = new ServiceBusMessage(data)
+        var activeSpan = Tracer.Instance.ActiveScope?.Span;
+        IScope? processScope = null;
+
+        try
         {
-            ContentType = "application/json"
-        };
-            
-        await sender.SendMessageAsync(serviceBusMessage);
+            if (activeSpan != null)
+            {
+                processScope = Tracer.Instance.StartActive($"publish {cloudEvent.Type}", new SpanCreationSettings()
+                {
+                    Parent = activeSpan.Context
+                });
+
+                cloudEvent.SetAttributeFromString("traceparent", $"00-{activeSpan.TraceId}-{activeSpan.SpanId}[01");
+            }
+
+            var sender = client.CreateSender(cloudEvent.Type);
+
+            var formatter = new JsonEventFormatter<UserRegisteredEvent>();
+            var data = formatter.EncodeBinaryModeEventData(cloudEvent);
+
+            var serviceBusMessage = new ServiceBusMessage(data)
+            {
+                ContentType = "application/json",
+            };
+
+            await sender.SendMessageAsync(serviceBusMessage);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failure publishing message");
+            processScope?.Span.SetException(ex);
+        }
+        finally
+        {
+            processScope?.Close();
+        }
     }
 }

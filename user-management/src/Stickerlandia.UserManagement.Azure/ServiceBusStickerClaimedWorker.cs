@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using Azure.Messaging.ServiceBus;
+using Datadog.Trace;
 using Microsoft.Extensions.Logging;
 using Saunter.Attributes;
 using Stickerlandia.UserManagement.Core;
@@ -35,6 +36,8 @@ public class ServiceBusStickerClaimedWorker : IMessagingWorker
     [SubscribeOperation(typeof(StickerClaimedEventV1))]
     private async Task ProcessMessageAsync(ProcessMessageEventArgs args)
     {
+        using var processSpan = Tracer.Instance.StartActive($"process users.stickerClaimed.v1");
+        
         var messageBody = args.Message.Body.ToString();
         _logger.LogInformation("Received message: {body}", messageBody);
 

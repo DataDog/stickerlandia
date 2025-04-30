@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,17 +29,12 @@ var logger = Log.Logger = new LoggerConfiguration()
 var appLogger = new SerilogLoggerFactory(logger)
     .CreateLogger<Program>();
 
-appLogger.LogInformation("Adding DI services");
-
 builder.AddAzureAdapters();
 
 builder.Services
     .AddAuthConfigs(appLogger, builder)
     .AddStickerlandiaUserManagement();
 
-var applicationName = "Stickerlandia.UserManagement.FunctionApp";
-
-builder.Services.AddSingleton(new ActivitySource(applicationName));
 builder.ConfigureFunctionsWebApplication();
 
 // Application Insights isn't enabled by default. See https://aka.ms/AAt8mw4.

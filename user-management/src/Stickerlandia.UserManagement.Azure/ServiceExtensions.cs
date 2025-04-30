@@ -6,6 +6,7 @@ using Azure.Messaging.ServiceBus;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Functions.Worker.Builder;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Stickerlandia.UserManagement.Core;
@@ -34,12 +35,11 @@ public static class ServiceExtensions
                 clientOptions.ConnectionMode = ConnectionMode.Gateway;
             });
 
-        // Register the CosmosDB repository implementation
-        builder.Services.AddSingleton<IUserAccountRepository, CosmosDbUserRepository>();
+        builder.Services.AddServices(builder.Configuration);
 
         return builder;
     }
-    
+
     public static WebApplicationBuilder AddAzureAdapters(this WebApplicationBuilder builder)
     {
         builder.AddAzureCosmosClient(
@@ -58,14 +58,22 @@ public static class ServiceExtensions
                 };
                 clientOptions.ConnectionMode = ConnectionMode.Gateway;
             });
-        builder.Services.AddSingleton<IMessagingWorker, ServiceBusStickerClaimedWorker>();
-        builder.Services.AddSingleton(new ServiceBusClient(builder.Configuration["messaging"]));
 
-        // Register the CosmosDB repository implementation
-        builder.Services.AddSingleton<IUserAccountRepository, CosmosDbUserRepository>();
-        builder.Services.AddSingleton<IOutbox, CosmosDbUserRepository>();
-        builder.Services.AddSingleton<IUserEventPublisher, ServiceBusEventPublisher>();
+        builder.Services.AddServices(builder.Configuration);
 
         return builder;
+    }
+
+    private static IServiceCollection AddServices(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddSingleton<IMessagingWorker, ServiceBusStickerClaimedWorker>();
+        services.AddSingleton(new ServiceBusClient(configuration["messaging"]));
+
+        // Register the CosmosDB repository implementation
+        services.AddSingleton<IUserAccountRepository, CosmosDbUserRepository>();
+        services.AddSingleton<IOutbox, CosmosDbUserRepository>();
+        services.AddSingleton<IUserEventPublisher, ServiceBusEventPublisher>();
+
+        return services;
     }
 }
