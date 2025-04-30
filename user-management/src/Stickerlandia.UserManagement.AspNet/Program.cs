@@ -1,8 +1,10 @@
 using System.Text;
 using System.Text.Json;
-using FastEndpoints;
+using System.Threading.RateLimiting;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.OpenApi.Models;
 using Serilog;
 using Serilog.Events;
 using Serilog.Extensions.Logging;
@@ -12,6 +14,8 @@ using Stickerlandia.UserManagement.Azure;
 using Stickerlandia.UserManagement.AspNet.Configurations;
 using Stickerlandia.UserManagement.AspNet.Middlewares;
 using Stickerlandia.UserManagement.Core;
+using Stickerlandia.UserManagement.Core.Login;
+using Stickerlandia.UserManagement.Core.Register;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
@@ -37,25 +41,65 @@ var appLogger = new SerilogLoggerFactory(logger)
 builder.AddAzureAdapters();
 
 builder.Services
-    .AddFastEndpoints()
     .AddAuthConfigs(appLogger, builder)
     .AddStickerlandiaUserManagement()
     .AddHealthChecks();
+// Add API versioning
+builder.Services.AddProblemDetails();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddApiVersioning(options =>
+{
+    options.DefaultApiVersion = new ApiVersion(1, 0);
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.ReportApiVersions = true;
+    options.ApiVersionReader = ApiVersionReader.Combine(
+        new HeaderApiVersionReader("X-API-Version")
+    );
+});
+builder.Services.AddRateLimiter(options =>
+{
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+    {
+        return RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Request.Headers.Host.ToString(),
+            partition => new FixedWindowRateLimiterOptions
+            {
+                AutoReplenishment = true,
+                PermitLimit = 60,
+                QueueLimit = 0,
+                Window = TimeSpan.FromMinutes(1)
+            });
+    });
+});
+builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHostedService<OutboxWorker>();
 builder.Services.AddHostedService<StickerClaimedWorker>();
 
+// Add API documentation
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "User Management API", Version = "v1" });
+
+    // Include XML comments for Swagger
+    var xmlFiles = Directory.GetFiles(AppContext.BaseDirectory, "*.xml");
+    foreach (var xmlFile in xmlFiles) options.IncludeXmlComments(xmlFile);
+});
+
+// Add response compression for improved performance
+builder.Services.AddResponseCompression(options => { options.EnableForHttps = true; });
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(name: "AllowAll",
-        policy  =>
-        {
-            policy.AllowAnyOrigin()
-                .AllowAnyHeader()
-                .AllowAnyMethod();
-        });
+    options.AddPolicy("AllowAll",
+        builder => builder
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader());
 });
 
 var app = builder.Build();
+
+app.UseRateLimiter();
 
 app.UseMiddleware<GlobalExceptionHandler>();
 
@@ -64,16 +108,46 @@ app.MapHealthChecks("/api/health", new HealthCheckOptions
     ResponseWriter = WriteHealthCheckResponse
 });
 
+// Enable Swagger UI
+app.UseSwagger();
+if (app.Environment.IsDevelopment())
+    app.UseSwaggerUI(options =>
+    {
+        var url = $"/swagger/v1/swagger.json";
+        var name = "V1";
+        options.SwaggerEndpoint(url, name);
+    });
+
 app.UseCors("AllowAll");
 
 app
     .UseAuthentication()
-    .UseAuthorization()
-    .UseFastEndpoints(options =>
-    {
-        options.Endpoints.RoutePrefix = "api";
-        options.Serializer.Options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-    });
+    .UseAuthorization();
+
+var v1Api = app.NewVersionedApi("v1Api");
+var v1Base = v1Api.MapGroup("api");
+
+v1Base.MapGet("details", GetUserDetails.HandleAsync)
+    .RequireAuthorization()
+    .HasApiVersion(1.0)
+    .WithDescription("Get the current authenticated users details")
+    .Produces<ApiResponse<UserAccountDTO>>(200)
+    .ProducesProblem(401);
+
+v1Base.MapPost("login", LoginEndpoint.HandleAsync)
+    .AllowAnonymous()
+    .HasApiVersion(1.0)
+    .WithDescription("Login")
+    .Produces<ApiResponse<LoginResponse>>(200)
+    .ProducesProblem(401)
+    .ProducesProblem(404);
+
+v1Base.MapPost("register", RegisterUserEndpoint.HandleAsync)
+    .AllowAnonymous()
+    .HasApiVersion(1.0)
+    .WithDescription("Register as a new user")
+    .Produces<ApiResponse<RegisterResponse>>(200)
+    .ProducesProblem(400);
 
 await app.RunAsync();
 

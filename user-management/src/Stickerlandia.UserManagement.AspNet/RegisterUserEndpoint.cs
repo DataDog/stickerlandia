@@ -1,22 +1,18 @@
-using FastEndpoints;
-using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.Register;
 
 namespace Stickerlandia.UserManagement.AspNet;
 
-[HttpPost("/register")]
-[AllowAnonymous]
-public class RegisterUserEndpoint(RegisterCommandHandler registerCommandHandler)
-    : Endpoint<RegisterUserCommand, ApiResponse<RegisterResponse>?>
+public static class RegisterUserEndpoint
 {
-    public override async Task<RegisterResponse?> HandleAsync(
+    public static async Task<ApiResponse<RegisterResponse>> HandleAsync(
+        [FromServices] RegisterCommandHandler registerCommandHandler,
         RegisterUserCommand request,
         CancellationToken ct)
     {
         var registerResponse = await registerCommandHandler.Handle(request, AccountType.User, ct);
-
-        Response = new ApiResponse<RegisterResponse>(registerResponse);
-        return registerResponse;
+        
+        return new ApiResponse<RegisterResponse>(registerResponse);
     }
 }

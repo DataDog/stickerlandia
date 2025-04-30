@@ -1,27 +1,25 @@
-using FastEndpoints;
-using Microsoft.AspNetCore.Authorization;
+using System.Net;
+using Microsoft.AspNetCore.Mvc;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.GetUserDetails;
 
 namespace Stickerlandia.UserManagement.AspNet;
 
-public class GetUserDetailsRequest
+public static class GetUserDetails
 {
-    [FromHeader] public string Authorization { get; set; } = "";
-}
-
-[HttpGet("/details")]
-[Authorize]
-public class GetUserDetails(GetUserDetailsQueryHandler handler)
-    : Endpoint<GetUserDetailsRequest, ApiResponse<UserAccountDTO>?>
-{
-    public override async Task<UserAccountDTO?> HandleAsync(
-        GetUserDetailsRequest req,
-        CancellationToken ct)
+    public static async Task<ApiResponse<UserAccountDTO?>> HandleAsync(
+        HttpContext context,
+        [FromServices] GetUserDetailsQueryHandler handler)
     {
-        var result = await handler.Handle(new GetUserDetailsQuery(req.Authorization));
-        
-        Response = new ApiResponse<UserAccountDTO>(result);
-        return result;
+        var authHeader = context.Request.Headers["Authorization"][0];
+        if (authHeader is null)
+        {
+            context.Response.StatusCode = 401;
+            return new ApiResponse<UserAccountDTO?>(false, null, "Unauthorized", HttpStatusCode.Unauthorized);
+        }
+
+        var result = await handler.Handle(new GetUserDetailsQuery(authHeader));
+
+        return new ApiResponse<UserAccountDTO?>(result);
     }
 }
