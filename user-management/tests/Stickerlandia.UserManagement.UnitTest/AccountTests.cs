@@ -19,7 +19,7 @@ public class AccountTests
         var userRepo = A.Fake<IUserAccountRepository>();
         A.CallTo(() => userRepo.CreateAccount(A<UserAccount>.Ignored))
             .Invokes((UserAccount account) => capturedAccount = account)
-            .Returns(Task.FromResult(UserAccount.From(testAccountId, testEmailAddress, testPassword, "John", "Doe", DateTime.UtcNow, AccountTier.Std, AccountType.User)));
+            .Returns(Task.FromResult(UserAccount.From(testAccountId, testEmailAddress, testPassword, "John", "Doe", 1, DateTime.UtcNow, AccountTier.Std, AccountType.User)));
         
         var registerCommandHandler = new RegisterCommandHandler(userRepo);
 
@@ -111,7 +111,7 @@ public class AccountTests
         
         var userRepo = A.Fake<IUserAccountRepository>();
         A.CallTo(() => userRepo.GetAccountByEmailAsync(A<string>.Ignored)).Returns(
-            Task.FromResult(UserAccount.From(testAccountId, testEmailAddress, testPasswordHash, "John", "Doe", DateTime.UtcNow, AccountTier.Std, AccountType.User)));
+            Task.FromResult(UserAccount.From(testAccountId, testEmailAddress, testPasswordHash, "John", "Doe", 1, DateTime.UtcNow, AccountTier.Std, AccountType.User)));
         
         var authService = A.Fake<IAuthService>();
         A.CallTo(() => authService.GenerateAuthToken(A<UserAccount>.Ignored)).Returns("atoken");
@@ -138,7 +138,7 @@ public class AccountTests
         var userRepo = A.Fake<IUserAccountRepository>();
 
         A.CallTo(() => userRepo.GetAccountByEmailAsync(A<string>.Ignored)).Returns(
-            Task.FromResult(UserAccount.From(testAccountId, testEmailAddress, testPasswordHash, "John", "Doe", DateTime.UtcNow, AccountTier.Std, AccountType.User)));
+            Task.FromResult(UserAccount.From(testAccountId, testEmailAddress, testPasswordHash, "John", "Doe", 1, DateTime.UtcNow, AccountTier.Std, AccountType.User)));
         
         var authService = A.Fake<IAuthService>();
         A.CallTo(() => authService.GenerateAuthToken(A<UserAccount>.Ignored)).Returns("atoken");
@@ -162,7 +162,7 @@ public class AccountTests
         
         var userRepo = A.Fake<IUserAccountRepository>();
         A.CallTo(() => userRepo.GetAccountByIdAsync(A<string>.Ignored)).Returns(
-            Task.FromResult(UserAccount.From(testAccountId, testEmailAddress, testPasswordHash, "John", "Doe", DateTime.UtcNow, AccountTier.Std, AccountType.User)));
+            Task.FromResult(UserAccount.From(testAccountId, testEmailAddress, testPasswordHash, "John", "Doe", 1, DateTime.UtcNow, AccountTier.Std, AccountType.User)));
         
         var authService = A.Fake<IAuthService>();
         A.CallTo(() => authService.ValidateAuthToken(A<string>.Ignored)).Returns(new AuthorizedUserDetails

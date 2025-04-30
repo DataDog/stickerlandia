@@ -68,6 +68,7 @@ public class UserAccount
         string passwordHash,
         string firstName,
         string lastName,
+        int claimedStickerCount,
         DateTime dateCreated,
         AccountTier accountTier,
         AccountType accountType)
@@ -81,7 +82,8 @@ public class UserAccount
             AccountTier = accountTier,
             AccountType = accountType,
             FirstName = firstName,
-            LastName = lastName
+            LastName = lastName,
+            ClaimedStickerCount = claimedStickerCount
         };
     }
 

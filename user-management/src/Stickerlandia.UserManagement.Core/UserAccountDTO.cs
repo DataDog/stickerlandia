@@ -12,13 +12,16 @@ public record UserAccountDTO
         EmailAddress = userAccount.EmailAddress;
         FirstName = userAccount.FirstName;
         LastName = userAccount.LastName;
+        ClaimedStickerCount = userAccount.ClaimedStickerCount;
     }
-    
+
     public string AccountId { get; set; }
-    
+
     public string EmailAddress { get; set; }
-    
+
     public string FirstName { get; set; }
-    
+
     public string LastName { get; set; }
+
+    public int ClaimedStickerCount { get; set; }
 }

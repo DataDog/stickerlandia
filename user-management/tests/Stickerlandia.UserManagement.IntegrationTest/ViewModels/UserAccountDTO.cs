@@ -13,4 +13,6 @@ public record UserAccountDTO
     public string FirstName { get; set; }
     
     public string LastName { get; set; }
+
+    public int ClaimedStickerCount { get; set; }
 }

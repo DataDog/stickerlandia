@@ -13,6 +13,7 @@ internal record CosmosDbUserAccount(
     string PasswordHash,
     string FirstName,
     string LastName,
+    int ClaimedStickerCount,
     DateTime DateCreated,
     AccountTier AccountTier,
     AccountType AccountType)
@@ -106,6 +107,7 @@ public class CosmosDbUserRepository : IUserAccountRepository, IOutbox
             userAccount.Password,
             userAccount.FirstName,
             userAccount.LastName,
+            userAccount.ClaimedStickerCount,
             userAccount.DateCreated,
             userAccount.AccountTier,
             userAccount.AccountType));
@@ -133,6 +135,7 @@ public class CosmosDbUserRepository : IUserAccountRepository, IOutbox
             userAccount.Password,
             userAccount.FirstName,
             userAccount.LastName,
+            userAccount.ClaimedStickerCount,
             userAccount.DateCreated,
             userAccount.AccountTier,
             userAccount.AccountType));
@@ -160,41 +163,81 @@ public class CosmosDbUserRepository : IUserAccountRepository, IOutbox
     {
         try
         {
-            var batch = _usersContainer.CreateTransactionalBatch(new PartitionKey(userAccount.EmailAddress));
-
-            // Replace the existing user account document
-            batch.ReplaceItem(userAccount.Id, new CosmosDbUserAccount(
-                userAccount.Id,
-                userAccount.EmailAddress,
-                userAccount.Password,
-                userAccount.FirstName,
-                userAccount.LastName,
-                userAccount.DateCreated,
-                userAccount.AccountTier,
-                userAccount.AccountType));
-
-            // Add outbox items for domain events
-            foreach (var evt in userAccount.DomainEvents)
+            if (_isEmulator)
             {
-                var outboxItem = new CosmosDbOutboxItem
-                {
-                    EventType = evt.EventName,
-                    EventData = evt.ToJsonString(),
-                    EmailAddress = userAccount.EmailAddress // Use same partition key as user
-                };
-
-                batch.CreateItem(outboxItem);
+                await UpdateWithSeparateOperations(userAccount);
             }
-
-            using var response = await batch.ExecuteAsync();
-
-            if (!response.IsSuccessStatusCode)
-                throw new Exception($"Failed to update account with outbox event: {response.StatusCode}");
+            else
+            {
+                await UpdateWithTransaction(userAccount);
+            }
+            
         }
         catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
             throw new Exception("User account not found", ex);
         }
+    }
+    
+    private async Task UpdateWithSeparateOperations(UserAccount userAccount)
+    {
+        await _usersContainer.ReplaceItemAsync(new CosmosDbUserAccount(
+            userAccount.Id,
+            userAccount.EmailAddress,
+            userAccount.Password,
+            userAccount.FirstName,
+            userAccount.LastName,
+            userAccount.ClaimedStickerCount,
+            userAccount.DateCreated,
+            userAccount.AccountTier,
+            userAccount.AccountType), userAccount.Id);
+
+        foreach (var evt in userAccount.DomainEvents)
+        {
+            var outboxItem = new CosmosDbOutboxItem
+            {
+                EventType = evt.EventName,
+                EventData = evt.ToJsonString(),
+                EmailAddress = userAccount.EmailAddress // Use same partition key as user
+            };
+
+            await _usersContainer.CreateItemAsync(outboxItem);
+        }
+    }
+
+    private async Task UpdateWithTransaction(UserAccount userAccount)
+    {
+        var batch = _usersContainer.CreateTransactionalBatch(new PartitionKey(userAccount.EmailAddress));
+
+        // Replace the existing user account document
+        batch.ReplaceItem(userAccount.Id, new CosmosDbUserAccount(
+            userAccount.Id,
+            userAccount.EmailAddress,
+            userAccount.Password,
+            userAccount.FirstName,
+            userAccount.LastName,
+            userAccount.ClaimedStickerCount,
+            userAccount.DateCreated,
+            userAccount.AccountTier,
+            userAccount.AccountType));
+
+        // Add outbox items for domain events
+        foreach (var evt in userAccount.DomainEvents)
+        {
+            var outboxItem = new CosmosDbOutboxItem
+            {
+                EventType = evt.EventName,
+                EventData = evt.ToJsonString(),
+                EmailAddress = userAccount.EmailAddress // Use same partition key as user
+            };
+
+            batch.CreateItem(outboxItem);
+        }
+
+        using var response = await batch.ExecuteAsync();
+
+        if (!response.IsSuccessStatusCode)
+            throw new Exception($"Failed to update account with outbox event: {response.StatusCode} - {response.ErrorMessage}");
     }
 
     public async Task<UserAccount> ValidateCredentials(string emailAddress, string password)
@@ -216,7 +259,8 @@ public class CosmosDbUserRepository : IUserAccountRepository, IOutbox
 
                 if (user != null)
                     return UserAccount.From(user.id, user.emailAddress, user.PasswordHash, user.FirstName,
-                        user.LastName, user.DateCreated,
+                        user.LastName,
+                        user.ClaimedStickerCount, user.DateCreated,
                         user.AccountTier, user.AccountType);
             }
 
@@ -264,9 +308,6 @@ public class CosmosDbUserRepository : IUserAccountRepository, IOutbox
 
     public async Task<UserAccount?> GetAccountByIdAsync(string accountId)
     {
-        // Try to get from cache first
-        if (_userCache.TryGetValue(accountId, out var cachedUser)) return cachedUser;
-
         try
         {
             var query = new QueryDefinition("SELECT * FROM c WHERE c.id = @id")
@@ -284,6 +325,7 @@ public class CosmosDbUserRepository : IUserAccountRepository, IOutbox
                     var account = UserAccount.From(user.id, user.emailAddress, user.PasswordHash,
                         user.FirstName,
                         user.LastName,
+                        user.ClaimedStickerCount,
                         user.DateCreated,
                         user.AccountTier, user.AccountType);
                     // Cache the result
@@ -323,7 +365,8 @@ public class CosmosDbUserRepository : IUserAccountRepository, IOutbox
                 if (user != null)
                 {
                     var account = UserAccount.From(user.id, user.emailAddress, user.PasswordHash, user.FirstName,
-                        user.LastName, user.DateCreated,
+                        user.LastName,
+                        user.ClaimedStickerCount, user.DateCreated,
                         user.AccountTier, user.AccountType);
                     // Cache the result
                     _userCache.TryAdd(account.Id, account);
@@ -382,7 +425,8 @@ public class CosmosDbUserRepository : IUserAccountRepository, IOutbox
                 foreach (var user in response)
                 {
                     var account = UserAccount.From(user.id, user.emailAddress, user.PasswordHash, user.FirstName,
-                        user.LastName, DateTime.UtcNow,
+                        user.LastName, 
+                        user.ClaimedStickerCount, DateTime.UtcNow,
                         user.AccountTier, user.AccountType);
                     _userCache.TryAdd(account.Id, account);
                 }

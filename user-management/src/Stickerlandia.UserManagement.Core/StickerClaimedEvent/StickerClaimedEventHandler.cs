@@ -14,10 +14,10 @@ public class StickerClaimedEventHandler(IUserAccountRepository userAccountReposi
         {
             if (eventV1 == null || string.IsNullOrEmpty(eventV1.AccountId))
             {
-                throw new ArgumentException("Invalid LoginCommand");
+                throw new ArgumentException("Invalid StickerClaimedEventV1");
             }
 
-            var account = await userAccountRepository.GetAccountByEmailAsync(eventV1.AccountId);
+            var account = await userAccountRepository.GetAccountByIdAsync(eventV1.AccountId);
 
             if (account is null)
             {

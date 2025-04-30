@@ -25,7 +25,7 @@ public static class AuthConfig
                     (Encoding.UTF8.GetBytes(builder.Configuration["Auth:Key"] ?? "")),
                 ValidateIssuer = true,
                 ValidateAudience = true,
-                ValidateLifetime = false,
+                ValidateLifetime = true,
                 ValidateIssuerSigningKey = true
             };
         });

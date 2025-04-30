@@ -52,7 +52,7 @@ public class OutboxWorker(IUserEventPublisher eventPublisher, IOutbox outbox, IL
             catch (Exception ex)
             {
                 // Log the exception
-                logger.LogInformation($"Error processing outbox items: {ex.Message}");
+                logger.LogError(ex, $"Error processing outbox items: {ex.Message}");
             }
 
             await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);

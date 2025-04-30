@@ -16,7 +16,7 @@ public class AccountDriver
     {
         _testOutputHelper = testOutputHelper;
         _httpClient = new HttpClient();
-        _messaging = messaging ?? new AzureServiceBusMessaging(TestConstants.DefaultTestUrl);
+        _messaging = messaging ?? new AzureServiceBusMessaging(TestConstants.DefaultMessagingConnection);
     }
 
     public async Task<RegisterResponse?> RegisterUser(string emailAddress, string password)
@@ -46,17 +46,20 @@ public class AccountDriver
             emailAddress,
             password
         });
-        
+
         _testOutputHelper.WriteLine("Starting login request");
 
         var loginResult = await _httpClient.PostAsync(new Uri($"{BaseUrl}/login"),
             new StringContent(requestBody, Encoding.Default, "application/json"));
-        
+
         _testOutputHelper.WriteLine($"Login status code is {loginResult.StatusCode}");
 
         var loginResultBody = await loginResult.Content.ReadAsStringAsync();
+
+        if (string.IsNullOrEmpty(loginResultBody)) return null;
+
         var parsedBody = JsonSerializer.Deserialize<ApiResponse<LoginResponse>>(loginResultBody);
-        
+
         return loginResult.IsSuccessStatusCode
             ? parsedBody.Data
             : null;
@@ -69,14 +72,18 @@ public class AccountDriver
 
         var response = await _httpClient.SendAsync(request);
         var responseBody = await response.Content.ReadAsStringAsync();
-        
+
         return response.IsSuccessStatusCode
             ? JsonSerializer.Deserialize<ApiResponse<UserAccountDTO>>(responseBody).Data
             : null;
     }
-    
-    public async Task SendUserMessageAsync(string queueName, object message)
+
+    public async Task InjectStickerClaimedMessage(string userId, string stickerId)
     {
-        await _messaging.SendMessageAsync(queueName, message);
+        await _messaging.SendMessageAsync("users.stickerClaimed.v1", new
+        {
+            accountId = userId,
+            stickerId = stickerId
+        });
     }
 }

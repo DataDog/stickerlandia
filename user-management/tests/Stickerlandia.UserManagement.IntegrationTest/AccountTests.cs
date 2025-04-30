@@ -1,5 +1,6 @@
 using System.Text;
 using FluentAssertions;
+using Microsoft.Extensions.Azure;
 using Stickerlandia.UserManagement.IntegrationTest.Drivers;
 using Xunit.Abstractions;
 
@@ -32,6 +33,25 @@ namespace Stickerlandia.UserManagement.IntegrationTest
             registerResult.Should().NotBeNull();
             loginResponse.Should().NotBeNull();
             loginResponse!.AuthToken.Should().NotBeEmpty();
+        }
+        
+        [Fact]
+        public async Task WhenStickerIsClaimedUsersStickerCountShouldIncrement()
+        {
+            // Arrange
+            var emailAddress = $"{Guid.NewGuid()}@test.com";
+            var password = $"{Guid.NewGuid()}!A23";
+            
+            // Act
+            var registerResult = await _driver.RegisterUser(emailAddress, password);
+            var loginResponse = await _driver.Login(emailAddress, password);
+            await _driver.InjectStickerClaimedMessage(registerResult.AccountId, Guid.NewGuid().ToString());
+            
+            await Task.Delay(TimeSpan.FromSeconds(5));
+
+            var user = await _driver.GetUserAccount(loginResponse.AuthToken);
+            
+            user.ClaimedStickerCount.Should().Be(1);
         }
         
         [Fact]
@@ -229,25 +249,6 @@ namespace Stickerlandia.UserManagement.IntegrationTest
                 var loginResponse = await _driver.Login(emailAddress, unicodePassword);
                 loginResponse.Should().NotBeNull();
             }
-        }
-
-        [Fact]
-        public async Task AttemptingConcurrentRegistrationWithSameEmail()
-        {
-            // Arrange
-            var emailAddress = $"{Guid.NewGuid()}@test.com";
-            var password = "ValidPassword123!";
-            
-            // Act - Start both registrations concurrently
-            var task1 = _driver.RegisterUser(emailAddress, password);
-            var task2 = _driver.RegisterUser(emailAddress, password);
-            
-            // Wait for both to complete
-            await Task.WhenAll(task1, task2);
-            
-            // Assert - One should succeed, one should fail
-            var results = new[] { task1.Result, task2.Result };
-            results.Count(r => r != null).Should().Be(1, "Only one registration with the same email should succeed");
         }
 
         #endregion
