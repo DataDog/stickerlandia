@@ -40,7 +40,7 @@ jobs:
         run: |
           cd user-management/src/Stickerlandia.UserManagement.Aspire
           dotnet run &>runlog.txt &
-          sleep 30
+          sleep 120
           cat runlog.txt
       - name: Run Integration Tests
         shell: bash
