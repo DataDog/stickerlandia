@@ -20,6 +20,6 @@ public class InvalidUserException : Exception
     public InvalidUserException(string message, Exception innerException) : base(message, innerException)
     {
     }
-    
-    public string Reason { get; set; }
+
+    public string Reason { get; set; } = "Unspecified reason";
 }

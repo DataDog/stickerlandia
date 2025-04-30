@@ -1,6 +1,5 @@
 using System.Text;
 using FluentAssertions;
-using Microsoft.Extensions.Azure;
 using Stickerlandia.UserManagement.IntegrationTest.Drivers;
 using Xunit.Abstractions;
 
@@ -44,14 +43,25 @@ namespace Stickerlandia.UserManagement.IntegrationTest
             
             // Act
             var registerResult = await _driver.RegisterUser(emailAddress, password);
+
+            if (registerResult is null)
+            {
+                throw new Exception("Registration failed");
+            }
+            
             var loginResponse = await _driver.Login(emailAddress, password);
+            
+            if (loginResponse is null)
+            {
+                throw new Exception("Login response is null");
+            }
             await _driver.InjectStickerClaimedMessage(registerResult.AccountId, Guid.NewGuid().ToString());
             
             await Task.Delay(TimeSpan.FromSeconds(5));
 
             var user = await _driver.GetUserAccount(loginResponse.AuthToken);
             
-            user.ClaimedStickerCount.Should().Be(1);
+            user!.ClaimedStickerCount.Should().Be(1);
         }
         
         [Fact]
@@ -361,7 +371,7 @@ namespace Stickerlandia.UserManagement.IntegrationTest
             return strategies[_random.Next(strategies.Length)]();
         }
 
-        private string GenerateRandomString(int length, string allowedChars = null)
+        private string GenerateRandomString(int length, string? allowedChars = null)
         {
             if (string.IsNullOrEmpty(allowedChars))
             {

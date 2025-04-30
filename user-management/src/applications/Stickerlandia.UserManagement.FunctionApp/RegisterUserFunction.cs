@@ -5,14 +5,13 @@
 using System.Net;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
-using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.Register;
 
 namespace Stickerlandia.UserManagement.FunctionApp;
 
-public class RegisterUserFunction(RegisterCommandHandler registerCommandHandler, ILogger<LoginFunction> logger)
+public class RegisterUserFunction(RegisterCommandHandler registerCommandHandler)
 {
     [Function("Register")]
     public async Task<HttpResponseData> RunAsync(
@@ -21,6 +20,11 @@ public class RegisterUserFunction(RegisterCommandHandler registerCommandHandler,
     {
         // Deserialize request
         var registerUserRequest = await JsonSerializer.DeserializeAsync<RegisterUserCommand>(req.Body);
+        
+        if (registerUserRequest == null)
+        {
+            return await new ApiResponse<RegisterUserCommand?>(false, null, "Invalid login request").WriteResponse(req, HttpStatusCode.BadRequest);
+        }
 
         var result = await registerCommandHandler.Handle(registerUserRequest, AccountType.User);
 

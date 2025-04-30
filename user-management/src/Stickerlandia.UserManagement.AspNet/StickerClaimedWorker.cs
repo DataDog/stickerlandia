@@ -2,10 +2,8 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
-using System.Text.Json;
 using Azure.Messaging.ServiceBus;
 using Stickerlandia.UserManagement.Core;
-using Stickerlandia.UserManagement.Core.StickerClaimedEvent;
 
 namespace Stickerlandia.UserManagement.AspNet;
 

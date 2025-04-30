@@ -21,6 +21,11 @@ public class GetUserDetailsFunction(GetUserDetailsQueryHandler handler)
         // Get auth header
         var authHeader = req.Headers.GetValues("Authorization").FirstOrDefault();
 
+        if (authHeader == null)
+        {
+            return await new ApiResponse<UserAccountDTO?>(false, null, "Invalid login request").WriteResponse(req, HttpStatusCode.Unauthorized);
+        }
+
         var result = await handler.Handle(new GetUserDetailsQuery(authHeader));
 
         // Return successful response with token

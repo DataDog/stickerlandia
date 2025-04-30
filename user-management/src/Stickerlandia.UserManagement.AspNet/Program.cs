@@ -1,6 +1,5 @@
 using System.Text;
 using System.Text.Json;
-using Azure.Messaging.ServiceBus;
 using FastEndpoints;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;

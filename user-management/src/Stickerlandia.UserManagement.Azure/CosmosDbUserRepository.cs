@@ -1,7 +1,6 @@
 ﻿using Microsoft.Azure.Cosmos;
 using Stickerlandia.UserManagement.Core;
 using System.Collections.Concurrent;
-using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 using Stickerlandia.UserManagement.Core.Outbox;
 

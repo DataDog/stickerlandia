@@ -2,8 +2,6 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
-using System.Text;
-using System.Text.Json;
 using Azure.Messaging.ServiceBus;
 using CloudNative.CloudEvents;
 using CloudNative.CloudEvents.SystemTextJson;

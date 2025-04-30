@@ -2,7 +2,6 @@ using FastEndpoints;
 using Microsoft.AspNetCore.Authorization;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.GetUserDetails;
-using Stickerlandia.UserManagement.Core.Login;
 
 namespace Stickerlandia.UserManagement.AspNet;
 

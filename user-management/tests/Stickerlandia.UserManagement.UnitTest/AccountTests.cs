@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.Auth;
 using Stickerlandia.UserManagement.Core.Login;
@@ -14,7 +13,7 @@ public class AccountTests
         var testEmailAddress = "test@test.com";
         var testPassword = "Password!234";
         var testAccountId = "1234";
-        UserAccount capturedAccount = null;
+        UserAccount? capturedAccount = null;
         
         var userRepo = A.Fake<IUserAccountRepository>();
         A.CallTo(() => userRepo.CreateAccount(A<UserAccount>.Ignored))
@@ -28,9 +27,9 @@ public class AccountTests
 
         result.AccountId.Should().NotBeEmpty();
         capturedAccount?.Id.Should().Be(result.AccountId);
-        capturedAccount.DomainEvents.Count.Should().Be(1);
+        capturedAccount?.DomainEvents.Count.Should().Be(1);
         
-        var firstEvent = capturedAccount.DomainEvents.First();
+        var firstEvent = capturedAccount!.DomainEvents.First();
         firstEvent.Should().BeOfType<UserRegisteredEvent>();
     }
     
@@ -39,7 +38,6 @@ public class AccountTests
     {
         var testEmailAddress = "test@test.com";
         var testPassword = "Password!234";
-        var testAccountId = "1234";
         
         var userRepo = A.Fake<IUserAccountRepository>();
         
@@ -56,7 +54,6 @@ public class AccountTests
     {
         var testEmailAddress = "test@test.com";
         var testPassword = "Password!234";
-        var testAccountId = "1234";
         
         var userRepo = A.Fake<IUserAccountRepository>();
         A.CallTo(() => userRepo.DoesEmailExistAsync(A<string>.Ignored)).Returns(Task.FromResult(true));
@@ -72,7 +69,6 @@ public class AccountTests
     {
         var testEmailAddress = "@test.com";
         var testPassword = "Password!234";
-        var testAccountId = "1234";
         
         var userRepo = A.Fake<IUserAccountRepository>();
         
@@ -89,7 +85,6 @@ public class AccountTests
     {
         var testEmailAddress = "test@test.com";
         var testPassword = "this does not meet password requirements";
-        var testAccountId = "1234";
         
         var userRepo = A.Fake<IUserAccountRepository>();
         
@@ -156,7 +151,6 @@ public class AccountTests
     public async Task CanRetrieveUserDetails()
     {
         var testEmailAddress = "test@test.com";
-        var testPassword = "Password!234";
         var testPasswordHash = "gY+ZhJfJftbzJvLmWE6grZgJv3nWkepeIigpSSnDwqY1xiQ1MkSAU16LE+3EljRw";
         var testAccountId = "1234";
         

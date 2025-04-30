@@ -2,7 +2,6 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
-using System.Diagnostics;
 using Datadog.Trace;
 
 namespace Stickerlandia.UserManagement.Core.Outbox;
@@ -36,6 +35,6 @@ public class OutboxItem
     public string? FailureReason { get; set; }
     
     public string? TraceId { get; set; }
-    
-    public string EmailAddress { get; set; }
+
+    public string EmailAddress { get; set; } = "";
 }

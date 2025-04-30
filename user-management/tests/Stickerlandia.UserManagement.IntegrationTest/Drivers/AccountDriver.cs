@@ -35,7 +35,7 @@ public class AccountDriver
         var body = await registerResult.Content.ReadAsStringAsync();
 
         return registerResult.IsSuccessStatusCode
-            ? JsonSerializer.Deserialize<ApiResponse<RegisterResponse>>(body).Data
+            ? JsonSerializer.Deserialize<ApiResponse<RegisterResponse>>(body)?.Data
             : null;
     }
 
@@ -61,11 +61,11 @@ public class AccountDriver
         var parsedBody = JsonSerializer.Deserialize<ApiResponse<LoginResponse>>(loginResultBody);
 
         return loginResult.IsSuccessStatusCode
-            ? parsedBody.Data
+            ? parsedBody?.Data
             : null;
     }
 
-    public async Task<UserAccountDTO> GetUserAccount(string authToken)
+    public async Task<UserAccountDTO?> GetUserAccount(string authToken)
     {
         var request = new HttpRequestMessage(HttpMethod.Get, new Uri($"{BaseUrl}/details"));
         request.Headers.Add("Authorization", $"Bearer {authToken}");
@@ -74,7 +74,7 @@ public class AccountDriver
         var responseBody = await response.Content.ReadAsStringAsync();
 
         return response.IsSuccessStatusCode
-            ? JsonSerializer.Deserialize<ApiResponse<UserAccountDTO>>(responseBody).Data
+            ? JsonSerializer.Deserialize<ApiResponse<UserAccountDTO>>(responseBody)?.Data
             : null;
     }
 

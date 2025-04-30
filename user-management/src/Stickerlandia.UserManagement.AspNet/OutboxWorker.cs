@@ -28,6 +28,13 @@ public class OutboxWorker(IUserEventPublisher eventPublisher, IOutbox outbox, IL
                         {
                             case "users.userRegistered.v1":
                                 var userRegisteredEvent = JsonSerializer.Deserialize<UserRegisteredEvent>(item.EventData);
+                                if (userRegisteredEvent == null)
+                                {
+                                    logger.LogWarning("Contents of outbox item cannot be deserialized {ItemId}", item.ItemId);
+                                    item.FailureReason = "Contents of outbox item cannot be deserialized.";
+                                    item.Failed = true;
+                                    break;
+                                }
                                 await eventPublisher.PublishUserRegisteredEventV1(userRegisteredEvent);
                                 item.Processed = true;
                                 break;

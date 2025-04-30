@@ -2,7 +2,6 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
-using System.Diagnostics;
 using System.Net;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
@@ -14,8 +13,7 @@ namespace Stickerlandia.UserManagement.FunctionApp;
 
 public class LoginFunction(
     LoginCommandHandler loginCommandHandler,
-    ILogger<LoginFunction> logger,
-    ActivitySource activitySource)
+    ILogger<LoginFunction> logger)
 {
     [Function("Login")]
     public async Task<HttpResponseData> RunAsync(
@@ -26,6 +24,11 @@ public class LoginFunction(
         
         // Deserialize request
         var loginRequest = await JsonSerializer.DeserializeAsync<LoginCommand>(req.Body);
+
+        if (loginRequest == null)
+        {
+            return await new ApiResponse<LoginResponse?>(false, null, "Invalid login request").WriteResponse(req, HttpStatusCode.BadRequest);
+        }
 
         var result = await loginCommandHandler.Handle(loginRequest);
 

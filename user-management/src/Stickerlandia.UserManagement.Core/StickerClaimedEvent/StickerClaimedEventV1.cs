@@ -9,8 +9,8 @@ namespace Stickerlandia.UserManagement.Core.StickerClaimedEvent;
 public record StickerClaimedEventV1
 {
     [JsonPropertyName("accountId")] 
-    public string AccountId {get;init;}
+    public string AccountId {get;init;} = "";
     
     [JsonPropertyName("stickerId")]
-    public string StickerId { get; init; }
+    public string StickerId { get; init; } = "";
 }

@@ -11,5 +11,5 @@ public record LoginResponse
 public record ApiResponse<T>
 {
     [JsonPropertyName("data")]
-    public T Data { get; set; }
+    public T? Data { get; set; }
 }

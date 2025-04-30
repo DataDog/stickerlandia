@@ -33,9 +33,16 @@ public class ServiceBusStickerClaimedWorker : IMessagingWorker
     {
         var messageBody = args.Message.Body.ToString();
         _logger.LogInformation("Received message: {body}", messageBody);
+
+        var evtData = JsonSerializer.Deserialize<StickerClaimedEventV1>(messageBody);
+
+        if (evtData == null)
+        {
+            await args.DeadLetterMessageAsync(args.Message, "Message body cannot be deserialized");
+        }
         
         // Process your message here
-        await _eventHandler.Handle(JsonSerializer.Deserialize<StickerClaimedEventV1>(messageBody));
+        await _eventHandler.Handle(evtData!);
         
         // Complete the message
         await args.CompleteMessageAsync(args.Message, CancellationToken.None);

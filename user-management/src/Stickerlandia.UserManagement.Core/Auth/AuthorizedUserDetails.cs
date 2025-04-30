@@ -6,9 +6,9 @@ namespace Stickerlandia.UserManagement.Core.Auth;
 
 public record AuthorizedUserDetails
 {
-    public string AccountId { get; set; }
+    public string AccountId { get; set; } = "";
     
-    public string Role { get; set; }
+    public string Role { get; set; } = "";
     
-    public string UserTier { get; set; }
+    public string UserTier { get; set; } = "";
 }

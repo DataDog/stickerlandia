@@ -1,6 +1,5 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Stickerlandia.UserManagement.AspNet.Configurations;
