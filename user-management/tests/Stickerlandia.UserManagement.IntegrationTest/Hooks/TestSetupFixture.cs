@@ -7,17 +7,17 @@ using Aspire.Hosting.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Stickerlandia.UserManagement.IntegrationTest.Drivers;
+using Xunit.Abstractions;
 
 namespace Stickerlandia.UserManagement.IntegrationTest.Hooks;
 
 public class TestSetupFixture : IDisposable
 {
-    private string BaseUrl = $"{TestConstants.DefaultTestUrl}/api";
     public readonly IMessaging Messaging;
     public readonly HttpClient HttpClient;
     public readonly DistributedApplication? App;
 
-    public TestSetupFixture()
+    public TestSetupFixture(ITestOutputHelper testOutputHelper)
     {
         var shouldTestAgainstRealResources = Environment.GetEnvironmentVariable("TEST_REAL_RESOURCES") == "true";
 
@@ -25,7 +25,14 @@ public class TestSetupFixture : IDisposable
         {
             // Run all local resources with Asipre for testing
             var builder = DistributedApplicationTestingBuilder
-                .CreateAsync<Projects.Stickerlandia_UserManagement_Aspire>()
+                .CreateAsync<Projects.Stickerlandia_UserManagement_Aspire>(
+                    args: ["DcpPublisher:RandomizePorts=false"],
+                    configureBuilder: (appOptions, _) =>
+                    {
+                        appOptions.DisableDashboard = false;
+                        appOptions.EnableResourceLogging = true;
+                        appOptions.AllowUnsecuredTransport = true;
+                    })
                 .GetAwaiter()
                 .GetResult();
             
