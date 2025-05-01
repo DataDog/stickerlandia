@@ -11,8 +11,10 @@ public record UpdateUserDetailsRequest
     [JsonIgnore]
     public AccountId? AccountId { get; set; }
 
+    [JsonPropertyName("firstName")]
     public string FirstName { get; set; } = "";
     
+    [JsonPropertyName("lastName")]
     public string LastName { get; set; } = "";
 
     public bool IsValid()

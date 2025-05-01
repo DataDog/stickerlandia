@@ -1,6 +1,8 @@
+using Microsoft.Extensions.Configuration;
 using Stickerlandia.UserManagement.Aspire;
 
 var builder = DistributedApplication.CreateBuilder(args);
+builder.Configuration.AddEnvironmentVariables();
 
 #pragma warning disable ASPIRECOSMOSDB001
 var cosmos = builder.AddAzureCosmosDB("cosmos-db")
@@ -28,14 +30,19 @@ var topic = serviceBus
     .AddServiceBusTopic("users-userRegistered-v1", "users.userRegistered.v1");
 topic.AddServiceBusSubscription("noop");
 
-var runAs = Environment.GetEnvironmentVariable("RUN_AS") ?? "ASPNET";
+var configuredRunAs = builder.Configuration["RUN_AS"];
 
-switch (runAs)
+if (!string.IsNullOrEmpty(configuredRunAs))
 {
-    case "AZURE_FUNCTIONS":
+    RunSettings.OverrideTo(Enum.Parse<RunAs>(configuredRunAs));
+}
+
+switch (RunSettings.RunAs)
+{
+    case RunAs.AZURE_FUNCTIONS:
         builder.WithAzureFunctions(cosmos, serviceBus);
         break;
-    case "AWS_LAMBDA":
+    case RunAs.AWS_LAMBDA:
         builder.WithAwsLambda(cosmos, serviceBus);
         break;
     default:

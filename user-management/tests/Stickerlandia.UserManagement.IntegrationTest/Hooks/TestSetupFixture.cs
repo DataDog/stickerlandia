@@ -23,7 +23,11 @@ public class TestSetupFixture : IDisposable
         {
             // Run all local resources with Asipre for testing
             var builder = DistributedApplicationTestingBuilder
-                .CreateAsync<Projects.Stickerlandia_UserManagement_Aspire>().GetAwaiter().GetResult();
+                .CreateAsync<Projects.Stickerlandia_UserManagement_Aspire>()
+                .GetAwaiter()
+                .GetResult();
+            
+            builder.Configuration["RUN_AS"] = Environment.GetEnvironmentVariable("RUN_AS") ?? "ASPNET";
 
             App = builder.BuildAsync().GetAwaiter().GetResult();
 
@@ -34,6 +38,9 @@ public class TestSetupFixture : IDisposable
                     "api",
                     cts.Token)
                 .GetAwaiter().GetResult();
+            
+            // When Azure Functions is used, the API is not available immediately even when the container is healthy.
+            Task.Delay(TimeSpan.FromSeconds(10)).GetAwaiter().GetResult();
 
             HttpClient = App.CreateHttpClient("api");
 
