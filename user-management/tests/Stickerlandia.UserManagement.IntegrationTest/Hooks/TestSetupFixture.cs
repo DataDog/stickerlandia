@@ -4,6 +4,8 @@
 
 using Aspire.Hosting;
 using Aspire.Hosting.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Stickerlandia.UserManagement.IntegrationTest.Drivers;
 
 namespace Stickerlandia.UserManagement.IntegrationTest.Hooks;
@@ -26,6 +28,13 @@ public class TestSetupFixture : IDisposable
                 .CreateAsync<Projects.Stickerlandia_UserManagement_Aspire>()
                 .GetAwaiter()
                 .GetResult();
+            builder.Services.AddLogging(logging =>
+            {
+                logging
+                    .SetMinimumLevel(LogLevel.Debug)
+                    .AddFilter(builder.Environment.ApplicationName, LogLevel.Debug)
+                    .AddFilter("Aspire.", LogLevel.Debug);
+            });
             
             builder.Configuration["RUN_AS"] = Environment.GetEnvironmentVariable("RUN_AS") ?? "ASPNET";
 
