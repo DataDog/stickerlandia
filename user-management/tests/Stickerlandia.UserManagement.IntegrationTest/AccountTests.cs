@@ -12,7 +12,6 @@ namespace Stickerlandia.UserManagement.IntegrationTest
     {
         private readonly AccountDriver _driver;
         private readonly ITestOutputHelper _testOutputHelper;
-        public DistributedApplication? App;
         
         public AccountTests(ITestOutputHelper testOutputHelper)//, TestSetupFixture testSetupFixture)
         {
@@ -36,19 +35,19 @@ namespace Stickerlandia.UserManagement.IntegrationTest
             
             builder.Configuration["RUN_AS"] = Environment.GetEnvironmentVariable("RUN_AS") ?? "ASPNET";
 
-            App = await builder.BuildAsync();
+            await using var app = await builder.BuildAsync();
 
-            await App.StartAsync();
+            await app.StartAsync();
 
-            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(180));
-            await App.ResourceNotifications.WaitForResourceHealthyAsync(
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(180));
+            await app.ResourceNotifications.WaitForResourceHealthyAsync(
                 "api",
                 cts.Token);
             
             // When Azure Functions is used, the API is not available immediately even when the container is healthy.
             await Task.Delay(TimeSpan.FromSeconds(10));
 
-            var messagingConnectionString = await App.GetConnectionStringAsync("messaging");
+            var messagingConnectionString = await app.GetConnectionStringAsync("messaging");
             
             if (string.IsNullOrEmpty(messagingConnectionString))
             {
@@ -56,7 +55,7 @@ namespace Stickerlandia.UserManagement.IntegrationTest
             }
 
             var messaging = new AzureServiceBusMessaging(messagingConnectionString);
-            var httpClient = App.CreateHttpClient("api");
+            var httpClient = app.CreateHttpClient("api");
             
             var apiDriver = new AccountDriver(_testOutputHelper, httpClient, messaging);
             
