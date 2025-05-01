@@ -11,12 +11,14 @@ namespace Stickerlandia.UserManagement.IntegrationTest.Drivers;
 public class AccountDriver
 {
     private readonly ITestOutputHelper _testOutputHelper;
-    private readonly TestSetupFixture _testSetupFixture;
+    private readonly HttpClient _httpClient;
+    private readonly IMessaging _messaging;
     
-    public AccountDriver(ITestOutputHelper testOutputHelper, TestSetupFixture testSetupFixture)
+    public AccountDriver(ITestOutputHelper testOutputHelper, HttpClient httpClient, IMessaging messaging)
     {
         _testOutputHelper = testOutputHelper;
-        _testSetupFixture = testSetupFixture;
+        _httpClient = httpClient;
+        _messaging = messaging;
     }
 
     public async Task<RegisterResponse?> RegisterUser(string emailAddress, string password)
@@ -31,7 +33,7 @@ public class AccountDriver
             lastName = "Doe"
         });
 
-        var registerResult = await _testSetupFixture.HttpClient.PostAsync("api/users/v1/register",
+        var registerResult = await _httpClient.PostAsync("api/users/v1/register",
             new StringContent(requestBody, Encoding.Default, "application/json"));
 
         var body = await registerResult.Content.ReadAsStringAsync();
@@ -54,7 +56,7 @@ public class AccountDriver
         request.Headers.Add("Authorization", $"Bearer {authToken}");
         request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
 
-        var response = await _testSetupFixture.HttpClient.SendAsync(request);
+        var response = await _httpClient.SendAsync(request);
         var responseBody = await response.Content.ReadAsStringAsync();
 
         return response.IsSuccessStatusCode
@@ -72,7 +74,7 @@ public class AccountDriver
             password
         });
 
-        var loginResult = await _testSetupFixture.HttpClient.PostAsync("api/users/v1/login",
+        var loginResult = await _httpClient.PostAsync("api/users/v1/login",
             new StringContent(requestBody, Encoding.Default, "application/json"));
 
         _testOutputHelper.WriteLine($"Login status code is {loginResult.StatusCode}");
@@ -95,7 +97,7 @@ public class AccountDriver
         var request = new HttpRequestMessage(HttpMethod.Get, "api/users/v1/details");
         request.Headers.Add("Authorization", $"Bearer {authToken}");
 
-        var response = await _testSetupFixture.HttpClient.SendAsync(request);
+        var response = await _httpClient.SendAsync(request);
         var responseBody = await response.Content.ReadAsStringAsync();
 
         return response.IsSuccessStatusCode
@@ -105,7 +107,7 @@ public class AccountDriver
 
     public async Task InjectStickerClaimedMessage(string userId, string stickerId)
     {
-        await _testSetupFixture.Messaging.SendMessageAsync("users.stickerClaimed.v1", new
+        await _messaging.SendMessageAsync("users.stickerClaimed.v1", new
         {
             accountId = userId,
             stickerId = stickerId

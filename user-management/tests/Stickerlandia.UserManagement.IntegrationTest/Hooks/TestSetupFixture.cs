@@ -23,48 +23,7 @@ public class TestSetupFixture : IDisposable
 
         if (!shouldTestAgainstRealResources)
         {
-            // Run all local resources with Asipre for testing
-            var builder = DistributedApplicationTestingBuilder
-                .CreateAsync<Projects.Stickerlandia_UserManagement_Aspire>(
-                    args: ["DcpPublisher:RandomizePorts=false"],
-                    configureBuilder: (appOptions, host) =>
-                    {
-                        appOptions.DisableDashboard = false;
-                        appOptions.EnableResourceLogging = true;
-                        appOptions.AllowUnsecuredTransport = true;
-                    })
-                .GetAwaiter()
-                .GetResult();
             
-            builder.Configuration["RUN_AS"] = Environment.GetEnvironmentVariable("RUN_AS") ?? "ASPNET";
-
-            App = builder.BuildAsync()
-                .GetAwaiter()
-                .GetResult();
-
-            App.StartAsync()
-                .GetAwaiter()
-                .GetResult();
-
-            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(180));
-            App.ResourceNotifications.WaitForResourceHealthyAsync(
-                    "api",
-                    cts.Token)
-                .GetAwaiter().GetResult();
-            
-            // When Azure Functions is used, the API is not available immediately even when the container is healthy.
-            Task.Delay(TimeSpan.FromSeconds(10)).GetAwaiter().GetResult();
-
-            HttpClient = App.CreateHttpClient("api");
-
-            var messagingConnectionString = App.GetConnectionStringAsync("messaging").GetAwaiter().GetResult();
-            
-            if (string.IsNullOrEmpty(messagingConnectionString))
-            {
-                throw new Exception("Messaging connection string is not set.");
-            }
-
-            Messaging = new AzureServiceBusMessaging(messagingConnectionString);
         }
         else
         {
