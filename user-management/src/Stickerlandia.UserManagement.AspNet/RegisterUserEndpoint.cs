@@ -8,7 +8,7 @@ public static class RegisterUserEndpoint
 {
     public static async Task<ApiResponse<RegisterResponse>> HandleAsync(
         [FromServices] RegisterCommandHandler registerCommandHandler,
-        RegisterUserCommand request)
+        [FromBody] RegisterUserCommand request)
     {
         var registerResponse = await registerCommandHandler.Handle(request, AccountType.User);
         

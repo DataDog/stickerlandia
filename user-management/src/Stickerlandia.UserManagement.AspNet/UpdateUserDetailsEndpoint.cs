@@ -11,7 +11,7 @@ public static class UpdateUserDetailsEndpoint
         HttpContext context,
         [FromServices] IAuthService authService,
         [FromServices] UpdateUserDetailsHandler updateHandler,
-        UpdateUserDetailsRequest request)
+        [FromBody] UpdateUserDetailsRequest request)
     {
         var authHeader = context.Request.Headers["Authorization"][0];
         if (authHeader is null)

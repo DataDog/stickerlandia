@@ -7,7 +7,7 @@ public static class LoginEndpoint
 {
     public static async Task<ApiResponse<LoginResponse>> HandleAsync(
         [FromServices] LoginCommandHandler loginCommandHandler,
-        LoginCommand request)
+        [FromBody] LoginCommand request)
     {
         var loginResponse = await loginCommandHandler.Handle(request);
         
