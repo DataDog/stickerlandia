@@ -17,7 +17,7 @@ public class TestSetupFixture : IDisposable
     public readonly HttpClient HttpClient;
     public readonly DistributedApplication? App;
 
-    public TestSetupFixture(ITestOutputHelper testOutputHelper)
+    public TestSetupFixture()
     {
         var shouldTestAgainstRealResources = Environment.GetEnvironmentVariable("TEST_REAL_RESOURCES") == "true";
 
@@ -27,7 +27,7 @@ public class TestSetupFixture : IDisposable
             var builder = DistributedApplicationTestingBuilder
                 .CreateAsync<Projects.Stickerlandia_UserManagement_Aspire>(
                     args: ["DcpPublisher:RandomizePorts=false"],
-                    configureBuilder: (appOptions, _) =>
+                    configureBuilder: (appOptions, host) =>
                     {
                         appOptions.DisableDashboard = false;
                         appOptions.EnableResourceLogging = true;
