@@ -28,19 +28,16 @@ public class TestSetupFixture : IDisposable
                 .CreateAsync<Projects.Stickerlandia_UserManagement_Aspire>()
                 .GetAwaiter()
                 .GetResult();
-            builder.Services.AddLogging(logging =>
-            {
-                logging
-                    .SetMinimumLevel(LogLevel.Debug)
-                    .AddFilter(builder.Environment.ApplicationName, LogLevel.Debug)
-                    .AddFilter("Aspire.", LogLevel.Debug);
-            });
             
             builder.Configuration["RUN_AS"] = Environment.GetEnvironmentVariable("RUN_AS") ?? "ASPNET";
 
-            App = builder.BuildAsync().GetAwaiter().GetResult();
+            App = builder.BuildAsync()
+                .GetAwaiter()
+                .GetResult();
 
-            App.StartAsync().GetAwaiter().GetResult();
+            App.StartAsync()
+                .GetAwaiter()
+                .GetResult();
 
             var cts = new CancellationTokenSource(TimeSpan.FromSeconds(180));
             App.ResourceNotifications.WaitForResourceHealthyAsync(

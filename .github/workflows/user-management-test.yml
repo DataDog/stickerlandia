@@ -49,6 +49,13 @@ jobs:
           docker pull mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview
           docker pull mcr.microsoft.com/azure-messaging/servicebus-emulator:1.0.1
           docker pull mcr.microsoft.com/azure-sql-edge:latest
+      - name: Build all projects
+        shell: bash
+        env:
+          RUN_AS: ${{ matrix.run_as }}
+        run: |
+          cd user-management
+          dotnet build
       - name: Run Integration Tests
         shell: bash
         env:
