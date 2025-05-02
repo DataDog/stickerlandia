@@ -1,3 +1,4 @@
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,16 +11,18 @@ using Serilog.Formatting.Json;
 using Stickerlandia.UserManagement.Azure;
 using Stickerlandia.UserManagement.FunctionApp.Configurations;
 using Stickerlandia.UserManagement.Core;
-using Microsoft.Azure.Functions.Worker;
 using Stickerlandia.UserManagement.Agnostic;
 using Stickerlandia.UserManagement.FunctionApp.Middlewares;
 
 var builder = FunctionsApplication.CreateBuilder(args);
+builder.UseDefaultWorkerMiddleware();
+builder.ConfigureFunctionsWebApplication();
 
 builder.UseMiddleware<ExceptionHandlingMiddleware>();
 
 builder.Configuration.AddEnvironmentVariables();
 builder.Services.AddLogging();
+
 var logger = Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
     .MinimumLevel.Override("Microsoft", LogEventLevel.Error)
@@ -47,8 +50,6 @@ switch (hosting.ToUpper())
 builder.Services
     .AddAuthConfigs(appLogger, builder)
     .AddStickerlandiaUserManagement();
-
-builder.ConfigureFunctionsWebApplication();
 
 // Application Insights isn't enabled by default. See https://aka.ms/AAt8mw4.
 builder.Services

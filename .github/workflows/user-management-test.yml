@@ -78,6 +78,7 @@ jobs:
           HOST_ON: AZURE
           COSMOSDB_CONNECTION_STRING: ${{ secrets.COSMOSDB_LOCAL_CONNECTION_STRING }}
         run: |
+          func --version
           cd user-management/tests/Stickerlandia.UserManagement.IntegrationTest && dotnet test --logger:"console;verbosity=detailed"
 
   integration-test-agnostic:
