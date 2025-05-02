@@ -1,5 +1,7 @@
 # User Management Service
 
+[![User Management Tests](https://github.com/DataDog/stickerlandia/actions/workflows/user-management-test.yml/badge.svg)](https://github.com/DataDog/stickerlandia/actions/workflows/user-management-test.yml)
+
 The User Management Service manages user accounts, credentials and details about a user. It provides APIs allowing users to register and login as well as retrieve and update their user account details. The API also generates JWT's for use by other services on a succesful login. Endpoints for interacting with a users account have appropriate access controls to ensure users can only access their own accounts.
 
 ## Features
