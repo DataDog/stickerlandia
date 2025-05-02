@@ -12,8 +12,8 @@
         "DOTNET_DASHBOARD_OTLP_ENDPOINT_URL": "http://localhost:19159",
         "DOTNET_RESOURCE_SERVICE_ENDPOINT_URL": "http://localhost:20231",
         "ASPIRE_ALLOW_UNSECURED_TRANSPORT": "true",
-        "RUN_AS": "ASPNET",
-        "HOST_ON": "AZURE"
+        "DRIVING": "ASPNET",
+        "DRIVEN": "AZURE"
       }
     },
     "az_functions": {
@@ -27,8 +27,8 @@
         "DOTNET_DASHBOARD_OTLP_ENDPOINT_URL": "http://localhost:19159",
         "DOTNET_RESOURCE_SERVICE_ENDPOINT_URL": "http://localhost:20231",
         "ASPIRE_ALLOW_UNSECURED_TRANSPORT": "true",
-        "RUN_AS": "AZURE_FUNCTIONS",
-        "HOST_ON": "AZURE"
+        "DRIVING": "AZURE_FUNCTIONS",
+        "DRIVEN": "AZURE"
       }
     },
     "aspnet": {
@@ -42,8 +42,8 @@
         "DOTNET_DASHBOARD_OTLP_ENDPOINT_URL": "http://localhost:19159",
         "DOTNET_RESOURCE_SERVICE_ENDPOINT_URL": "http://localhost:20231",
         "ASPIRE_ALLOW_UNSECURED_TRANSPORT": "true",
-        "RUN_AS": "ASPNET",
-        "HOST_ON": "AZURE"
+        "DRIVING": "ASPNET",
+        "DRIVEN": "AZURE"
       }
       },
       "aspnet_agnostic": {
@@ -57,8 +57,8 @@
           "DOTNET_DASHBOARD_OTLP_ENDPOINT_URL": "http://localhost:19159",
           "DOTNET_RESOURCE_SERVICE_ENDPOINT_URL": "http://localhost:20231",
           "ASPIRE_ALLOW_UNSECURED_TRANSPORT": "true",
-          "RUN_AS": "ASPNET",
-          "HOST_ON": "AGNOSTIC"
+          "DRIVING": "ASPNET",
+          "DRIVEN": "AGNOSTIC"
         }
     }
   }

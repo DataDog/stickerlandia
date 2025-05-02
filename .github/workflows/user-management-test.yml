@@ -26,7 +26,7 @@ jobs:
     needs: unit-test
     strategy:
       matrix:
-        run_as:
+        DRIVEN:
           - ASPNET
           #- AZURE_FUNCTIONS
       fail-fast: false
@@ -59,23 +59,19 @@ jobs:
           func --version
       - name: .NET Restore
         shell: bash
-        env:
-          RUN_AS: ${{ matrix.run_as }}
         run: |
           cd user-management
           dotnet restore
       - name: .NET Build
         shell: bash
-        env:
-          RUN_AS: ${{ matrix.run_as }}
         run: |
           cd user-management
           dotnet build
       - name: Run Integration Tests
         shell: bash
         env:
-          RUN_AS: ${{ matrix.run_as }}
-          HOST_ON: AZURE
+          DRIVING: ${{ matrix.DRIVING }}
+          DRIVEN: AZURE
           COSMOSDB_CONNECTION_STRING: ${{ secrets.COSMOSDB_LOCAL_CONNECTION_STRING }}
         run: |
           func --version
@@ -86,7 +82,7 @@ jobs:
     needs: unit-test
     strategy:
       matrix:
-        run_as:
+        DRIVING:
           - ASPNET
       fail-fast: false
 
@@ -105,22 +101,18 @@ jobs:
           func --version
       - name: .NET Restore
         shell: bash
-        env:
-          RUN_AS: ${{ matrix.run_as }}
         run: |
           cd user-management
           dotnet restore
       - name: .NET Build
         shell: bash
-        env:
-          RUN_AS: ${{ matrix.run_as }}
         run: |
           cd user-management
           dotnet build
       - name: Run Integration Tests
         shell: bash
         env:
-          RUN_AS: ${{ matrix.run_as }}
-          HOST_ON: AGNOSTIC
+          DRIVING: ${{ matrix.DRIVING }}
+          DRIVEN: AGNOSTIC
         run: |
           cd user-management/tests/Stickerlandia.UserManagement.IntegrationTest && dotnet test --logger:"console;verbosity=detailed"

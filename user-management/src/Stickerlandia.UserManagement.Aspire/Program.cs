@@ -6,25 +6,24 @@ builder.Configuration.AddEnvironmentVariables();
 
 #pragma warning disable ASPIRECOSMOSDB001
 
-var configuredRunAs = builder.Configuration["RUN_AS"];
-var configuredHostOn = builder.Configuration["HOST_ON"];
-
-if (!string.IsNullOrEmpty(configuredRunAs))
+var configuredDrivingAdapters = builder.Configuration["DRIVING"];
+if (!string.IsNullOrEmpty(configuredDrivingAdapters))
 {
-    RunSettings.OverrideTo(Enum.Parse<RunAs>(configuredRunAs));
+    DrivingAdapterSettings.OverrideTo(Enum.Parse<DrivingAdapter>(configuredDrivingAdapters));
 }
 
-if (!string.IsNullOrEmpty(configuredHostOn))
+var configuredDrivenAdapters = builder.Configuration["DRIVEN"];
+if (!string.IsNullOrEmpty(configuredDrivenAdapters))
 {
-    HostOnSettings.OverrideTo(Enum.Parse<HostOn>(configuredHostOn));
+    DrivenAdapterSettings.OverrideTo(Enum.Parse<DrivenAdapters>(configuredDrivenAdapters));
 }
 
 IResourceBuilder<IResourceWithConnectionString>? databaseResource = null;
 IResourceBuilder<IResourceWithConnectionString>? messagingResource = null;
 
-switch (HostOnSettings.HostOn)
+switch (DrivenAdapterSettings.DrivenAdapter)
 {
-    case HostOn.AZURE:
+    case DrivenAdapters.AZURE:
         var cosmos = builder
             .AddAzureCosmosDB("database")
             .RunAsPreviewEmulator(options =>
@@ -53,7 +52,7 @@ switch (HostOnSettings.HostOn)
         databaseResource = cosmos;
         messagingResource = serviceBus;
         break;
-    case HostOn.AGNOSTIC:
+    case DrivenAdapters.AGNOSTIC:
         var kafka = builder.AddKafka("messaging")
             .WithKafkaUI()
             .WithTestCommands();
@@ -63,16 +62,16 @@ switch (HostOnSettings.HostOn)
         databaseResource = db;
         
         break;
-    case HostOn.AWS:
+    case DrivenAdapters.AWS:
         break;
 }
 
-switch (RunSettings.RunAs)
+switch (DrivingAdapterSettings.DrivingAdapter)
 {
-    case RunAs.AZURE_FUNCTIONS:
+    case DrivingAdapter.AZURE_FUNCTIONS:
         builder.WithAzureFunctions(databaseResource, messagingResource);
         break;
-    case RunAs.AWS_LAMBDA:
+    case DrivingAdapter.AWS_LAMBDA:
         builder.WithAwsLambda(databaseResource, messagingResource);
         break;
     default:

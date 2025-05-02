@@ -20,7 +20,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagemen
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.Azure", "src\Stickerlandia.UserManagement.Azure\Stickerlandia.UserManagement.Azure.csproj", "{1F6841EA-97F0-4079-967A-42F816E4FD1F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.FunctionApp", "src\applications\Stickerlandia.UserManagement.FunctionApp\Stickerlandia.UserManagement.FunctionApp.csproj", "{ABDA3664-3B8A-40A5-8038-5150E660B11E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.FunctionApp", "src\Stickerlandia.UserManagement.FunctionApp\Stickerlandia.UserManagement.FunctionApp.csproj", "{ABDA3664-3B8A-40A5-8038-5150E660B11E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.Aspire", "src\Stickerlandia.UserManagement.Aspire\Stickerlandia.UserManagement.Aspire.csproj", "{E481765C-9B3F-4F5E-B351-076415595A8B}"
 EndProject

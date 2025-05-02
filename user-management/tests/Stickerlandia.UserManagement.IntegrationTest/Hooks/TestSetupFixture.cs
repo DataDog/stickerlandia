@@ -31,10 +31,10 @@ public class TestSetupFixture : IDisposable
                 .GetAwaiter()
                 .GetResult();
 
-            var hostOn = Environment.GetEnvironmentVariable("HOST_ON") ?? "AGNOSTIC";
-
-            builder.Configuration["RUN_AS"] = Environment.GetEnvironmentVariable("RUN_AS") ?? "ASPNET";
-            builder.Configuration["HOST_ON"] = hostOn;
+            builder.Configuration["DRIVING"] = Environment.GetEnvironmentVariable("DRIVING") ?? "ASPNET";
+            
+            var drivenAdapter = Environment.GetEnvironmentVariable("DRIVEN") ?? "AGNOSTIC";
+            builder.Configuration["DRIVEN"] = drivenAdapter;
 
             App = builder.BuildAsync().GetAwaiter().GetResult();
 
@@ -52,7 +52,7 @@ public class TestSetupFixture : IDisposable
             var messagingConnectionString = App.GetConnectionStringAsync("messaging").GetAwaiter().GetResult();
 
             HttpClient = App.CreateHttpClient("api");
-            Messaging = MessagingProviderFactory.From(hostOn, messagingConnectionString);
+            Messaging = MessagingProviderFactory.From(drivenAdapter, messagingConnectionString);
         }
         else
         {

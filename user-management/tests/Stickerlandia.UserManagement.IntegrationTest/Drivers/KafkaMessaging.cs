@@ -23,7 +23,7 @@ public class KafkaMessaging : IMessaging, IAsyncDisposable
             Acks             = Acks.All
         };
     }
-    public async Task SendMessageAsync(string queueName, object message)
+    public Task SendMessageAsync(string queueName, object message)
     {
         using var producer = new ProducerBuilder<string, string>(config).Build();
             
@@ -37,6 +37,8 @@ public class KafkaMessaging : IMessaging, IAsyncDisposable
             });
                 
         producer.Flush(TimeSpan.FromSeconds(10));
+
+        return Task.CompletedTask;
     }
 
     public async ValueTask DisposeAsync()

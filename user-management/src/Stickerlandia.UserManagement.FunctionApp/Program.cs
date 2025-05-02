@@ -33,7 +33,7 @@ var logger = Log.Logger = new LoggerConfiguration()
 var appLogger = new SerilogLoggerFactory(logger)
     .CreateLogger<Program>();
 
-var hosting = Environment.GetEnvironmentVariable("HOST_ON");
+var hosting = Environment.GetEnvironmentVariable("DRIVING");
 
 switch (hosting.ToUpper())
 {
