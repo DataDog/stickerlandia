@@ -40,13 +40,11 @@ jobs:
         ports:
           - 8081:8081
 
-    env:
-      COSMOSDB_CONNECTION_STRING: ${{ secrets.COSMOSDB_LOCAL_CONNECTION_STRING }}
-      COSMOSDB_DATABASE_NAME: ${{ secrets.COSMOSDB_LOCAL_DATABASE_NAME }}
-      COSMOSDB_CONTAINER_NAME: ${{ secrets.COSMOSDB_LOCAL_CONTAINER_NAME }}
-
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "9.0.x"
