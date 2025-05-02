@@ -2,6 +2,7 @@ using System.Text;
 using Aspire.Hosting;
 using Aspire.Hosting.Testing;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using Stickerlandia.UserManagement.IntegrationTest.Drivers;
 using Stickerlandia.UserManagement.IntegrationTest.Hooks;
 using Xunit.Abstractions;
@@ -32,14 +33,20 @@ namespace Stickerlandia.UserManagement.IntegrationTest
                         appOptions.EnableResourceLogging = true;
                         appOptions.AllowUnsecuredTransport = true;
                     });
+            builder.Services.ConfigureHttpClientDefaults(clientBuilder =>
+            {
+                clientBuilder.AddStandardResilienceHandler();
+            });
             
             builder.Configuration["RUN_AS"] = Environment.GetEnvironmentVariable("RUN_AS") ?? "ASPNET";
 
             await using var app = await builder.BuildAsync();
 
             await app.StartAsync();
+            
+            var httpClient = app.CreateHttpClient("api");
 
-            using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
             await app.ResourceNotifications.WaitForResourceHealthyAsync(
                 "api",
                 cts.Token);
@@ -55,7 +62,6 @@ namespace Stickerlandia.UserManagement.IntegrationTest
             }
 
             var messaging = new AzureServiceBusMessaging(messagingConnectionString);
-            var httpClient = app.CreateHttpClient("api");
             
             var apiDriver = new AccountDriver(_testOutputHelper, httpClient, messaging);
             
