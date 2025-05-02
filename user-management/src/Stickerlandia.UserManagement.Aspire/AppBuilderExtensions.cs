@@ -88,6 +88,8 @@ public static class AppBuilderExtensions
             .WithEnvironment("Auth__Issuer", "https://stickerlandia.com")
             .WithEnvironment("Auth__Audience", "https://stickerlandia.com")
             .WithEnvironment("Auth__Key", "This is a super secret key that should not be used in production'")
+            .WithEnvironment("DRIVING", builder.Configuration["DRIVING"])
+            .WithEnvironment("DRIVEN", builder.Configuration["DRIVEN"])
             .WaitFor(messagingResource);
         
         if (string.IsNullOrEmpty(cosmosDbConnectionString))
@@ -115,6 +117,8 @@ public static class AppBuilderExtensions
             .WithEnvironment("Auth__Issuer", "https://stickerlandia.com")
             .WithEnvironment("Auth__Audience", "https://stickerlandia.com")
             .WithEnvironment("Auth__Key", "This is a super secret key that should not be used in production'")
+            .WithEnvironment("DRIVING", builder.Configuration["DRIVING"])
+            .WithEnvironment("DRIVEN", builder.Configuration["DRIVEN"])
             .WaitFor(messagingResource)
             .WithExternalHttpEndpoints();
 
