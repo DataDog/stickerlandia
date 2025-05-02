@@ -40,12 +40,33 @@ jobs:
         with:
           dotnet-version: "9.0.x"
       # Pulling the base images in a seperate test ensures the Aspire startup time is not affected by the time it takes to pull the images
+      - name: Export Cosmos DB Emulator Certificate
+        run: |
+          sudo apt update && sudo apt install -y openssl
+          openssl s_client -connect localhost:8081 </dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > cosmos_emulator.cert
+          
+          sudo cp cosmos_emulator.cert /usr/local/share/ca-certificates/
+          sudo update-ca-certificates
       - name: Pull Base Images
         shell: bash
         run: |
           docker pull mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview
           docker pull mcr.microsoft.com/azure-messaging/servicebus-emulator:1.0.1
           docker pull mcr.microsoft.com/azure-sql-edge:latest
+      - name: .NET Restore
+        shell: bash
+        env:
+          RUN_AS: ${{ matrix.run_as }}
+        run: |
+          cd user-management
+          dotnet restore
+      - name: .NET Build
+        shell: bash
+        env:
+          RUN_AS: ${{ matrix.run_as }}
+        run: |
+          cd user-management
+          dotnet build
       - name: Run Integration Tests
         shell: bash
         env:

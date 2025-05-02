@@ -37,7 +37,7 @@ public static class AppBuilderExtensions
         IResourceBuilder<IResourceWithConnectionString> databaseResource,
         IResourceBuilder<IResourceWithConnectionString> messagingResource)
     {
-        var webApp = builder.AddProject<Projects.Stickerlandia_UserManagement_AspNet>("api")
+        builder.AddProject<Projects.Stickerlandia_UserManagement_AspNet>("api")
             .WithReference(databaseResource)
             .WithReference(messagingResource)
             .WithEnvironment("ConnectionStrings__messaging", messagingResource)
