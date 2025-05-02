@@ -41,9 +41,9 @@ builder.Host.UseSerilog((_, config) =>
 var appLogger = new SerilogLoggerFactory(logger)
     .CreateLogger<Program>();
 
-var hosting = Environment.GetEnvironmentVariable("DRIVING");
+var drivenAdapters = Environment.GetEnvironmentVariable("DRIVEN");
 
-switch (hosting.ToUpper())
+switch (drivenAdapters.ToUpper())
 {
     case "AZURE":
         builder.AddAzureAdapters();
@@ -54,7 +54,7 @@ switch (hosting.ToUpper())
     case "AWS":
         break;
     default:
-        throw new Exception($"Unknown hosting option {hosting}");
+        throw new Exception($"Unknown driven adapters {drivenAdapters}");
 }
 
 builder.Services
