@@ -3,7 +3,6 @@
 // Copyright 2025 Datadog, Inc.
 
 using System.Diagnostics;
-using Stickerlandia.UserManagement.Core.Auth;
 
 namespace Stickerlandia.UserManagement.Core.GetUserDetails;
 

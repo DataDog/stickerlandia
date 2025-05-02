@@ -15,9 +15,6 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: "9.0.x"
       - name: Run Unit Tests
         shell: bash
         run: |
@@ -45,9 +42,6 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: "9.0.x"
       - name: Export Cosmos DB Emulator Certificate
         run: |
           sudo apt update && sudo apt install -y openssl

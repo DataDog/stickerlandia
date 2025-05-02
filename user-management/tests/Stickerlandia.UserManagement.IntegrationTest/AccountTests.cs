@@ -1,8 +1,4 @@
-using System.Text;
-using Aspire.Hosting;
-using Aspire.Hosting.Testing;
 using FluentAssertions;
-using Microsoft.Extensions.DependencyInjection;
 using Stickerlandia.UserManagement.IntegrationTest.Drivers;
 using Stickerlandia.UserManagement.IntegrationTest.Hooks;
 using Xunit.Abstractions;

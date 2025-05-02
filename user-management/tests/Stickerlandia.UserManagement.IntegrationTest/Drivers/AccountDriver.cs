@@ -1,8 +1,5 @@
 using System.Text;
 using System.Text.Json;
-using Aspire.Hosting.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using Stickerlandia.UserManagement.IntegrationTest.Hooks;
 using Stickerlandia.UserManagement.IntegrationTest.ViewModels;
 using Xunit.Abstractions;
 

@@ -2,11 +2,8 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
-using System.Text.Json;
-using Datadog.Trace;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
-using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.Outbox;
 
 namespace Stickerlandia.UserManagement.FunctionApp;
