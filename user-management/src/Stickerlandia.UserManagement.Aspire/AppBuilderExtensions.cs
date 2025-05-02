@@ -37,16 +37,25 @@ public static class AppBuilderExtensions
         IResourceBuilder<IResourceWithConnectionString> databaseResource,
         IResourceBuilder<IResourceWithConnectionString> messagingResource)
     {
-        builder.AddProject<Projects.Stickerlandia_UserManagement_AspNet>("api")
-            .WithReference(databaseResource)
+        var cosmosDbConnectionString = builder.Configuration["COSMOSDB_CONNECTION_STRING"];
+        
+        var application = builder.AddProject<Projects.Stickerlandia_UserManagement_AspNet>("api")
             .WithReference(messagingResource)
             .WithEnvironment("ConnectionStrings__messaging", messagingResource)
-            .WithEnvironment("ConnectionStrings__cosmosdb", databaseResource)
             .WithEnvironment("Auth__Issuer", "https://stickerlandia.com")
             .WithEnvironment("Auth__Audience", "https://stickerlandia.com")
             .WithEnvironment("Auth__Key", "This is a super secret key that should not be used in production'")
-            .WaitFor(databaseResource)
             .WaitFor(messagingResource);
+        
+        if (string.IsNullOrEmpty(cosmosDbConnectionString))
+        {
+            application.WithEnvironment("ConnectionStrings__cosmosdb", databaseResource);
+            application.WaitFor(databaseResource);
+        }
+        else
+        {
+            application.WithEnvironment("ConnectionStrings__cosmosdb", cosmosDbConnectionString);
+        }
 
         return builder;
     }
@@ -56,15 +65,25 @@ public static class AppBuilderExtensions
         IResourceBuilder<IResourceWithConnectionString> databaseResource,
         IResourceBuilder<IResourceWithConnectionString> messagingResource)
     {
+        var cosmosDbConnectionString = builder.Configuration["COSMOSDB_CONNECTION_STRING"];
+
         var functions = builder.AddAzureFunctionsProject<Projects.Stickerlandia_UserManagement_FunctionApp>("api")
-            .WithEnvironment("ConnectionStrings__cosmosdb", databaseResource)
             .WithEnvironment("ConnectionStrings__messaging", messagingResource)
             .WithEnvironment("Auth__Issuer", "https://stickerlandia.com")
             .WithEnvironment("Auth__Audience", "https://stickerlandia.com")
             .WithEnvironment("Auth__Key", "This is a super secret key that should not be used in production'")
             .WaitFor(messagingResource)
-            .WaitFor(databaseResource)
             .WithExternalHttpEndpoints();
+
+        if (string.IsNullOrEmpty(cosmosDbConnectionString))
+        {
+            functions.WithEnvironment("ConnectionStrings__cosmosdb", databaseResource);
+            functions.WaitFor(databaseResource);
+        }
+        else
+        {
+            functions.WithEnvironment("ConnectionStrings__cosmosdb", cosmosDbConnectionString);
+        }
 
         return builder;
     }

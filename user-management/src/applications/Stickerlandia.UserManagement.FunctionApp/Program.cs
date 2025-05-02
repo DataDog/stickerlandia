@@ -1,3 +1,4 @@
+using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -56,6 +57,11 @@ builder.Services
         }
     });
 
-appLogger.LogInformation("Application started");
+appLogger.LogInformation("Application started"); ;
 
-builder.Build().Run();
+var app = builder.Build();
+
+var database = app.Services.GetRequiredService<IUsers>();
+await database.MigrateAsync();
+
+await app.RunAsync();

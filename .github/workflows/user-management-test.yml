@@ -34,6 +34,17 @@ jobs:
           - AZURE_FUNCTIONS
       fail-fast: false
 
+    services:
+      cosmosdb:
+        image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview
+        ports:
+          - 8081:8081
+
+    env:
+      COSMOSDB_CONNECTION_STRING: ${{ secrets.COSMOSDB_LOCAL_CONNECTION_STRING }}
+      COSMOSDB_DATABASE_NAME: ${{ secrets.COSMOSDB_LOCAL_DATABASE_NAME }}
+      COSMOSDB_CONTAINER_NAME: ${{ secrets.COSMOSDB_LOCAL_CONTAINER_NAME }}
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -64,5 +75,6 @@ jobs:
         shell: bash
         env:
           RUN_AS: ${{ matrix.run_as }}
+          COSMOSDB_CONNECTION_STRING: ${{ secrets.COSMOSDB_LOCAL_CONNECTION_STRING }}
         run: |
           cd user-management/tests/Stickerlandia.UserManagement.IntegrationTest && dotnet test --logger:"console;verbosity=detailed"

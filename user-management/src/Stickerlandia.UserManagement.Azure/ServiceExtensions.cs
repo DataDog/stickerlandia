@@ -44,10 +44,14 @@ public static class ServiceExtensions
     {
         builder.AddAzureCosmosClient(
             "cosmosdb",
-            settings => { settings.DisableTracing = false; },
+            settings =>
+            {
+                settings.DisableTracing = false;
+                settings.ConnectionString = builder.Configuration
+                    .GetConnectionString("cosmosdb");
+            },
             clientOptions =>
             {
-                clientOptions.ApplicationName = "cosmos-aspire";
                 clientOptions.SerializerOptions = new CosmosSerializationOptions
                 {
                     PropertyNamingPolicy = CosmosPropertyNamingPolicy.Default

@@ -40,4 +40,10 @@ public interface IUsers
     /// <param name="emailAddress">The email address to check for.</param>
     /// <returns>true/false if the email exists or does not respectively</returns>
     Task<bool> DoesEmailExistAsync(string emailAddress);
+
+    /// <summary>
+    ///  Check the database exists and apply any migrations
+    /// </summary>
+    /// <returns>N/A</returns>
+    Task MigrateAsync();
 }

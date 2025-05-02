@@ -161,6 +161,9 @@ v1.MapPost("register", RegisterUserEndpoint.HandleAsync)
     .Produces<ApiResponse<RegisterResponse>>(200)
     .ProducesProblem(400);
 
+var database = app.Services.GetRequiredService<IUsers>();
+await database.MigrateAsync();
+
 await app.RunAsync();
 
 static Task WriteHealthCheckResponse(HttpContext context, HealthReport healthReport)

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Azure.Cosmos;
+using Microsoft.Extensions.Configuration;
 using Stickerlandia.UserManagement.Core;
 using Microsoft.Extensions.Logging;
 using Stickerlandia.UserManagement.Core.Outbox;
@@ -55,16 +56,20 @@ internal class CosmosDbOutboxItem : OutboxItem
 
 public class CosmosDbUserRepository : IUsers, IOutbox
 {
+    private readonly CosmosClient _cosmosClient;
     private readonly ILogger<CosmosDbUserRepository> _logger;
     private readonly Container _usersContainer;
+    private readonly IConfiguration _configuration;
     private readonly bool _isEmulator;
     
     private const string DatabaseId = "Stickerlandia";
     private const string ContainerId = "Users";
 
-    public CosmosDbUserRepository(CosmosClient cosmosClient, ILogger<CosmosDbUserRepository> logger)
+    public CosmosDbUserRepository(CosmosClient cosmosClient, ILogger<CosmosDbUserRepository> logger, IConfiguration configuration)
     {
+        _cosmosClient = cosmosClient;
         _logger = logger;
+        _configuration = configuration;
         _usersContainer = cosmosClient.GetContainer(DatabaseId, ContainerId);
         _isEmulator = cosmosClient.Endpoint.Host.Contains("localhost");
     }
@@ -328,6 +333,12 @@ public class CosmosDbUserRepository : IUsers, IOutbox
         {
             return false;
         }
+    }
+
+    public async Task MigrateAsync()
+    {
+        var database = await _cosmosClient.CreateDatabaseIfNotExistsAsync(DatabaseId);
+        var container = await database.Database.CreateContainerIfNotExistsAsync(ContainerId, "/emailAddress");
     }
 
     public async Task<List<OutboxItem>> GetUnprocessedItemsAsync(int maxCount = 100)
