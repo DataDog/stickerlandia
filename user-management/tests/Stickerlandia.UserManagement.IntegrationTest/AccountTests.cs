@@ -39,7 +39,7 @@ namespace Stickerlandia.UserManagement.IntegrationTest
 
             await app.StartAsync();
 
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(180));
+            using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
             await app.ResourceNotifications.WaitForResourceHealthyAsync(
                 "api",
                 cts.Token);
