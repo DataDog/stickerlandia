@@ -52,9 +52,3 @@ jobs:
           RUN_AS: ${{ matrix.run_as }}
         run: |
           cd user-management/tests/Stickerlandia.UserManagement.IntegrationTest && dotnet test --logger:"console;verbosity=detailed"
-      - name: View test output
-        if: always()
-        shell: bash
-        run: |
-          cd user-management/tests/Stickerlandia.UserManagement.IntegrationTest
-          cat testoutput.txt

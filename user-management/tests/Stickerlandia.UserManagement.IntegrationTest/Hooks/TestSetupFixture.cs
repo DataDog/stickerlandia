@@ -16,6 +16,10 @@ public class TestSetupFixture : IDisposable
     public readonly IMessaging Messaging;
     public readonly HttpClient HttpClient;
     public readonly DistributedApplication? App;
+    
+    private const string ApiApplicationName = "api";
+    private const string DatabaseResourceName = "database";
+    private const string MessagingResourceName = "messaging";
 
     public TestSetupFixture()
     {
@@ -43,6 +47,19 @@ public class TestSetupFixture : IDisposable
             App = builder.BuildAsync().GetAwaiter().GetResult();
 
             App.StartAsync().GetAwaiter().GetResult();
+            
+            // Ensure messaging and database are healthy before running tests
+            using var messagingCts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            App.ResourceNotifications.WaitForResourceHealthyAsync(
+                MessagingResourceName,
+                messagingCts.Token)
+                .GetAwaiter().GetResult();
+            
+            using var databaseCts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            App.ResourceNotifications.WaitForResourceHealthyAsync(
+                    DatabaseResourceName,
+                    databaseCts.Token)
+                .GetAwaiter().GetResult();
 
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
             App.ResourceNotifications.WaitForResourceHealthyAsync(

@@ -5,7 +5,7 @@ var builder = DistributedApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
 
 #pragma warning disable ASPIRECOSMOSDB001
-var cosmos = builder.AddAzureCosmosDB("cosmos-db")
+var cosmos = builder.AddAzureCosmosDB("database")
     .RunAsPreviewEmulator(options =>
     {
         options.WithLifetime(ContainerLifetime.Persistent);
