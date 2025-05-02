@@ -29,14 +29,7 @@ public class TestSetupFixture : IDisposable
         {
             // Run all local resources with Asipre for testing
             var builder = DistributedApplicationTestingBuilder
-                .CreateAsync<Projects.Stickerlandia_UserManagement_Aspire>(
-                    args: ["DcpPublisher:RandomizePorts=false"],
-                    configureBuilder: (appOptions, host) =>
-                    {
-                        appOptions.DisableDashboard = false;
-                        appOptions.EnableResourceLogging = true;
-                        appOptions.AllowUnsecuredTransport = true;
-                    }).GetAwaiter().GetResult();
+                .CreateAsync<Projects.Stickerlandia_UserManagement_Aspire>().GetAwaiter().GetResult();
             builder.Services.ConfigureHttpClientDefaults(clientBuilder =>
             {
                 clientBuilder.AddStandardResilienceHandler();

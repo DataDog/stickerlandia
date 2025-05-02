@@ -39,7 +39,6 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "9.0.x"
-      # Pulling the base images in a seperate test ensures the Aspire startup time is not affected by the time it takes to pull the images
       - name: Export Cosmos DB Emulator Certificate
         run: |
           sudo apt update && sudo apt install -y openssl
