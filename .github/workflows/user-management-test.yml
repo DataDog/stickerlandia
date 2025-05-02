@@ -49,6 +49,11 @@ jobs:
           docker pull mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview
           docker pull mcr.microsoft.com/azure-messaging/servicebus-emulator:1.0.1
           docker pull mcr.microsoft.com/azure-sql-edge:latest
+      - name: Run Aspire
+        shell: bash
+        run: |
+          cd user-management/src/Stickerlandia.UserManagement.Aspire
+          dotnet run -v diag
       - name: Build all projects
         shell: bash
         env:
