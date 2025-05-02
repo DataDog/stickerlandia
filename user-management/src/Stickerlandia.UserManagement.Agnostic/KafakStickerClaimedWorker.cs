@@ -3,6 +3,7 @@
 // Copyright 2025 Datadog, Inc.
 
 using System.Text.Json;
+using Confluent.Kafka;
 using Datadog.Trace;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -17,41 +18,36 @@ public class KafakStickerClaimedWorker : IMessagingWorker
 {
     private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly ILogger<KafakStickerClaimedWorker> _logger;
-
-    public KafakStickerClaimedWorker(ILogger<KafakStickerClaimedWorker> logger, IServiceScopeFactory serviceScopeFactory)
+    private readonly ConsumerConfig _consumerConfig;
+    const string topic = "users.stickerClaimed.v1";
+    
+    public KafakStickerClaimedWorker(ILogger<KafakStickerClaimedWorker> logger, IServiceScopeFactory serviceScopeFactory, ConsumerConfig consumerConfig)
     {
         _logger = logger;
         _serviceScopeFactory = serviceScopeFactory;
+        _consumerConfig = consumerConfig;
     }
     
-    // [Channel("users.stickerClaimed.v1")]
-    // [SubscribeOperation(typeof(StickerClaimedEventV1))]
-    // private async Task ProcessMessageAsync(ProcessMessageEventArgs args)
-    // {
-    //     using var processSpan = Tracer.Instance.StartActive($"process users.stickerClaimed.v1");
-    //     
-    //     var messageBody = args.Message.Body.ToString();
-    //     _logger.LogInformation("Received message: {body}", messageBody);
-    //
-    //     var evtData = JsonSerializer.Deserialize<StickerClaimedEventV1>(messageBody);
-    //
-    //     if (evtData == null)
-    //     {
-    //         await args.DeadLetterMessageAsync(args.Message, "Message body cannot be deserialized");
-    //     }
-    //     
-    //     // Process your message here
-    //     await _eventHandler.Handle(evtData!);
-    //     
-    //     // Complete the message
-    //     await args.CompleteMessageAsync(args.Message, CancellationToken.None);
-    // }
+    [Channel("users.stickerClaimed.v1")]
+    [SubscribeOperation(typeof(StickerClaimedEventV1))]
+    private async Task<bool> ProcessMessageAsync(StickerClaimedEventHandler handler, ConsumeResult<string, string> consumeResult)
+    {
+        using var processSpan = Tracer.Instance.StartActive($"process users.stickerClaimed.v1");
+        
+        _logger.LogInformation("Received message: {body}", consumeResult.Message.Value);
     
-    // private Task ProcessErrorAsync(ProcessErrorEventArgs args)
-    // {
-    //     _logger.LogError(args.Exception, "Error processing message: {source}", args.ErrorSource);
-    //     return Task.CompletedTask;
-    // }
+        var evtData = JsonSerializer.Deserialize<StickerClaimedEventV1>(consumeResult.Message.Value);
+    
+        if (evtData == null)
+        {
+            return false;
+        }
+        
+        // Process your message here
+        await handler.Handle(evtData!);
+        
+        return true;
+    }
 
     public Task StartAsync()
     {
@@ -60,16 +56,35 @@ public class KafakStickerClaimedWorker : IMessagingWorker
         return Task.CompletedTask;
     }
 
-    public Task PollAsync()
+    public async Task PollAsync(CancellationToken stoppingToken)
     {
         using var scope = _serviceScopeFactory.CreateScope();
         var handler = scope.ServiceProvider.GetService<StickerClaimedEventHandler>();
         
-        // This should be a no-op;
-        return Task.CompletedTask;
+        using (var consumer = new ConsumerBuilder<string, string>(_consumerConfig).Build())
+        {
+            consumer.Subscribe(topic);
+            try {
+                var cr = consumer.Consume(stoppingToken);
+                
+                var processResult = await ProcessMessageAsync(handler, cr);
+
+                if (processResult)
+                {
+                    consumer.Commit(cr);
+                }
+            }   
+            catch (Exception ex) {
+                _logger.LogError(ex, "Error processing message");
+            }
+            finally{
+                consumer.Close();
+            }
+        }
     }
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
+        // NOOP
     }
 }

@@ -2,8 +2,10 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
+using System.Text.Json;
 using Aspire.Hosting.Azure;
 using Azure.Messaging.ServiceBus;
+using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Stickerlandia.UserManagement.Aspire;
@@ -25,6 +27,47 @@ public static class AppBuilderExtensions
             var sbClient = c.ServiceProvider.GetRequiredService<ServiceBusClient>();
             await sbClient.CreateSender(builder.Resource.QueueName)
                 .SendMessageAsync(new ServiceBusMessage("Hello, world!"));
+
+            return new ExecuteCommandResult { Success = true };
+        }, new CommandOptions());
+
+        return builder;
+    }
+    
+    public static IResourceBuilder<KafkaServerResource> WithTestCommands(
+        this IResourceBuilder<KafkaServerResource> builder)
+    {
+        builder.ApplicationBuilder.Services.AddSingleton<ProducerConfig>(provider =>
+        {
+            var connectionString = builder.Resource.ConnectionStringExpression
+                .GetValueAsync(CancellationToken.None).GetAwaiter().GetResult();
+            return new ProducerConfig
+            {
+                // User-specific properties that you must set
+                BootstrapServers = connectionString,
+                // Fixed properties
+                SecurityProtocol = SecurityProtocol.Plaintext,
+                Acks             = Acks.All
+            };
+        });
+
+        builder.WithCommand("SendStickerClaimedMessage", "Send Sticker Claimed Message", async (c) =>
+        {
+            var config = c.ServiceProvider.GetRequiredService<ProducerConfig>();
+            using var producer = new ProducerBuilder<string, string>(config).Build();
+            
+            producer.Produce("users.stickerClaimed.v1", new Message<string, string> { Key = "", Value = JsonSerializer.Serialize(new
+                {
+                    accountId = "i2ieniu23hrri23",
+                    stickerId = "dnqwiufb2f2"
+                }) },
+                (deliveryReport) =>
+                {
+                    if (deliveryReport.Error.Code != ErrorCode.NoError) {
+                    }
+                });
+                
+            producer.Flush(TimeSpan.FromSeconds(10));
 
             return new ExecuteCommandResult { Success = true };
         }, new CommandOptions());

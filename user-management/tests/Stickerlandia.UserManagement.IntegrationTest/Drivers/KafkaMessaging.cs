@@ -25,15 +25,6 @@ public class KafkaMessaging : IMessaging, IAsyncDisposable
     }
     public async Task SendMessageAsync(string queueName, object message)
     {
-        // var sender = _client.CreateSender(queueName);
-        // var messageBody = JsonSerializer.Serialize(message);
-        // var serviceBusMessage = new ServiceBusMessage(Encoding.UTF8.GetBytes(messageBody))
-        // {
-        //     ContentType = "application/json"
-        // };
-        //     
-        // await sender.SendMessageAsync(serviceBusMessage);
-        
         using var producer = new ProducerBuilder<string, string>(config).Build();
             
         producer.Produce(queueName, new Message<string, string> { Key = "", Value = JsonSerializer.Serialize(message) },

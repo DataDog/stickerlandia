@@ -55,7 +55,8 @@ switch (HostOnSettings.HostOn)
         break;
     case HostOn.AGNOSTIC:
         var kafka = builder.AddKafka("messaging")
-            .WithKafkaUI();
+            .WithKafkaUI()
+            .WithTestCommands();
         var db = builder.AddPostgres("database").AddDatabase("users");
         
         messagingResource = kafka;

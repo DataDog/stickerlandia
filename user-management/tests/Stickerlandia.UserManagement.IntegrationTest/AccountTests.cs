@@ -16,49 +16,49 @@ namespace Stickerlandia.UserManagement.IntegrationTest
             _testOutputHelper = testOutputHelper;
         }
         
-        // [Fact]
-        // public async Task WhenStickerIsClaimedUsersStickerCountShouldIncrement()
-        // {
-        //     // Arrange
-        //     var emailAddress = $"{Guid.NewGuid()}@test.com";
-        //     var password = $"{Guid.NewGuid()}!A23";
-        //     
-        //     // Act
-        //     var registerResult = await _driver.RegisterUser(emailAddress, password);
-        //
-        //     if (registerResult is null)
-        //     {
-        //         throw new Exception("Registration failed");
-        //     }
-        //     
-        //     var loginResponse = await _driver.Login(emailAddress, password);
-        //     
-        //     if (loginResponse is null)
-        //     {
-        //         throw new Exception("Login response is null");
-        //     }
-        //     await _driver.InjectStickerClaimedMessage(registerResult.AccountId, Guid.NewGuid().ToString());
-        //     
-        //     await Task.Delay(TimeSpan.FromSeconds(5));
-        //
-        //     var user = await _driver.GetUserAccount(loginResponse.AuthToken);
-        //     
-        //     user!.ClaimedStickerCount.Should().Be(1);
-        // }
+        [Fact]
+        public async Task WhenStickerIsClaimed_ThenAUsersStickerCountShouldIncrement()
+        {
+            // Arrange
+            var emailAddress = $"{Guid.NewGuid()}@test.com";
+            var password = $"{Guid.NewGuid()}!A23";
+            
+            // Act
+            var registerResult = await _driver.RegisterUser(emailAddress, password);
+        
+            if (registerResult is null)
+            {
+                throw new Exception("Registration failed");
+            }
+            
+            var loginResponse = await _driver.Login(emailAddress, password);
+            
+            if (loginResponse is null)
+            {
+                throw new Exception("Login response is null");
+            }
+            await _driver.InjectStickerClaimedMessage(registerResult.AccountId, Guid.NewGuid().ToString());
+            
+            await Task.Delay(TimeSpan.FromSeconds(5));
+        
+            var user = await _driver.GetUserAccount(loginResponse.AuthToken);
+            
+            user!.ClaimedStickerCount.Should().Be(1);
+        }
         
         [Fact]
-        public async Task UserShouldBeAbleToRegisterAndThenLogin()
+        public async Task WhenAUserRegisters_ThenTheyShouldBeAbleToLogin()
         {
             try
             {
                 // Arrange
                 var emailAddress = $"{Guid.NewGuid()}@test.com";
                 var password = $"{Guid.NewGuid()}!A23";
-
+        
                 // Act
                 var registerResult = await _driver.RegisterUser(emailAddress, password);
                 var loginResponse = await _driver.Login(emailAddress, password);
-
+        
                 // Assert
                 registerResult.Should().NotBeNull();
                 loginResponse.Should().NotBeNull();
@@ -77,7 +77,7 @@ namespace Stickerlandia.UserManagement.IntegrationTest
         }
         
         [Fact]
-        public async Task UserShouldBeAbleToRegisterAndThenUpdateDetails()
+        public async Task WhenAUserRegisters_TheyShouldBeAbleToUpdateTheirDetails()
         {
             // Arrange
             var emailAddress = $"{Guid.NewGuid()}@test.com";
@@ -97,7 +97,7 @@ namespace Stickerlandia.UserManagement.IntegrationTest
         }
         
         [Fact]
-        public async Task UserCanRetrieveTheirAccountDetailsAfterRegistration()
+        public async Task WhenAUserRegisters_ThenCanRetrieveTheirAccountDetails()
         {
             // Arrange
             var emailAddress = $"{Guid.NewGuid()}@test.com";
@@ -116,7 +116,7 @@ namespace Stickerlandia.UserManagement.IntegrationTest
         }
         
         [Fact]
-        public async Task UserShouldNotBeAbleToLoginWithInvalidPassword()
+        public async Task WhenAUserLogsInWithAnInvalidPassword_ThenLoginFails()
         {
             // Arrange
             var emailAddress = $"{Guid.NewGuid()}@test.com";
@@ -133,7 +133,7 @@ namespace Stickerlandia.UserManagement.IntegrationTest
         }
         
         [Fact]
-        public async Task UnregisteredEmailsCantLogin()
+        public async Task WhenAUserLogsInWithAnUnregisteredEmail_LoginShouldFail()
         {
             // Arrange
             var unregisteredEmail = $"{Guid.NewGuid()}@test.com";
@@ -150,7 +150,8 @@ namespace Stickerlandia.UserManagement.IntegrationTest
         [InlineData("invalidemailformat")]
         [InlineData("@missingusername.com")]
         [InlineData("missing@tld")]
-        public async Task InvalidEmailsCantRegister(string invalidEmail)
+        [InlineData("")]
+        public async Task WhenAUserUsesAnInvalidEmail_RegistrationShouldFail(string invalidEmail)
         {
             // Arrange
             var password = "ValidPassword123!";
@@ -162,27 +163,14 @@ namespace Stickerlandia.UserManagement.IntegrationTest
             registerResult.Should().BeNull();
         }
         
-        [Fact]
-        public async Task EmptyEmailsCantRegister()
-        {
-            // Arrange
-            var emptyEmail = string.Empty;
-            var password = "ValidPassword123!";
-            
-            // Act
-            var registerResult = await _driver.RegisterUser(emptyEmail, password);
-            
-            // Assert
-            registerResult.Should().BeNull();
-        }
-        
         [Theory]
         [InlineData("short")]                // Too short
         [InlineData("nouppercase123!")]      // No uppercase
         [InlineData("NOLOWERCASE123!")]      // No lowercase
         [InlineData("NoSpecialChars123")]    // No special chars
         [InlineData("NoNumbers!")]           // No numbers
-        public async Task InvalidPasswordsCantRegister(string invalidPassword)
+        [InlineData("")]           // Empty
+        public async Task WhenAUserRegistersWithAnInvalidPassword_RegistrationShouldFail(string invalidPassword)
         {
             // Arrange
             var emailAddress = $"{Guid.NewGuid()}@test.com";
@@ -195,21 +183,7 @@ namespace Stickerlandia.UserManagement.IntegrationTest
         }
         
         [Fact]
-        public async Task EmptyPasswordsCantRegister()
-        {
-            // Arrange
-            var emailAddress = $"{Guid.NewGuid()}@test.com";
-            var emptyPassword = string.Empty;
-            
-            // Act
-            var registerResult = await _driver.RegisterUser(emailAddress, emptyPassword);
-            
-            // Assert
-            registerResult.Should().BeNull();
-        }
-        
-        [Fact]
-        public async Task ExtremelyLongEmailShouldFailRegistration()
+        public async Task WhenAUserUsesAnExtremelyLongEmailAddress_RegistrationShouldFail()
         {
             // Arrange
             var longLocalPart = new string('a', 300);
@@ -224,7 +198,7 @@ namespace Stickerlandia.UserManagement.IntegrationTest
         }
         
         [Fact]
-        public async Task ExtremelyLongPasswordShouldFailRegistration()
+        public async Task WhenAUserUsesAnExtremelyLongPassword_RegistrationShouldFail()
         {
             // Arrange
             var emailAddress = $"{Guid.NewGuid()}@test.com";
@@ -242,7 +216,7 @@ namespace Stickerlandia.UserManagement.IntegrationTest
         [InlineData("test.email@example.com")]        // Dots in local part
         [InlineData("email-with-hyphen@example.com")] // Hyphens
         [InlineData("email_with_underscore@example.com")] // Underscores
-        public async Task ValidSpecialFormatsOfEmailShouldRegister(string email)
+        public async Task WhenAUserUsesASpecialEmailFormat_RegistrationShouldBeSuccessful(string email)
         {
             // Arrange
             var password = "ValidPassword123!";
@@ -252,43 +226,6 @@ namespace Stickerlandia.UserManagement.IntegrationTest
             
             // Assert
             registerResult.Should().NotBeNull();
-        }
-        
-        [Theory]
-        [InlineData("üñïçøðé@example.com")]           // Unicode in local part
-        [InlineData("user@üñïçøðé.com")]              // Unicode in domain
-        public async Task UnicodeInEmailShouldBeHandledConsistently(string email)
-        {
-            // Arrange
-            var password = "ValidPassword123!";
-            
-            // Act
-            var registerResult = await _driver.RegisterUser(email, password);
-            
-            // Whether it succeeds or fails, it should do so consistently
-            // This test doesn't assert success/failure but checks system handles it gracefully
-            _testOutputHelper.WriteLine($"Registration with Unicode email '{email}' result: {(registerResult != null ? "Success" : "Failure")}");
-        }
-        
-        [Fact]
-        public async Task PasswordWithUnicodeCharactersShouldBeHandledConsistently()
-        {
-            // Arrange
-            var emailAddress = $"{Guid.NewGuid()}@test.com";
-            var unicodePassword = "ÜñïÇøÐé!123A";
-            
-            // Act
-            var registerResult = await _driver.RegisterUser(emailAddress, unicodePassword);
-            
-            // Whether it succeeds or fails, system should handle it gracefully
-            _testOutputHelper.WriteLine($"Registration with Unicode password result: {(registerResult != null ? "Success" : "Failure")}");
-            
-            if (registerResult != null)
-            {
-                // If registration succeeded, login should also work
-                var loginResponse = await _driver.Login(emailAddress, unicodePassword);
-                loginResponse.Should().NotBeNull();
-            }
         }
     }
 } 

@@ -30,7 +30,7 @@ public static class ServiceExtensions
 
     private static IServiceCollection AddServices(this IServiceCollection services, IConfiguration configuration)
     {
-        var config = new ProducerConfig
+        var producerConfig = new ProducerConfig
         {
             // User-specific properties that you must set
             BootstrapServers = configuration.GetConnectionString("messaging"),
@@ -39,7 +39,19 @@ public static class ServiceExtensions
             Acks             = Acks.All
         };
         
-        services.AddSingleton(config);
+        var consumerConfig = new ConsumerConfig
+        {
+            // User-specific properties that you must set
+            BootstrapServers = configuration.GetConnectionString("messaging"),
+            // Fixed properties
+            SecurityProtocol = SecurityProtocol.Plaintext,
+            GroupId          = "stickerlandia-users",
+            AutoOffsetReset  = AutoOffsetReset.Earliest,
+            EnableAutoCommit = false,
+        };
+        
+        services.AddSingleton(producerConfig);
+        services.AddSingleton(consumerConfig);
         services.AddSingleton<IMessagingWorker, KafakStickerClaimedWorker>();
 
         // Register PostgreSQL repository with proper EF Core configuration

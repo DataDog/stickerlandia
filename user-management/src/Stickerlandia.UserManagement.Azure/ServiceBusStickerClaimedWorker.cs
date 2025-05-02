@@ -68,7 +68,7 @@ public class ServiceBusStickerClaimedWorker : IMessagingWorker
         return Task.CompletedTask;
     }
 
-    public Task PollAsync()
+    public Task PollAsync(CancellationToken cancellationToken)
     {
         // This should be a no-op;
         return Task.CompletedTask;

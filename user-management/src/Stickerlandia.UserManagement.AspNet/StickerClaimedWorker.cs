@@ -25,10 +25,25 @@ public class StickerClaimedWorker : BackgroundService
 
         try
         {
+            var failureCount = 0;
             while (!stoppingToken.IsCancellationRequested)
             {
-                await _messagingWorker.PollAsync();
-                await Task.Delay(1000, stoppingToken);
+                try
+                {
+                    await _messagingWorker.PollAsync(stoppingToken);
+                    failureCount = 0;
+                    await Task.Delay(1000, stoppingToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Error running worker");
+                    failureCount++;
+
+                    if (failureCount > 10)
+                    {
+                        throw;
+                    }
+                }
             }
         }
         catch (Exception ex)
