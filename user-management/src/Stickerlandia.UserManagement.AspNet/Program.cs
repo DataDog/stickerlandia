@@ -143,34 +143,34 @@ app
     .UseAuthorization();
 
 var api = app.NewVersionedApi("api");
-var v1 = api.MapGroup("api/users/v{version:apiVersion}")
+var v1ApiEndpoints = api.MapGroup("api/users/v{version:apiVersion}")
     .HasApiVersion(1.0);
-v1.MapHealthChecks("/health", new HealthCheckOptions
+v1ApiEndpoints.MapHealthChecks("/health", new HealthCheckOptions
 {
     ResponseWriter = WriteHealthCheckResponse
 });
 
 
-v1.MapGet("details", GetUserDetails.HandleAsync)
+v1ApiEndpoints.MapGet("details", GetUserDetails.HandleAsync)
     .RequireAuthorization()
     .WithDescription("Get the current authenticated users details")
     .Produces<ApiResponse<UserAccountDTO>>(200)
     .ProducesProblem(401);
 
-v1.MapPut("details", UpdateUserDetailsEndpoint.HandleAsync)
+v1ApiEndpoints.MapPut("details", UpdateUserDetailsEndpoint.HandleAsync)
     .RequireAuthorization()
     .WithDescription("Update the user details")
     .Produces<ApiResponse<string>>(200)
     .ProducesProblem(401);
 
-v1.MapPost("login", LoginEndpoint.HandleAsync)
+v1ApiEndpoints.MapPost("login", LoginEndpoint.HandleAsync)
     .AllowAnonymous()
     .WithDescription("Login")
     .Produces<ApiResponse<LoginResponse>>(200)
     .ProducesProblem(401)
     .ProducesProblem(404);
 
-v1.MapPost("register", RegisterUserEndpoint.HandleAsync)
+v1ApiEndpoints.MapPost("register", RegisterUserEndpoint.HandleAsync)
     .AllowAnonymous()
     .WithDescription("RegisterUser as a new user")
     .Produces<ApiResponse<RegisterResponse>>(200)

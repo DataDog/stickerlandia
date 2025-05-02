@@ -44,7 +44,7 @@ switch (hosting.ToUpper())
         builder.AddAgnosticAdapters();
         break;
     default:
-        throw new Exception($"Unknown hosting option {hosting}");
+        throw new ArgumentException($"Unknown hosting option {hosting}");
 }
 
 builder.Services
