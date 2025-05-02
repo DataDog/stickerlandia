@@ -9,14 +9,14 @@ using Xunit.Abstractions;
 
 namespace Stickerlandia.UserManagement.IntegrationTest
 {
-    public class AccountTests// : IClassFixture<TestSetupFixture>
+    public class AccountTests : IClassFixture<TestSetupFixture>
     {
         private readonly AccountDriver _driver;
         private readonly ITestOutputHelper _testOutputHelper;
         
-        public AccountTests(ITestOutputHelper testOutputHelper)//, TestSetupFixture testSetupFixture)
+        public AccountTests(ITestOutputHelper testOutputHelper, TestSetupFixture testSetupFixture)
         {
-            //_driver = new AccountDriver(testOutputHelper, testSetupFixture);
+            _driver = new AccountDriver(testOutputHelper, testSetupFixture.HttpClient, testSetupFixture.Messaging);
             _testOutputHelper = testOutputHelper;
         }
         
@@ -25,55 +25,13 @@ namespace Stickerlandia.UserManagement.IntegrationTest
         {
             try
             {
-// Run all local resources with Asipre for testing
-                var builder = await DistributedApplicationTestingBuilder
-                    .CreateAsync<Projects.Stickerlandia_UserManagement_Aspire>(
-                        args: ["DcpPublisher:RandomizePorts=false"],
-                        configureBuilder: (appOptions, host) =>
-                        {
-                            appOptions.DisableDashboard = false;
-                            appOptions.EnableResourceLogging = true;
-                            appOptions.AllowUnsecuredTransport = true;
-                        });
-                builder.Services.ConfigureHttpClientDefaults(clientBuilder =>
-                {
-                    clientBuilder.AddStandardResilienceHandler();
-                });
-
-                builder.Configuration["RUN_AS"] = Environment.GetEnvironmentVariable("RUN_AS") ?? "ASPNET";
-
-                await using var app = await builder.BuildAsync();
-
-                await app.StartAsync();
-
-                var httpClient = app.CreateHttpClient("api");
-
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-                await app.ResourceNotifications.WaitForResourceHealthyAsync(
-                    "api",
-                    cts.Token);
-
-                // When Azure Functions is used, the API is not available immediately even when the container is healthy.
-                await Task.Delay(TimeSpan.FromSeconds(10));
-
-                var messagingConnectionString = await app.GetConnectionStringAsync("messaging");
-
-                if (string.IsNullOrEmpty(messagingConnectionString))
-                {
-                    throw new Exception("Messaging connection string is not set.");
-                }
-
-                var messaging = new AzureServiceBusMessaging(messagingConnectionString);
-
-                var apiDriver = new AccountDriver(_testOutputHelper, httpClient, messaging);
-
                 // Arrange
                 var emailAddress = $"{Guid.NewGuid()}@test.com";
                 var password = $"{Guid.NewGuid()}!A23";
 
                 // Act
-                var registerResult = await apiDriver.RegisterUser(emailAddress, password);
-                var loginResponse = await apiDriver.Login(emailAddress, password);
+                var registerResult = await _driver.RegisterUser(emailAddress, password);
+                var loginResponse = await _driver.Login(emailAddress, password);
 
                 // Assert
                 registerResult.Should().NotBeNull();

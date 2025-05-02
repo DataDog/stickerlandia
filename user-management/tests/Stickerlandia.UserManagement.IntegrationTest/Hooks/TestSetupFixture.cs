@@ -23,7 +23,45 @@ public class TestSetupFixture : IDisposable
 
         if (!shouldTestAgainstRealResources)
         {
-            
+            // Run all local resources with Asipre for testing
+            var builder = DistributedApplicationTestingBuilder
+                .CreateAsync<Projects.Stickerlandia_UserManagement_Aspire>(
+                    args: ["DcpPublisher:RandomizePorts=false"],
+                    configureBuilder: (appOptions, host) =>
+                    {
+                        appOptions.DisableDashboard = false;
+                        appOptions.EnableResourceLogging = true;
+                        appOptions.AllowUnsecuredTransport = true;
+                    }).GetAwaiter().GetResult();
+            builder.Services.ConfigureHttpClientDefaults(clientBuilder =>
+            {
+                clientBuilder.AddStandardResilienceHandler();
+            });
+
+            builder.Configuration["RUN_AS"] = Environment.GetEnvironmentVariable("RUN_AS") ?? "ASPNET";
+
+            App = builder.BuildAsync().GetAwaiter().GetResult();
+
+            App.StartAsync().GetAwaiter().GetResult();
+
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            App.ResourceNotifications.WaitForResourceHealthyAsync(
+                "api",
+                cts.Token)
+                .GetAwaiter().GetResult();
+
+            // When Azure Functions is used, the API is not available immediately even when the container is healthy.
+            Task.Delay(TimeSpan.FromSeconds(10)).GetAwaiter().GetResult();
+
+            var messagingConnectionString = App.GetConnectionStringAsync("messaging").GetAwaiter().GetResult();
+
+            if (string.IsNullOrEmpty(messagingConnectionString))
+            {
+                throw new Exception("Messaging connection string is not set.");
+            }
+
+            HttpClient = App.CreateHttpClient("api");
+            Messaging = new AzureServiceBusMessaging(messagingConnectionString);
         }
         else
         {
