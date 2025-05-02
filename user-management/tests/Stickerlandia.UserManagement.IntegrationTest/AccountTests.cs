@@ -23,60 +23,73 @@ namespace Stickerlandia.UserManagement.IntegrationTest
         [Fact]
         public async Task UserShouldBeAbleToRegisterAndThenLogin()
         {
-            // Run all local resources with Asipre for testing
-            var builder = await DistributedApplicationTestingBuilder
-                .CreateAsync<Projects.Stickerlandia_UserManagement_Aspire>(
-                    args: ["DcpPublisher:RandomizePorts=false"],
-                    configureBuilder: (appOptions, host) =>
-                    {
-                        appOptions.DisableDashboard = false;
-                        appOptions.EnableResourceLogging = true;
-                        appOptions.AllowUnsecuredTransport = true;
-                    });
-            builder.Services.ConfigureHttpClientDefaults(clientBuilder =>
+            try
             {
-                clientBuilder.AddStandardResilienceHandler();
-            });
-            
-            builder.Configuration["RUN_AS"] = Environment.GetEnvironmentVariable("RUN_AS") ?? "ASPNET";
+// Run all local resources with Asipre for testing
+                var builder = await DistributedApplicationTestingBuilder
+                    .CreateAsync<Projects.Stickerlandia_UserManagement_Aspire>(
+                        args: ["DcpPublisher:RandomizePorts=false"],
+                        configureBuilder: (appOptions, host) =>
+                        {
+                            appOptions.DisableDashboard = false;
+                            appOptions.EnableResourceLogging = true;
+                            appOptions.AllowUnsecuredTransport = true;
+                        });
+                builder.Services.ConfigureHttpClientDefaults(clientBuilder =>
+                {
+                    clientBuilder.AddStandardResilienceHandler();
+                });
 
-            await using var app = await builder.BuildAsync();
+                builder.Configuration["RUN_AS"] = Environment.GetEnvironmentVariable("RUN_AS") ?? "ASPNET";
 
-            await app.StartAsync();
-            
-            var httpClient = app.CreateHttpClient("api");
+                await using var app = await builder.BuildAsync();
 
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-            await app.ResourceNotifications.WaitForResourceHealthyAsync(
-                "api",
-                cts.Token);
-            
-            // When Azure Functions is used, the API is not available immediately even when the container is healthy.
-            await Task.Delay(TimeSpan.FromSeconds(10));
+                await app.StartAsync();
 
-            var messagingConnectionString = await app.GetConnectionStringAsync("messaging");
-            
-            if (string.IsNullOrEmpty(messagingConnectionString))
-            {
-                throw new Exception("Messaging connection string is not set.");
+                var httpClient = app.CreateHttpClient("api");
+
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+                await app.ResourceNotifications.WaitForResourceHealthyAsync(
+                    "api",
+                    cts.Token);
+
+                // When Azure Functions is used, the API is not available immediately even when the container is healthy.
+                await Task.Delay(TimeSpan.FromSeconds(10));
+
+                var messagingConnectionString = await app.GetConnectionStringAsync("messaging");
+
+                if (string.IsNullOrEmpty(messagingConnectionString))
+                {
+                    throw new Exception("Messaging connection string is not set.");
+                }
+
+                var messaging = new AzureServiceBusMessaging(messagingConnectionString);
+
+                var apiDriver = new AccountDriver(_testOutputHelper, httpClient, messaging);
+
+                // Arrange
+                var emailAddress = $"{Guid.NewGuid()}@test.com";
+                var password = $"{Guid.NewGuid()}!A23";
+
+                // Act
+                var registerResult = await apiDriver.RegisterUser(emailAddress, password);
+                var loginResponse = await apiDriver.Login(emailAddress, password);
+
+                // Assert
+                registerResult.Should().NotBeNull();
+                loginResponse.Should().NotBeNull();
+                loginResponse!.AuthToken.Should().NotBeEmpty();
             }
-
-            var messaging = new AzureServiceBusMessaging(messagingConnectionString);
+            catch (Exception ex)
+            {
+                _testOutputHelper.WriteLine(ex.Message);
+                _testOutputHelper.WriteLine(ex.StackTrace);
+                
+                // Wait for logs to flish
+                await Task.Delay(TimeSpan.FromSeconds(10));
+                throw;
+            }
             
-            var apiDriver = new AccountDriver(_testOutputHelper, httpClient, messaging);
-            
-            // Arrange
-            var emailAddress = $"{Guid.NewGuid()}@test.com";
-            var password = $"{Guid.NewGuid()}!A23";
-            
-            // Act
-            var registerResult = await apiDriver.RegisterUser(emailAddress, password);
-            var loginResponse = await apiDriver.Login(emailAddress, password);
-            
-            // Assert
-            registerResult.Should().NotBeNull();
-            loginResponse.Should().NotBeNull();
-            loginResponse!.AuthToken.Should().NotBeEmpty();
         }
         
         // [Fact]
