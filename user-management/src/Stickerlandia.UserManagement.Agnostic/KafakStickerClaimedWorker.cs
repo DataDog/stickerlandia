@@ -59,7 +59,7 @@ public class KafakStickerClaimedWorker : IMessagingWorker
     public async Task PollAsync(CancellationToken stoppingToken)
     {
         using var scope = _serviceScopeFactory.CreateScope();
-        var handler = scope.ServiceProvider.GetService<StickerClaimedEventHandler>();
+        var handler = scope.ServiceProvider.GetRequiredService<StickerClaimedEventHandler>();
         
         using (var consumer = new ConsumerBuilder<string, string>(_consumerConfig).Build())
         {
@@ -83,8 +83,9 @@ public class KafakStickerClaimedWorker : IMessagingWorker
         }
     }
 
-    public async Task StopAsync(CancellationToken cancellationToken)
+    public Task StopAsync(CancellationToken cancellationToken)
     {
         // NOOP
+        return Task.CompletedTask;
     }
 }

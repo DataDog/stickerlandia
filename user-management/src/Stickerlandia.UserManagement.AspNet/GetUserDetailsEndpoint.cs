@@ -21,8 +21,14 @@ public static class GetUserDetails
         }
         
         var authorizedUser = authService.ValidateAuthToken(authHeader);
+        
+        if (authorizedUser is null || authorizedUser.AccountId is null)
+        {
+            context.Response.StatusCode = 401;
+            return new ApiResponse<UserAccountDTO?>(false, null, "Unauthorized", HttpStatusCode.Unauthorized);
+        }
 
-        var result = await handler.Handle(new GetUserDetailsQuery(authorizedUser.AccountId));
+        var result = await handler.Handle(new GetUserDetailsQuery(authorizedUser!.AccountId!));
 
         return new ApiResponse<UserAccountDTO?>(result);
     }

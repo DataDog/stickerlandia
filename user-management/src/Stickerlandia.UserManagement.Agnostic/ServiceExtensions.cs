@@ -3,25 +3,16 @@
 // Copyright 2025 Datadog, Inc.
 
 using Confluent.Kafka;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Stickerlandia.UserManagement.Core;
-using Stickerlandia.UserManagement.Core.Outbox;
 
 namespace Stickerlandia.UserManagement.Agnostic;
 
 public static class ServiceExtensions
 {
-    public static FunctionsApplicationBuilder AddAgnosticAdapters(this FunctionsApplicationBuilder builder)
-    {
-        builder.Services.AddServices(builder.Configuration);
-
-        return builder;
-    }
-
-    public static WebApplicationBuilder AddAgnosticAdapters(this WebApplicationBuilder builder)
+    public static IHostApplicationBuilder AddAgnosticAdapters(this IHostApplicationBuilder builder)
     {
         builder.Services.AddServices(builder.Configuration);
 

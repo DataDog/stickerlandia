@@ -1,15 +1,18 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using Stickerlandia.UserManagement.Core.Auth;
 
-namespace Stickerlandia.UserManagement.AspNet.Configurations;
+namespace Stickerlandia.UserManagement.SharedSetup.Configurations;
 
 public static class AuthConfig
 {
     public static IServiceCollection AddAuthConfigs(this IServiceCollection services,
-        ILogger logger, WebApplicationBuilder builder)
+        IConfiguration configuration)
     {
-        builder.Services.AddAuthentication(options =>
+        services.AddAuthentication(options =>
         {
             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
             options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -18,26 +21,24 @@ public static class AuthConfig
         {
             o.TokenValidationParameters = new TokenValidationParameters
             {
-                ValidIssuer = builder.Configuration["Auth:Issuer"],
-                ValidAudience = builder.Configuration["Auth:Audience"],
+                ValidIssuer = configuration["Auth:Issuer"],
+                ValidAudience = configuration["Auth:Audience"],
                 IssuerSigningKey = new SymmetricSecurityKey
-                    (Encoding.UTF8.GetBytes(builder.Configuration["Auth:Key"] ?? "")),
+                    (Encoding.UTF8.GetBytes(configuration["Auth:Key"] ?? "")),
                 ValidateIssuer = true,
                 ValidateAudience = true,
-                ValidateLifetime = true,
+                ValidateLifetime = false,
                 ValidateIssuerSigningKey = true
             };
         });
         
-        builder.Services.AddAuthorization(options =>
+        services.AddAuthorization(options =>
         {
             options.AddPolicy("admin", x => x.RequireRole("admin"));
             options.AddPolicy("staff", x => x.RequireRole("staff"));
         });
         
-        builder.Services.Configure<Core.Auth.JwtConfiguration>(builder.Configuration.GetSection("Auth"));
-        
-        logger.LogInformation("Added auth configuration");
+        services.Configure<JwtConfiguration>(configuration.GetSection("Auth"));
         
         return services;
     }

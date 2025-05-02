@@ -4,7 +4,6 @@
 
 using Aspire.Hosting;
 using Aspire.Hosting.Testing;
-using Microsoft.Extensions.DependencyInjection;
 using Stickerlandia.UserManagement.IntegrationTest.Drivers;
 
 namespace Stickerlandia.UserManagement.IntegrationTest.Hooks;

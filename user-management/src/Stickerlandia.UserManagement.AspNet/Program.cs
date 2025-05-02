@@ -1,28 +1,22 @@
-using System.Net.Http.Metrics;
 using System.Text;
 using System.Text.Json;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.OpenApi.Models;
 using Saunter;
-using Saunter.AsyncApiSchema.v2;
 using Serilog;
 using Serilog.Events;
-using Serilog.Extensions.Logging;
 using Serilog.Formatting.Json;
-using Stickerlandia.UserManagement.Agnostic;
 using Stickerlandia.UserManagement.AspNet;
-using Stickerlandia.UserManagement.Azure;
 using Stickerlandia.UserManagement.AspNet.Configurations;
 using Stickerlandia.UserManagement.AspNet.Middlewares;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.Login;
 using Stickerlandia.UserManagement.Core.RegisterUser;
+using Stickerlandia.UserManagement.SharedSetup;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Configuration.AddEnvironmentVariables();
-builder.Services.AddLogging();
+builder.AddUserManagementSharedSetup();
 
 var logger = Log.Logger = new LoggerConfiguration()
         .MinimumLevel.Information()
@@ -30,6 +24,7 @@ var logger = Log.Logger = new LoggerConfiguration()
         .Enrich.FromLogContext()
         .WriteTo.Console(new JsonFormatter())
     .CreateLogger();
+
 builder.Host.UseSerilog((_, config) =>
 {
     config.MinimumLevel.Information()
@@ -38,43 +33,15 @@ builder.Host.UseSerilog((_, config) =>
         .WriteTo.Console(new JsonFormatter());
 });
 
-var appLogger = new SerilogLoggerFactory(logger)
-    .CreateLogger<Program>();
-
-var drivenAdapters = Environment.GetEnvironmentVariable("DRIVEN");
-
-switch (drivenAdapters.ToUpper())
-{
-    case "AZURE":
-        builder.AddAzureAdapters();
-        break;
-    case "AGNOSTIC":
-        builder.AddAgnosticAdapters();
-        break;
-    case "AWS":
-        break;
-    default:
-        throw new Exception($"Unknown driven adapters {drivenAdapters}");
-}
+builder.AddDocumentationEndpoints();
 
 builder.Services
-    .AddAuthConfigs(appLogger, builder)
-    .AddStickerlandiaUserManagement()
     .AddHealthChecks();
-// Add API versioning
-builder.Services.AddProblemDetails();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddApiVersioning();
 
-builder.Services.AddAsyncApiSchemaGeneration(options =>
-{
-    options.AssemblyMarkerTypes = new[] { typeof(ServiceBusEventPublisher) };
-    options.Middleware.UiTitle = "Users API";
-    options.AsyncApi = new AsyncApiDocument
-    {
-        Info = new Info("Users Service", "1.0.0")
-    };
-});
+// Add API versioning
+builder.Services.AddProblemDetails()
+    .AddEndpointsApiExplorer()
+    .AddApiVersioning();
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -92,21 +59,11 @@ builder.Services.AddRateLimiter(options =>
     });
 });
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddHostedService<OutboxWorker>();
-builder.Services.AddHostedService<StickerClaimedWorker>();
-
-// Add API documentation
-builder.Services.AddSwaggerGen(options =>
-{
-    options.SwaggerDoc("v1", new OpenApiInfo { Title = "User Management API", Version = "v1" });
-
-    // Include XML comments for Swagger
-    var xmlFiles = Directory.GetFiles(AppContext.BaseDirectory, "*.xml");
-    foreach (var xmlFile in xmlFiles) options.IncludeXmlComments(xmlFile);
-});
-
 // Add response compression for improved performance
 builder.Services.AddResponseCompression(options => { options.EnableForHttps = true; });
+
+builder.Services.AddHostedService<OutboxWorker>();
+builder.Services.AddHostedService<StickerClaimedWorker>();
 
 builder.Services.AddCors(options =>
 {
@@ -120,7 +77,6 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 app.UseRateLimiter();
-
 app.UseMiddleware<GlobalExceptionHandler>();
 
 // Enable Swagger UI
@@ -128,6 +84,7 @@ app.UseSwagger();
 app.MapAsyncApiDocuments();
 
 if (app.Environment.IsDevelopment())
+{
     app.MapAsyncApiUi();
     app.UseSwaggerUI(options =>
     {
@@ -135,6 +92,7 @@ if (app.Environment.IsDevelopment())
         var name = "V1";
         options.SwaggerEndpoint(url, name);
     });
+}
 
 app.UseCors("AllowAll");
 
@@ -149,7 +107,6 @@ v1ApiEndpoints.MapHealthChecks("/health", new HealthCheckOptions
 {
     ResponseWriter = WriteHealthCheckResponse
 });
-
 
 v1ApiEndpoints.MapGet("details", GetUserDetails.HandleAsync)
     .RequireAuthorization()

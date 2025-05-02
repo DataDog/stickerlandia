@@ -32,7 +32,7 @@ public class KafkaEventPublisher(ProducerConfig config, ILogger<KafkaEventPublis
         await this.Publish(cloudEvent);
     }
 
-    private async Task Publish(CloudEvent cloudEvent)
+    private Task Publish(CloudEvent cloudEvent)
     {
         var activeSpan = Tracer.Instance.ActiveScope?.Span;
         IScope? processScope = null;
@@ -54,7 +54,7 @@ public class KafkaEventPublisher(ProducerConfig config, ILogger<KafkaEventPublis
 
             using var producer = new ProducerBuilder<string, string>(config).Build();
             
-            producer.Produce(cloudEvent.Type, new Message<string, string> { Key = cloudEvent.Id, Value = Encoding.UTF8.GetString(data.Span) },
+            producer.Produce(cloudEvent.Type, new Message<string, string> { Key = cloudEvent.Id!, Value = Encoding.UTF8.GetString(data.Span) },
                 (deliveryReport) =>
                 {
                     if (deliveryReport.Error.Code != ErrorCode.NoError) {
@@ -76,5 +76,7 @@ public class KafkaEventPublisher(ProducerConfig config, ILogger<KafkaEventPublis
         {
             processScope?.Close();
         }
+
+        return Task.CompletedTask;
     }
 }

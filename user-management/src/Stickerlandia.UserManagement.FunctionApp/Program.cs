@@ -1,6 +1,5 @@
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Builder;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -8,20 +7,17 @@ using Serilog;
 using Serilog.Events;
 using Serilog.Extensions.Logging;
 using Serilog.Formatting.Json;
-using Stickerlandia.UserManagement.Azure;
-using Stickerlandia.UserManagement.FunctionApp.Configurations;
 using Stickerlandia.UserManagement.Core;
-using Stickerlandia.UserManagement.Agnostic;
 using Stickerlandia.UserManagement.FunctionApp.Middlewares;
+using Stickerlandia.UserManagement.SharedSetup;
 
 var builder = FunctionsApplication.CreateBuilder(args);
 builder.UseDefaultWorkerMiddleware();
 builder.ConfigureFunctionsWebApplication();
 
-builder.UseMiddleware<ExceptionHandlingMiddleware>();
+builder.AddUserManagementSharedSetup();
 
-builder.Configuration.AddEnvironmentVariables();
-builder.Services.AddLogging();
+builder.UseMiddleware<ExceptionHandlingMiddleware>();
 
 var logger = Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
@@ -32,26 +28,6 @@ var logger = Log.Logger = new LoggerConfiguration()
 
 var appLogger = new SerilogLoggerFactory(logger)
     .CreateLogger<Program>();
-
-var drivenAdapters = Environment.GetEnvironmentVariable("DRIVEN");
-
-switch (drivenAdapters.ToUpper())
-{
-    case "AZURE":
-        builder.AddAzureAdapters();
-        break;
-    case "AGNOSTIC":
-        builder.AddAgnosticAdapters();
-        break;
-    case "AWS":
-        break;
-    default:
-        throw new Exception($"Unknown driven adapters {drivenAdapters}");
-}
-
-builder.Services
-    .AddAuthConfigs(appLogger, builder)
-    .AddStickerlandiaUserManagement();
 
 // Application Insights isn't enabled by default. See https://aka.ms/AAt8mw4.
 builder.Services
@@ -76,7 +52,11 @@ appLogger.LogInformation("Application started"); ;
 
 var app = builder.Build();
 
+appLogger.LogInformation("Checking database migration status");
+
 var database = app.Services.GetRequiredService<IUsers>();
 await database.MigrateAsync();
+
+appLogger.LogInformation("Done");
 
 await app.RunAsync();
