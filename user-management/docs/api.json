@@ -5,9 +5,9 @@
     "version": "v1"
   },
   "paths": {
-    "/api/details": {
+    "/api/users/v{version}/details": {
       "get": {
-        "tags": ["v1Api"],
+        "tags": ["api"],
         "description": "Get the current authenticated users details",
         "responses": {
           "200": {
@@ -31,11 +31,47 @@
             }
           }
         }
+      },
+      "put": {
+        "tags": ["api"],
+        "description": "Update the user details",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserDetailsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StringApiResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
       }
     },
-    "/api/login": {
+    "/api/users/v{version}/login": {
       "post": {
-        "tags": ["v1Api"],
+        "tags": ["api"],
         "description": "Login",
         "requestBody": {
           "content": {
@@ -81,10 +117,10 @@
         }
       }
     },
-    "/api/register": {
+    "/api/users/v{version}/register": {
       "post": {
-        "tags": ["v1Api"],
-        "description": "Register as a new user",
+        "tags": ["api"],
+        "description": "RegisterUser as a new user",
         "requestBody": {
           "content": {
             "application/json": {
@@ -231,6 +267,37 @@
             "nullable": true
           },
           "password": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "StringApiResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateUserDetailsRequest": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastName": {
             "type": "string",
             "nullable": true
           }
