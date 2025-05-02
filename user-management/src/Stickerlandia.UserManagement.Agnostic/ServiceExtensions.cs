@@ -2,67 +2,27 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
-using Azure.Messaging.ServiceBus;
+using Confluent.Kafka;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.Outbox;
 
-namespace Stickerlandia.UserManagement.Azure;
+namespace Stickerlandia.UserManagement.Agnostic;
 
 public static class ServiceExtensions
 {
-    public static FunctionsApplicationBuilder AddAzureAdapters(this FunctionsApplicationBuilder builder)
+    public static FunctionsApplicationBuilder AddAgnosticAdapters(this FunctionsApplicationBuilder builder)
     {
-        builder.AddAzureCosmosClient(
-            "cosmosdb",
-            settings => { settings.DisableTracing = false; },
-            clientOptions =>
-            {
-                clientOptions.ApplicationName = "cosmos-aspire";
-                clientOptions.SerializerOptions = new CosmosSerializationOptions
-                {
-                    PropertyNamingPolicy = CosmosPropertyNamingPolicy.Default
-                };
-                clientOptions.CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions
-                {
-                    DisableDistributedTracing = false
-                };
-                clientOptions.ConnectionMode = ConnectionMode.Gateway;
-            });
-
         builder.Services.AddServices(builder.Configuration);
 
         return builder;
     }
 
-    public static WebApplicationBuilder AddAzureAdapters(this WebApplicationBuilder builder)
+    public static WebApplicationBuilder AddAgnosticAdapters(this WebApplicationBuilder builder)
     {
-        builder.AddAzureCosmosClient(
-            "cosmosdb",
-            settings =>
-            {
-                settings.DisableTracing = false;
-                settings.ConnectionString = builder.Configuration
-                    .GetConnectionString("cosmosdb");
-            },
-            clientOptions =>
-            {
-                clientOptions.SerializerOptions = new CosmosSerializationOptions
-                {
-                    PropertyNamingPolicy = CosmosPropertyNamingPolicy.Default
-                };
-                clientOptions.CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions
-                {
-                    DisableDistributedTracing = false
-                };
-                clientOptions.ConnectionMode = ConnectionMode.Gateway;
-            });
-
         builder.Services.AddServices(builder.Configuration);
 
         return builder;
@@ -70,13 +30,26 @@ public static class ServiceExtensions
 
     private static IServiceCollection AddServices(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddSingleton<IMessagingWorker, ServiceBusStickerClaimedWorker>();
-        services.AddSingleton(new ServiceBusClient(configuration["ConnectionStrings:messaging"]));
+        var config = new ProducerConfig
+        {
+            // User-specific properties that you must set
+            BootstrapServers = configuration.GetConnectionString("KafkaBootstrapServers"),
+            SaslUsername     = configuration.GetConnectionString("KafkaSaslUsername"),
+            SaslPassword     = configuration.GetConnectionString("KafkaSaslPassword"),
+
+            // Fixed properties
+            SecurityProtocol = SecurityProtocol.SaslSsl,
+            SaslMechanism    = SaslMechanism.Plain,
+            Acks             = Acks.All
+        };
+        
+        services.AddSingleton(config);
+        services.AddSingleton<IMessagingWorker, KafakStickerClaimedWorker>();
 
         // RegisterUser the CosmosDB repository implementation
-        services.AddSingleton<IUsers, CosmosDbUserRepository>();
-        services.AddSingleton<IOutbox, CosmosDbUserRepository>();
-        services.AddSingleton<IUserEventPublisher, ServiceBusEventPublisher>();
+        services.AddSingleton<IUsers, PostgresUserRepository>();
+        services.AddSingleton<IOutbox, PostgresUserRepository>();
+        services.AddSingleton<IUserEventPublisher, KafkaEventPublisher>();
 
         return services;
     }
