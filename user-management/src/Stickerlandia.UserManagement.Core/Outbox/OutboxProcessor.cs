@@ -4,15 +4,20 @@
 
 using System.Text.Json;
 using Datadog.Trace;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Stickerlandia.UserManagement.Core.RegisterUser;
 
 namespace Stickerlandia.UserManagement.Core.Outbox;
 
-public class OutboxProcessor(IOutbox outbox, IUserEventPublisher eventPublisher, ILogger<OutboxProcessor> logger)
+public class OutboxProcessor(IServiceScopeFactory serviceScope, ILogger<OutboxProcessor> logger)
 {
     public async Task ProcessAsync()
     {
+        using var scope = serviceScope.CreateScope();
+        IOutbox outbox = scope.ServiceProvider.GetRequiredService<IOutbox>();
+        IUserEventPublisher eventPublisher = scope.ServiceProvider.GetRequiredService<IUserEventPublisher>();
+        
         using (var outboxProcessingScope = Tracer.Instance.StartActive("outbox worker"))
         {
             try
@@ -23,7 +28,7 @@ public class OutboxProcessor(IOutbox outbox, IUserEventPublisher eventPublisher,
 
                 foreach (var item in outboxItems)
                 {
-                    await ProcessOutboxItemAsync(item);
+                    await ProcessOutboxItemAsync(outbox, eventPublisher, item);
                 }
 
                 logger.LogInformation("There are {Count} unprocessed outbox items", outboxItems.Count);
@@ -36,7 +41,7 @@ public class OutboxProcessor(IOutbox outbox, IUserEventPublisher eventPublisher,
         }
     }
     
-    private async Task ProcessOutboxItemAsync(OutboxItem item)
+    private async Task ProcessOutboxItemAsync(IOutbox outbox, IUserEventPublisher eventPublisher, OutboxItem item)
     {
         using (var messageProcessingScope = Tracer.Instance.StartActive($"process {item.EventType}"))
         {

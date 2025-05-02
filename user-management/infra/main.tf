@@ -62,10 +62,8 @@ locals {
   }
 
   app_settings = {
-    "messaging" = azurerm_servicebus_namespace.stickerlandia_users_service_bus.default_primary_connection_string
     "ConnectionStrings__messaging" = azurerm_servicebus_namespace.stickerlandia_users_service_bus.default_primary_connection_string
-    "ConnectionStrings__cosmosdb" = "AccountEndpoint=${azurerm_cosmosdb_account.user_management.endpoint};AccountKey=${azurerm_cosmosdb_account.user_management.primary_key};"
-    "cosmosdb" = "AccountEndpoint=${azurerm_cosmosdb_account.user_management.endpoint};AccountKey=${azurerm_cosmosdb_account.user_management.primary_key};"
+    "ConnectionStrings__database" = "AccountEndpoint=${azurerm_cosmosdb_account.user_management.endpoint};AccountKey=${azurerm_cosmosdb_account.user_management.primary_key};"
     "Auth__Issuer"= "https://stickerlandia.com"
     "Auth__Audience"= "https://stickerlandia.com"
     "Auth__Key"= "This is a super secret key that should not be used in production'"

@@ -1,3 +1,4 @@
+using System.Net.Http.Metrics;
 using System.Text;
 using System.Text.Json;
 using System.Threading.RateLimiting;
@@ -10,6 +11,7 @@ using Serilog;
 using Serilog.Events;
 using Serilog.Extensions.Logging;
 using Serilog.Formatting.Json;
+using Stickerlandia.UserManagement.Agnostic;
 using Stickerlandia.UserManagement.AspNet;
 using Stickerlandia.UserManagement.Azure;
 using Stickerlandia.UserManagement.AspNet.Configurations;
@@ -39,7 +41,21 @@ builder.Host.UseSerilog((_, config) =>
 var appLogger = new SerilogLoggerFactory(logger)
     .CreateLogger<Program>();
 
-builder.AddAzureAdapters();
+var hosting = Environment.GetEnvironmentVariable("HOST_ON");
+
+switch (hosting.ToUpper())
+{
+    case "AZURE":
+        builder.AddAzureAdapters();
+        break;
+    case "AGNOSTIC":
+        builder.AddAgnosticAdapters();
+        break;
+    case "AWS":
+        break;
+    default:
+        throw new Exception($"Unknown hosting option {hosting}");
+}
 
 builder.Services
     .AddAuthConfigs(appLogger, builder)
@@ -160,8 +176,12 @@ v1.MapPost("register", RegisterUserEndpoint.HandleAsync)
     .Produces<ApiResponse<RegisterResponse>>(200)
     .ProducesProblem(400);
 
-var database = app.Services.GetRequiredService<IUsers>();
-await database.MigrateAsync();
+var scope = app.Services.GetRequiredService<IServiceScopeFactory>();
+using (var serviceScope = scope.CreateScope())
+{
+    var database = serviceScope.ServiceProvider.GetRequiredService<IUsers>();
+    await database.MigrateAsync();
+}
 
 await app.RunAsync();
 

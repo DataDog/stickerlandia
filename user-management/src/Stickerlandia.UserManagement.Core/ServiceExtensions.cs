@@ -17,13 +17,14 @@ public static class ServiceExtensions
 {
     public static IServiceCollection AddStickerlandiaUserManagement(this IServiceCollection services)
     {
-        services.AddSingleton<UpdateUserDetailsHandler>();
-        services.AddSingleton<RegisterCommandHandler>();
-        services.AddSingleton<LoginCommandHandler>();
-        services.AddSingleton<StickerClaimedEventHandler>();
-        services.AddSingleton<GetUserDetailsQueryHandler>();
+        services.AddTransient<UpdateUserDetailsHandler>();
+        services.AddTransient<RegisterCommandHandler>();
+        services.AddTransient<LoginCommandHandler>();
+        services.AddTransient<GetUserDetailsQueryHandler>();
+        services.AddTransient<StickerClaimedEventHandler>();
+        
         services.AddSingleton<IAuthService, JwtAuthService>();
-        services.AddSingleton<OutboxProcessor>();
+        services.AddTransient<OutboxProcessor>();
         
         return services;
     }

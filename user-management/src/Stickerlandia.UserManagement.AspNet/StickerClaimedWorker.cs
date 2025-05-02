@@ -12,7 +12,7 @@ public class StickerClaimedWorker : BackgroundService
     private readonly ILogger<OutboxWorker> _logger;
     private readonly IMessagingWorker _messagingWorker;
 
-    public StickerClaimedWorker(ILogger<OutboxWorker> logger, ServiceBusClient serviceBusClient, IMessagingWorker messagingWorker)
+    public StickerClaimedWorker(ILogger<OutboxWorker> logger, IMessagingWorker messagingWorker)
     {
         _logger = logger;
         _messagingWorker = messagingWorker;
@@ -27,7 +27,6 @@ public class StickerClaimedWorker : BackgroundService
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
                 await _messagingWorker.PollAsync();
                 await Task.Delay(1000, stoppingToken);
             }

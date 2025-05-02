@@ -33,22 +33,19 @@ public static class ServiceExtensions
         var config = new ProducerConfig
         {
             // User-specific properties that you must set
-            BootstrapServers = configuration.GetConnectionString("KafkaBootstrapServers"),
-            SaslUsername     = configuration.GetConnectionString("KafkaSaslUsername"),
-            SaslPassword     = configuration.GetConnectionString("KafkaSaslPassword"),
-
+            BootstrapServers = configuration.GetConnectionString("messaging"),
             // Fixed properties
-            SecurityProtocol = SecurityProtocol.SaslSsl,
-            SaslMechanism    = SaslMechanism.Plain,
+            SecurityProtocol = SecurityProtocol.Plaintext,
             Acks             = Acks.All
         };
         
         services.AddSingleton(config);
         services.AddSingleton<IMessagingWorker, KafakStickerClaimedWorker>();
 
-        // RegisterUser the CosmosDB repository implementation
-        services.AddSingleton<IUsers, PostgresUserRepository>();
-        services.AddSingleton<IOutbox, PostgresUserRepository>();
+        // Register PostgreSQL repository with proper EF Core configuration
+        services.AddPostgresUserRepository(configuration);
+        
+        // Register event publisher as singleton
         services.AddSingleton<IUserEventPublisher, KafkaEventPublisher>();
 
         return services;

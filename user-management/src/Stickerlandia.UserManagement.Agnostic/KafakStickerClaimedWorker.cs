@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using Datadog.Trace;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Saunter.Attributes;
 using Stickerlandia.UserManagement.Core;
@@ -14,13 +15,13 @@ namespace Stickerlandia.UserManagement.Agnostic;
 [AsyncApi]
 public class KafakStickerClaimedWorker : IMessagingWorker
 {
-    private readonly StickerClaimedEventHandler _eventHandler;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly ILogger<KafakStickerClaimedWorker> _logger;
 
-    public KafakStickerClaimedWorker(StickerClaimedEventHandler eventHandler, ILogger<KafakStickerClaimedWorker> logger)
+    public KafakStickerClaimedWorker(ILogger<KafakStickerClaimedWorker> logger, IServiceScopeFactory serviceScopeFactory)
     {
-        _eventHandler = eventHandler;
         _logger = logger;
+        _serviceScopeFactory = serviceScopeFactory;
     }
     
     // [Channel("users.stickerClaimed.v1")]
@@ -55,11 +56,15 @@ public class KafakStickerClaimedWorker : IMessagingWorker
     public Task StartAsync()
     {
         _logger.LogInformation("Starting ServiceBus processor");
+        
         return Task.CompletedTask;
     }
 
     public Task PollAsync()
     {
+        using var scope = _serviceScopeFactory.CreateScope();
+        var handler = scope.ServiceProvider.GetService<StickerClaimedEventHandler>();
+        
         // This should be a no-op;
         return Task.CompletedTask;
     }

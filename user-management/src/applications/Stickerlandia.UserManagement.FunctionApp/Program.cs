@@ -11,6 +11,7 @@ using Stickerlandia.UserManagement.Azure;
 using Stickerlandia.UserManagement.FunctionApp.Configurations;
 using Stickerlandia.UserManagement.Core;
 using Microsoft.Azure.Functions.Worker;
+using Stickerlandia.UserManagement.Agnostic;
 using Stickerlandia.UserManagement.FunctionApp.Middlewares;
 
 var builder = FunctionsApplication.CreateBuilder(args);
@@ -29,7 +30,19 @@ var logger = Log.Logger = new LoggerConfiguration()
 var appLogger = new SerilogLoggerFactory(logger)
     .CreateLogger<Program>();
 
-builder.AddAzureAdapters();
+var hosting = Environment.GetEnvironmentVariable("HOST_ON");
+
+switch (hosting.ToUpper())
+{
+    case "AZURE":
+        builder.AddAzureAdapters();
+        break;
+    case "AGNOSTIC":
+        builder.AddAgnosticAdapters();
+        break;
+    default:
+        throw new Exception($"Unknown hosting option {hosting}");
+}
 
 builder.Services
     .AddAuthConfigs(appLogger, builder)

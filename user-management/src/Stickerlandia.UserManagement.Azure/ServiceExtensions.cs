@@ -43,12 +43,12 @@ public static class ServiceExtensions
     public static WebApplicationBuilder AddAzureAdapters(this WebApplicationBuilder builder)
     {
         builder.AddAzureCosmosClient(
-            "cosmosdb",
+            "database",
             settings =>
             {
                 settings.DisableTracing = false;
                 settings.ConnectionString = builder.Configuration
-                    .GetConnectionString("cosmosdb");
+                    .GetConnectionString("database");
             },
             clientOptions =>
             {

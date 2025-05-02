@@ -31,7 +31,10 @@ public class TestSetupFixture : IDisposable
                 .GetAwaiter()
                 .GetResult();
 
+            var hostOn = Environment.GetEnvironmentVariable("HOST_ON") ?? "AGNOSTIC";
+
             builder.Configuration["RUN_AS"] = Environment.GetEnvironmentVariable("RUN_AS") ?? "ASPNET";
+            builder.Configuration["HOST_ON"] = hostOn;
 
             App = builder.BuildAsync().GetAwaiter().GetResult();
 
@@ -48,13 +51,8 @@ public class TestSetupFixture : IDisposable
 
             var messagingConnectionString = App.GetConnectionStringAsync("messaging").GetAwaiter().GetResult();
 
-            if (string.IsNullOrEmpty(messagingConnectionString))
-            {
-                throw new Exception("Messaging connection string is not set.");
-            }
-
             HttpClient = App.CreateHttpClient("api");
-            Messaging = new AzureServiceBusMessaging(messagingConnectionString);
+            Messaging = MessagingProviderFactory.From(hostOn, messagingConnectionString);
         }
         else
         {

@@ -49,12 +49,12 @@ public static class AppBuilderExtensions
         
         if (string.IsNullOrEmpty(cosmosDbConnectionString))
         {
-            application.WithEnvironment("ConnectionStrings__cosmosdb", databaseResource);
+            application.WithEnvironment("ConnectionStrings__database", databaseResource);
             application.WaitFor(databaseResource);
         }
         else
         {
-            application.WithEnvironment("ConnectionStrings__cosmosdb", cosmosDbConnectionString);
+            application.WithEnvironment("ConnectionStrings__database", cosmosDbConnectionString);
         }
 
         return builder;
@@ -77,12 +77,12 @@ public static class AppBuilderExtensions
 
         if (string.IsNullOrEmpty(cosmosDbConnectionString))
         {
-            functions.WithEnvironment("ConnectionStrings__cosmosdb", databaseResource);
+            functions.WithEnvironment("ConnectionStrings__database", databaseResource);
             functions.WaitFor(databaseResource);
         }
         else
         {
-            functions.WithEnvironment("ConnectionStrings__cosmosdb", cosmosDbConnectionString);
+            functions.WithEnvironment("ConnectionStrings__database", cosmosDbConnectionString);
         }
 
         return builder;

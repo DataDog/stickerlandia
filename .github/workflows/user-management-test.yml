@@ -21,14 +21,14 @@ jobs:
           cd user-management/tests/Stickerlandia.UserManagement.UnitTest
           dotnet test
 
-  integration-test:
+  integration-test-azure:
     runs-on: ubuntu-latest
     needs: unit-test
     strategy:
       matrix:
         run_as:
           - ASPNET
-          - AZURE_FUNCTIONS
+          #- AZURE_FUNCTIONS
       fail-fast: false
 
     services:
@@ -75,6 +75,51 @@ jobs:
         shell: bash
         env:
           RUN_AS: ${{ matrix.run_as }}
+          HOST_ON: AZURE
           COSMOSDB_CONNECTION_STRING: ${{ secrets.COSMOSDB_LOCAL_CONNECTION_STRING }}
+        run: |
+          cd user-management/tests/Stickerlandia.UserManagement.IntegrationTest && dotnet test --logger:"console;verbosity=detailed"
+
+  integration-test-agnostic:
+    runs-on: ubuntu-latest
+    needs: unit-test
+    strategy:
+      matrix:
+        run_as:
+          - ASPNET
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Install Azure Functions Core Tools
+        run: |
+          curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
+          sudo mv microsoft.gpg /etc/apt/trusted.gpg.d/microsoft.gpg
+          sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-ubuntu-$(lsb_release -cs 2>/dev/null)-prod $(lsb_release -cs 2>/dev/null) main" > /etc/apt/sources.list.d/dotnetdev.list'
+          sudo apt-get update
+          sudo apt-get install azure-functions-core-tools-4
+          func --version
+      - name: .NET Restore
+        shell: bash
+        env:
+          RUN_AS: ${{ matrix.run_as }}
+        run: |
+          cd user-management
+          dotnet restore
+      - name: .NET Build
+        shell: bash
+        env:
+          RUN_AS: ${{ matrix.run_as }}
+        run: |
+          cd user-management
+          dotnet build
+      - name: Run Integration Tests
+        shell: bash
+        env:
+          RUN_AS: ${{ matrix.run_as }}
+          HOST_ON: AGNOSTIC
         run: |
           cd user-management/tests/Stickerlandia.UserManagement.IntegrationTest && dotnet test --logger:"console;verbosity=detailed"

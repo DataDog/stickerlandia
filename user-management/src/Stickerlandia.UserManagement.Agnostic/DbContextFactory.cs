@@ -13,7 +13,7 @@ public static class ServiceCollectionExtensions
         // Register DbContext
         services.AddDbContext<UserManagementDbContext>(options =>
         {
-            options.UseNpgsql(configuration.GetConnectionString("PostgresUserManagement"), 
+            options.UseNpgsql(configuration.GetConnectionString("database"), 
                 npgsqlOptions => npgsqlOptions.MigrationsAssembly("Stickerlandia.UserManagement.Agnostic"));
         });
 

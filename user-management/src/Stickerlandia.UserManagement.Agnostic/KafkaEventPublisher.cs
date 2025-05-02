@@ -52,19 +52,20 @@ public class KafkaEventPublisher(ProducerConfig config, ILogger<KafkaEventPublis
             var formatter = new JsonEventFormatter<UserRegisteredEvent>();
             var data = formatter.EncodeBinaryModeEventData(cloudEvent);
 
-            using (var producer = new ProducerBuilder<string, string>(config).Build())
-            {
-                producer.Produce(cloudEvent.Type, new Message<string, string> { Key = cloudEvent.Id, Value = Encoding.UTF8.GetString(data.Span) },
-                    (deliveryReport) =>
-                    {
-                        if (deliveryReport.Error.Code != ErrorCode.NoError) {
-                            logger.LogError($"Failed to deliver message: {deliveryReport.Error.Reason}");
-                        }
-                        else {
-                            logger.LogInformation($"Produced event to topic {cloudEvent.Type}");
-                        }
-                    });
-            }
+            using var producer = new ProducerBuilder<string, string>(config).Build();
+            
+            producer.Produce(cloudEvent.Type, new Message<string, string> { Key = cloudEvent.Id, Value = Encoding.UTF8.GetString(data.Span) },
+                (deliveryReport) =>
+                {
+                    if (deliveryReport.Error.Code != ErrorCode.NoError) {
+                        logger.LogError($"Failed to deliver message: {deliveryReport.Error.Reason}");
+                    }
+                    else {
+                        logger.LogInformation($"Produced event to topic {cloudEvent.Type}");
+                    }
+                });
+                
+            producer.Flush(TimeSpan.FromSeconds(10));
         }
         catch (Exception ex)
         {
