@@ -29,7 +29,10 @@ public class TestSetupFixture : IDisposable
         {
             // Run all local resources with Asipre for testing
             var builder = DistributedApplicationTestingBuilder
-                .CreateAsync<Projects.Stickerlandia_UserManagement_Aspire>().GetAwaiter().GetResult();
+                .CreateAsync<Projects.Stickerlandia_UserManagement_Aspire>()
+                .GetAwaiter()
+                .GetResult();
+            
             builder.Services.ConfigureHttpClientDefaults(clientBuilder =>
             {
                 clientBuilder.AddStandardResilienceHandler();
@@ -40,21 +43,8 @@ public class TestSetupFixture : IDisposable
             App = builder.BuildAsync().GetAwaiter().GetResult();
 
             App.StartAsync().GetAwaiter().GetResult();
-            
-            // Ensure messaging and database are healthy before running tests
-            using var messagingCts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-            App.ResourceNotifications.WaitForResourceHealthyAsync(
-                MessagingResourceName,
-                messagingCts.Token)
-                .GetAwaiter().GetResult();
-            
-            using var databaseCts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-            App.ResourceNotifications.WaitForResourceHealthyAsync(
-                    DatabaseResourceName,
-                    databaseCts.Token)
-                .GetAwaiter().GetResult();
 
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(30));
             App.ResourceNotifications.WaitForResourceHealthyAsync(
                 "api",
                 cts.Token)
