@@ -5,11 +5,11 @@ var builder = DistributedApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
 
 #pragma warning disable ASPIRECOSMOSDB001
-var cosmos = builder.AddAzureCosmosDB("database")
+var cosmos = builder
+    .AddAzureCosmosDB("database")
     .RunAsPreviewEmulator(options =>
     {
         options.WithLifetime(ContainerLifetime.Persistent);
-        options.WithDataExplorer();
     });
 
 var database = cosmos.AddCosmosDatabase("Stickerlandia");

@@ -47,12 +47,6 @@ jobs:
           
           sudo cp cosmos_emulator.cert /usr/local/share/ca-certificates/
           sudo update-ca-certificates
-      - name: Pull Base Images
-        shell: bash
-        run: |
-          docker pull mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview
-          docker pull mcr.microsoft.com/azure-messaging/servicebus-emulator:1.0.1
-          docker pull mcr.microsoft.com/azure-sql-edge:latest
       - name: .NET Restore
         shell: bash
         env:
