@@ -8,15 +8,6 @@ The Sticker Award Service manages the assignment of stickers to users in the Sti
 - JWT-based authentication and authorization
 - Event-driven integration with other services
 
-## API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/award/v1/users/{userId}/stickers` | Get stickers assigned to a user |
-| POST | `/api/award/v1/users/{userId}/stickers` | Assign a new sticker to a user |
-| DELETE | `/api/award/v1/users/{userId}/stickers/{stickerId}` | Remove a sticker assignment |
-| GET | `/health` | Service health check |
-
 ## Event Subscriptions
 
 The service listens to the following events:
