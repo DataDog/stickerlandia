@@ -8,7 +8,11 @@ import com.datadoghq.stickerlandia.stickeraward.beans.StickerRemovalResponse;
 import com.datadoghq.stickerlandia.stickeraward.beans.StickerRemovalResponseApiResponse;
 import com.datadoghq.stickerlandia.stickeraward.beans.UserStickersResponse;
 import com.datadoghq.stickerlandia.stickeraward.beans.UserStickersResponseApiResponse;
+import com.datadoghq.stickerlandia.stickeraward.entity.Sticker;
+import com.datadoghq.stickerlandia.stickeraward.entity.StickerAssignment;
 import io.smallrye.common.constraint.NotNull;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
@@ -19,77 +23,45 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Path("/api")
 public class StickerAwardResource {
-    
-    // Sample in-memory storage for demonstration
-    private final Map<String, List<StickerDTO>> userStickers = new HashMap<>();
-    
-    // Some sample stickers
-    private final Map<String, StickerDTO> availableStickers = new HashMap<>();
-    
-    public StickerAwardResource() {
-        // Initialize some sample stickers
-        StickerDTO debuggingHero = new StickerDTO();
-        debuggingHero.setStickerId("sticker-001");
-        debuggingHero.setName("Debugging Hero");
-        debuggingHero.setDescription("Awarded for exceptional debugging skills");
-        debuggingHero.setImageUrl("https://stickerlandia.example.com/images/debugging-hero.png");
-        
-        StickerDTO codeReviewChampion = new StickerDTO();
-        codeReviewChampion.setStickerId("sticker-002");
-        codeReviewChampion.setName("Code Review Champion");
-        codeReviewChampion.setDescription("Awarded for thorough code reviews");
-        codeReviewChampion.setImageUrl("https://stickerlandia.example.com/images/code-review-champion.png");
-        
-        StickerDTO performanceOptimizer = new StickerDTO();
-        performanceOptimizer.setStickerId("sticker-003");
-        performanceOptimizer.setName("Performance Optimizer");
-        performanceOptimizer.setDescription("Awarded for significant performance improvements");
-        performanceOptimizer.setImageUrl("https://stickerlandia.example.com/images/performance-optimizer.png");
-        
-        availableStickers.put(debuggingHero.getStickerId(), debuggingHero);
-        availableStickers.put(codeReviewChampion.getStickerId(), codeReviewChampion);
-        availableStickers.put(performanceOptimizer.getStickerId(), performanceOptimizer);
-        
-        // Sample user with a sticker
-        String sampleUserId = "user-001";
-        List<StickerDTO> stickersList = new ArrayList<>();
-        
-        StickerDTO userSticker = new StickerDTO();
-        userSticker.setStickerId(debuggingHero.getStickerId());
-        userSticker.setName(debuggingHero.getName());
-        userSticker.setDescription(debuggingHero.getDescription());
-        userSticker.setImageUrl(debuggingHero.getImageUrl());
-        userSticker.setAssignedAt(new Date());
-        
-        stickersList.add(userSticker);
-        userStickers.put(sampleUserId, stickersList);
-    }
 
     @Operation(description = "Get stickers assigned to a user (access controlled based on caller identity)")
     @Path("/award/v1/users/{userId}/stickers")
     @GET
     @Produces("application/json")
+    @Transactional
     public UserStickersResponseApiResponse getUserStickers(@PathParam("userId") String userId) {
+        List<StickerAssignment> assignments = StickerAssignment.findActiveByUserId(userId);
+
+        List<StickerDTO> stickerDTOs = assignments.stream()
+                .map(assignment -> {
+                    Sticker sticker = assignment.getSticker();
+                    StickerDTO dto = new StickerDTO();
+                    dto.setStickerId(sticker.getStickerId());
+                    dto.setName(sticker.getName());
+                    dto.setDescription(sticker.getDescription());
+                    dto.setImageUrl(sticker.getImageUrl());
+                    dto.setAssignedAt(Date.from(assignment.getAssignedAt()));
+                    return dto;
+                })
+                .collect(Collectors.toList());
+
         UserStickersResponse response = new UserStickersResponse();
         response.setUserId(userId);
-        
-        List<StickerDTO> stickers = userStickers.getOrDefault(userId, new ArrayList<>());
-        response.setStickers(stickers);
-        
+        response.setStickers(stickerDTOs);
+
         UserStickersResponseApiResponse apiResponse = new UserStickersResponseApiResponse();
         apiResponse.setSuccess(true);
         apiResponse.setMessage("Successfully retrieved user stickers");
         apiResponse.setData(response);
-        
+
         return apiResponse;
     }
 
@@ -98,42 +70,44 @@ public class StickerAwardResource {
     @POST
     @Produces("application/json")
     @Consumes("application/json")
+    @Transactional
     public StickerAssignmentResponseApiResponse assignStickerToUser(@PathParam("userId") String userId,
             @NotNull AssignStickerCommand data) {
-        
+
         String stickerId = data.getStickerId();
-        StickerDTO stickerToAssign = availableStickers.get(stickerId);
-        
-        if (stickerToAssign == null) {
+        Sticker sticker = Sticker.findById(stickerId);
+
+        if (sticker == null) {
             StickerAssignmentResponseApiResponse apiResponse = new StickerAssignmentResponseApiResponse();
             apiResponse.setSuccess(false);
             apiResponse.setMessage("Sticker not found: " + stickerId);
             return apiResponse;
         }
-        
-        // Create new sticker instance with assignment time
-        StickerDTO userSticker = new StickerDTO();
-        userSticker.setStickerId(stickerToAssign.getStickerId());
-        userSticker.setName(stickerToAssign.getName());
-        userSticker.setDescription(stickerToAssign.getDescription());
-        userSticker.setImageUrl(stickerToAssign.getImageUrl());
-        userSticker.setAssignedAt(new Date());
-        
-        // Add to user's stickers
-        List<StickerDTO> stickers = userStickers.computeIfAbsent(userId, k -> new ArrayList<>());
-        stickers.add(userSticker);
-        
+
+        // Check if sticker is already assigned to the user and not removed
+        StickerAssignment existingAssignment = StickerAssignment.findActiveByUserAndSticker(userId, stickerId);
+        if (existingAssignment != null) {
+            StickerAssignmentResponseApiResponse apiResponse = new StickerAssignmentResponseApiResponse();
+            apiResponse.setSuccess(false);
+            apiResponse.setMessage("User already has this sticker assigned");
+            return apiResponse;
+        }
+
+        // Create new assignment
+        StickerAssignment assignment = new StickerAssignment(userId, sticker, data.getReason());
+        assignment.persist();
+
         // Create response
         StickerAssignmentResponse response = new StickerAssignmentResponse();
         response.setUserId(userId);
         response.setStickerId(stickerId);
-        response.setAssignedAt(userSticker.getAssignedAt());
-        
+        response.setAssignedAt(Date.from(assignment.getAssignedAt()));
+
         StickerAssignmentResponseApiResponse apiResponse = new StickerAssignmentResponseApiResponse();
         apiResponse.setSuccess(true);
         apiResponse.setMessage("Sticker assigned successfully");
         apiResponse.setData(response);
-        
+
         return apiResponse;
     }
 
@@ -141,38 +115,34 @@ public class StickerAwardResource {
     @Path("/award/v1/users/{userId}/stickers/{stickerId}")
     @DELETE
     @Produces("application/json")
+    @Transactional
     public StickerRemovalResponseApiResponse removeStickerFromUser(@PathParam("userId") String userId,
             @PathParam("stickerId") String stickerId) {
-        
-        List<StickerDTO> userStickerList = userStickers.get(userId);
-        
-        if (userStickerList == null) {
+
+        StickerAssignment assignment = StickerAssignment.findActiveByUserAndSticker(userId, stickerId);
+
+        if (assignment == null) {
             StickerRemovalResponseApiResponse apiResponse = new StickerRemovalResponseApiResponse();
             apiResponse.setSuccess(false);
-            apiResponse.setMessage("User not found: " + userId);
+            apiResponse.setMessage("Active sticker assignment not found for user");
             return apiResponse;
         }
-        
-        boolean removed = userStickerList.removeIf(sticker -> sticker.getStickerId().equals(stickerId));
-        
-        if (!removed) {
-            StickerRemovalResponseApiResponse apiResponse = new StickerRemovalResponseApiResponse();
-            apiResponse.setSuccess(false);
-            apiResponse.setMessage("Sticker not found for user: " + stickerId);
-            return apiResponse;
-        }
-        
+
+        // Mark as removed
+        assignment.setRemovedAt(Instant.now());
+        assignment.persist();
+
         // Create response
         StickerRemovalResponse response = new StickerRemovalResponse();
         response.setUserId(userId);
         response.setStickerId(stickerId);
-        response.setRemovedAt(new Date());
-        
+        response.setRemovedAt(Date.from(assignment.getRemovedAt()));
+
         StickerRemovalResponseApiResponse apiResponse = new StickerRemovalResponseApiResponse();
         apiResponse.setSuccess(true);
         apiResponse.setMessage("Sticker removed successfully");
         apiResponse.setData(response);
-        
+
         return apiResponse;
     }
 }
