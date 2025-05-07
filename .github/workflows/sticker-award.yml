@@ -1,0 +1,41 @@
+name: Sticker Award Service
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "sticker-award/**"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "sticker-award/**"
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      
+      - name: Set up JDK 21
+        uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4.2.1
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+      
+      - name: Build with Maven
+        run: |
+          cd sticker-award
+          ./mvnw clean package -DskipTests
+      
+      - name: Run Unit Tests
+        run: |
+          cd sticker-award
+          ./mvnw test
+      
+      - name: Run Integration Tests
+        run: |
+          cd sticker-award
+          ./mvnw verify -Dskip.unit.tests=true -DskipITs=false
