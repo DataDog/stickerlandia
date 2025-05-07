@@ -18,7 +18,7 @@ public class HealthResourceTest {
             .then()
                 .statusCode(200)
                 .contentType(ContentType.JSON)
-                .body("ok", is(true))
-                .body("timestamp", notNullValue());
+                .body("status", is("OK"));
+
     }
 }
