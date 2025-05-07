@@ -21,8 +21,7 @@ public class HealthResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response checkHealth() {
         Map<String, Object> healthStatus = new HashMap<>();
-        healthStatus.put("ok", true);
-        healthStatus.put("timestamp", System.currentTimeMillis());
+        healthStatus.put("status", "OK");
         return Response.ok(healthStatus).build();
     }
 }
