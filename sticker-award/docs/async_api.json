@@ -1,0 +1,172 @@
+{
+  "asyncapi": "2.4.0",
+  "info": {
+    "title": "Sticker Award Service",
+    "version": "1.0.0"
+  },
+  "defaultContentType": "application/json",
+  "channels": {
+    "stickers.stickerAssignedToUser.v1": {
+      "publish": {
+        "operationId": "PublishStickerAssignedToUserEventV1",
+        "summary": "Published when a sticker is assigned to a user",
+        "message": {
+          "$ref": "#/components/messages/stickerAssignedToUserEvent"
+        }
+      }
+    },
+    "stickers.stickerRemovedFromUser.v1": {
+      "publish": {
+        "operationId": "PublishStickerRemovedFromUserEventV1",
+        "summary": "Published when a sticker is removed from a user",
+        "message": {
+          "$ref": "#/components/messages/stickerRemovedFromUserEvent"
+        }
+      }
+    },
+    "certifications.certificationCompleted.v1": {
+      "subscribe": {
+        "operationId": "ProcessCertificationCompletedEventAsync",
+        "summary": "Subscribed to assign stickers based on completed certifications",
+        "message": {
+          "$ref": "#/components/messages/certificationCompletedEventV1"
+        }
+      }
+    },
+    "users.stickerClaimed.v1": {
+      "publish": {
+        "operationId": "PublishStickerClaimedEventV1",
+        "summary": "Published when a user claims a sticker",
+        "message": {
+          "$ref": "#/components/messages/stickerClaimedEventV1"
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "domainEvent": {
+        "id": "domainEvent",
+        "type": "object",
+        "x-abstract": true,
+        "additionalProperties": false
+      },
+      "stickerAssignedToUserEvent": {
+        "id": "stickerAssignedToUserEvent",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/domainEvent"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "eventName": {
+                "type": "string"
+              },
+              "eventVersion": {
+                "type": "string"
+              },
+              "accountId": {
+                "type": "string"
+              },
+              "stickerId": {
+                "type": "string"
+              },
+              "assignedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        ]
+      },
+      "stickerRemovedFromUserEvent": {
+        "id": "stickerRemovedFromUserEvent",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/domainEvent"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "eventName": {
+                "type": "string"
+              },
+              "eventVersion": {
+                "type": "string"
+              },
+              "accountId": {
+                "type": "string"
+              },
+              "stickerId": {
+                "type": "string"
+              },
+              "removedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        ]
+      },
+      "certificationCompletedEventV1": {
+        "id": "certificationCompletedEventV1",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "accountId": {
+            "type": "string"
+          },
+          "certificationId": {
+            "type": "string"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "stickerClaimedEventV1": {
+        "id": "stickerClaimedEventV1",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "accountId": {
+            "type": "string"
+          },
+          "stickerId": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "messages": {
+      "stickerAssignedToUserEvent": {
+        "payload": {
+          "$ref": "#/components/schemas/stickerAssignedToUserEvent"
+        },
+        "name": "stickerAssignedToUserEvent"
+      },
+      "stickerRemovedFromUserEvent": {
+        "payload": {
+          "$ref": "#/components/schemas/stickerRemovedFromUserEvent"
+        },
+        "name": "stickerRemovedFromUserEvent"
+      },
+      "certificationCompletedEventV1": {
+        "payload": {
+          "$ref": "#/components/schemas/certificationCompletedEventV1"
+        },
+        "name": "certificationCompletedEventV1"
+      },
+      "stickerClaimedEventV1": {
+        "payload": {
+          "$ref": "#/components/schemas/stickerClaimedEventV1"
+        },
+        "name": "stickerClaimedEventV1"
+      }
+    }
+  }
+}
