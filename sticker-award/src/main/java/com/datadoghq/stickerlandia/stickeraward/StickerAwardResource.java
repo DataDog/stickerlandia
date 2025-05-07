@@ -37,7 +37,7 @@ public class StickerAwardResource {
     @GET
     @Produces("application/json")
     @Transactional
-    public UserStickersResponseApiResponse getUserStickers(@PathParam("userId") String userId) {
+    public Response getUserStickers(@PathParam("userId") String userId) {
         List<StickerAssignment> assignments = StickerAssignment.findActiveByUserId(userId);
 
         List<StickerDTO> stickerDTOs = assignments.stream()
@@ -62,7 +62,7 @@ public class StickerAwardResource {
         apiResponse.setMessage("Successfully retrieved user stickers");
         apiResponse.setData(response);
 
-        return apiResponse;
+        return Response.ok(apiResponse).build();
     }
 
     @Operation(description = "Assign a new sticker to a user (access controlled based on caller identity)")
@@ -71,7 +71,7 @@ public class StickerAwardResource {
     @Produces("application/json")
     @Consumes("application/json")
     @Transactional
-    public StickerAssignmentResponseApiResponse assignStickerToUser(@PathParam("userId") String userId,
+    public Response assignStickerToUser(@PathParam("userId") String userId,
             @NotNull AssignStickerCommand data) {
 
         String stickerId = data.getStickerId();
@@ -81,7 +81,9 @@ public class StickerAwardResource {
             StickerAssignmentResponseApiResponse apiResponse = new StickerAssignmentResponseApiResponse();
             apiResponse.setSuccess(false);
             apiResponse.setMessage("Sticker not found: " + stickerId);
-            return apiResponse;
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(apiResponse)
+                .build();
         }
 
         // Check if sticker is already assigned to the user and not removed
@@ -90,7 +92,9 @@ public class StickerAwardResource {
             StickerAssignmentResponseApiResponse apiResponse = new StickerAssignmentResponseApiResponse();
             apiResponse.setSuccess(false);
             apiResponse.setMessage("User already has this sticker assigned");
-            return apiResponse;
+            return Response.status(Response.Status.CONFLICT)
+                .entity(apiResponse)
+                .build();
         }
 
         // Create new assignment
@@ -108,7 +112,9 @@ public class StickerAwardResource {
         apiResponse.setMessage("Sticker assigned successfully");
         apiResponse.setData(response);
 
-        return apiResponse;
+        return Response.status(Response.Status.CREATED)
+            .entity(apiResponse)
+            .build();
     }
 
     @Operation(description = "Remove a sticker assignment from a user (access controlled based on caller identity)")
@@ -116,7 +122,7 @@ public class StickerAwardResource {
     @DELETE
     @Produces("application/json")
     @Transactional
-    public StickerRemovalResponseApiResponse removeStickerFromUser(@PathParam("userId") String userId,
+    public Response removeStickerFromUser(@PathParam("userId") String userId,
             @PathParam("stickerId") String stickerId) {
 
         StickerAssignment assignment = StickerAssignment.findActiveByUserAndSticker(userId, stickerId);
@@ -125,7 +131,9 @@ public class StickerAwardResource {
             StickerRemovalResponseApiResponse apiResponse = new StickerRemovalResponseApiResponse();
             apiResponse.setSuccess(false);
             apiResponse.setMessage("Active sticker assignment not found for user");
-            return apiResponse;
+            return Response.status(Response.Status.NOT_FOUND)
+                .entity(apiResponse)
+                .build();
         }
 
         // Mark as removed
@@ -143,6 +151,6 @@ public class StickerAwardResource {
         apiResponse.setMessage("Sticker removed successfully");
         apiResponse.setData(response);
 
-        return apiResponse;
+        return Response.ok(apiResponse).build();
     }
 }
