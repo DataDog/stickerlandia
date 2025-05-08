@@ -1,0 +1,185 @@
+package com.datadoghq.stickerlandia.stickeraward;
+
+import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.http.ContentType;
+import org.junit.jupiter.api.Test;
+
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+
+@QuarkusTest
+class StickerAwardResourceTest {
+
+    private static final String TEST_USER_ID = "user-001";
+    private static final String EXISTING_STICKER_ID = "sticker-001";
+    private static final String NON_EXISTING_STICKER_ID = "sticker-999";
+
+    @Test
+    void testGetUserStickers() {
+        given()
+            .when().get("/api/award/v1/users/{userId}/stickers", TEST_USER_ID)
+            .then()
+                .statusCode(200)
+                .contentType(ContentType.JSON)
+                .body("success", is(true))
+                .body("data", notNullValue())
+                .body("data.userId", is(TEST_USER_ID))
+                .body("data.stickers.size()", is(1))
+                .body("data.stickers[0].stickerId", is(EXISTING_STICKER_ID));
+    }
+
+    @Test
+    void testGetUserStickersForUserWithNoStickers() {
+        String unknownUserId = "unknown-user";
+        given()
+            .when().get("/api/award/v1/users/{userId}/stickers", unknownUserId)
+            .then()
+                .statusCode(200)
+                .contentType(ContentType.JSON)
+                .body("success", is(true))
+                .body("data", notNullValue())
+                .body("data.userId", is(unknownUserId))
+                .body("data.stickers.size()", is(0));
+    }
+
+    @Test
+    void testAssignStickerToUser() {
+        String userId = "test-user-" + System.currentTimeMillis();
+        String stickerId = "sticker-002";  // Use one of the stickers from our seed data
+        
+        // Create sticker assignment request
+        String requestBody = String.format(
+            "{ \"stickerId\": \"%s\", \"reason\": \"Test assignment\" }", 
+            stickerId
+        );
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(requestBody)
+            .when().post("/api/award/v1/users/{userId}/stickers", userId)
+            .then()
+                .statusCode(201)
+                .contentType(ContentType.JSON)
+                .body("success", is(true))
+                .body("data", notNullValue())
+                .body("data.userId", is(userId))
+                .body("data.stickerId", is(stickerId))
+                .body("data.assignedAt", notNullValue());
+
+        // Verify the sticker is now assigned by getting user stickers
+        given()
+            .when().get("/api/award/v1/users/{userId}/stickers", userId)
+            .then()
+                .statusCode(200)
+                .contentType(ContentType.JSON)
+                .body("data.stickers.size()", is(1))
+                .body("data.stickers[0].stickerId", is(stickerId));
+    }
+
+    @Test
+    void testAssignNonExistingStickerReturns400() {
+        String userId = "test-user-" + System.currentTimeMillis();
+        
+        // Create sticker assignment request with non-existing sticker
+        String requestBody = String.format(
+            "{ \"stickerId\": \"%s\", \"reason\": \"Test assignment\" }", 
+            NON_EXISTING_STICKER_ID
+        );
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(requestBody)
+            .when().post("/api/award/v1/users/{userId}/stickers", userId)
+            .then()
+                .statusCode(400)
+                .contentType(ContentType.JSON)
+                .body("success", is(false))
+                .body("message", notNullValue());
+    }
+
+    @Test
+    void testAssignAlreadyAssignedStickerReturns409() {
+        // First, assign a sticker
+        String userId = "test-user-" + System.currentTimeMillis();
+        String stickerId = "sticker-003";  // Use one from seed data
+        
+        String requestBody = String.format(
+            "{ \"stickerId\": \"%s\", \"reason\": \"Test assignment\" }", 
+            stickerId
+        );
+
+        // First assignment should succeed
+        given()
+            .contentType(ContentType.JSON)
+            .body(requestBody)
+            .when().post("/api/award/v1/users/{userId}/stickers", userId)
+            .then()
+                .statusCode(201);
+
+        // Second assignment of the same sticker should fail with 409 Conflict
+        given()
+            .contentType(ContentType.JSON)
+            .body(requestBody)
+            .when().post("/api/award/v1/users/{userId}/stickers", userId)
+            .then()
+                .statusCode(409)
+                .contentType(ContentType.JSON)
+                .body("success", is(false))
+                .body("message", notNullValue());
+    }
+
+    @Test
+    void testRemoveStickerAssignment() {
+        // First, assign a sticker
+        String userId = "test-user-" + System.currentTimeMillis();
+        String stickerId = "sticker-002";
+        
+        String requestBody = String.format(
+            "{ \"stickerId\": \"%s\", \"reason\": \"Test assignment\" }", 
+            stickerId
+        );
+
+        // Assign the sticker
+        given()
+            .contentType(ContentType.JSON)
+            .body(requestBody)
+            .when().post("/api/award/v1/users/{userId}/stickers", userId)
+            .then()
+                .statusCode(201);
+
+        // Remove the sticker
+        given()
+            .when().delete("/api/award/v1/users/{userId}/stickers/{stickerId}", userId, stickerId)
+            .then()
+                .statusCode(200)
+                .contentType(ContentType.JSON)
+                .body("success", is(true))
+                .body("data", notNullValue())
+                .body("data.userId", is(userId))
+                .body("data.stickerId", is(stickerId))
+                .body("data.removedAt", notNullValue());
+
+        // Verify the sticker is no longer assigned
+        given()
+            .when().get("/api/award/v1/users/{userId}/stickers", userId)
+            .then()
+                .statusCode(200)
+                .contentType(ContentType.JSON)
+                .body("data.stickers.size()", is(0));
+    }
+
+    @Test
+    void testRemoveNonExistingStickerAssignmentReturns404() {
+        String userId = "test-user-" + System.currentTimeMillis();
+        String stickerId = "sticker-001";
+
+        given()
+            .when().delete("/api/award/v1/users/{userId}/stickers/{stickerId}", userId, stickerId)
+            .then()
+                .statusCode(404)
+                .contentType(ContentType.JSON)
+                .body("success", is(false))
+                .body("message", notNullValue());
+    }
+}
