@@ -1,6 +1,56 @@
 version: '3.8'
 
 services:
+  # Redpanda - Kafka API compatible messaging system
+  redpanda:
+    image: redpandadata/redpanda:latest
+    container_name: stickerlandia-redpanda
+    command:
+      - redpanda
+      - start
+      - --smp=1
+      - --memory=1G
+      - --reserve-memory=0M
+      - --overprovisioned
+      - --node-id=0
+      - --check=false
+      - --pandaproxy-addr=0.0.0.0:8082
+      - --advertise-pandaproxy-addr=redpanda:8082
+      - --kafka-addr=0.0.0.0:9092
+      - --advertise-kafka-addr=redpanda:9092
+      - --rpc-addr=0.0.0.0:33145
+      - --advertise-rpc-addr=redpanda:33145
+      - --mode dev-container
+    ports:
+      - "9092:9092" # Kafka API
+      - "8082:8082" # HTTP Proxy
+      - "9644:9644" # Admin API
+    volumes:
+      - redpanda-data:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD", "rpk", "cluster", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      
+  # Redpanda Console - Web UI for monitoring and managing Redpanda
+  redpanda-console:
+    image: redpandadata/console:latest
+    container_name: stickerlandia-redpanda-console
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    ports:
+      - "8090:8080"
+    environment:
+      REDPANDA_BROKERS: redpanda:9092
+      REDPANDA_ADMIN_API_URLS: http://redpanda:9644
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # PostgreSQL database for sticker-award service
   sticker-award-db:
     image: postgres:16
@@ -38,8 +88,8 @@ services:
       retries: 5
 
   # Sticker Award Service
-  # http://localhost:8080/health
-  # http://localhost:8080/api/award/v1/users/user-001/stickers
+  # http://localhost:9080/health
+  # http://localhost:9080/api/award/v1/users/user-001/stickers
   sticker-award:
     build:
       context: ./sticker-award
@@ -48,12 +98,19 @@ services:
     depends_on:
       sticker-award-db:
         condition: service_healthy
+      redpanda:
+        condition: service_healthy
     environment:
+      # Database settings
       QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://sticker-award-db:5432/sticker_award
       QUARKUS_DATASOURCE_USERNAME: sticker_user
       QUARKUS_DATASOURCE_PASSWORD: sticker_password
       QUARKUS_DATASOURCE_DB_KIND: postgresql
       QUARKUS_DATASOURCE_DEVSERVICES_ENABLED: "false"
+      # Kafka settings (compatible with Redpanda)
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
+      MP_MESSAGING_CONNECTOR_SMALLRYE_KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
+      QUARKUS_KAFKA_STREAMS_BOOTSTRAP_SERVERS: redpanda:9092
     ports:
       - "8080:8080"
 
@@ -66,12 +123,17 @@ services:
     depends_on:
       user-management-db:
         condition: service_healthy
+      redpanda:
+        condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       DRIVING: ASPNET
       DRIVEN: AGNOSTIC
-      messaging: "YOUR KAFKA BOOTSTRAP SERVERS"
-      database: "Host=user-management-db;Port=5432;Database=user_management;Username=user_mgmt_user;Password=user_mgmt_password"
+      ConnectionStrings__messaging: "redpanda:9092"
+      ConnectionStrings__database: "Host=user-management-db;Port=5432;Database=user_management;Username=user_mgmt_user;Password=user_mgmt_password"
+      KAFKA__BOOTSTRAPSERVERS: "redpanda:9092"
+      KAFKA__SCHEMAREGISTRY: "http://redpanda:8082"
+      KAFKA__GROUPID: "stickerlandia-user-management"
 
     ports:
       - "8081:80"  # Map to 8081 on host to avoid conflict with other services
@@ -79,3 +141,4 @@ services:
 volumes:
   sticker-award-data:
   user-management-data:
+  redpanda-data:
