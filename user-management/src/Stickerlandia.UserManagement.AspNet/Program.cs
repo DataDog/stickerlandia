@@ -139,12 +139,19 @@ using (var serviceScope = scope.CreateScope())
     await database.MigrateAsync();
 }
 
-await app.StartAsync();
-
-var urlList = app.Urls;
-var urls = string.Join(" ", urlList);
-
-logger.Information("UserManagement API started on {Urls}", urls);
+try
+{
+    await app.StartAsync().WaitAsync(TimeSpan.FromSeconds(30)); // Add timeout to prevent hanging indefinitely
+    
+    var urlList = app.Urls;
+    var urls = string.Join(" ", urlList);
+    
+    logger.Information("UserManagement API started on {Urls}", urls);
+}
+catch (Exception ex)
+{
+    logger.Error(ex, "Error starting the application");
+}
 
 await app.WaitForShutdownAsync();
 
