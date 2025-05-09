@@ -17,3 +17,13 @@ In both cases these will be modelled in OpenAPI.
 | [User Management](./user-management/) | Manages user accounts, authentication, and profile information. Handles user registration, login, and JWT token issuance. | [API Docs](./user-management/docs/api.json) |
 | [Sticker Award](./sticker-award/) | Manages the assignment of stickers to users. Tracks which users have which stickers and handles assignment/removal based on criteria like certification completion. | [API Docs](./sticker-award/docs/api.json) |
 
+## Messaging Topics
+
+The following Kafka topics are used for asynchronous communication between services:
+
+| Topic Name | Publishing Service | Description |
+|------------|-------------------|-------------|
+| users.userRegistered.v1 | User Management | Published when a new user successfully registers. Contains user profile information for other services to initialize user-related data. |
+| users.userDetailsUpdated.v1 | User Management | Published when a user updates their profile information. Contains the updated user profile data. |
+| users.stickerClaimed.v1 | TODO | TODO |
+
