@@ -58,6 +58,10 @@ public class KafakStickerClaimedWorker : IMessagingWorker
 
     public async Task PollAsync(CancellationToken stoppingToken)
     {
+        // Check for cancellation first
+        if (stoppingToken.IsCancellationRequested)
+            return;
+            
         using var scope = _serviceScopeFactory.CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<StickerClaimedEventHandler>();
         
@@ -70,7 +74,8 @@ public class KafakStickerClaimedWorker : IMessagingWorker
             consumer.Subscribe(topic);
             
             try {
-                var consumeResult = consumer.Consume(TimeSpan.FromSeconds(2), stoppingToken);
+                var consumeResult = consumer.Consume(TimeSpan.FromSeconds(2));
+                
                 if (consumeResult != null)
                 {
                     var processResult = await ProcessMessageAsync(handler, consumeResult);

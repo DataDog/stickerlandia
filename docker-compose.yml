@@ -5,9 +5,9 @@ version: '3.8'
 # - Sticker Award API:      http://localhost:8080/api/award
 #   - User stickers:        http://localhost:8080/api/award/v1/users/user-001/stickers
 # 
-# - User Management API:    http://localhost:8080/api/user-management
-#   - Registration:         http://localhost:8080/api/user-management/api/users/v1/register
-#   - Login:                http://localhost:8080/api/user-management/api/users/v1/login
+# - User Management API:    http://localhost:8080/api/users
+#   - Registration:         http://localhost:8080/api/users/v1/register
+#   - Login:                http://localhost:8080/api/users/v1/login
 #
 # - Traefik Dashboard:      http://localhost:8081/dashboard/
 # - Redpanda Console:       http://localhost:8082
