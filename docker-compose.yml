@@ -1,7 +1,39 @@
 version: '3.8'
 
+# Stickerlandia Service Endpoints
+# -------------------------------
+# - Sticker Award API:      http://localhost:8080/api/award
+#   - User stickers:        http://localhost:8080/api/award/v1/users/user-001/stickers
+# 
+# - User Management API:    http://localhost:8080/api/user-management
+#   - Registration:         http://localhost:8080/api/user-management/api/users/v1/register
+#   - Login:                http://localhost:8080/api/user-management/api/users/v1/login
+#
+# - Traefik Dashboard:      http://localhost:8081/dashboard/
+# - Redpanda Console:       http://localhost:8082
+#
 services:
-  # Redpanda - Kafka API compatible messaging system
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    ports:
+      - "8080:80"     # App traffic
+      - "8081:8080"   # Dashboard
+    command:
+      - --api.dashboard=true
+      - --api.insecure=true
+      - --entrypoints.web.address=:80
+      - --entrypoints.dashboard.address=:8081
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=PathPrefix(`/dashboard`)"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.entrypoints=dashboard"
+
   redpanda:
     image: redpandadata/redpanda:latest
     container_name: stickerlandia-redpanda
@@ -22,9 +54,9 @@ services:
       - --advertise-rpc-addr=redpanda:33145
       - --mode dev-container
     ports:
-      - "9092:9092" # Kafka API
-      - "8082:8082" # HTTP Proxy
-      - "9644:9644" # Admin API
+      - "9092:9092"
+      # - "8082:8082"
+      - "9644:9644"
     volumes:
       - redpanda-data:/var/lib/redpanda/data
     healthcheck:
@@ -33,7 +65,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Provision topics we need
   redpanda-init:
     image: redpandadata/redpanda:latest
     container_name: redpanda-init
@@ -45,7 +76,6 @@ services:
       "rpk topic create users.userRegistered.v1 users.stickerClaimed.v1 users.userDetailsUpdated.v1 --brokers redpanda:9092"
     restart: "no"
 
-  # Redpanda Console - Web UI for monitoring and managing Redpanda
   redpanda-console:
     image: redpandadata/console:latest
     container_name: stickerlandia-redpanda-console
@@ -53,17 +83,16 @@ services:
       redpanda:
         condition: service_healthy
     ports:
-      - "8090:8080"
+      - "8082:8080"
     environment:
-      REDPANDA_BROKERS: redpanda:9092
-      REDPANDA_ADMIN_API_URLS: http://redpanda:9644
+      KAFKA_BROKERS: redpanda:9092
+      # REDPANDA_ADMIN_API_URLS: http://redpanda:9644
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # PostgreSQL database for sticker-award service
   sticker-award-db:
     image: postgres:16
     container_name: sticker-award-db
@@ -81,7 +110,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # PostgreSQL database for user-management service
   user-management-db:
     image: postgres:16
     container_name: user-management-db
@@ -90,7 +118,7 @@ services:
       POSTGRES_USER: user_mgmt_user
       POSTGRES_PASSWORD: user_mgmt_password
     ports:
-      - "5433:5432"  # Map to different port on host to avoid conflict
+      - "5433:5432"
     volumes:
       - user-management-data:/var/lib/postgresql/data
     healthcheck:
@@ -99,9 +127,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Sticker Award Service
-  # http://localhost:9080/health
-  # http://localhost:9080/api/award/v1/users/user-001/stickers
   sticker-award:
     build:
       context: ./sticker-award
@@ -113,20 +138,19 @@ services:
       redpanda:
         condition: service_healthy
     environment:
-      # Database settings
       QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://sticker-award-db:5432/sticker_award
       QUARKUS_DATASOURCE_USERNAME: sticker_user
       QUARKUS_DATASOURCE_PASSWORD: sticker_password
       QUARKUS_DATASOURCE_DB_KIND: postgresql
       QUARKUS_DATASOURCE_DEVSERVICES_ENABLED: "false"
-      # Kafka settings (compatible with Redpanda)
       KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
       MP_MESSAGING_CONNECTOR_SMALLRYE_KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
       QUARKUS_KAFKA_STREAMS_BOOTSTRAP_SERVERS: redpanda:9092
-    ports:
-      - "8080:8080"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sticker-award.rule=PathPrefix(`/api/award`)"
+      - "traefik.http.services.sticker-award.loadbalancer.server.port=8080"
 
-  # User Management Service
   user-management:
     build:
       context: ./user-management
@@ -146,9 +170,10 @@ services:
       KAFKA__BOOTSTRAPSERVERS: "redpanda:9092"
       KAFKA__SCHEMAREGISTRY: "http://redpanda:8082"
       KAFKA__GROUPID: "stickerlandia-user-management"
-
-    ports:
-      - "8081:80"  # Map to 8081 on host to avoid conflict with other services
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.user-management.rule=PathPrefix(`/api/user-management`)"
+      - "traefik.http.services.user-management.loadbalancer.server.port=80"
 
 volumes:
   sticker-award-data:
