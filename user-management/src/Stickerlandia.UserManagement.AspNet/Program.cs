@@ -20,7 +20,6 @@ builder.AddUserManagementSharedSetup();
 
 var logger = Log.Logger = new LoggerConfiguration()
         .MinimumLevel.Information()
-        .MinimumLevel.Override("Microsoft", LogEventLevel.Error)
         .Enrich.FromLogContext()
         .WriteTo.Console(new JsonFormatter())
     .CreateLogger();
@@ -140,7 +139,14 @@ using (var serviceScope = scope.CreateScope())
     await database.MigrateAsync();
 }
 
-await app.RunAsync();
+await app.StartAsync();
+
+var urlList = app.Urls;
+var urls = string.Join(" ", urlList);
+
+logger.Information("UserManagement API started on {Urls}", urls);
+
+await app.WaitForShutdownAsync();
 
 static Task WriteHealthCheckResponse(HttpContext context, HealthReport healthReport)
 {
