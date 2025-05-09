@@ -32,7 +32,19 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      
+
+  # Provision topics we need
+  redpanda-init:
+    image: redpandadata/redpanda:latest
+    container_name: redpanda-init
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      "rpk topic create users.userRegistered.v1 users.stickerClaimed.v1 users.userDetailsUpdated.v1 --brokers redpanda:9092"
+    restart: "no"
+
   # Redpanda Console - Web UI for monitoring and managing Redpanda
   redpanda-console:
     image: redpandadata/console:latest
