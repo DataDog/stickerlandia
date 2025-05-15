@@ -1,14 +1,48 @@
 # Stickerlandia
 
+![Stickerlandia Logo](https://img.shields.io/badge/Stickerlandia-Collect_and_Trade_Stickers-blue)
+[![Documentation](https://img.shields.io/badge/Documentation-Available-green)](./docs/README.md)
+
+## Overview
+
+Stickerlandia lets you collect Datadog stickers by completing Datadog certifications, trading with others, and through various other exciting mechanisms. Users can bring their Stickerlandia account to Datadog events and receive high-quality physical stickers for their gadgets.
+
+This application serves a dual purpose:
+
+- A fun community engagement platform
+- A reference application demonstrating modern architectural patterns
+
+As a reference application, Stickerlandia showcases **platform adaptability** by design. We've gone to significant lengths to ensure that all components can be retargeted idiomatically to different platforms - from AWS serverless to Azure Functions to Kubernetes to simple Docker deployments. This adaptability reflects the increasingly common need for applications to run across diverse environments while leveraging each platform's native strengths.
+
+## Key Features
+
+- **Collect stickers** through certifications and achievements
+- **Track your collection** of digital stickers
+- **Trade stickers** with other community members
+- **Redeem physical stickers** at Datadog events
+- **Multi-platform deployment** capabilities for cloud and on-premises environments
+- **Consistent architecture** across all deployment targets
+
+## Documentation
+
+Comprehensive documentation is available in the [docs](./docs/README.md).
+
 ## High-Level Architecture
-Stickerlandia is built in a microservice fashion, and can run in a bunch of different configurations across various types of modern infrastructure including cloud-native serverless, cloud-native container orchestrated, and self-hosted container orchestrated. In each case, appropriate components are composed together to lean into the strengths of a particular platform - the choice of database, queue technology, and load balancer on a serverless deployment will not be the same as on a self-hosted K8S environment!
 
-Services communicate in two ways:
+Stickerlandia follows a microservice architecture that can run in various configurations across different types of modern infrastructure:
+- Cloud-native serverless
+- Cloud-native container orchestration
+- Self-hosted container orchestration
 
-* Synchronous, RESTful APIs - for both read and write operations, where the operation is naturally imperative. These calls are secured by JWT. 
-* Asynchronous, event-based APIs - for our implicit, observation based interactions, each service emits business events describing changes in its managed domain.
+Each deployment model uses appropriate components optimized for the specific platform - from database selection to queue technology and load balancing. This platform-specific optimization allows Stickerlandia to maintain consistent functionality while leveraging the unique capabilities of each environment.
 
-In both cases these will be modelled in OpenAPI. 
+## Technical Stack
+
+- **User Management**: .NET-based service for identity and authentication
+- **Sticker Award**: Java/Quarkus-based service for sticker management
+- **Message Broker**: Kafka or Azure Service Bus for event distribution
+- **Databases**: PostgreSQL for structured data
+- **Authentication**: JWT-based authentication
 
 ## Services
 
@@ -17,13 +51,30 @@ In both cases these will be modelled in OpenAPI.
 | [User Management](./user-management/) | Manages user accounts, authentication, and profile information. Handles user registration, login, and JWT token issuance. | [API Docs](./user-management/docs/api.json) |
 | [Sticker Award](./sticker-award/) | Manages the assignment of stickers to users. Tracks which users have which stickers and handles assignment/removal based on criteria like certification completion. | [API Docs](./sticker-award/docs/api.json) |
 
-## Messaging Topics
+## Observability
 
-The following Kafka topics are used for asynchronous communication between services:
+Stickerlandia is fully instrumented with Datadog's observability and analysis tooling, showcasing best practices for modern application monitoring and performance optimization.
 
-| Topic Name | Publishing Service | Description |
-|------------|-------------------|-------------|
-| users.userRegistered.v1 | User Management | Published when a new user successfully registers. Contains user profile information for other services to initialize user-related data. |
-| users.userDetailsUpdated.v1 | User Management | Published when a user updates their profile information. Contains the updated user profile data. |
-| users.stickerClaimed.v1 | TODO | TODO |
+## Getting Started
+
+To run Stickerlandia locally, follow these steps:
+
+1. Clone this repository
+2. Set up dependencies (see service-specific READMEs)
+3. Start the services using Docker Compose or your preferred method
+4. Access the application at `http://localhost:8080`
+
+For detailed setup instructions, see the [environment setup guide](./docs/README.md).
+
+> [!NOTE]
+> For bigger, more serious microservice architectures, at some point its likely you'll have
+> to give up the ability to `docker-compose` your whole stack. 
+
+## Contributing
+
+Contributions are welcome! Please see our [contributing guidelines](./CONTRIBUTING.md) for more information.
+
+## License
+
+This project is licensed under the Apache License 2.0 - see the [LICENSE](./LICENSE) file for details.
 
