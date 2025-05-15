@@ -10,6 +10,7 @@ import com.datadoghq.stickerlandia.stickeraward.beans.UserStickersResponse;
 import com.datadoghq.stickerlandia.stickeraward.beans.UserStickersResponseApiResponse;
 import com.datadoghq.stickerlandia.stickeraward.entity.Sticker;
 import com.datadoghq.stickerlandia.stickeraward.entity.StickerAssignment;
+import com.datadoghq.stickerlandia.stickeraward.messaging.StickerEventPublisher;
 import io.smallrye.common.constraint.NotNull;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -22,6 +23,8 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -31,6 +34,11 @@ import java.util.stream.Collectors;
 
 @Path("/api")
 public class StickerAwardResource {
+    
+    private static final Logger log = LoggerFactory.getLogger(StickerAwardResource.class);
+    
+    @Inject
+    StickerEventPublisher eventPublisher;
 
     @Operation(description = "Get stickers assigned to a user (access controlled based on caller identity)")
     @Path("/award/v1/users/{userId}/stickers")
@@ -100,6 +108,16 @@ public class StickerAwardResource {
         // Create new assignment
         StickerAssignment assignment = new StickerAssignment(userId, sticker, data.getReason());
         assignment.persist();
+        
+        // Publish events to Kafka
+        try {
+            log.info("Publishing sticker assignment events for userId={}, stickerId={}", userId, stickerId);
+            eventPublisher.publishStickerAssigned(assignment);
+        } catch (Exception e) {
+            log.error("Failed to publish sticker assignment events", e);
+            // Continue with the response even if the event publishing fails
+            // In a production system, you might want to implement a retry mechanism
+        }
 
         // Create response
         StickerAssignmentResponse response = new StickerAssignmentResponse();
@@ -139,6 +157,16 @@ public class StickerAwardResource {
         // Mark as removed
         assignment.setRemovedAt(Instant.now());
         assignment.persist();
+        
+        // Publish events to Kafka
+        try {
+            log.info("Publishing sticker removal event for userId={}, stickerId={}", userId, stickerId);
+            eventPublisher.publishStickerRemoved(assignment);
+        } catch (Exception e) {
+            log.error("Failed to publish sticker removal event", e);
+            // Continue with the response even if the event publishing fails
+            // In a production system, you might want to implement a retry mechanism
+        }
 
         // Create response
         StickerRemovalResponse response = new StickerRemovalResponse();
