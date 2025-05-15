@@ -58,28 +58,53 @@ public class KafakStickerClaimedWorker : IMessagingWorker
 
     public async Task PollAsync(CancellationToken stoppingToken)
     {
+        // Check for cancellation first
+        if (stoppingToken.IsCancellationRequested)
+            return;
+            
         using var scope = _serviceScopeFactory.CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<StickerClaimedEventHandler>();
         
-        using (var consumer = new ConsumerBuilder<string, string>(_consumerConfig).Build())
+        try 
         {
+            using var consumer = new ConsumerBuilder<string, string>(_consumerConfig)
+                .SetErrorHandler((_, e) => _logger.LogError("Kafka error: {Error}", e.Reason))
+                .Build();
+            
             consumer.Subscribe(topic);
+            
             try {
-                var cr = consumer.Consume(stoppingToken);
+                var consumeResult = consumer.Consume(TimeSpan.FromSeconds(2));
                 
-                var processResult = await ProcessMessageAsync(handler, cr);
-
-                if (processResult)
+                if (consumeResult != null)
                 {
-                    consumer.Commit(cr);
+                    var processResult = await ProcessMessageAsync(handler, consumeResult);
+                    
+                    if (processResult)
+                    {
+                        consumer.Commit(consumeResult);
+                    }
                 }
             }   
+            catch (ConsumeException ex) {
+                _logger.LogError(ex, "Error consuming message");
+            }
+            catch (OperationCanceledException)
+            {
+                // This is expected when the token is canceled
+                _logger.LogInformation("Polling canceled");
+            }
             catch (Exception ex) {
                 _logger.LogError(ex, "Error processing message");
             }
             finally{
+                // Ensure consumer is closed even if an exception occurs
                 consumer.Close();
             }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create Kafka consumer");
         }
     }
 

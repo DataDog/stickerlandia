@@ -1,0 +1,46 @@
+####
+# Multi-stage Dockerfile that builds and runs the Quarkus application in JVM mode
+# This version includes the build stage, eliminating the need to run ./mvnw package separately.
+#
+# Build the image with:
+#
+# docker build -f src/main/docker/Dockerfile.jvmlocal -t quarkus/sticker-award-jvm .
+#
+# Then run the container using:
+#
+# docker run -i --rm -p 8080:8080 quarkus/sticker-award-jvm
+#
+# If you want to include the debug port into your docker image
+# you will have to expose the debug port (default 5005 being the default) like this: EXPOSE 8080 5005.
+# Additionally you will have to set -e JAVA_DEBUG=true and -e JAVA_DEBUG_PORT=*:5005
+# when running the container
+###
+
+# Stage 1: Build stage
+FROM maven:3.9-eclipse-temurin-21 AS build
+WORKDIR /build
+
+# The context needs to be the root of the sticker-award directory, not the Dockerfile location
+COPY pom.xml .
+COPY src ./src
+
+# Make sure mvnw is executable and then build
+RUN mvn package -DskipTests
+
+# Stage 2: Runtime stage
+FROM registry.access.redhat.com/ubi9/openjdk-21:1.21
+
+ENV LANGUAGE='en_US:en'
+
+# We make four distinct layers so if there are application changes the library layers can be re-used
+COPY --from=build --chown=185 /build/target/quarkus-app/lib/ /deployments/lib/
+COPY --from=build --chown=185 /build/target/quarkus-app/*.jar /deployments/
+COPY --from=build --chown=185 /build/target/quarkus-app/app/ /deployments/app/
+COPY --from=build --chown=185 /build/target/quarkus-app/quarkus/ /deployments/quarkus/
+
+EXPOSE 8080
+USER 185
+ENV JAVA_OPTS_APPEND="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
+ENV JAVA_APP_JAR="/deployments/quarkus-run.jar"
+
+ENTRYPOINT [ "/opt/jboss/container/java/run/run-java.sh" ]
