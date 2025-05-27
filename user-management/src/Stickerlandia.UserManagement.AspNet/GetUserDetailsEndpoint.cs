@@ -1,7 +1,7 @@
 using System.Net;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Stickerlandia.UserManagement.Core;
-using Stickerlandia.UserManagement.Core.Auth;
 using Stickerlandia.UserManagement.Core.GetUserDetails;
 
 namespace Stickerlandia.UserManagement.AspNet;
@@ -10,25 +10,16 @@ public static class GetUserDetails
 {
     public static async Task<ApiResponse<UserAccountDTO?>> HandleAsync(
         HttpContext context,
+        ClaimsPrincipal user,
         [FromServices] IAuthService authService,
         [FromServices] GetUserDetailsQueryHandler handler)
     {
-        var authHeader = context.Request.Headers["Authorization"][0];
-        if (authHeader is null)
+        if (user.Identity?.Name == null)
         {
-            context.Response.StatusCode = 401;
-            return new ApiResponse<UserAccountDTO?>(false, null, "Unauthorized", HttpStatusCode.Unauthorized);
+            return new ApiResponse<UserAccountDTO?>(false, null, "User not authenticated", HttpStatusCode.Unauthorized);
         }
         
-        var authorizedUser = authService.ValidateAuthToken(authHeader);
-        
-        if (authorizedUser is null || authorizedUser.AccountId is null)
-        {
-            context.Response.StatusCode = 401;
-            return new ApiResponse<UserAccountDTO?>(false, null, "Unauthorized", HttpStatusCode.Unauthorized);
-        }
-
-        var result = await handler.Handle(new GetUserDetailsQuery(authorizedUser!.AccountId!));
+        var result = await handler.Handle(new GetUserDetailsQuery(new AccountId(user.Identity.Name)));
 
         return new ApiResponse<UserAccountDTO?>(result);
     }

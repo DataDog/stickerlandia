@@ -7,15 +7,31 @@ using Serilog;
 using Serilog.Events;
 using Serilog.Extensions.Logging;
 using Serilog.Formatting.Json;
+using Stickerlandia.UserManagement.Agnostic;
+using Stickerlandia.UserManagement.Azure;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.FunctionApp.Middlewares;
-using Stickerlandia.UserManagement.SharedSetup;
 
 var builder = FunctionsApplication.CreateBuilder(args);
 builder.UseDefaultWorkerMiddleware();
 builder.ConfigureFunctionsWebApplication();
 
-builder.AddUserManagementSharedSetup();
+var drivenAdapters = Environment.GetEnvironmentVariable("DRIVEN") ?? "";
+
+switch (drivenAdapters.ToUpper())
+{
+    case "AZURE":
+        builder.AddAzureAdapters();
+        break;
+    case "AGNOSTIC":
+        builder.AddAgnosticAdapters();
+        break;
+    case "AWS":
+        break;
+    default:
+        throw new Exception($"Unknown driven adapters {drivenAdapters}");
+}
+
 
 builder.UseMiddleware<ExceptionHandlingMiddleware>();
 

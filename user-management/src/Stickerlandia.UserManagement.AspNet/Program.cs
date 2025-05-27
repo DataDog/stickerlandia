@@ -7,16 +7,40 @@ using Saunter;
 using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Json;
+using Stickerlandia.UserManagement.Agnostic;
 using Stickerlandia.UserManagement.AspNet;
 using Stickerlandia.UserManagement.AspNet.Configurations;
 using Stickerlandia.UserManagement.AspNet.Middlewares;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.Login;
 using Stickerlandia.UserManagement.Core.RegisterUser;
-using Stickerlandia.UserManagement.SharedSetup;
+using Stickerlandia.UserManagement.Auth;
+using Stickerlandia.UserManagement.Azure;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.AddUserManagementSharedSetup();
+builder.Configuration.AddEnvironmentVariables();
+
+builder.Configuration.AddEnvironmentVariables();
+builder.Services.AddLogging();
+        
+var drivenAdapters = Environment.GetEnvironmentVariable("DRIVEN") ?? "";
+
+switch (drivenAdapters.ToUpper())
+{
+    case "AZURE":
+        builder.AddAzureAdapters();
+        break;
+    case "AGNOSTIC":
+        builder.AddAgnosticAdapters();
+        break;
+    case "AWS":
+        break;
+    default:
+        throw new Exception($"Unknown driven adapters {drivenAdapters}");
+}
+
+builder.Services
+    .AddStickerlandiaUserManagement();
 
 var logger = Log.Logger = new LoggerConfiguration()
         .MinimumLevel.Information()
@@ -62,8 +86,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddResponseCompression(options => { options.EnableForHttps = true; });
 
 builder.Services.AddHostedService<OutboxWorker>();
-builder.Services.AddHostedService<StickerClaimedWorker>();
+//builder.Services.AddHostedService<StickerClaimedWorker>();
 
+builder.Services.AddControllers();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll",
@@ -98,6 +123,8 @@ app.UseCors("AllowAll");
 app
     .UseAuthentication()
     .UseAuthorization();
+
+app.MapControllers();
 
 var api = app.NewVersionedApi("api");
 var v1ApiEndpoints = api.MapGroup("api/users/v{version:apiVersion}")
@@ -135,13 +162,13 @@ v1ApiEndpoints.MapPost("register", RegisterUserEndpoint.HandleAsync)
 var scope = app.Services.GetRequiredService<IServiceScopeFactory>();
 using (var serviceScope = scope.CreateScope())
 {
-    var database = serviceScope.ServiceProvider.GetRequiredService<IUsers>();
-    await database.MigrateAsync();
+    var userStore = serviceScope.ServiceProvider.GetRequiredService<IUsers>();
+    await userStore.MigrateAsync();
 }
 
 try
 {
-    await app.StartAsync().WaitAsync(TimeSpan.FromSeconds(30)); // Add timeout to prevent hanging indefinitely
+    await app.StartAsync();
     
     var urlList = app.Urls;
     var urls = string.Join(" ", urlList);
@@ -151,6 +178,7 @@ try
 catch (Exception ex)
 {
     logger.Error(ex, "Error starting the application");
+    throw;
 }
 
 await app.WaitForShutdownAsync();

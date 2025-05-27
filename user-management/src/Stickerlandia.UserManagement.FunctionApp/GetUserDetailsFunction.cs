@@ -6,7 +6,6 @@ using System.Net;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Stickerlandia.UserManagement.Core;
-using Stickerlandia.UserManagement.Core.Auth;
 using Stickerlandia.UserManagement.Core.GetUserDetails;
 
 
@@ -19,17 +18,8 @@ public class GetUserDetailsFunction(GetUserDetailsQueryHandler handler, IAuthSer
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "users/v1/details")]
         HttpRequestData req)
     {
-        // Get auth header
-        var authHeader = req.Headers.GetValues("Authorization").FirstOrDefault();
-
-        if (authHeader == null)
-        {
-            return await new ApiResponse<UserAccountDTO?>(false, null, "Invalid login request").WriteResponse(req, HttpStatusCode.Unauthorized);
-        }
-        
-        var authorizedUser = authService.ValidateAuthToken(authHeader);
-        
-        var result = await handler.Handle(new GetUserDetailsQuery(authorizedUser!.AccountId!));
+        //TODO: Work out how to make this work for Azure funcitons
+        var result = await handler.Handle(new GetUserDetailsQuery(new AccountId("a-random-account-id")));
 
         // Return successful response with token
         return await new ApiResponse<UserAccountDTO>(result).WriteResponse(req, HttpStatusCode.OK);

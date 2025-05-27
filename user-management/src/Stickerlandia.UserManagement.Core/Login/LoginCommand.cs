@@ -2,6 +2,7 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
+using System.Collections.Immutable;
 using System.Text.Json.Serialization;
 
 namespace Stickerlandia.UserManagement.Core.Login;
@@ -13,6 +14,9 @@ public record LoginCommand
     
     [JsonPropertyName("password")]
     public string Password { get; set; } = string.Empty;
+    
+    [JsonIgnore]
+    public ImmutableArray<string> Scopes { get; set; }
 
     public bool IsValid()
     {

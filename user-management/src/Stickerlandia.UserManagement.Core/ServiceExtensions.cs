@@ -3,7 +3,6 @@
 // Copyright 2025 Datadog, Inc.
 
 using Microsoft.Extensions.DependencyInjection;
-using Stickerlandia.UserManagement.Core.Auth;
 using Stickerlandia.UserManagement.Core.GetUserDetails;
 using Stickerlandia.UserManagement.Core.Login;
 using Stickerlandia.UserManagement.Core.Outbox;
@@ -23,7 +22,6 @@ public static class ServiceExtensions
         services.AddTransient<GetUserDetailsQueryHandler>();
         services.AddTransient<StickerClaimedEventHandler>();
         
-        services.AddSingleton<IAuthService, JwtAuthService>();
         services.AddTransient<OutboxProcessor>();
         
         return services;

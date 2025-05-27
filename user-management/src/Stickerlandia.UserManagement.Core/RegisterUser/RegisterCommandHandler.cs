@@ -3,6 +3,7 @@
 // Copyright 2025 Datadog, Inc.
 
 using System.Diagnostics;
+using Microsoft.AspNetCore.Identity;
 
 namespace Stickerlandia.UserManagement.Core.RegisterUser;
 
@@ -12,23 +13,21 @@ public class RegisterCommandHandler(IUsers users)
     {
         try
         {
-            if (command == null || !command.IsValid())
-            {
-                throw new ArgumentException("Invalid LoginCommand");
-            }
-            
+            if (command == null || !command.IsValid()) throw new ArgumentException("Invalid LoginCommand");
+
             // Check if email exists before creating account
             var emailExists = await users.DoesEmailExistAsync(command.EmailAddress);
             if (emailExists) throw new UserExistsException();
 
             // Use async version for better performance
-            var userAccount = await UserAccount.Register(command.EmailAddress, command.Password, command.FirstName, command.LastName, accountType);
+            var userAccount = await UserAccount.Register(command.EmailAddress, command.Password, command.FirstName,
+                command.LastName, accountType);
 
             await users.Add(userAccount);
 
             return new RegisterResponse
             {
-                AccountId = userAccount.Id.Value,
+                AccountId = userAccount.Id.Value
             };
         }
         catch (UserExistsException ex)

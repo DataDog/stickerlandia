@@ -8,15 +8,11 @@ builder.Configuration.AddEnvironmentVariables();
 
 var configuredDrivingAdapters = builder.Configuration["DRIVING"];
 if (!string.IsNullOrEmpty(configuredDrivingAdapters))
-{
     DrivingAdapterSettings.OverrideTo(Enum.Parse<DrivingAdapter>(configuredDrivingAdapters));
-}
 
 var configuredDrivenAdapters = builder.Configuration["DRIVEN"];
 if (!string.IsNullOrEmpty(configuredDrivenAdapters))
-{
     DrivenAdapterSettings.OverrideTo(Enum.Parse<DrivenAdapters>(configuredDrivenAdapters));
-}
 
 IResourceBuilder<IResourceWithConnectionString>? databaseResource = null;
 IResourceBuilder<IResourceWithConnectionString>? messagingResource = null;
@@ -24,20 +20,11 @@ IResourceBuilder<IResourceWithConnectionString>? messagingResource = null;
 switch (DrivenAdapterSettings.DrivenAdapter)
 {
     case DrivenAdapters.AZURE:
-        var cosmos = builder
-            .AddAzureCosmosDB("database")
-            .RunAsPreviewEmulator(options =>
-            {
-                options.WithLifetime(ContainerLifetime.Persistent);
-            });
-
-        var database = cosmos.AddCosmosDatabase("Stickerlandia");
-        var container = database.AddContainer("Users", "/emailAddress");
-
         var serviceBus = builder.AddAzureServiceBus("messaging")
             .RunAsEmulator(c =>
             {
                 c.WithLifetime(ContainerLifetime.Persistent);
+                c.WithBindMount("servicebus-data", "/var/opt/mssql/data");
                 c.WithHostPort(60001);
             });
 
@@ -49,18 +36,30 @@ switch (DrivenAdapterSettings.DrivenAdapter)
             .AddServiceBusTopic("users-userRegistered-v1", "users.userRegistered.v1");
         topic.AddServiceBusSubscription("noop");
 
-        databaseResource = cosmos;
+        var azurePostgresDb = builder
+            .AddPostgres("database")
+            .WithLifetime(ContainerLifetime.Persistent)
+            .AddDatabase("users");
+
         messagingResource = serviceBus;
+        databaseResource = azurePostgresDb;
         break;
     case DrivenAdapters.AGNOSTIC:
         var kafka = builder.AddKafka("messaging")
+            .WithLifetime(ContainerLifetime.Persistent)
             .WithKafkaUI()
+            .WithLifetime(ContainerLifetime.Persistent)
             .WithTestCommands();
-        var db = builder.AddPostgres("database").AddDatabase("users");
-        
+        builder.CreateKafkaTopicsOnReady(kafka);
+
+        var agnosticDb = builder
+            .AddPostgres("database")
+            .WithLifetime(ContainerLifetime.Persistent)
+            .AddDatabase("users");
+
         messagingResource = kafka;
-        databaseResource = db;
-        
+        databaseResource = agnosticDb;
+
         break;
     case DrivenAdapters.AWS:
         break;

@@ -39,8 +39,8 @@
     </ItemGroup>
     <ItemGroup>
       <ProjectReference Include="..\Stickerlandia.UserManagement.Agnostic\Stickerlandia.UserManagement.Agnostic.csproj" />
+      <ProjectReference Include="..\Stickerlandia.UserManagement.Auth\Stickerlandia.UserManagement.Auth.csproj" />
       <ProjectReference Include="..\Stickerlandia.UserManagement.Azure\Stickerlandia.UserManagement.Azure.csproj" />
       <ProjectReference Include="..\Stickerlandia.UserManagement.Core\Stickerlandia.UserManagement.Core.csproj" />
-      <ProjectReference Include="..\Stickerlandia.UserManagement.SharedSetup\Stickerlandia.UserManagement.SharedSetup.csproj" />
     </ItemGroup>
 </Project>

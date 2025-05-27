@@ -2,12 +2,12 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
+using System.Collections.Immutable;
 using System.Net;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using System.Text.Json;
 using Stickerlandia.UserManagement.Core;
-using Stickerlandia.UserManagement.Core.Auth;
 using Stickerlandia.UserManagement.Core.RegisterUser;
 using Stickerlandia.UserManagement.Core.UpdateUserDetails;
 
@@ -28,18 +28,20 @@ public class UpdateUserDetailsFunction(UpdateUserDetailsHandler updateHandler, I
             return await new ApiResponse<UserAccountDTO?>(false, null, "Invalid login request").WriteResponse(req, HttpStatusCode.Unauthorized);
         }
         
-        var authorizedUser = authService.ValidateAuthToken(authHeader);
+        // TODO: Implement auth service
+        var authorizedUser = authService.VerifyPassword("", "", new ImmutableArray<string>());
         
         // Deserialize request
-        var registerUserRequest = await JsonSerializer.DeserializeAsync<UpdateUserDetailsRequest>(req.Body);
+        var updateUserDetailsRequest = await JsonSerializer.DeserializeAsync<UpdateUserDetailsRequest>(req.Body);
         
-        if (registerUserRequest == null)
+        if (updateUserDetailsRequest == null)
         {
             return await new ApiResponse<RegisterUserCommand?>(false, null, "Invalid login request").WriteResponse(req, HttpStatusCode.BadRequest);
         }
         
-        registerUserRequest.AccountId = authorizedUser!.AccountId;
-        await updateHandler.Handle(registerUserRequest);
+        // TODO: Get from auth service
+        updateUserDetailsRequest.AccountId = new AccountId("a-random-account-id");
+        await updateHandler.Handle(updateUserDetailsRequest);
 
         // Return successful response with token
         return await new ApiResponse<string>("OK").WriteResponse(req, HttpStatusCode.OK);

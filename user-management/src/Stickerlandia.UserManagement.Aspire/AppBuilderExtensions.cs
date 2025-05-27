@@ -6,6 +6,7 @@ using System.Text.Json;
 using Aspire.Hosting.Azure;
 using Azure.Messaging.ServiceBus;
 using Confluent.Kafka;
+using Confluent.Kafka.Admin;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Stickerlandia.UserManagement.Aspire;
@@ -33,7 +34,39 @@ public static class AppBuilderExtensions
 
         return builder;
     }
-    
+
+    public static IDistributedApplicationBuilder CreateKafkaTopicsOnReady(
+        this IDistributedApplicationBuilder builder,
+        IResourceBuilder<KafkaServerResource> kafka)
+    {
+        builder.Eventing.Subscribe<ResourceReadyEvent>(kafka.Resource, async (@event, ct) =>
+        {
+            var cs = await kafka.Resource.ConnectionStringExpression.GetValueAsync(ct);
+
+            var config = new AdminClientConfig
+            {
+                BootstrapServers = cs
+            };
+
+            using var adminClient = new AdminClientBuilder(config).Build();
+            try
+            {
+                await adminClient.CreateTopicsAsync(new TopicSpecification[]
+                {
+                    new() { Name = "users.stickerClaimed.v1", NumPartitions = 1, ReplicationFactor = 1 },
+                    new() { Name = "users.userRegistered.v1", NumPartitions = 1, ReplicationFactor = 1 }
+                });
+            }
+            catch (CreateTopicsException e)
+            {
+                Console.WriteLine($"An error occurred creating topic: {e.Message}");
+                throw;
+            }
+        });
+        
+        return builder;
+    }
+
     public static IResourceBuilder<KafkaServerResource> WithTestCommands(
         this IResourceBuilder<KafkaServerResource> builder)
     {
@@ -47,7 +80,7 @@ public static class AppBuilderExtensions
                 BootstrapServers = connectionString,
                 // Fixed properties
                 SecurityProtocol = SecurityProtocol.Plaintext,
-                Acks             = Acks.All
+                Acks = Acks.All
             };
         });
 
@@ -55,18 +88,22 @@ public static class AppBuilderExtensions
         {
             var config = c.ServiceProvider.GetRequiredService<ProducerConfig>();
             using var producer = new ProducerBuilder<string, string>(config).Build();
-            
-            producer.Produce("users.stickerClaimed.v1", new Message<string, string> { Key = "", Value = JsonSerializer.Serialize(new
+
+            producer.Produce("users.stickerClaimed.v1", new Message<string, string>
                 {
-                    accountId = "i2ieniu23hrri23",
-                    stickerId = "dnqwiufb2f2"
-                }) },
+                    Key = "", Value = JsonSerializer.Serialize(new
+                    {
+                        accountId = "i2ieniu23hrri23",
+                        stickerId = "dnqwiufb2f2"
+                    })
+                },
                 (deliveryReport) =>
                 {
-                    if (deliveryReport.Error.Code != ErrorCode.NoError) {
+                    if (deliveryReport.Error.Code != ErrorCode.NoError)
+                    {
                     }
                 });
-                
+
             producer.Flush(TimeSpan.FromSeconds(10));
 
             return new ExecuteCommandResult { Success = true };
@@ -81,17 +118,15 @@ public static class AppBuilderExtensions
         IResourceBuilder<IResourceWithConnectionString> messagingResource)
     {
         var cosmosDbConnectionString = builder.Configuration["COSMOSDB_CONNECTION_STRING"];
-        
+
         var application = builder.AddProject<Projects.Stickerlandia_UserManagement_AspNet>("api")
             .WithReference(messagingResource)
             .WithEnvironment("ConnectionStrings__messaging", messagingResource)
-            .WithEnvironment("Auth__Issuer", "https://stickerlandia.com")
-            .WithEnvironment("Auth__Audience", "https://stickerlandia.com")
-            .WithEnvironment("Auth__Key", "This is a super secret key that should not be used in production'")
             .WithEnvironment("DRIVING", builder.Configuration["DRIVING"])
             .WithEnvironment("DRIVEN", builder.Configuration["DRIVEN"])
+            .WithHttpsEndpoint(51545)
             .WaitFor(messagingResource);
-        
+
         if (string.IsNullOrEmpty(cosmosDbConnectionString))
         {
             application.WithEnvironment("ConnectionStrings__database", databaseResource);

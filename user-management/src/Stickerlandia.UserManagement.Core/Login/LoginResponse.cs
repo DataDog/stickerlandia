@@ -2,12 +2,13 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
+using System.Security.Claims;
 using System.Text.Json.Serialization;
 
 namespace Stickerlandia.UserManagement.Core.Login;
 
 public class LoginResponse
 {
-    [JsonPropertyName("authToken")]
-    public string AuthToken { get; set; } = string.Empty;
+    [JsonPropertyName("identity")]
+    public ClaimsIdentity Identity { get; set; }
 }
