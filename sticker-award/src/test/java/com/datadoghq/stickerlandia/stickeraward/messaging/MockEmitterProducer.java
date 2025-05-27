@@ -7,9 +7,9 @@ import jakarta.enterprise.inject.Produces;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.mockito.Mockito;
 
-import com.datadoghq.stickerlandia.stickeraward.events.StickerAssignedToUserEvent;
-import com.datadoghq.stickerlandia.stickeraward.events.StickerClaimedEvent;
-import com.datadoghq.stickerlandia.stickeraward.events.StickerRemovedFromUserEvent;
+import com.datadoghq.stickerlandia.stickeraward.common.events.out.StickerAssignedToUserEvent;
+import com.datadoghq.stickerlandia.stickeraward.common.events.out.StickerClaimedEvent;
+import com.datadoghq.stickerlandia.stickeraward.common.events.out.StickerRemovedFromUserEvent;
 
 /**
  * Producer for mock emitters to be used in tests.

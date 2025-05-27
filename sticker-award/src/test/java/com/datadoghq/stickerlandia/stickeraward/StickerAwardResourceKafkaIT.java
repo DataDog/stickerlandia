@@ -3,18 +3,15 @@ package com.datadoghq.stickerlandia.stickeraward;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 
-import java.util.UUID;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import com.datadoghq.stickerlandia.stickeraward.beans.AssignStickerCommand;
-import com.datadoghq.stickerlandia.stickeraward.entity.Sticker;
+import com.datadoghq.stickerlandia.stickeraward.award.dto.AssignStickerCommand;
+import com.datadoghq.stickerlandia.stickeraward.sticker.entity.Sticker;
 
 import io.quarkus.test.junit.QuarkusTest;
-import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response.Status;
