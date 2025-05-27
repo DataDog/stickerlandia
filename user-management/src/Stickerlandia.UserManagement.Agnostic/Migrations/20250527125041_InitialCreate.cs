@@ -356,6 +356,7 @@ namespace Stickerlandia.UserManagement.Agnostic.Migrations
                 unique: true);
         }
 
+        /// <summary></summary>
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
