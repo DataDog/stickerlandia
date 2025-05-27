@@ -21,7 +21,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserStickersResponseApiResponse'
+                $ref: '#/components/schemas/UserStickersResponse'
         '401':
           description: Unauthorized
           content:
@@ -58,12 +58,12 @@ paths:
               $ref: '#/components/schemas/AssignStickerCommand'
         required: true
       responses:
-        '200':
-          description: OK
+        '201':
+          description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StickerAssignmentResponseApiResponse'
+                $ref: '#/components/schemas/StickerAssignmentResponse'
         '400':
           description: Bad Request
           content:
@@ -112,7 +112,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StickerRemovalResponseApiResponse'
+                $ref: '#/components/schemas/StickerRemovalResponse'
         '400':
           description: Bad Request
           content:
@@ -137,6 +137,250 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
+  # New sticker catalog endpoints
+  /api/award/v1/stickers:
+    get:
+      tags:
+        - v1Api
+      description: Get all stickers in the catalog
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Page number (0-based)
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+          description: Number of items per page
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StickerCatalogResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+    post:
+      tags:
+        - v1Api
+      description: Create a new sticker in the catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateStickerCommand'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StickerCreatedResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /api/award/v1/stickers/{stickerId}:
+    get:
+      tags:
+        - v1Api
+      description: Get a specific sticker's metadata
+      parameters:
+        - name: stickerId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the sticker to retrieve
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StickerMetadata'
+        '404':
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+    put:
+      tags:
+        - v1Api
+      description: Update a sticker's metadata
+      parameters:
+        - name: stickerId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the sticker to update
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateStickerCommand'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StickerMetadata'
+        '400':
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+    delete:
+      tags:
+        - v1Api
+      description: Delete a sticker from the catalog. A sticker can only be deleted if it is not assigned to anyone.
+      parameters:
+        - name: stickerId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the sticker to delete
+      responses:
+        '204':
+          description: No Content
+        '404':
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /api/award/v1/stickers/{stickerId}/image:
+    get:
+      tags:
+        - v1Api
+      description: Get the sticker image
+      parameters:
+        - name: stickerId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the sticker whose image to retrieve
+      responses:
+        '200':
+          description: OK
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+    put:
+      tags:
+        - v1Api
+      description: Upload or update the sticker image
+      parameters:
+        - name: stickerId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the sticker to update the image for
+      requestBody:
+        content:
+          image/png:
+            schema:
+              type: string
+              format: binary
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StickerImageUploadResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /api/award/v1/stickers/{stickerId}/assignments:
+    get:
+      tags:
+        - v1Api
+      description: Get users to which this sticker is assigned
+      parameters:
+        - name: stickerId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the sticker
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Page number (0-based)
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+          description: Number of items per page
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StickerAssignmentsResponse'
+        '404':
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
   /health:
     get:
       tags:
@@ -189,17 +433,6 @@ components:
           items:
             $ref: '#/components/schemas/StickerDTO'
       additionalProperties: false
-    UserStickersResponseApiResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-        message:
-          type: string
-          nullable: true
-        data:
-          $ref: '#/components/schemas/UserStickersResponse'
-      additionalProperties: false
     StickerAssignmentResponse:
       type: object
       properties:
@@ -213,17 +446,6 @@ components:
           type: string
           format: date-time
       additionalProperties: false
-    StickerAssignmentResponseApiResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-        message:
-          type: string
-          nullable: true
-        data:
-          $ref: '#/components/schemas/StickerAssignmentResponse'
-      additionalProperties: false
     StickerRemovalResponse:
       type: object
       properties:
@@ -236,17 +458,6 @@ components:
         removedAt:
           type: string
           format: date-time
-      additionalProperties: false
-    StickerRemovalResponseApiResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-        message:
-          type: string
-          nullable: true
-        data:
-          $ref: '#/components/schemas/StickerRemovalResponse'
       additionalProperties: false
     ProblemDetails:
       type: object
@@ -268,3 +479,150 @@ components:
           type: string
           nullable: true
       additionalProperties: {}
+
+    # New sticker catalog schemas
+    CreateStickerCommand:
+      type: object
+      properties:
+        stickerName:
+          type: string
+          nullable: false
+        stickerDescription:
+          type: string
+          nullable: true
+        stickerQuantityRemaining:
+          type: integer
+          nullable: false
+          description: Quantity remaining (-1 for infinite)
+      required:
+        - stickerName
+        - stickerQuantityRemaining
+      additionalProperties: false
+
+    UpdateStickerCommand:
+      type: object
+      properties:
+        stickerName:
+          type: string
+          nullable: true
+        stickerDescription:
+          type: string
+          nullable: true
+        stickerQuantityRemaining:
+          type: integer
+          nullable: true
+          description: Quantity remaining (-1 for infinite)
+      additionalProperties: false
+
+    StickerMetadata:
+      type: object
+      properties:
+        stickerId:
+          type: string
+          nullable: false
+        stickerName:
+          type: string
+          nullable: false
+        stickerDescription:
+          type: string
+          nullable: true
+        stickerQuantityRemaining:
+          type: integer
+          nullable: false
+          description: Quantity remaining (-1 for infinite)
+        imageUrl:
+          type: string
+          nullable: true
+          description: URL to the sticker image resource
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      additionalProperties: false
+
+    StickerCreatedResponse:
+      type: object
+      properties:
+        stickerId:
+          type: string
+          nullable: false
+        stickerName:
+          type: string
+          nullable: false
+        imageUrl:
+          type: string
+          nullable: true
+      additionalProperties: false
+
+    PagedResponse:
+      type: object
+      properties:
+        page:
+          type: integer
+          description: Current page number (0-based)
+        size:
+          type: integer
+          description: Number of items per page
+        total:
+          type: integer
+          description: Total number of items
+        totalPages:
+          type: integer
+          description: Total number of pages
+      additionalProperties: false
+
+    StickerCatalogResponse:
+      type: object
+      properties:
+        stickers:
+          type: array
+          items:
+            $ref: '#/components/schemas/StickerMetadata'
+        pagination:
+          $ref: '#/components/schemas/PagedResponse'
+      additionalProperties: false
+
+    StickerImageUploadResponse:
+      type: object
+      properties:
+        stickerId:
+          type: string
+          nullable: false
+        imageUrl:
+          type: string
+          nullable: false
+        uploadedAt:
+          type: string
+          format: date-time
+      additionalProperties: false
+
+    UserAssignment:
+      type: object
+      properties:
+        userId:
+          type: string
+          nullable: false
+        assignedAt:
+          type: string
+          format: date-time
+        reason:
+          type: string
+          nullable: true
+      additionalProperties: false
+
+    StickerAssignmentsResponse:
+      type: object
+      properties:
+        stickerId:
+          type: string
+          nullable: false
+        assignments:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserAssignment'
+        pagination:
+          $ref: '#/components/schemas/PagedResponse'
+      additionalProperties: false
+
