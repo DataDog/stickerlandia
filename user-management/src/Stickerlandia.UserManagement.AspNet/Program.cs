@@ -36,7 +36,7 @@ switch (drivenAdapters.ToUpper())
     case "AWS":
         break;
     default:
-        throw new Exception($"Unknown driven adapters {drivenAdapters}");
+        throw new ArgumentException($"Unknown driven adapters {drivenAdapters}");
 }
 
 builder.Services

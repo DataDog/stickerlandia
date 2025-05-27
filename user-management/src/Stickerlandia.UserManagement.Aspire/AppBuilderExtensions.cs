@@ -41,11 +41,11 @@ public static class AppBuilderExtensions
     {
         builder.Eventing.Subscribe<ResourceReadyEvent>(kafka.Resource, async (@event, ct) =>
         {
-            var cs = await kafka.Resource.ConnectionStringExpression.GetValueAsync(ct);
+            var kafkaConnectionString = await kafka.Resource.ConnectionStringExpression.GetValueAsync(ct);
 
             var config = new AdminClientConfig
             {
-                BootstrapServers = cs
+                BootstrapServers = kafkaConnectionString
             };
 
             using var adminClient = new AdminClientBuilder(config).Build();
