@@ -33,20 +33,20 @@ class StickerAwardResourceTest {
         // Make sure our test stickers exist
         Sticker sticker1 = Sticker.findById(EXISTING_STICKER_ID);
         if (sticker1 == null) {
-            sticker1 = new Sticker(EXISTING_STICKER_ID, "Test Sticker", "For testing", "http://example.com/test.png");
+            sticker1 = new Sticker(EXISTING_STICKER_ID, "Test Sticker", "For testing", "http://example.com/test.png", 100);
             sticker1.persist();
         }
 
         // Create sticker-002 and sticker-003 for other tests
         Sticker sticker2 = Sticker.findById("sticker-002");
         if (sticker2 == null) {
-            sticker2 = new Sticker("sticker-002", "Test Sticker 2", "For testing", "http://example.com/test2.png");
+            sticker2 = new Sticker("sticker-002", "Test Sticker 2", "For testing", "http://example.com/test2.png", 100);
             sticker2.persist();
         }
 
         Sticker sticker3 = Sticker.findById("sticker-003");
         if (sticker3 == null) {
-            sticker3 = new Sticker("sticker-003", "Test Sticker 3", "For testing", "http://example.com/test3.png");
+            sticker3 = new Sticker("sticker-003", "Test Sticker 3", "For testing", "http://example.com/test3.png", 100);
             sticker3.persist();
         }
 
@@ -65,11 +65,9 @@ class StickerAwardResourceTest {
             .then()
                 .statusCode(200)
                 .contentType(ContentType.JSON)
-                .body("success", is(true))
-                .body("data", notNullValue())
-                .body("data.userId", is(TEST_USER_ID))
-                .body("data.stickers.size()", is(1))
-                .body("data.stickers[0].stickerId", is(EXISTING_STICKER_ID));
+                .body("userId", is(TEST_USER_ID))
+                .body("stickers.size()", is(1))
+                .body("stickers[0].stickerId", is(EXISTING_STICKER_ID));
     }
 
     @Test
@@ -80,10 +78,8 @@ class StickerAwardResourceTest {
             .then()
                 .statusCode(200)
                 .contentType(ContentType.JSON)
-                .body("success", is(true))
-                .body("data", notNullValue())
-                .body("data.userId", is(unknownUserId))
-                .body("data.stickers.size()", is(0));
+                .body("userId", is(unknownUserId))
+                .body("stickers.size()", is(0));
     }
 
     @Test
@@ -104,11 +100,9 @@ class StickerAwardResourceTest {
             .then()
                 .statusCode(201)
                 .contentType(ContentType.JSON)
-                .body("success", is(true))
-                .body("data", notNullValue())
-                .body("data.userId", is(userId))
-                .body("data.stickerId", is(stickerId))
-                .body("data.assignedAt", notNullValue());
+                .body("userId", is(userId))
+                .body("stickerId", is(stickerId))
+                .body("assignedAt", notNullValue());
 
         // Verify the sticker is now assigned by getting user stickers
         given()
@@ -116,8 +110,8 @@ class StickerAwardResourceTest {
             .then()
                 .statusCode(200)
                 .contentType(ContentType.JSON)
-                .body("data.stickers.size()", is(1))
-                .body("data.stickers[0].stickerId", is(stickerId));
+                .body("stickers.size()", is(1))
+                .body("stickers[0].stickerId", is(stickerId));
     }
 
     @Test
@@ -135,10 +129,7 @@ class StickerAwardResourceTest {
             .body(command)
             .when().post("/api/award/v1/users/{userId}/stickers", userId)
             .then()
-                .statusCode(400)
-                .contentType(ContentType.JSON)
-                .body("success", is(false))
-                .body("message", notNullValue());
+                .statusCode(400);
     }
 
     @Test
@@ -166,10 +157,7 @@ class StickerAwardResourceTest {
             .body(command)
             .when().post("/api/award/v1/users/{userId}/stickers", userId)
             .then()
-                .statusCode(409)
-                .contentType(ContentType.JSON)
-                .body("success", is(false))
-                .body("message", notNullValue());
+                .statusCode(409);
     }
 
     @Test
@@ -197,11 +185,9 @@ class StickerAwardResourceTest {
             .then()
                 .statusCode(200)
                 .contentType(ContentType.JSON)
-                .body("success", is(true))
-                .body("data", notNullValue())
-                .body("data.userId", is(userId))
-                .body("data.stickerId", is(stickerId))
-                .body("data.removedAt", notNullValue());
+                .body("userId", is(userId))
+                .body("stickerId", is(stickerId))
+                .body("removedAt", notNullValue());
 
         // Verify the sticker is no longer assigned
         given()
@@ -209,7 +195,7 @@ class StickerAwardResourceTest {
             .then()
                 .statusCode(200)
                 .contentType(ContentType.JSON)
-                .body("data.stickers.size()", is(0));
+                .body("stickers.size()", is(0));
     }
 
     @Test
@@ -220,9 +206,6 @@ class StickerAwardResourceTest {
         given()
             .when().delete("/api/award/v1/users/{userId}/stickers/{stickerId}", userId, stickerId)
             .then()
-                .statusCode(404)
-                .contentType(ContentType.JSON)
-                .body("success", is(false))
-                .body("message", notNullValue());
+                .statusCode(404);
     }
 }

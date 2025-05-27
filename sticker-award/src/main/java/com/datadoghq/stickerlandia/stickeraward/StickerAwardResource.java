@@ -2,12 +2,9 @@ package com.datadoghq.stickerlandia.stickeraward;
 
 import com.datadoghq.stickerlandia.stickeraward.beans.AssignStickerCommand;
 import com.datadoghq.stickerlandia.stickeraward.beans.StickerAssignmentResponse;
-import com.datadoghq.stickerlandia.stickeraward.beans.StickerAssignmentResponseApiResponse;
 import com.datadoghq.stickerlandia.stickeraward.beans.StickerDTO;
 import com.datadoghq.stickerlandia.stickeraward.beans.StickerRemovalResponse;
-import com.datadoghq.stickerlandia.stickeraward.beans.StickerRemovalResponseApiResponse;
 import com.datadoghq.stickerlandia.stickeraward.beans.UserStickersResponse;
-import com.datadoghq.stickerlandia.stickeraward.beans.UserStickersResponseApiResponse;
 import com.datadoghq.stickerlandia.stickeraward.entity.Sticker;
 import com.datadoghq.stickerlandia.stickeraward.entity.StickerAssignment;
 import com.datadoghq.stickerlandia.stickeraward.messaging.StickerEventPublisher;
@@ -45,7 +42,7 @@ public class StickerAwardResource {
     @GET
     @Produces("application/json")
     @Transactional
-    public Response getUserStickers(@PathParam("userId") String userId) {
+    public UserStickersResponse getUserStickers(@PathParam("userId") String userId) {
         List<StickerAssignment> assignments = StickerAssignment.findActiveByUserId(userId);
 
         List<StickerDTO> stickerDTOs = assignments.stream()
@@ -65,12 +62,7 @@ public class StickerAwardResource {
         response.setUserId(userId);
         response.setStickers(stickerDTOs);
 
-        UserStickersResponseApiResponse apiResponse = new UserStickersResponseApiResponse();
-        apiResponse.setSuccess(true);
-        apiResponse.setMessage("Successfully retrieved user stickers");
-        apiResponse.setData(response);
-
-        return Response.ok(apiResponse).build();
+        return response;
     }
 
     @Operation(description = "Assign a new sticker to a user (access controlled based on caller identity)")
@@ -86,23 +78,13 @@ public class StickerAwardResource {
         Sticker sticker = Sticker.findById(stickerId);
 
         if (sticker == null) {
-            StickerAssignmentResponseApiResponse apiResponse = new StickerAssignmentResponseApiResponse();
-            apiResponse.setSuccess(false);
-            apiResponse.setMessage("Sticker not found: " + stickerId);
-            return Response.status(Response.Status.BAD_REQUEST)
-                .entity(apiResponse)
-                .build();
+            return Response.status(Response.Status.BAD_REQUEST).build();
         }
 
         // Check if sticker is already assigned to the user and not removed
         StickerAssignment existingAssignment = StickerAssignment.findActiveByUserAndSticker(userId, stickerId);
         if (existingAssignment != null) {
-            StickerAssignmentResponseApiResponse apiResponse = new StickerAssignmentResponseApiResponse();
-            apiResponse.setSuccess(false);
-            apiResponse.setMessage("User already has this sticker assigned");
-            return Response.status(Response.Status.CONFLICT)
-                .entity(apiResponse)
-                .build();
+            return Response.status(Response.Status.CONFLICT).build();
         }
 
         // Create new assignment
@@ -125,13 +107,8 @@ public class StickerAwardResource {
         response.setStickerId(stickerId);
         response.setAssignedAt(Date.from(assignment.getAssignedAt()));
 
-        StickerAssignmentResponseApiResponse apiResponse = new StickerAssignmentResponseApiResponse();
-        apiResponse.setSuccess(true);
-        apiResponse.setMessage("Sticker assigned successfully");
-        apiResponse.setData(response);
-
         return Response.status(Response.Status.CREATED)
-            .entity(apiResponse)
+            .entity(response)
             .build();
     }
 
@@ -146,12 +123,7 @@ public class StickerAwardResource {
         StickerAssignment assignment = StickerAssignment.findActiveByUserAndSticker(userId, stickerId);
 
         if (assignment == null) {
-            StickerRemovalResponseApiResponse apiResponse = new StickerRemovalResponseApiResponse();
-            apiResponse.setSuccess(false);
-            apiResponse.setMessage("Active sticker assignment not found for user");
-            return Response.status(Response.Status.NOT_FOUND)
-                .entity(apiResponse)
-                .build();
+            return Response.status(Response.Status.NOT_FOUND).build();
         }
 
         // Mark as removed
@@ -174,11 +146,6 @@ public class StickerAwardResource {
         response.setStickerId(stickerId);
         response.setRemovedAt(Date.from(assignment.getRemovedAt()));
 
-        StickerRemovalResponseApiResponse apiResponse = new StickerRemovalResponseApiResponse();
-        apiResponse.setSuccess(true);
-        apiResponse.setMessage("Sticker removed successfully");
-        apiResponse.setData(response);
-
-        return Response.ok(apiResponse).build();
+        return Response.ok(response).build();
     }
 }
