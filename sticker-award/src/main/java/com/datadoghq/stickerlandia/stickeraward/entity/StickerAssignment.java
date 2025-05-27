@@ -116,4 +116,12 @@ public class StickerAssignment extends PanacheEntityBase {
         return find("userId = ?1 AND sticker.stickerId = ?2 AND removedAt IS NULL", userId, stickerId)
                 .firstResult();
     }
+
+    public static List<StickerAssignment> findActiveByStickerId(String stickerId) {
+        return list("sticker.stickerId = ?1 AND removedAt IS NULL", stickerId);
+    }
+
+    public static long countActiveByStickerId(String stickerId) {
+        return count("sticker.stickerId = ?1 AND removedAt IS NULL", stickerId);
+    }
 }
