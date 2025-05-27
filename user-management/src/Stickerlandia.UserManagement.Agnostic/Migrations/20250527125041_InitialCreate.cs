@@ -9,6 +9,7 @@ namespace Stickerlandia.UserManagement.Agnostic.Migrations
     /// <inheritdoc />
     public partial class InitialCreate : Migration
     {
+        /// <summary></summary>
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
