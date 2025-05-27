@@ -81,6 +81,14 @@ public class Sticker extends PanacheEntityBase {
         this.imageUrl = imageUrl;
     }
 
+    public Integer getStickerQuantityRemaining() {
+        return stickerQuantityRemaining;
+    }
+
+    public void setStickerQuantityRemaining(Integer stickerQuantityRemaining) {
+        this.stickerQuantityRemaining = stickerQuantityRemaining;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
     }
@@ -97,14 +105,6 @@ public class Sticker extends PanacheEntityBase {
         this.updatedAt = updatedAt;
     }
 
-    public Integer getStickerQuantityRemaining() {
-        return stickerQuantityRemaining;
-    }
-
-    public void setStickerQuantityRemaining(Integer stickerQuantityRemaining) {
-        this.stickerQuantityRemaining = stickerQuantityRemaining;
-    }
-
     // Helper methods for quantity management
     public boolean isAvailable() {
         return stickerQuantityRemaining == null || stickerQuantityRemaining == -1 || stickerQuantityRemaining > 0;
@@ -118,6 +118,14 @@ public class Sticker extends PanacheEntityBase {
         if (stickerQuantityRemaining != null && stickerQuantityRemaining > 0) {
             stickerQuantityRemaining--;
         }
+    }
+
+    // Increase quantity by 1 (for removal)
+    public void increaseQuantity() {
+        if (stickerQuantityRemaining != null && stickerQuantityRemaining >= 0) {
+            stickerQuantityRemaining++;
+        }
+        // If -1 (infinite), do nothing
     }
 
     // Helper methods for finding stickers
