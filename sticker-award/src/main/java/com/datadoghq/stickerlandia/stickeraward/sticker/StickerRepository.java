@@ -98,6 +98,16 @@ public class StickerRepository {
     }
 
     @Transactional
+    public void updateStickerImageKey(String stickerId, String imageKey) {
+        Sticker sticker = Sticker.findById(stickerId);
+        if (sticker != null) {
+            sticker.setImageKey(imageKey);
+            sticker.setUpdatedAt(Instant.now());
+            sticker.persist();
+        }
+    }
+
+    @Transactional
     public boolean deleteSticker(String stickerId) {
         Sticker sticker = Sticker.findById(stickerId);
         if (sticker == null) {
@@ -154,6 +164,7 @@ public class StickerRepository {
         metadata.setStickerDescription(sticker.getDescription());
         metadata.setStickerQuantityRemaining(sticker.getStickerQuantityRemaining());
         metadata.setImageUrl(buildImageUrl(sticker.getStickerId()));
+        metadata.setImageKey(sticker.getImageKey());
         metadata.setCreatedAt(Date.from(sticker.getCreatedAt()));
         metadata.setUpdatedAt(sticker.getUpdatedAt() != null ? Date.from(sticker.getUpdatedAt()) : null);
         return metadata;

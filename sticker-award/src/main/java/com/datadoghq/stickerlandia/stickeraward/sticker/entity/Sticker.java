@@ -25,6 +25,9 @@ public class Sticker extends PanacheEntityBase {
     @Column(name = "image_url")
     private String imageUrl;
 
+    @Column(name = "image_key")
+    private String imageKey;
+
     @Column(name = "sticker_quantity_remaining", nullable = false)
     private Integer stickerQuantityRemaining;
 
@@ -79,6 +82,14 @@ public class Sticker extends PanacheEntityBase {
 
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+
+    public String getImageKey() {
+        return imageKey;
+    }
+
+    public void setImageKey(String imageKey) {
+        this.imageKey = imageKey;
     }
 
     public Integer getStickerQuantityRemaining() {

@@ -18,7 +18,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
     "createdAt",
     "updatedAt"
 })
-public class StickerDTO {
+public class StickerMetadata {
 
     @JsonProperty("stickerId")
     private String stickerId;
