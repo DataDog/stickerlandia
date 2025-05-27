@@ -1,13 +1,14 @@
 package com.datadoghq.stickerlandia.stickeraward;
 
+import com.datadoghq.stickerlandia.stickeraward.award.dto.AssignStickerCommand;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.datadoghq.stickerlandia.stickeraward.entity.Sticker;
-import com.datadoghq.stickerlandia.stickeraward.entity.StickerAssignment;
+import com.datadoghq.stickerlandia.stickeraward.sticker.entity.Sticker;
+import com.datadoghq.stickerlandia.stickeraward.award.entity.StickerAssignment;
 
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -88,8 +89,8 @@ class StickerAwardResourceTest {
         String stickerId = "sticker-002";  // Use one of the stickers from our seed data
 
         // Create sticker assignment request using a proper bean for serialization
-        com.datadoghq.stickerlandia.stickeraward.beans.AssignStickerCommand command =
-            new com.datadoghq.stickerlandia.stickeraward.beans.AssignStickerCommand();
+        AssignStickerCommand command =
+            new AssignStickerCommand();
         command.setStickerId(stickerId);
         command.setReason("Test assignment");
 
@@ -119,8 +120,8 @@ class StickerAwardResourceTest {
         String userId = "test-user-" + System.currentTimeMillis();
 
         // Create sticker assignment request with non-existing sticker
-        com.datadoghq.stickerlandia.stickeraward.beans.AssignStickerCommand command =
-            new com.datadoghq.stickerlandia.stickeraward.beans.AssignStickerCommand();
+        AssignStickerCommand command =
+            new AssignStickerCommand();
         command.setStickerId(NON_EXISTING_STICKER_ID);
         command.setReason("Test assignment");
 
@@ -138,8 +139,8 @@ class StickerAwardResourceTest {
         String userId = "test-user-" + System.currentTimeMillis();
         String stickerId = "sticker-003";  // Use one from seed data
 
-        com.datadoghq.stickerlandia.stickeraward.beans.AssignStickerCommand command =
-            new com.datadoghq.stickerlandia.stickeraward.beans.AssignStickerCommand();
+        AssignStickerCommand command =
+            new AssignStickerCommand();
         command.setStickerId(stickerId);
         command.setReason("Test assignment");
 
@@ -166,8 +167,8 @@ class StickerAwardResourceTest {
         String userId = "test-user-" + System.currentTimeMillis();
         String stickerId = "sticker-002";
 
-        com.datadoghq.stickerlandia.stickeraward.beans.AssignStickerCommand command =
-            new com.datadoghq.stickerlandia.stickeraward.beans.AssignStickerCommand();
+        AssignStickerCommand command =
+            new AssignStickerCommand();
         command.setStickerId(stickerId);
         command.setReason("Test assignment");
 
