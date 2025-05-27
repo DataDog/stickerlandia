@@ -23,7 +23,6 @@ namespace Stickerlandia.UserManagement.Auth;
 /// DynamoDB-specific implementation of IAuthService using AWS DynamoDB for persistence
 /// </summary>
 public class DynamoDbIdentityAuthService(
-    SignInManager<IdentityUser> signInManager,
     UserManager<IdentityUser> userManager,
     IOpenIddictApplicationManager applicationManager,
     ILogger<DynamoDbIdentityAuthService> logger,
@@ -74,29 +73,9 @@ public class DynamoDbIdentityAuthService(
         if (user == null)
             return null;
 
-        // Check that the user can sign in and is not locked out.
-        // If two-factor authentication is supported, it would also be appropriate to check that 2FA is enabled for the user
-        if (!await signInManager.CanSignInAsync(user) ||
-            (userManager.SupportsUserLockout && await userManager.IsLockedOutAsync(user)))
-            // Return bad request is the user can't sign in
-            return null;
-
         // Validate the username/password parameters and ensure the account is not locked out.
-        var result = await signInManager.PasswordSignInAsync(user.UserName, password, false,
-            false);
-        if (!result.Succeeded)
-        {
-            if (result.IsNotAllowed)
-                return null;
-
-            if (result.RequiresTwoFactor)
-                return null;
-
-            if (result.IsLockedOut)
-                return null;
-            else
-                return null;
-        }
+        var result = await userManager.CheckPasswordAsync(user, password);
+        if (!result) return null;
 
         // The user is now validated, so reset lockout counts, if necessary
         if (userManager.SupportsUserLockout) await userManager.ResetAccessFailedCountAsync(user);

@@ -50,7 +50,7 @@ public class TestSetupFixture : IDisposable
 
             var messagingConnectionString = App.GetConnectionStringAsync("messaging").GetAwaiter().GetResult();
 
-            HttpClient = App.CreateHttpClient("api");
+            HttpClient = App.CreateHttpClient("api", "https");
             Messaging = MessagingProviderFactory.From(drivenAdapter, messagingConnectionString);
         }
         else

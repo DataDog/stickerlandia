@@ -70,8 +70,8 @@ public class AccountDriver
             new("grant_type", "password"),
             new("username", emailAddress),
             new("password", password),
-            new("client_id", "user-authentication"), // Replace with your client_id
-            new("client_secret", "388D45FA-B36B-4988-BA59-B187D329C207") // Replace with your client_secret
+            new("client_id", "user-authentication"),
+            new("client_secret", "388D45FA-B36B-4988-BA59-B187D329C207")
         };
 
         var requestContent = new FormUrlEncodedContent(requestBody);

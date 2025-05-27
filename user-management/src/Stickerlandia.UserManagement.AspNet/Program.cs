@@ -82,11 +82,9 @@ builder.Services.AddRateLimiter(options =>
     });
 });
 builder.Services.AddEndpointsApiExplorer();
-// Add response compression for improved performance
 builder.Services.AddResponseCompression(options => { options.EnableForHttps = true; });
 
 builder.Services.AddHostedService<OutboxWorker>();
-//builder.Services.AddHostedService<StickerClaimedWorker>();
 
 builder.Services.AddControllers();
 builder.Services.AddCors(options =>
@@ -123,8 +121,6 @@ app.UseCors("AllowAll");
 app
     .UseAuthentication()
     .UseAuthorization();
-
-app.MapControllers();
 
 var api = app.NewVersionedApi("api");
 var v1ApiEndpoints = api.MapGroup("api/users/v{version:apiVersion}")

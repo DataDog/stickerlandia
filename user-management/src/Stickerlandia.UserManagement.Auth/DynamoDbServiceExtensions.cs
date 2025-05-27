@@ -42,7 +42,7 @@ public static class DynamoDbServiceExtensions
         services.AddSingleton<IOpenIddictScopeStore<DynamoDbScope>, DynamoDbScopeStore>();
         
         // Configure Identity with DynamoDB stores
-        services.AddIdentity<IdentityUser, IdentityRole>(options =>
+        services.AddIdentityCore<IdentityUser>(options =>
         {
             options.ClaimsIdentity.UserNameClaimType = OpenIddictConstants.Claims.Name;
             options.ClaimsIdentity.UserIdClaimType = OpenIddictConstants.Claims.Subject;

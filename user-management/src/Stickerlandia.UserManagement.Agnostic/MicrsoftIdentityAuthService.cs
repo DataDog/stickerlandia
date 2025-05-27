@@ -20,7 +20,6 @@ public class MicrosoftIdentityAuthService(
     IOpenIddictApplicationManager applicationManager,
     IOpenIddictScopeManager scopeManager,
     UserManagementDbContext dbContext,
-    SignInManager<PostgresUserAccount> signInManager,
     UserManager<PostgresUserAccount> userManager) : IAuthService
 {
     public async Task<ClaimsIdentity?> VerifyClient(string clientId)
@@ -56,34 +55,15 @@ public class MicrosoftIdentityAuthService(
     {
         var identity = new ClaimsIdentity(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
             OpenIddictConstants.Claims.Name, OpenIddictConstants.Claims.Role);
-        PostgresUserAccount? user = await userManager.FindByEmailAsync(username);
+        var user = await userManager.FindByEmailAsync(username);
         AuthenticationProperties properties = new();
 
         if (user == null)
             return null;
 
-        // Check that the user can sign in and is not locked out.
-        // If two-factor authentication is supported, it would also be appropriate to check that 2FA is enabled for the user
-        if (!await signInManager.CanSignInAsync(user) ||
-            (userManager.SupportsUserLockout && await userManager.IsLockedOutAsync(user)))
-            // Return bad request is the user can't sign in
-            return null;
-
         // Validate the username/password parameters and ensure the account is not locked out.
-        var result = await signInManager.CheckPasswordSignInAsync(user, password, false);
-        if (!result.Succeeded)
-        {
-            if (result.IsNotAllowed)
-                return null;
-
-            if (result.RequiresTwoFactor)
-                return null;
-
-            if (result.IsLockedOut)
-                return null;
-            else
-                return null;
-        }
+        var result = await userManager.CheckPasswordAsync(user, password);
+        if (!result) return null;
 
         // The user is now validated, so reset lockout counts, if necessary
         if (userManager.SupportsUserLockout) await userManager.ResetAccessFailedCountAsync(user);
@@ -95,6 +75,7 @@ public class MicrosoftIdentityAuthService(
         identity.SetResources(resources);
 
         // Add Custom claims
+        identity.AddClaim(new Claim(OpenIddictConstants.Claims.Name, user.Id));
         identity.AddClaim(new Claim(OpenIddictConstants.Claims.Subject, user.Id));
         identity.AddClaim(new Claim(OpenIddictConstants.Claims.Audience, "Resource"));
         identity.AddClaim(new Claim(OpenIddictConstants.Claims.Email, user.Email));

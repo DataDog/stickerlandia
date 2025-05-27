@@ -69,7 +69,7 @@ public static class ServiceExtensions
             options.UseOpenIddict();
         });
         
-        services.AddIdentity<PostgresUserAccount, IdentityRole>()
+        services.AddIdentityCore<PostgresUserAccount>()
             .AddEntityFrameworkStores<UserManagementDbContext>()
             .AddDefaultTokenProviders();
 

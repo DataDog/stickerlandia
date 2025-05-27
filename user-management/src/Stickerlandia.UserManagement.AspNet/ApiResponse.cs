@@ -40,6 +40,7 @@ public record ApiResponse<T>
     internal async Task<HttpResponseData> WriteResponse(HttpRequestData req)
     {
         var response = req.CreateResponse(StatusCode);
+        response.StatusCode = StatusCode;
         await response.WriteAsJsonAsync(this);
         return response;
     }

@@ -14,7 +14,7 @@ public static class GetUserDetails
         [FromServices] IAuthService authService,
         [FromServices] GetUserDetailsQueryHandler handler)
     {
-        if (user.Identity?.Name == null)
+        if (user.Identity.Name == null)
         {
             return new ApiResponse<UserAccountDTO?>(false, null, "User not authenticated", HttpStatusCode.Unauthorized);
         }

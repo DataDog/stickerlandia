@@ -47,9 +47,7 @@ public static class AuthServiceExtensions
 
                 // Register the ASP.NET Core host and configure the ASP.NET Core options.
                 options.UseAspNetCore()
-                    .EnableAuthorizationEndpointPassthrough()
-                    .EnableTokenEndpointPassthrough()
-                    .EnableEndSessionEndpointPassthrough();
+                    .EnableTokenEndpointPassthrough();
                 
                 options.AddEventHandler<OpenIddictServerEvents.HandleUserInfoRequestContext>(options => options.UseInlineHandler(context =>
                 {
