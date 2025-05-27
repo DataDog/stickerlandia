@@ -5,6 +5,8 @@ import com.datadoghq.stickerlandia.stickeraward.sticker.dto.GetStickerAssignment
 import com.datadoghq.stickerlandia.stickeraward.sticker.dto.GetAllStickersResponse;
 import com.datadoghq.stickerlandia.stickeraward.sticker.dto.CreateStickerResponse;
 import com.datadoghq.stickerlandia.stickeraward.sticker.dto.StickerDTO;
+import com.datadoghq.stickerlandia.stickeraward.sticker.dto.StickerImageUploadResponse;
+import com.datadoghq.stickerlandia.stickeraward.sticker.dto.StickerMetadata;
 import com.datadoghq.stickerlandia.stickeraward.sticker.dto.UpdateStickerRequest;
 import io.smallrye.common.constraint.NotNull;
 import jakarta.ws.rs.Consumes;
@@ -22,12 +24,16 @@ import org.eclipse.microprofile.openapi.annotations.Operation;
 import jakarta.inject.Inject;
 
 import java.io.InputStream;
+import java.util.Date;
 
 @Path("/api/award/v1/stickers")
 public class StickerResource {
 
     @Inject
     StickerRepository stickerRepository;
+
+    @Inject
+    StickerImageService stickerImageService;
 
     @GET
     @Produces("application/json")
@@ -98,9 +104,27 @@ public class StickerResource {
     @Produces("image/png")
     @Operation(description = "Get the sticker image")
     public Response getStickerImage(@PathParam("stickerId") String stickerId) {
-        return Response.status(Response.Status.NOT_IMPLEMENTED)
-            .entity("Image storage not implemented yet")
-            .build();
+        StickerDTO metadata = stickerRepository.getStickerMetadata(stickerId);
+        if (metadata == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        
+        if (metadata.getImageKey() == null) {
+            return Response.status(Response.Status.NOT_FOUND)
+                .entity("No image found for this sticker")
+                .build();
+        }
+        
+        try {
+            InputStream imageStream = stickerImageService.getImage(metadata.getImageKey());
+            return Response.ok(imageStream)
+                .type("image/png")
+                .build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("Failed to retrieve image")
+                .build();
+        }
     }
 
     @PUT
@@ -111,9 +135,31 @@ public class StickerResource {
     public Response uploadStickerImage(
             @PathParam("stickerId") String stickerId,
             @NotNull InputStream data) {
-        return Response.status(Response.Status.NOT_IMPLEMENTED)
-            .entity("Image upload not implemented yet")
-            .build();
+        StickerDTO metadata = stickerRepository.getStickerMetadata(stickerId);
+        if (metadata == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        
+        try {
+            byte[] imageBytes = data.readAllBytes();
+            String imageKey = stickerImageService.uploadImage(new java.io.ByteArrayInputStream(imageBytes), "image/png", imageBytes.length);
+            
+            stickerRepository.updateStickerImageKey(stickerId, imageKey);
+            
+            String imageUrl = stickerImageService.getImageUrl(imageKey);
+            
+            StickerImageUploadResponse response = new StickerImageUploadResponse();
+            response.setStickerId(stickerId);
+            response.setImageUrl(imageUrl);
+            response.setUploadedAt(new Date());
+            
+            return Response.ok(response).build();
+        } catch (Exception e) {
+            System.out.println(e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("Failed to upload image")
+                .build();
+        }
     }
 
     @GET
