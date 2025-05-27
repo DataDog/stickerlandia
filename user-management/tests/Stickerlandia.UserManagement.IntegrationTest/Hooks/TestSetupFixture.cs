@@ -56,7 +56,10 @@ public class TestSetupFixture : IDisposable
         else
         {
             Messaging = new AzureServiceBusMessaging(TestConstants.DefaultMessagingConnection);
-            HttpClient = new HttpClient();
+            HttpClient = new HttpClient()
+            {
+                BaseAddress = new Uri(TestConstants.DefaultTestUrl)
+            };
         }
     }
 
