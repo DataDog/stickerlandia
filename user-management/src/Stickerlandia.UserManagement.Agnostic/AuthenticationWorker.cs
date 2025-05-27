@@ -34,6 +34,7 @@ public class AuthenticationWorker : IHostedService
                 {
                     OpenIddictConstants.Permissions.Endpoints.Token,
                     OpenIddictConstants.Permissions.GrantTypes.Password,
+                    OpenIddictConstants.Permissions.GrantTypes.RefreshToken,
                 }
             });
         } 
