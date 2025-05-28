@@ -14,7 +14,8 @@ namespace Stickerlandia.UserManagement.Auth;
 
 public static class AuthServiceExtensions
 {
-    public static IServiceCollection AddCoreAuthentication(this IServiceCollection services, Action<OpenIddictCoreBuilder> configuration)
+    public static IServiceCollection AddCoreAuthentication(this IServiceCollection services,
+        Action<OpenIddictCoreBuilder> configuration, bool enableSsl)
     {
         services.AddOpenIddict()
             .AddCore(configuration)
@@ -34,7 +35,7 @@ public static class AuthServiceExtensions
                     .AllowImplicitFlow()
                     .AllowHybridFlow()
                     .AllowRefreshTokenFlow();
-                
+
                 // Expose all the supported claims in the discovery document.
                 options.RegisterClaims("email", "issuer", "preferred_username", "profile", "updated_at");
 
@@ -46,28 +47,36 @@ public static class AuthServiceExtensions
                     .AddEphemeralSigningKey();
 
                 // Register the ASP.NET Core host and configure the ASP.NET Core options.
-                options.UseAspNetCore()
-                    .EnableTokenEndpointPassthrough();
-                
-                options.AddEventHandler<OpenIddictServerEvents.HandleUserInfoRequestContext>(options => options.UseInlineHandler(context =>
-                {
-                    if (context.Principal.HasScope(OpenIddictConstants.Permissions.Scopes.Profile))
-                    {
-                        context.Profile = context.Principal.GetClaim(OpenIddictConstants.Claims.Profile);
-                        context.PreferredUsername = context.Principal.GetClaim(OpenIddictConstants.Claims.PreferredUsername);
-                        context.Claims[OpenIddictConstants.Claims.UpdatedAt] = long.Parse(
-                            context.Principal.GetClaim(OpenIddictConstants.Claims.UpdatedAt)!,
-                            NumberStyles.Number, CultureInfo.InvariantCulture);
-                    }
+                if (enableSsl)
+                    options.UseAspNetCore()
+                        .EnableTokenEndpointPassthrough();
+                else
+                    options.UseAspNetCore()
+                        .DisableTransportSecurityRequirement()
+                        .EnableTokenEndpointPassthrough();
 
-                    if (context.Principal.HasScope(OpenIddictConstants.Scopes.Email))
-                    {
-                        context.Email = context.Principal.GetClaim(OpenIddictConstants.Claims.Email);
-                        context.EmailVerified = false;
-                    }
 
-                    return default;
-                }));
+                options.AddEventHandler<OpenIddictServerEvents.HandleUserInfoRequestContext>(options =>
+                    options.UseInlineHandler(context =>
+                    {
+                        if (context.Principal.HasScope(OpenIddictConstants.Permissions.Scopes.Profile))
+                        {
+                            context.Profile = context.Principal.GetClaim(OpenIddictConstants.Claims.Profile);
+                            context.PreferredUsername =
+                                context.Principal.GetClaim(OpenIddictConstants.Claims.PreferredUsername);
+                            context.Claims[OpenIddictConstants.Claims.UpdatedAt] = long.Parse(
+                                context.Principal.GetClaim(OpenIddictConstants.Claims.UpdatedAt)!,
+                                NumberStyles.Number, CultureInfo.InvariantCulture);
+                        }
+
+                        if (context.Principal.HasScope(OpenIddictConstants.Scopes.Email))
+                        {
+                            context.Email = context.Principal.GetClaim(OpenIddictConstants.Claims.Email);
+                            context.EmailVerified = false;
+                        }
+
+                        return default;
+                    }));
             })
             .AddValidation(options =>
             {
@@ -81,12 +90,12 @@ public static class AuthServiceExtensions
                 // to reject access tokens retrieved from a revoked authorization code.
                 options.EnableAuthorizationEntryValidation();
             });
-        
+
         services.AddAuthentication(options =>
         {
             options.DefaultScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
         });
-        
+
         return services;
     }
 }

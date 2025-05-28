@@ -35,23 +35,23 @@ public static class ServiceExtensions
             BootstrapServers = configuration.GetConnectionString("messaging"),
             // Fixed properties
             SecurityProtocol = SecurityProtocol.Plaintext,
-            Acks             = Acks.All
+            Acks = Acks.All
         };
-        
+
         var consumerConfig = new ConsumerConfig
         {
             // User-specific properties that you must set
             BootstrapServers = configuration.GetConnectionString("messaging"),
             // Fixed properties
             SecurityProtocol = SecurityProtocol.Plaintext,
-            GroupId          = "stickerlandia-users",
-            AutoOffsetReset  = AutoOffsetReset.Earliest,
-            EnableAutoCommit = false,
+            GroupId = "stickerlandia-users",
+            AutoOffsetReset = AutoOffsetReset.Earliest,
+            EnableAutoCommit = false
         };
-        
+
         services.AddSingleton(producerConfig);
         services.AddSingleton(consumerConfig);
-        
+
         // Register event publisher as singleton
         services.AddSingleton<IUserEventPublisher, KafkaEventPublisher>();
         services.AddSingleton<IMessagingWorker, KafakStickerClaimedWorker>();
@@ -64,21 +64,25 @@ public static class ServiceExtensions
     {
         services.AddDbContext<UserManagementDbContext>(options =>
         {
-            options.UseNpgsql(configuration.GetConnectionString("database"), 
+            options.UseNpgsql(configuration.GetConnectionString("database"),
                 npgsqlOptions => npgsqlOptions.MigrationsAssembly("Stickerlandia.UserManagement.Agnostic"));
             options.UseOpenIddict();
         });
-        
+
         services.AddIdentityCore<PostgresUserAccount>()
             .AddEntityFrameworkStores<UserManagementDbContext>()
             .AddDefaultTokenProviders();
 
+        var enableSsl = true;
+
+        if (configuration.GetValue<bool>("DISABLE_SSL")) enableSsl = false;
+
         services.AddCoreAuthentication(options =>
             options.UseEntityFrameworkCore()
-                .UseDbContext<UserManagementDbContext>());
-        
+                .UseDbContext<UserManagementDbContext>(), enableSsl);
+
         services.AddScoped<IAuthService, MicrosoftIdentityAuthService>();
-        
+
         services.AddScoped<IUsers, PostgresUserRepository>();
         services.AddScoped<IOutbox, PostgresUserRepository>();
 

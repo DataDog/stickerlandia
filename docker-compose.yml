@@ -165,6 +165,7 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       DRIVING: AGNOSTIC
       DRIVEN: AGNOSTIC
+      DISABLE_SSL: "true"
       ConnectionStrings__messaging: "redpanda:9092"
       ConnectionStrings__database: "Host=user-management-db;Port=5432;Database=user_management;Username=user_mgmt_user;Password=user_mgmt_password"
       KAFKA__BOOTSTRAPSERVERS: "redpanda:9092"
