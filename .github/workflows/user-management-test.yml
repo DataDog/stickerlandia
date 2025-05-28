@@ -62,11 +62,6 @@ jobs:
         run: |
           cd user-management
           dotnet restore
-      - name: .NET Build
-        shell: bash
-        run: |
-          cd user-management
-          dotnet build
       - name: Run Integration Tests
         shell: bash
         env:
@@ -107,11 +102,6 @@ jobs:
         run: |
           cd user-management
           dotnet restore
-      - name: .NET Build
-        shell: bash
-        run: |
-          cd user-management
-          dotnet build
       - name: Run Integration Tests
         shell: bash
         env:
