@@ -9,9 +9,14 @@ using Serilog.Extensions.Logging;
 using Serilog.Formatting.Json;
 using Stickerlandia.UserManagement.ServiceDefaults;
 
+var configuration = new ConfigurationBuilder()
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables()
+    .Build();
+
 var hostBuilder = new HostBuilder()
     .ConfigureFunctionsWebApplication()
-    .ConfigureAppConfiguration(c => { c.AddEnvironmentVariables(); })
     .ConfigureServices((hostContext, services) =>
         services.AddApplicationInsightsTelemetryWorkerService()
             .ConfigureFunctionsApplicationInsights()
@@ -27,7 +32,8 @@ var hostBuilder = new HostBuilder()
 
                 if (toRemove is not null) options.Rules.Remove(toRemove);
             })
-    );
+    )
+    .ConfigureAppConfiguration(c => { c.AddConfiguration(configuration); });
 
 var logger = Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
