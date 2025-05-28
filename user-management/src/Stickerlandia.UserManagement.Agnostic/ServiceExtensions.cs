@@ -19,20 +19,20 @@ namespace Stickerlandia.UserManagement.Agnostic;
 
 public static class ServiceExtensions
 {
-    public static IHostApplicationBuilder AddAgnosticAdapters(this IHostApplicationBuilder builder)
+    public static IServiceCollection AddAgnosticAdapters(this IServiceCollection services, IConfiguration configuration)
     {
-        builder.AddKafkaMessaging();
-        builder.Services.AddPostgresAuthServices(builder.Configuration);
+        services.AddKafkaMessaging(configuration);
+        services.AddPostgresAuthServices(configuration);
 
-        return builder;
+        return services;
     }
 
-    public static IHostApplicationBuilder AddKafkaMessaging(this IHostApplicationBuilder builder)
+    public static IServiceCollection AddKafkaMessaging(this IServiceCollection services, IConfiguration configuration)
     {
         var producerConfig = new ProducerConfig
         {
             // User-specific properties that you must set
-            BootstrapServers = builder.Configuration.GetConnectionString("messaging"),
+            BootstrapServers = configuration.GetConnectionString("messaging"),
             // Fixed properties
             SecurityProtocol = SecurityProtocol.Plaintext,
             Acks             = Acks.All
@@ -41,7 +41,7 @@ public static class ServiceExtensions
         var consumerConfig = new ConsumerConfig
         {
             // User-specific properties that you must set
-            BootstrapServers = builder.Configuration.GetConnectionString("messaging"),
+            BootstrapServers = configuration.GetConnectionString("messaging"),
             // Fixed properties
             SecurityProtocol = SecurityProtocol.Plaintext,
             GroupId          = "stickerlandia-users",
@@ -49,14 +49,14 @@ public static class ServiceExtensions
             EnableAutoCommit = false,
         };
         
-        builder.Services.AddSingleton(producerConfig);
-        builder.Services.AddSingleton(consumerConfig);
+        services.AddSingleton(producerConfig);
+        services.AddSingleton(consumerConfig);
         
         // Register event publisher as singleton
-        builder.Services.AddSingleton<IUserEventPublisher, KafkaEventPublisher>();
-        builder.Services.AddSingleton<IMessagingWorker, KafakStickerClaimedWorker>();
+        services.AddSingleton<IUserEventPublisher, KafkaEventPublisher>();
+        services.AddSingleton<IMessagingWorker, KafakStickerClaimedWorker>();
 
-        return builder;
+        return services;
     }
 
     public static IServiceCollection AddPostgresAuthServices(this IServiceCollection services,

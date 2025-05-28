@@ -17,28 +17,9 @@ public static class ServiceDefaults
     {
         builder.Configuration.AddEnvironmentVariables();
         builder.Services.AddLogging();
-        
-        var drivenAdapters = Environment.GetEnvironmentVariable("DRIVEN") ?? "";
+        builder.Services.ConfigureDefaultUserManagementServices(builder.Configuration);
 
-        switch (drivenAdapters.ToUpper())
-        {
-            case "AZURE":
-                builder.AddAzureAdapters();
-                break;
-            case "AGNOSTIC":
-                builder.AddAgnosticAdapters();
-                break;
-            case "AWS":
-                break;
-            default:
-                throw new ArgumentException($"Unknown driven adapters {drivenAdapters}");
-        }
-
-        builder.Services
-            .AddStickerlandiaUserManagement();
-        
         if (builder is WebApplicationBuilder hostBuilder)
-        {
             hostBuilder.Host.UseSerilog((_, config) =>
             {
                 config.MinimumLevel.Information()
@@ -46,8 +27,32 @@ public static class ServiceDefaults
                     .Enrich.FromLogContext()
                     .WriteTo.Console(new JsonFormatter());
             });
-        }
-        
+
         return builder;
+    }
+
+    public static IServiceCollection ConfigureDefaultUserManagementServices(this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        var drivenAdapters = Environment.GetEnvironmentVariable("DRIVEN") ?? "";
+
+        switch (drivenAdapters.ToUpper())
+        {
+            case "AZURE":
+                services.AddAzureAdapters(configuration);
+                break;
+            case "AGNOSTIC":
+                services.AddAgnosticAdapters(configuration);
+                break;
+            case "AWS":
+                break;
+            default:
+                throw new ArgumentException($"Unknown driven adapters {drivenAdapters}");
+        }
+
+        services
+            .AddStickerlandiaUserManagement();
+
+        return services;
     }
 }

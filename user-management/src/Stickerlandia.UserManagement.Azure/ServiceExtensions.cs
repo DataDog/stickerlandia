@@ -22,15 +22,15 @@ namespace Stickerlandia.UserManagement.Azure;
 
 public static class ServiceExtensions
 {
-    public static IHostApplicationBuilder AddAzureAdapters(this IHostApplicationBuilder builder)
+    public static IServiceCollection AddAzureAdapters(this IServiceCollection services, IConfiguration configuration)
     {
-        builder.Services.AddPostgresAuthServices(builder.Configuration);
+        services.AddPostgresAuthServices(configuration);
 
-        builder.Services.AddSingleton<IMessagingWorker, ServiceBusStickerClaimedWorker>();
-        builder.Services.AddSingleton(new ServiceBusClient(builder.Configuration["ConnectionStrings:messaging"]));
+        services.AddSingleton<IMessagingWorker, ServiceBusStickerClaimedWorker>();
+        services.AddSingleton(new ServiceBusClient(configuration["ConnectionStrings:messaging"]));
 
-        builder.Services.AddSingleton<IUserEventPublisher, ServiceBusEventPublisher>();
+        services.AddSingleton<IUserEventPublisher, ServiceBusEventPublisher>();
 
-        return builder;
+        return services;
     }
 }
