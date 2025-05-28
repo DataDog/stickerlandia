@@ -207,8 +207,7 @@ public static class AppBuilderExtensions
             .WithEnvironment("DRIVING", builder.Configuration["DRIVING"])
             .WithEnvironment("DRIVEN", builder.Configuration["DRIVEN"])
             .WaitFor(resources.MessagingResource)
-            .WaitFor(resources.DatabaseResource)
-            .WithExternalHttpEndpoints();
+            .WaitFor(resources.DatabaseResource);
 
         return builder;
     }

@@ -14,8 +14,8 @@ using Stickerlandia.UserManagement.FunctionApp.Middlewares;
 using Stickerlandia.UserManagement.ServiceDefaults;
 
 var builder = FunctionsApplication.CreateBuilder(args);
-builder.UseDefaultWorkerMiddleware();
 builder.ConfigureFunctionsWebApplication();
+builder.UseDefaultWorkerMiddleware();
 builder.AddServiceDefaults();
 
 builder.UseMiddleware<ExceptionHandlingMiddleware>();
