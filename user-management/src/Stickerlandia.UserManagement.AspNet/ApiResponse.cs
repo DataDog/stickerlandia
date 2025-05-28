@@ -39,23 +39,16 @@ public record ApiResponse<T>
 
     internal async Task<HttpResponseData> WriteResponse(HttpRequestData req)
     {
-        var response = req.CreateResponse(StatusCode);
-        response.StatusCode = StatusCode;
-        await response.WriteAsJsonAsync(this);
-        return response;
-    }
-
-    internal async Task<HttpResponseData> WriteResponse(HttpRequestData req, HttpStatusCode statusCode)
-    {
         var activeSpan = Tracer.Instance.ActiveScope?.Span;
 
         if (activeSpan != null)
         {
-            activeSpan.SetTag("http.status_code", (int)statusCode);
+            activeSpan.SetTag("http.status_code", (int)StatusCode);
             activeSpan.SetTag("http.method", req.Method);
         }
         
-        StatusCode = statusCode;
-        return await WriteResponse(req);
+        var response = req.CreateResponse(StatusCode);
+        await response.WriteAsJsonAsync(this);
+        return response;
     }
 }

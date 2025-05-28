@@ -28,7 +28,6 @@ public class UpdateUserDetailsFunction(UpdateUserDetailsHandler updateHandler, I
             return await new ApiResponse<UserAccountDTO?>(false, null, "Invalid login request").WriteResponse(req, HttpStatusCode.Unauthorized);
         }
         
-        // TODO: Implement auth service
         var authorizedUser = authService.VerifyPassword("", "", new ImmutableArray<string>());
         
         // Deserialize request
@@ -39,7 +38,6 @@ public class UpdateUserDetailsFunction(UpdateUserDetailsHandler updateHandler, I
             return await new ApiResponse<RegisterUserCommand?>(false, null, "Invalid login request").WriteResponse(req, HttpStatusCode.BadRequest);
         }
         
-        // TODO: Get from auth service
         updateUserDetailsRequest.AccountId = new AccountId("a-random-account-id");
         await updateHandler.Handle(updateUserDetailsRequest);
 

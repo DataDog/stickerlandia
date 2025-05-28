@@ -10,11 +10,11 @@ public static class GetUserDetails
 {
     public static async Task<ApiResponse<UserAccountDTO?>> HandleAsync(
         HttpContext context,
-        ClaimsPrincipal user,
+        ClaimsPrincipal? user,
         [FromServices] IAuthService authService,
         [FromServices] GetUserDetailsQueryHandler handler)
     {
-        if (user.Identity.Name == null)
+        if (user?.Identity?.Name == null)
         {
             return new ApiResponse<UserAccountDTO?>(false, null, "User not authenticated", HttpStatusCode.Unauthorized);
         }

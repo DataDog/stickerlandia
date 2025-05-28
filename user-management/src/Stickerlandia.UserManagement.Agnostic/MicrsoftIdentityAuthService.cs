@@ -91,23 +91,24 @@ public class MicrosoftIdentityAuthService(
     {
         await dbContext.Database.MigrateAsync();
     }
-
+    
     private static IEnumerable<string> GetDestinations(Claim claim)
     {
         // Note: by default, claims are NOT automatically included in the access and identity tokens.
         // To allow OpenIddict to serialize them, you must attach them a destination, that specifies
         // whether they should be included in access tokens, in identity tokens or in both.
-
         return claim.Type switch
         {
             OpenIddictConstants.Claims.Name or
                 OpenIddictConstants.Claims.Subject
-                => new[]
-                {
-                    OpenIddictConstants.Destinations.AccessToken, OpenIddictConstants.Destinations.IdentityToken
-                },
+                => new[] { OpenIddictConstants.Destinations.AccessToken },
 
-            _ => new[] { OpenIddictConstants.Destinations.AccessToken }
+            OpenIddictConstants.Claims.Email or
+                OpenIddictConstants.Claims.Role or
+                OpenIddictConstants.Claims.PreferredUsername
+                => new[] { OpenIddictConstants.Destinations.IdentityToken },
+
+            _ => Array.Empty<string>()
         };
     }
 }

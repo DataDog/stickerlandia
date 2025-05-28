@@ -99,23 +99,7 @@ public class DynamoDbIdentityAuthService(
 
         return identity;
     }
-
-    public async Task CreateIdentityFor(UserAccount userAccount, string password)
-    {
-        var identityUser = new IdentityUser { UserName = userAccount.Id.Value, Email = userAccount.EmailAddress };
-
-        var result = await userManager.CreateAsync(identityUser, password);
-        
-        if (!result.Succeeded)
-        {
-            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-            logger.LogError("Failed to create user {Username}: {Errors}", userAccount.Id, errors);
-            throw new InvalidOperationException($"Failed to create user: {errors}");
-        }
-
-        logger.LogInformation("Successfully created user {Username} with DynamoDB storage", userAccount.Id);
-    }
-
+    
     public Task EnsureStoreCreatedAsync()
     {
         return Task.CompletedTask;
@@ -131,12 +115,12 @@ public class DynamoDbIdentityAuthService(
         {
             OpenIddictConstants.Claims.Name or
             OpenIddictConstants.Claims.Subject
-                => new[] { OpenIddictConstants.Destinations.AccessToken, OpenIddictConstants.Destinations.IdentityToken },
+                => new[] { OpenIddictConstants.Destinations.AccessToken },
 
             OpenIddictConstants.Claims.Email or
             OpenIddictConstants.Claims.Role or
             OpenIddictConstants.Claims.PreferredUsername
-                => new[] { OpenIddictConstants.Destinations.AccessToken },
+                => new[] { OpenIddictConstants.Destinations.IdentityToken },
 
             _ => Array.Empty<string>()
         };

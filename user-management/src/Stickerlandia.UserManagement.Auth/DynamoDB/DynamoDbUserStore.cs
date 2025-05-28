@@ -26,7 +26,8 @@ public class DynamoDbUserStore :
     IUserPhoneNumberStore<IdentityUser>,
     IUserTwoFactorStore<IdentityUser>,
     IUserAuthenticatorKeyStore<IdentityUser>,
-    IUserTwoFactorRecoveryCodeStore<IdentityUser>
+    IUserTwoFactorRecoveryCodeStore<IdentityUser>,
+    IDisposable
 {
     private readonly DynamoDBContext _context;
     private readonly IAmazonDynamoDB _dynamoDb;

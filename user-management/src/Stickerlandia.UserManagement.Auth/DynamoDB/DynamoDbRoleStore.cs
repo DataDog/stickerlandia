@@ -12,22 +12,16 @@ namespace Stickerlandia.UserManagement.Auth.DynamoDB;
 /// <summary>
 /// DynamoDB implementation of IRoleStore for ASP.NET Core Identity
 /// </summary>
-public class DynamoDbRoleStore : 
+public class DynamoDbRoleStore(DynamoDBContext context, IAmazonDynamoDB dynamoDb) :
     IRoleStore<IdentityRole>,
-    IRoleClaimStore<IdentityRole>
+    IRoleClaimStore<IdentityRole>,
+    IDisposable
 {
-    private readonly DynamoDBContext _context;
-    private readonly IAmazonDynamoDB _dynamoDb;
-
-    public DynamoDbRoleStore(DynamoDBContext context, IAmazonDynamoDB dynamoDb)
-    {
-        _context = context;
-        _dynamoDb = dynamoDb;
-    }
+    private readonly IAmazonDynamoDB _dynamoDb = dynamoDb;
 
     public void Dispose()
     {
-        _context?.Dispose();
+        context?.Dispose();
     }
 
     #region IRoleStore
@@ -35,26 +29,26 @@ public class DynamoDbRoleStore :
     public async Task<IdentityResult> CreateAsync(IdentityRole role, CancellationToken cancellationToken)
     {
         var dynamoDbRole = DynamoDbRole.FromIdentityRole(role);
-        await _context.SaveAsync(dynamoDbRole, cancellationToken);
+        await context.SaveAsync(dynamoDbRole, cancellationToken);
         return IdentityResult.Success;
     }
 
     public async Task<IdentityResult> DeleteAsync(IdentityRole role, CancellationToken cancellationToken)
     {
-        await _context.DeleteAsync<DynamoDbRole>(role.Id, cancellationToken);
+        await context.DeleteAsync<DynamoDbRole>(role.Id, cancellationToken);
         return IdentityResult.Success;
     }
 
     public async Task<IdentityRole?> FindByIdAsync(string roleId, CancellationToken cancellationToken)
     {
-        var dynamoDbRole = await _context.LoadAsync<DynamoDbRole>(roleId, cancellationToken);
+        var dynamoDbRole = await context.LoadAsync<DynamoDbRole>(roleId, cancellationToken);
         return dynamoDbRole?.ToIdentityRole();
     }
 
     public async Task<IdentityRole?> FindByNameAsync(string normalizedRoleName, CancellationToken cancellationToken)
     {
         // Use scan to find role by normalized name - not optimal but functional
-        var allRoles = await _context.ScanAsync<DynamoDbRole>(new List<ScanCondition>())
+        var allRoles = await context.ScanAsync<DynamoDbRole>(new List<ScanCondition>())
             .GetRemainingAsync(cancellationToken);
         
         var role = allRoles.FirstOrDefault(r => r.NormalizedName == normalizedRoleName);
@@ -91,7 +85,7 @@ public class DynamoDbRoleStore :
     public async Task<IdentityResult> UpdateAsync(IdentityRole role, CancellationToken cancellationToken)
     {
         var dynamoDbRole = DynamoDbRole.FromIdentityRole(role);
-        await _context.SaveAsync(dynamoDbRole, cancellationToken);
+        await context.SaveAsync(dynamoDbRole, cancellationToken);
         return IdentityResult.Success;
     }
 
@@ -109,12 +103,12 @@ public class DynamoDbRoleStore :
         };
         
         var dynamoDbRoleClaim = DynamoDbRoleClaim.FromIdentityRoleClaim(roleClaim);
-        await _context.SaveAsync(dynamoDbRoleClaim, cancellationToken);
+        await context.SaveAsync(dynamoDbRoleClaim, cancellationToken);
     }
 
     public async Task<IList<Claim>> GetClaimsAsync(IdentityRole role, CancellationToken cancellationToken = default)
     {
-        var roleClaims = await _context.QueryAsync<DynamoDbRoleClaim>(role.Id)
+        var roleClaims = await context.QueryAsync<DynamoDbRoleClaim>(role.Id)
             .GetRemainingAsync(cancellationToken);
         
         return roleClaims.Select(c => new Claim(c.ClaimType!, c.ClaimValue!)).ToList();
@@ -122,14 +116,14 @@ public class DynamoDbRoleStore :
 
     public async Task RemoveClaimAsync(IdentityRole role, Claim claim, CancellationToken cancellationToken = default)
     {
-        var existingClaims = await _context.QueryAsync<DynamoDbRoleClaim>(role.Id)
+        var existingClaims = await context.QueryAsync<DynamoDbRoleClaim>(role.Id)
             .GetRemainingAsync(cancellationToken);
         
         var claimsToRemove = existingClaims.Where(c => c.ClaimType == claim.Type && c.ClaimValue == claim.Value);
         
         foreach (var claimToRemove in claimsToRemove)
         {
-            await _context.DeleteAsync(claimToRemove, cancellationToken);
+            await context.DeleteAsync(claimToRemove, cancellationToken);
         }
     }
 

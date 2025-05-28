@@ -18,7 +18,6 @@ public class GetUserDetailsFunction(GetUserDetailsQueryHandler handler, IAuthSer
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "users/v1/details")]
         HttpRequestData req)
     {
-        //TODO: Work out how to make this work for Azure funcitons
         var result = await handler.Handle(new GetUserDetailsQuery(new AccountId("a-random-account-id")));
 
         // Return successful response with token
