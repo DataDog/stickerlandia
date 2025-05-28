@@ -50,7 +50,7 @@ public class StickerEventPublisherTest {
     @Test
     public void testPublishStickerAssigned() {
         // Prepare test data
-        Sticker sticker = new Sticker("sticker-123", "Test Sticker", "Test Description", "https://example.com/image.png");
+        Sticker sticker = new Sticker("sticker-123", "Test Sticker", "Test Description", "https://example.com/image.png", 100);
         StickerAssignment assignment = new StickerAssignment("user-123", sticker, "For testing");
         
         // Execute the method
@@ -77,7 +77,7 @@ public class StickerEventPublisherTest {
     @Test
     public void testPublishStickerRemoved() {
         // Prepare test data
-        Sticker sticker = new Sticker("sticker-456", "Test Sticker", "Test Description", "https://example.com/image.png");
+        Sticker sticker = new Sticker("sticker-456", "Test Sticker", "Test Description", "https://example.com/image.png", 100);
         StickerAssignment assignment = new StickerAssignment("user-456", sticker, "For testing");
         Instant removedAt = Instant.now();
         assignment.setRemovedAt(removedAt);
@@ -98,7 +98,7 @@ public class StickerEventPublisherTest {
     @Test
     public void testPublishStickerRemovedWithActiveAssignment() {
         // Prepare test data with no removal date
-        Sticker sticker = new Sticker("sticker-789", "Test Sticker", "Test Description", "https://example.com/image.png");
+        Sticker sticker = new Sticker("sticker-789", "Test Sticker", "Test Description", "https://example.com/image.png", 100);
         StickerAssignment assignment = new StickerAssignment("user-789", sticker, "For testing");
         
         // Execute the method - should log a warning but not throw exception
@@ -111,7 +111,7 @@ public class StickerEventPublisherTest {
     @Test
     public void testEmitterFailure() {
         // Prepare test data
-        Sticker sticker = new Sticker("sticker-fail", "Test Sticker", "Test Description", "https://example.com/image.png");
+        Sticker sticker = new Sticker("sticker-fail", "Test Sticker", "Test Description", "https://example.com/image.png", 100);
         StickerAssignment assignment = new StickerAssignment("user-fail", sticker, "For testing");
         
         // Simulate emitter failure

@@ -25,6 +25,9 @@ public class Sticker extends PanacheEntityBase {
     @Column(name = "image_url")
     private String imageUrl;
 
+    @Column(name = "sticker_quantity_remaining", nullable = false)
+    private Integer stickerQuantityRemaining;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -36,11 +39,12 @@ public class Sticker extends PanacheEntityBase {
     }
 
     // Constructor with fields
-    public Sticker(String stickerId, String name, String description, String imageUrl) {
+    public Sticker(String stickerId, String name, String description, String imageUrl, Integer stickerQuantityRemaining) {
         this.stickerId = stickerId;
         this.name = name;
         this.description = description;
         this.imageUrl = imageUrl;
+        this.stickerQuantityRemaining = stickerQuantityRemaining;
         this.createdAt = Instant.now();
     }
 
@@ -91,6 +95,29 @@ public class Sticker extends PanacheEntityBase {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Integer getStickerQuantityRemaining() {
+        return stickerQuantityRemaining;
+    }
+
+    public void setStickerQuantityRemaining(Integer stickerQuantityRemaining) {
+        this.stickerQuantityRemaining = stickerQuantityRemaining;
+    }
+
+    // Helper methods for quantity management
+    public boolean isAvailable() {
+        return stickerQuantityRemaining == null || stickerQuantityRemaining == -1 || stickerQuantityRemaining > 0;
+    }
+
+    public boolean hasUnlimitedQuantity() {
+        return stickerQuantityRemaining == null || stickerQuantityRemaining == -1;
+    }
+
+    public void decrementQuantity() {
+        if (stickerQuantityRemaining != null && stickerQuantityRemaining > 0) {
+            stickerQuantityRemaining--;
+        }
     }
 
     // Helper methods for finding stickers

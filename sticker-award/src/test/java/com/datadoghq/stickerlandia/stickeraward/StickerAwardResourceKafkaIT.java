@@ -35,7 +35,7 @@ public class StickerAwardResourceKafkaIT {
     @Order(1)
     public void testCreateSticker() {
         // Create a test sticker in the database
-        Sticker sticker = new Sticker(TEST_STICKER_ID, "Test Sticker", "A test sticker", "https://example.com/sticker.png");
+        Sticker sticker = new Sticker(TEST_STICKER_ID, "Test Sticker", "A test sticker", "https://example.com/sticker.png", 100);
         sticker.persist();
     }
     
@@ -55,9 +55,8 @@ public class StickerAwardResourceKafkaIT {
             .post("/api/award/v1/users/" + TEST_USER_ID + "/stickers")
             .then()
             .statusCode(Status.CREATED.getStatusCode())
-            .body("success", is(true))
-            .body("data.userId", is(TEST_USER_ID))
-            .body("data.stickerId", is(TEST_STICKER_ID));
+            .body("userId", is(TEST_USER_ID))
+            .body("stickerId", is(TEST_STICKER_ID));
     }
     
     @Test
@@ -69,10 +68,9 @@ public class StickerAwardResourceKafkaIT {
             .get("/api/award/v1/users/" + TEST_USER_ID + "/stickers")
             .then()
             .statusCode(Status.OK.getStatusCode())
-            .body("success", is(true))
-            .body("data.userId", is(TEST_USER_ID))
-            .body("data.stickers.size()", is(1))
-            .body("data.stickers[0].stickerId", is(TEST_STICKER_ID));
+            .body("userId", is(TEST_USER_ID))
+            .body("stickers.size()", is(1))
+            .body("stickers[0].stickerId", is(TEST_STICKER_ID));
     }
     
     @Test
@@ -84,9 +82,8 @@ public class StickerAwardResourceKafkaIT {
             .delete("/api/award/v1/users/" + TEST_USER_ID + "/stickers/" + TEST_STICKER_ID)
             .then()
             .statusCode(Status.OK.getStatusCode())
-            .body("success", is(true))
-            .body("data.userId", is(TEST_USER_ID))
-            .body("data.stickerId", is(TEST_STICKER_ID));
+            .body("userId", is(TEST_USER_ID))
+            .body("stickerId", is(TEST_STICKER_ID));
             
         // Verify the user no longer has the sticker
         given()
@@ -94,8 +91,7 @@ public class StickerAwardResourceKafkaIT {
             .get("/api/award/v1/users/" + TEST_USER_ID + "/stickers")
             .then()
             .statusCode(Status.OK.getStatusCode())
-            .body("success", is(true))
-            .body("data.userId", is(TEST_USER_ID))
-            .body("data.stickers.size()", is(0));
+            .body("userId", is(TEST_USER_ID))
+            .body("stickers.size()", is(0));
     }
 }
