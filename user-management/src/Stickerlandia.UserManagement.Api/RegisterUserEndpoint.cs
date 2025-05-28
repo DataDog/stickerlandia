@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.RegisterUser;
 
-namespace Stickerlandia.UserManagement.AspNet;
+namespace Stickerlandia.UserManagement.Api;
 
 public static class RegisterUserEndpoint
 {

@@ -20,6 +20,4 @@ public interface IAuthService
     /// <param name="scopes">Available application scopes for the claim.</param>
     /// <returns>A valid claims identity if success, or null if fails. Throws a <see cref="LoginFailedException"/> if the user cannot login.</returns>
     Task<ClaimsIdentity?> VerifyPassword(string username, string password, ImmutableArray<string> scopes);
-
-    Task EnsureStoreCreatedAsync();
 }

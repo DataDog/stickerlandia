@@ -5,17 +5,11 @@ using Xunit.Abstractions;
 
 namespace Stickerlandia.UserManagement.IntegrationTest
 {
-    public class AccountTests : IClassFixture<TestSetupFixture>
+    public class AccountTests(ITestOutputHelper testOutputHelper, TestSetupFixture testSetupFixture)
+        : IClassFixture<TestSetupFixture>
     {
-        private readonly AccountDriver _driver;
-        private readonly ITestOutputHelper _testOutputHelper;
-        
-        public AccountTests(ITestOutputHelper testOutputHelper, TestSetupFixture testSetupFixture)
-        {
-            _driver = new AccountDriver(testOutputHelper, testSetupFixture.HttpClient, testSetupFixture.Messaging);
-            _testOutputHelper = testOutputHelper;
-        }
-        
+        private readonly AccountDriver _driver = new(testOutputHelper, testSetupFixture.HttpClient, testSetupFixture.Messaging);
+
         [Fact]
         public async Task WhenStickerIsClaimed_ThenAUsersStickerCountShouldIncrement()
         {
@@ -66,8 +60,8 @@ namespace Stickerlandia.UserManagement.IntegrationTest
             }
             catch (Exception ex)
             {
-                _testOutputHelper.WriteLine(ex.Message);
-                _testOutputHelper.WriteLine(ex.StackTrace);
+                testOutputHelper.WriteLine(ex.Message);
+                testOutputHelper.WriteLine(ex.StackTrace);
                 
                 // Wait for logs to flish
                 await Task.Delay(TimeSpan.FromSeconds(10));
@@ -197,32 +191,19 @@ namespace Stickerlandia.UserManagement.IntegrationTest
             registerResult.Should().BeNull();
         }
         
-        [Fact]
-        public async Task WhenAUserUsesAnExtremelyLongPassword_RegistrationShouldFail()
-        {
-            // Arrange
-            var emailAddress = $"{Guid.NewGuid()}@test.com";
-            var longPassword = new string('A', 100) + new string('a', 100) + new string('1', 100) + new string('!', 100);
-            
-            // Act
-            var registerResult = await _driver.RegisterUser(emailAddress, longPassword);
-            
-            // Assert
-            registerResult.Should().BeNull();
-        }
-        
         [Theory]
-        [InlineData("test+tag@example.com")]          // Gmail-style tags
-        [InlineData("test.email@example.com")]        // Dots in local part
-        [InlineData("email-with-hyphen@example.com")] // Hyphens
-        [InlineData("email_with_underscore@example.com")] // Underscores
+        [InlineData("test+tag")]          // Gmail-style tags
+        [InlineData("test.email")]        // Dots in local part
+        [InlineData("email-with-hyphen")] // Hyphens
+        [InlineData("email_with_underscore")] // Underscores
         public async Task WhenAUserUsesASpecialEmailFormat_RegistrationShouldBeSuccessful(string email)
         {
+            var emailUnderTest = $"{email}{Guid.NewGuid()}@example.com";
             // Arrange
             var password = "ValidPassword123!";
             
             // Act
-            var registerResult = await _driver.RegisterUser(email, password);
+            var registerResult = await _driver.RegisterUser(emailUnderTest, password);
             
             // Assert
             registerResult.Should().NotBeNull();

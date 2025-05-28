@@ -7,7 +7,7 @@ using Saunter;
 using Saunter.AsyncApiSchema.v2;
 using Stickerlandia.UserManagement.Azure;
 
-namespace Stickerlandia.UserManagement.AspNet.Configurations;
+namespace Stickerlandia.UserManagement.Api.Configurations;
 
 public static class DocumentationConfig
 {

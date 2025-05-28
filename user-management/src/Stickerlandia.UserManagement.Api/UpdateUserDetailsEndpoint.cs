@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.UpdateUserDetails;
 
-namespace Stickerlandia.UserManagement.AspNet;
+namespace Stickerlandia.UserManagement.Api;
 
 public static class UpdateUserDetailsEndpoint
 {

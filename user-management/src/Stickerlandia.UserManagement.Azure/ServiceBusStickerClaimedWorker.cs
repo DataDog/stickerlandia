@@ -39,7 +39,7 @@ public class ServiceBusStickerClaimedWorker : IMessagingWorker
     private async Task ProcessMessageAsync(ProcessMessageEventArgs args)
     {
         using var processSpan = Tracer.Instance.StartActive($"process users.stickerClaimed.v1");
-        
+
         using var scope = _serviceScopeFactory.CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<StickerClaimedEventHandler>();
 
@@ -51,7 +51,15 @@ public class ServiceBusStickerClaimedWorker : IMessagingWorker
         if (evtData == null) await args.DeadLetterMessageAsync(args.Message, "Message body cannot be deserialized");
 
         // Process your message here
-        await handler.Handle(evtData!);
+        try
+        {
+            await handler.Handle(evtData!);
+        }
+        catch (InvalidUserException ex)
+        {
+            _logger.LogWarning(ex, "User with account in this event not found");
+            await args.DeadLetterMessageAsync(args.Message, "Invalid account id");
+        }
 
         // Complete the message
         await args.CompleteMessageAsync(args.Message, CancellationToken.None);

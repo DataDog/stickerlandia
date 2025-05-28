@@ -21,7 +21,7 @@ public class StickerClaimedEventHandler(IUsers users)
 
             if (account is null)
             {
-                return;
+                throw new InvalidUserException("No user found with the provided account ID.");
             }
             
             account.StickerOrdered();

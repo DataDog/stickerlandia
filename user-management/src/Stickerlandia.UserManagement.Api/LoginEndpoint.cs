@@ -5,7 +5,7 @@ using OpenIddict.Server.AspNetCore;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.Login;
 
-namespace Stickerlandia.UserManagement.AspNet;
+namespace Stickerlandia.UserManagement.Api;
 
 public static class LoginEndpoint
 {

@@ -4,7 +4,7 @@
 
 using Stickerlandia.UserManagement.Core.Outbox;
 
-namespace Stickerlandia.UserManagement.AspNet;
+namespace Stickerlandia.UserManagement.Worker;
 
 public class OutboxWorker(OutboxProcessor outboxProcessor, ILogger<OutboxWorker> logger)
     : BackgroundService

@@ -8,53 +8,24 @@ using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Json;
 using Stickerlandia.UserManagement.Agnostic;
-using Stickerlandia.UserManagement.AspNet;
-using Stickerlandia.UserManagement.AspNet.Configurations;
-using Stickerlandia.UserManagement.AspNet.Middlewares;
+using Stickerlandia.UserManagement.Api;
+using Stickerlandia.UserManagement.Api.Configurations;
+using Stickerlandia.UserManagement.Api.Middlewares;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.Login;
 using Stickerlandia.UserManagement.Core.RegisterUser;
 using Stickerlandia.UserManagement.Auth;
 using Stickerlandia.UserManagement.Azure;
+using Stickerlandia.UserManagement.ServiceDefaults;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Configuration.AddEnvironmentVariables();
-
-builder.Configuration.AddEnvironmentVariables();
-builder.Services.AddLogging();
-        
-var drivenAdapters = Environment.GetEnvironmentVariable("DRIVEN") ?? "";
-
-switch (drivenAdapters.ToUpper())
-{
-    case "AZURE":
-        builder.AddAzureAdapters();
-        break;
-    case "AGNOSTIC":
-        builder.AddAgnosticAdapters();
-        break;
-    case "AWS":
-        break;
-    default:
-        throw new ArgumentException($"Unknown driven adapters {drivenAdapters}");
-}
-
-builder.Services
-    .AddStickerlandiaUserManagement();
+builder.AddServiceDefaults();
 
 var logger = Log.Logger = new LoggerConfiguration()
         .MinimumLevel.Information()
         .Enrich.FromLogContext()
         .WriteTo.Console(new JsonFormatter())
     .CreateLogger();
-
-builder.Host.UseSerilog((_, config) =>
-{
-    config.MinimumLevel.Information()
-        .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
-        .Enrich.FromLogContext()
-        .WriteTo.Console(new JsonFormatter());
-});
 
 builder.AddDocumentationEndpoints();
 
@@ -83,8 +54,6 @@ builder.Services.AddRateLimiter(options =>
 });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddResponseCompression(options => { options.EnableForHttps = true; });
-
-builder.Services.AddHostedService<OutboxWorker>();
 
 builder.Services.AddControllers();
 builder.Services.AddCors(options =>
@@ -154,13 +123,6 @@ v1ApiEndpoints.MapPost("register", RegisterUserEndpoint.HandleAsync)
     .WithDescription("RegisterUser as a new user")
     .Produces<ApiResponse<RegisterResponse>>(200)
     .ProducesProblem(400);
-
-var scope = app.Services.GetRequiredService<IServiceScopeFactory>();
-using (var serviceScope = scope.CreateScope())
-{
-    var userStore = serviceScope.ServiceProvider.GetRequiredService<IUsers>();
-    await userStore.MigrateAsync();
-}
 
 try
 {

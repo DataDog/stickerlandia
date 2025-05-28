@@ -86,11 +86,6 @@ public class MicrosoftIdentityAuthService(
 
         return identity;
     }
-
-    public async Task EnsureStoreCreatedAsync()
-    {
-        await dbContext.Database.MigrateAsync();
-    }
     
     private static IEnumerable<string> GetDestinations(Claim claim)
     {

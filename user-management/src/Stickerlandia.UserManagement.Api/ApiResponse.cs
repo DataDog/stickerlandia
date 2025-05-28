@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 using Datadog.Trace;
 using Microsoft.Azure.Functions.Worker.Http;
 
-namespace Stickerlandia.UserManagement.AspNet;
+namespace Stickerlandia.UserManagement.Api;
 
 public record ApiResponse<T>
 {

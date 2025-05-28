@@ -3,6 +3,7 @@
 // Copyright 2025 Datadog, Inc.
 
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using OpenIddict.Abstractions;
@@ -20,7 +21,7 @@ public class AuthenticationWorker : IHostedService
     {
         using var scope = _serviceProvider.CreateScope();
         var identityDbContext = scope.ServiceProvider.GetRequiredService<UserManagementDbContext>();
-        await identityDbContext.Database.EnsureCreatedAsync(cancellationToken);
+        await identityDbContext.Database.MigrateAsync(cancellationToken);
 
         var manager = scope.ServiceProvider.GetRequiredService<IOpenIddictApplicationManager>();
 

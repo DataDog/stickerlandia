@@ -6,9 +6,9 @@ namespace Stickerlandia.UserManagement.Aspire;
 
 public enum DrivingAdapter
 {
-    ASPNET,
-    AZURE_FUNCTIONS,
-    AWS_LAMBDA
+    AGNOSTIC,
+    AZURE,
+    AWS
 }
 
 public static class DrivingAdapterSettings
@@ -19,26 +19,23 @@ public static class DrivingAdapterSettings
     {
         get
         {
-            if (_drivingAdapter is not null)
-            {
-                return _drivingAdapter;
-            }
-            
+            if (_drivingAdapter is not null) return _drivingAdapter;
+
             var drivingSetting = Environment.GetEnvironmentVariable("DRIVING");
-        
+
             switch (drivingSetting)
             {
                 case "AZURE_FUNCTIONS":
-                    _drivingAdapter = Aspire.DrivingAdapter.AZURE_FUNCTIONS;
+                    _drivingAdapter = Aspire.DrivingAdapter.AZURE;
                     break;
                 case "AWS_LAMBDA":
-                    _drivingAdapter = Aspire.DrivingAdapter.AWS_LAMBDA;
+                    _drivingAdapter = Aspire.DrivingAdapter.AWS;
                     break;
                 default:
-                    _drivingAdapter = Aspire.DrivingAdapter.ASPNET;
+                    _drivingAdapter = Aspire.DrivingAdapter.AGNOSTIC;
                     break;
             }
-            
+
             return _drivingAdapter;
         }
     }

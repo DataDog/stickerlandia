@@ -24,7 +24,8 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Stickerlandia.UserManagement.FunctionApp\Stickerlandia.UserManagement.FunctionApp.csproj" />
-      <ProjectReference Include="..\Stickerlandia.UserManagement.AspNet\Stickerlandia.UserManagement.AspNet.csproj" />
+      <ProjectReference Include="..\Stickerlandia.UserManagement.Api\Stickerlandia.UserManagement.Api.csproj" />
+      <ProjectReference Include="..\Stickerlandia.UserManagement.Worker\Stickerlandia.UserManagement.Worker.csproj" />
     </ItemGroup>
 
 </Project>

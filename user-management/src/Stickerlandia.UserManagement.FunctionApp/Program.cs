@@ -11,27 +11,12 @@ using Stickerlandia.UserManagement.Agnostic;
 using Stickerlandia.UserManagement.Azure;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.FunctionApp.Middlewares;
+using Stickerlandia.UserManagement.ServiceDefaults;
 
 var builder = FunctionsApplication.CreateBuilder(args);
 builder.UseDefaultWorkerMiddleware();
 builder.ConfigureFunctionsWebApplication();
-
-var drivenAdapters = Environment.GetEnvironmentVariable("DRIVEN") ?? "";
-
-switch (drivenAdapters.ToUpper())
-{
-    case "AZURE":
-        builder.AddAzureAdapters();
-        break;
-    case "AGNOSTIC":
-        builder.AddAgnosticAdapters();
-        break;
-    case "AWS":
-        break;
-    default:
-        throw new ArgumentException($"Unknown driven adapters {drivenAdapters}");
-}
-
+builder.AddServiceDefaults();
 
 builder.UseMiddleware<ExceptionHandlingMiddleware>();
 
@@ -67,12 +52,5 @@ builder.Services
 appLogger.LogInformation("Application started"); ;
 
 var app = builder.Build();
-
-appLogger.LogInformation("Checking database migration status");
-
-var database = app.Services.GetRequiredService<IUsers>();
-await database.MigrateAsync();
-
-appLogger.LogInformation("Done");
 
 await app.RunAsync();

@@ -13,13 +13,15 @@ public class TestSetupFixture : IDisposable
     public readonly IMessaging Messaging;
     public readonly HttpClient HttpClient;
     public readonly DistributedApplication? App;
-    
+
     private const string ApiApplicationName = "api";
     private const string DatabaseResourceName = "database";
     private const string MessagingResourceName = "messaging";
 
     public TestSetupFixture()
     {
+        var drivenAdapter = Environment.GetEnvironmentVariable("DRIVEN") ?? "AGNOSTIC";
+        var drivingAdapter = Environment.GetEnvironmentVariable("DRIVING") ?? "AGNOSTIC";
         var shouldTestAgainstRealResources = Environment.GetEnvironmentVariable("TEST_REAL_RESOURCES") == "true";
 
         if (!shouldTestAgainstRealResources)
@@ -30,9 +32,7 @@ public class TestSetupFixture : IDisposable
                 .GetAwaiter()
                 .GetResult();
 
-            builder.Configuration["DRIVING"] = Environment.GetEnvironmentVariable("DRIVING") ?? "ASPNET";
-            
-            var drivenAdapter = Environment.GetEnvironmentVariable("DRIVEN") ?? "AGNOSTIC";
+            builder.Configuration["DRIVING"] = drivingAdapter;
             builder.Configuration["DRIVEN"] = drivenAdapter;
 
             App = builder.BuildAsync().GetAwaiter().GetResult();
@@ -41,22 +41,23 @@ public class TestSetupFixture : IDisposable
 
             using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(30));
             App.ResourceNotifications.WaitForResourceHealthyAsync(
-                "api",
-                cts.Token)
+                    ApiApplicationName,
+                    cts.Token)
                 .GetAwaiter().GetResult();
 
             // When Azure Functions is used, the API is not available immediately even when the container is healthy.
             Task.Delay(TimeSpan.FromSeconds(10)).GetAwaiter().GetResult();
 
-            var messagingConnectionString = App.GetConnectionStringAsync("messaging").GetAwaiter().GetResult();
-
-            HttpClient = App.CreateHttpClient("api", "https");
-            Messaging = MessagingProviderFactory.From(drivenAdapter, messagingConnectionString);
+            var messagingConnectionString = App.GetConnectionStringAsync(MessagingResourceName).GetAwaiter().GetResult();
+            Messaging = MessagingProviderFactory.From(drivenAdapter,
+                TestConstants.DefaultMessagingConnection(drivenAdapter, messagingConnectionString));
+            HttpClient = App.CreateHttpClient(ApiApplicationName, "https");
         }
         else
         {
-            Messaging = new AzureServiceBusMessaging(TestConstants.DefaultMessagingConnection);
-            HttpClient = new HttpClient()
+            Messaging = MessagingProviderFactory.From(drivenAdapter,
+                TestConstants.DefaultMessagingConnection(drivenAdapter));
+            HttpClient = new HttpClient
             {
                 BaseAddress = new Uri(TestConstants.DefaultTestUrl)
             };
@@ -65,6 +66,6 @@ public class TestSetupFixture : IDisposable
 
     public void Dispose()
     {
-        App.StopAsync().GetAwaiter().GetResult();
+        App?.StopAsync().GetAwaiter().GetResult();
     }
 }

@@ -219,11 +219,6 @@ public class PostgresUserRepository(
         }
     }
 
-    public async Task MigrateAsync()
-    {
-        await dbContext.Database.MigrateAsync();
-    }
-
     public async Task<List<OutboxItem>> GetUnprocessedItemsAsync(int maxCount = 100)
     {
         try

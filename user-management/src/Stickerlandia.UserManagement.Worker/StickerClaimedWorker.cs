@@ -4,7 +4,7 @@
 
 using Stickerlandia.UserManagement.Core;
 
-namespace Stickerlandia.UserManagement.AspNet;
+namespace Stickerlandia.UserManagement.Worker;
 
 public class StickerClaimedWorker : BackgroundService
 {

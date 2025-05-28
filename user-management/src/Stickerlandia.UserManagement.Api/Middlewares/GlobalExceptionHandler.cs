@@ -2,7 +2,7 @@ using System.Net;
 using System.Text.Json;
 using Stickerlandia.UserManagement.Core;
 
-namespace Stickerlandia.UserManagement.AspNet.Middlewares;
+namespace Stickerlandia.UserManagement.Api.Middlewares;
 
 public class GlobalExceptionHandler
 {

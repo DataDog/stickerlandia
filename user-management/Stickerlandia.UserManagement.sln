@@ -11,7 +11,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagemen
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.UnitTest", "tests\Stickerlandia.UserManagement.UnitTest\Stickerlandia.UserManagement.UnitTest.csproj", "{7BD95F13-FE66-43A0-A48A-8D5903E37F7D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.AspNet", "src\Stickerlandia.UserManagement.AspNet\Stickerlandia.UserManagement.AspNet.csproj", "{488873C6-4BFA-4D6E-9364-D672C15EA2D9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.Api", "src\Stickerlandia.UserManagement.Api\Stickerlandia.UserManagement.Api.csproj", "{488873C6-4BFA-4D6E-9364-D672C15EA2D9}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.Core", "src\Stickerlandia.UserManagement.Core\Stickerlandia.UserManagement.Core.csproj", "{A93481EC-FDED-4740-902D-B5D911402CBA}"
 EndProject
@@ -34,6 +34,10 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Driven", "Driven", "{86CA6782-DAF7-4130-9B10-02DE0680DF78}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.Auth", "src\Stickerlandia.UserManagement.Auth\Stickerlandia.UserManagement.Auth.csproj", "{408EFE63-AA9C-46BD-ADD5-AB917BB4E9E6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.Worker", "src\Stickerlandia.UserManagement.Worker\Stickerlandia.UserManagement.Worker.csproj", "{ED36763B-8971-4CC9-A4FE-16924F1961C0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.ServiceDefaults", "src\Stickerlandia.UserManagement.ServiceDefaults\Stickerlandia.UserManagement.ServiceDefaults.csproj", "{7C28228C-4B3D-4AAE-95E6-4669413BD06C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -88,6 +92,14 @@ Global
 		{408EFE63-AA9C-46BD-ADD5-AB917BB4E9E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{408EFE63-AA9C-46BD-ADD5-AB917BB4E9E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{408EFE63-AA9C-46BD-ADD5-AB917BB4E9E6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ED36763B-8971-4CC9-A4FE-16924F1961C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ED36763B-8971-4CC9-A4FE-16924F1961C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ED36763B-8971-4CC9-A4FE-16924F1961C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ED36763B-8971-4CC9-A4FE-16924F1961C0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7C28228C-4B3D-4AAE-95E6-4669413BD06C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7C28228C-4B3D-4AAE-95E6-4669413BD06C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7C28228C-4B3D-4AAE-95E6-4669413BD06C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7C28228C-4B3D-4AAE-95E6-4669413BD06C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{4DDC795B-2EA4-4123-B631-F0D8CAA99BA6} = {FE220876-2B87-4095-8BD2-039049503C72}
@@ -103,5 +115,7 @@ Global
 		{9A175F6D-120D-4AF2-B407-B1499B70BE9E} = {86CA6782-DAF7-4130-9B10-02DE0680DF78}
 		{1F6841EA-97F0-4079-967A-42F816E4FD1F} = {86CA6782-DAF7-4130-9B10-02DE0680DF78}
 		{408EFE63-AA9C-46BD-ADD5-AB917BB4E9E6} = {FC9DDF76-8DAC-4498-8926-8883F984709C}
+		{ED36763B-8971-4CC9-A4FE-16924F1961C0} = {924749FC-98D5-40A6-8F4B-BA9BFDEDDEC3}
+		{7C28228C-4B3D-4AAE-95E6-4669413BD06C} = {924749FC-98D5-40A6-8F4B-BA9BFDEDDEC3}
 	EndGlobalSection
 EndGlobal
