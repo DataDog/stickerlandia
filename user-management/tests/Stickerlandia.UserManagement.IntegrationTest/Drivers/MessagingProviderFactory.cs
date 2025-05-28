@@ -8,22 +8,13 @@ public static class MessagingProviderFactory
 {
     public static IMessaging From(string hostOn, string? connectionString)
     {
-        if (connectionString == null)
+        ArgumentNullException.ThrowIfNull(connectionString);
+
+        return hostOn switch
         {
-            throw new ArgumentNullException(nameof(connectionString));
-        }
-        
-        if (hostOn == "AZURE")
-        {
-            return new AzureServiceBusMessaging(connectionString);
-        }
-        else if (hostOn == "AGNOSTIC")
-        {
-            return new KafkaMessaging(connectionString);
-        }
-        else
-        {
-            throw new NotSupportedException($"Unsupported messaging provider: {connectionString}");
-        }
+            "AZURE" => new AzureServiceBusMessaging(connectionString),
+            "AGNOSTIC" => new KafkaMessaging(connectionString),
+            _ => throw new NotSupportedException($"Unsupported messaging provider: {connectionString}")
+        };
     }
 }

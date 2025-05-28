@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <Version>1.2.0</Version>
+        <AssemblyVersion>1.2.0</AssemblyVersion>
+        <FileVersion>1.2.0</FileVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="OpenIddict.Validation.AspNetCore" Version="6.3.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.16" />
+        <PackageReference Include="OpenIddict.AspNetCore" Version="6.3.0" />
+        <PackageReference Include="OpenIddict.Server.AspNetCore" Version="6.3.0" />
+        <PackageReference Include="OpenIddict.EntityFrameworkCore" Version="6.3.0" />
+        <PackageReference Include="System.Linq.Async" Version="6.0.1" />
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Cosmos" Version="8.0.11" />
+        <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.7.400.44" />
+        <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.301" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Stickerlandia.UserManagement.Core\Stickerlandia.UserManagement.Core.csproj" />
+    </ItemGroup>
+
+</Project>

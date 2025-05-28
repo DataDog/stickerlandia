@@ -193,7 +193,7 @@ services:
   user-management:
     build:
       context: ./user-management
-      dockerfile: src/Stickerlandia.UserManagement.AspNet/Dockerfile
+      dockerfile: src/Stickerlandia.UserManagement.Api/Dockerfile
     container_name: user-management
     depends_on:
       user-management-db:
@@ -202,8 +202,9 @@ services:
         condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      DRIVING: ASPNET
+      DRIVING: AGNOSTIC
       DRIVEN: AGNOSTIC
+      DISABLE_SSL: "true"
       ConnectionStrings__messaging: "redpanda:9092"
       ConnectionStrings__database: "Host=user-management-db;Port=5432;Database=user_management;Username=user_mgmt_user;Password=user_mgmt_password"
       KAFKA__BOOTSTRAPSERVERS: "redpanda:9092"
@@ -213,6 +214,44 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.user-management.rule=PathPrefix(`/api/users`)"
       - "traefik.http.services.user-management.loadbalancer.server.port=8080"
+
+  user-management-worker:
+    build:
+      context: ./user-management
+      dockerfile: src/Stickerlandia.UserManagement.Worker/Dockerfile
+    container_name: user-management-worker
+    depends_on:
+      user-management-db:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      DRIVING: AGNOSTIC
+      DRIVEN: AGNOSTIC
+      ConnectionStrings__messaging: "redpanda:9092"
+      ConnectionStrings__database: "Host=user-management-db;Port=5432;Database=user_management;Username=user_mgmt_user;Password=user_mgmt_password"
+      KAFKA__BOOTSTRAPSERVERS: "redpanda:9092"
+      KAFKA__SCHEMAREGISTRY: "http://redpanda:8082"
+      KAFKA__GROUPID: "stickerlandia-user-management"
+
+  user-management-db-migrations:
+    build:
+      context: ./user-management
+      dockerfile: src/Stickerlandia.UserManagement.MigrationService/Dockerfile
+    container_name: user-management-migrations
+    depends_on:
+      user-management-db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      DRIVING: AGNOSTIC
+      DRIVEN: AGNOSTIC
+      ConnectionStrings__messaging: "redpanda:9092"
+      ConnectionStrings__database: "Host=user-management-db;Port=5432;Database=user_management;Username=user_mgmt_user;Password=user_mgmt_password"
+      KAFKA__BOOTSTRAPSERVERS: "redpanda:9092"
+      KAFKA__SCHEMAREGISTRY: "http://redpanda:8082"
+      KAFKA__GROUPID: "stickerlandia-user-management"
 
 volumes:
   sticker-award-data:

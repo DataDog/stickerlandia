@@ -18,8 +18,7 @@ public static class ServiceCollectionExtensions
         });
 
         // Register repositories
-        services.AddScoped<IUsers, PostgresUserRepository>();
-        services.AddScoped<IOutbox, PostgresUserRepository>();
+        
 
         return services;
     }

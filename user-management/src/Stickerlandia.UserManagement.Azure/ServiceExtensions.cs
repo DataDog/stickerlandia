@@ -2,11 +2,19 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
+using System.Globalization;
 using Azure.Messaging.ServiceBus;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Azure.Cosmos;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using OpenIddict.Abstractions;
+using OpenIddict.Server;
+using OpenIddict.Validation.AspNetCore;
+using Stickerlandia.UserManagement.Agnostic;
+using Stickerlandia.UserManagement.Auth;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.Outbox;
 
@@ -14,42 +22,13 @@ namespace Stickerlandia.UserManagement.Azure;
 
 public static class ServiceExtensions
 {
-    public static IHostApplicationBuilder AddAzureAdapters(this IHostApplicationBuilder builder)
+    public static IServiceCollection AddAzureAdapters(this IServiceCollection services, IConfiguration configuration)
     {
-        builder.AddAzureCosmosClient(
-            "database",
-            settings =>
-            {
-                settings.DisableTracing = false;
-                settings.ConnectionString = builder.Configuration
-                    .GetConnectionString("database");
-            },
-            clientOptions =>
-            {
-                clientOptions.SerializerOptions = new CosmosSerializationOptions
-                {
-                    PropertyNamingPolicy = CosmosPropertyNamingPolicy.Default
-                };
-                clientOptions.CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions
-                {
-                    DisableDistributedTracing = false
-                };
-                clientOptions.ConnectionMode = ConnectionMode.Gateway;
-            });
+        services.AddPostgresAuthServices(configuration);
 
-        builder.Services.AddServices(builder.Configuration);
-
-        return builder;
-    }
-
-    private static IServiceCollection AddServices(this IServiceCollection services, IConfiguration configuration)
-    {
         services.AddSingleton<IMessagingWorker, ServiceBusStickerClaimedWorker>();
         services.AddSingleton(new ServiceBusClient(configuration["ConnectionStrings:messaging"]));
 
-        // RegisterUser the CosmosDB repository implementation
-        services.AddSingleton<IUsers, CosmosDbUserRepository>();
-        services.AddSingleton<IOutbox, CosmosDbUserRepository>();
         services.AddSingleton<IUserEventPublisher, ServiceBusEventPublisher>();
 
         return services;

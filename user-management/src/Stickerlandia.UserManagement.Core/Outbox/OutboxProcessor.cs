@@ -31,7 +31,7 @@ public class OutboxProcessor(IServiceScopeFactory serviceScope, ILogger<OutboxPr
                     await ProcessOutboxItemAsync(outbox, eventPublisher, item);
                 }
 
-                logger.LogInformation("There are {Count} unprocessed outbox items", outboxItems.Count);
+                logger.LogTrace("There are {Count} unprocessed outbox items", outboxItems.Count);
             }
             catch (Exception ex)
             {

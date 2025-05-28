@@ -31,8 +31,8 @@ jobs:
     strategy:
       matrix:
         DRIVING:
-          - ASPNET
-          #- AZURE_FUNCTIONS
+          - AGNOSTIC
+          - AZURE
       fail-fast: false
 
     services:
@@ -46,13 +46,12 @@ jobs:
       - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 #4.3.1
         with:
           dotnet-version: "8.0.x"
-      - name: Export Cosmos DB Emulator Certificate
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 #4.3.1
+        with:
+          dotnet-version: "9.0.x"
+      - name: Install SSL Certificates
         run: |
-          sudo apt update && sudo apt install -y openssl
-          openssl s_client -connect localhost:8081 </dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > cosmos_emulator.cert
-          
-          sudo cp cosmos_emulator.cert /usr/local/share/ca-certificates/
-          sudo update-ca-certificates
+          dotnet dev-certs https --trust
       - name: Install Azure Functions Core Tools
         run: |
           curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
@@ -66,17 +65,11 @@ jobs:
         run: |
           cd user-management
           dotnet restore
-      - name: .NET Build
-        shell: bash
-        run: |
-          cd user-management
-          dotnet build
       - name: Run Integration Tests
         shell: bash
         env:
           DRIVING: ${{ matrix.DRIVING }}
           DRIVEN: AZURE
-          COSMOSDB_CONNECTION_STRING: ${{ secrets.COSMOSDB_LOCAL_CONNECTION_STRING }}
         run: |
           func --version
           cd user-management/tests/Stickerlandia.UserManagement.IntegrationTest && dotnet test --logger:"console;verbosity=detailed"
@@ -87,7 +80,8 @@ jobs:
     strategy:
       matrix:
         DRIVING:
-          - ASPNET
+          - AGNOSTIC
+          - AZURE
       fail-fast: false
 
     steps:
@@ -95,6 +89,12 @@ jobs:
       - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 #4.3.1
         with:
           dotnet-version: "8.0.x"
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 #4.3.1
+        with:
+          dotnet-version: "9.0.x"
+      - name: Install SSL Certificates
+        run: |
+          dotnet dev-certs https --trust
       - name: Install Azure Functions Core Tools
         run: |
           curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
@@ -108,11 +108,6 @@ jobs:
         run: |
           cd user-management
           dotnet restore
-      - name: .NET Build
-        shell: bash
-        run: |
-          cd user-management
-          dotnet build
       - name: Run Integration Tests
         shell: bash
         env:

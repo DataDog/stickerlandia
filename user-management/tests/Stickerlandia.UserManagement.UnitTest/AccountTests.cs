@@ -1,5 +1,6 @@
+using System.Collections.Immutable;
+using System.Security.Claims;
 using Stickerlandia.UserManagement.Core;
-using Stickerlandia.UserManagement.Core.Auth;
 using Stickerlandia.UserManagement.Core.Login;
 using Stickerlandia.UserManagement.Core.RegisterUser;
 using Stickerlandia.UserManagement.Core.UpdateUserDetails;
@@ -20,7 +21,7 @@ public class AccountTests
         var userRepo = A.Fake<IUsers>();
         A.CallTo(() => userRepo.Add(A<UserAccount>.Ignored))
             .Invokes((UserAccount account) => capturedAccount = account)
-            .Returns(Task.FromResult(UserAccount.From(new AccountId(testAccountId), testEmailAddress, testPassword,
+            .Returns(Task.FromResult(UserAccount.From(new AccountId(testAccountId), testEmailAddress,
                 "John", "Doe", 1, DateTime.UtcNow, AccountTier.Std, AccountType.User)));
 
         var registerCommandHandler = new RegisterCommandHandler(userRepo);
@@ -45,7 +46,6 @@ public class AccountTests
 
         UserAccount? capturedAccount = null;
         UserAccount? userAccountUnderTest = UserAccount.From(new AccountId(testAccountId), testEmailAddress,
-            testPassword,
             "John", "Doe", 1, DateTime.UtcNow, AccountTier.Std, AccountType.User);
 
         var userRepo = A.Fake<IUsers>();
@@ -99,22 +99,6 @@ public class AccountTests
     }
 
     [Fact]
-    public async Task GivenAUserLogsInWithAnInvalidPassword_AInvalidUserExceptionShouldBeThrown()
-    {
-        var testEmailAddress = "test@test.com";
-        var testPassword = "this does not meet password requirements";
-
-        var userRepo = A.Fake<IUsers>();
-
-        var registerCommandHandler = new RegisterCommandHandler(userRepo);
-
-        var exception = await Assert.ThrowsAsync<InvalidUserException>(async () => await registerCommandHandler.Handle(
-            new RegisterUserCommand { EmailAddress = testEmailAddress, Password = testPassword }, AccountType.User));
-
-        exception.Reason.Should().Be("Invalid password");
-    }
-
-    [Fact]
     public async Task GivenAUserLogsInSuccessfully_AValidJwtShouldBeReturned()
     {
         var testEmailAddress = "test@test.com";
@@ -123,12 +107,13 @@ public class AccountTests
         var testAccountId = "1234";
 
         var userRepo = A.Fake<IUsers>();
-        A.CallTo(() => userRepo.WithEmailAsync(A<string>.Ignored)).Returns(
-            Task.FromResult(UserAccount.From(new AccountId(testAccountId), testEmailAddress, testPasswordHash, "John",
+        A.CallTo(() => userRepo.WithEmailAsync(A<string>.Ignored))!.Returns(
+            Task.FromResult(UserAccount.From(new AccountId(testAccountId), testEmailAddress, "John",
                 "Doe", 1, DateTime.UtcNow, AccountTier.Std, AccountType.User)));
 
         var authService = A.Fake<IAuthService>();
-        A.CallTo(() => authService.GenerateAuthToken(A<UserAccount>.Ignored)).Returns("atoken");
+        A.CallTo(() => authService.VerifyPassword(A<string>.Ignored, A<string>.Ignored, A<ImmutableArray<string>>.Ignored))
+            .Returns(new ClaimsIdentity());
 
         var loginCommandHandler = new LoginCommandHandler(userRepo, authService);
 
@@ -138,7 +123,7 @@ public class AccountTests
             Password = testPassword
         });
 
-        loginResult.AuthToken.Should().NotBeEmpty();
+        loginResult.Identity.Should().NotBeNull();
     }
 
     [Fact]
@@ -152,45 +137,32 @@ public class AccountTests
         var userRepo = A.Fake<IUsers>();
 
         A.CallTo(() => userRepo.WithEmailAsync(A<string>.Ignored)).Returns(
-            Task.FromResult(UserAccount.From(new AccountId(testAccountId), testEmailAddress, testPasswordHash, "John",
+            Task.FromResult(UserAccount.From(new AccountId(testAccountId), testEmailAddress, "John",
                 "Doe", 1, DateTime.UtcNow, AccountTier.Std, AccountType.User)));
 
         var authService = A.Fake<IAuthService>();
-        A.CallTo(() => authService.GenerateAuthToken(A<UserAccount>.Ignored)).Returns("atoken");
+        A.CallTo(() => authService.VerifyPassword(A<string>.Ignored, A<string>.Ignored, A<ImmutableArray<string>>.Ignored))
+            .Throws<LoginFailedException>();
 
         var loginCommandHandler = new LoginCommandHandler(userRepo, authService);
 
-        await Assert.ThrowsAsync<LoginFailedException>(async () => await loginCommandHandler.Handle(new LoginCommand
+        try
         {
-            EmailAddress = testEmailAddress,
-            Password = testPassword
-        }));
-    }
-
-    [Fact]
-    public async Task GivenAUserIsLoggedIn_TheyCanRetrieveTheirUserDetails()
-    {
-        var testEmailAddress = "test@test.com";
-        var testPasswordHash = "gY+ZhJfJftbzJvLmWE6grZgJv3nWkepeIigpSSnDwqY1xiQ1MkSAU16LE+3EljRw";
-        var testAccountId = "1234";
-
-        var userRepo = A.Fake<IUsers>();
-        A.CallTo(() => userRepo.WithIdAsync(A<AccountId>.Ignored)).Returns(
-            Task.FromResult(UserAccount.From(new AccountId(testAccountId), testEmailAddress, testPasswordHash, "John",
-                "Doe", 1, DateTime.UtcNow, AccountTier.Std, AccountType.User)));
-
-        var authService = A.Fake<IAuthService>();
-        A.CallTo(() => authService.ValidateAuthToken(A<string>.Ignored)).Returns(new AuthorizedUserDetails
+            await loginCommandHandler.Handle(new LoginCommand
+            {
+                EmailAddress = testEmailAddress,
+                Password = testPassword
+            });
+            
+            Assert.Fail("Expected LoginFailedException to be thrown, but it was not.");
+        }
+        catch (LoginFailedException ex)
         {
-            AccountId = new AccountId(testAccountId),
-            Role = "user",
-            UserTier = "Std"
-        });
 
-        var accountDetailsHandler = new AccountDetailsHandler(userRepo, authService);
-
-        var accountDetails = await accountDetailsHandler.GetAccountByAuthToken("atestauthtoken");
-
-        accountDetails.Should().NotBeNull();
+        }
+        catch (Exception ex)
+        {
+            Assert.Fail("An exception was thrown that was not a LoginFailedException: " + ex.Message);
+        }
     }
 }

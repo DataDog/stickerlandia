@@ -5,6 +5,7 @@
 using System.Text.Json;
 using Azure.Messaging.ServiceBus;
 using Datadog.Trace;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Saunter.Attributes;
 using Stickerlandia.UserManagement.Core;
@@ -15,46 +16,55 @@ namespace Stickerlandia.UserManagement.Azure;
 [AsyncApi]
 public class ServiceBusStickerClaimedWorker : IMessagingWorker
 {
-    private readonly StickerClaimedEventHandler _eventHandler;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly ILogger<ServiceBusStickerClaimedWorker> _logger;
     private readonly ServiceBusProcessor _processor;
 
-    public ServiceBusStickerClaimedWorker(StickerClaimedEventHandler eventHandler, ILogger<ServiceBusStickerClaimedWorker> logger, ServiceBusClient serviceBusClient)
+    public ServiceBusStickerClaimedWorker(ILogger<ServiceBusStickerClaimedWorker> logger,
+        ServiceBusClient serviceBusClient, IServiceScopeFactory serviceScopeFactory)
     {
-        _eventHandler = eventHandler;
         _logger = logger;
-        
+        _serviceScopeFactory = serviceScopeFactory;
+
         // Create the processor
         _processor = serviceBusClient.CreateProcessor("users.stickerClaimed.v1");
-        
+
         // Set up handlers
         _processor.ProcessMessageAsync += ProcessMessageAsync;
         _processor.ProcessErrorAsync += ProcessErrorAsync;
     }
-    
+
     [Channel("users.stickerClaimed.v1")]
     [SubscribeOperation(typeof(StickerClaimedEventV1))]
     private async Task ProcessMessageAsync(ProcessMessageEventArgs args)
     {
         using var processSpan = Tracer.Instance.StartActive($"process users.stickerClaimed.v1");
-        
+
+        using var scope = _serviceScopeFactory.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<StickerClaimedEventHandler>();
+
         var messageBody = args.Message.Body.ToString();
         _logger.LogInformation("Received message: {body}", messageBody);
 
         var evtData = JsonSerializer.Deserialize<StickerClaimedEventV1>(messageBody);
 
-        if (evtData == null)
-        {
-            await args.DeadLetterMessageAsync(args.Message, "Message body cannot be deserialized");
-        }
-        
+        if (evtData == null) await args.DeadLetterMessageAsync(args.Message, "Message body cannot be deserialized");
+
         // Process your message here
-        await _eventHandler.Handle(evtData!);
-        
+        try
+        {
+            await handler.Handle(evtData!);
+        }
+        catch (InvalidUserException ex)
+        {
+            _logger.LogWarning(ex, "User with account in this event not found");
+            await args.DeadLetterMessageAsync(args.Message, "Invalid account id");
+        }
+
         // Complete the message
         await args.CompleteMessageAsync(args.Message, CancellationToken.None);
     }
-    
+
     private Task ProcessErrorAsync(ProcessErrorEventArgs args)
     {
         _logger.LogError(args.Exception, "Error processing message: {source}", args.ErrorSource);

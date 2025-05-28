@@ -38,7 +38,7 @@ public static class DrivenAdapterSettings
                     _drivenAdapter = Aspire.DrivenAdapters.AGNOSTIC;
                     break;
                 default:
-                    throw new Exception($"Unknown host type: '{drivenAdapterSetting}'");
+                    throw new ArgumentException($"Unknown host type: '{drivenAdapterSetting}'");
             }
             
             return _drivenAdapter;

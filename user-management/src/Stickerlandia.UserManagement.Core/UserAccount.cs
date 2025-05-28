@@ -59,21 +59,13 @@ public class UserAccount
     public static async Task<UserAccount> Register(string emailAddress, string password, string firstName,
         string lastName, AccountType accountType)
     {
-        // Validate inputs in parallel for better performance
-        var emailTask = Task.Run(() => IsValidEmail(emailAddress));
-        var passwordTask = Task.Run(() => IsValidPassword(password));
-
-        await Task.WhenAll(emailTask, passwordTask);
-
-        if (!emailTask.Result) throw new InvalidUserException("Invalid email address");
-
-        if (!passwordTask.Result) throw new InvalidUserException("Invalid password");
+        if (!IsValidEmail(emailAddress)) throw new InvalidUserException("Invalid email address");
 
         var userAccount = new UserAccount
         {
             Id = new AccountId(emailAddress),
+            Password = password,
             EmailAddress = emailAddress,
-            Password = HashPassword(password),
             AccountType = accountType,
             DateCreated = DateTime.UtcNow,
             AccountTier = AccountTier.Std,
@@ -89,7 +81,6 @@ public class UserAccount
     public static UserAccount From(
         AccountId id,
         string emailAddress,
-        string passwordHash,
         string firstName,
         string lastName,
         int claimedStickerCount,
@@ -101,7 +92,6 @@ public class UserAccount
         {
             Id = id,
             EmailAddress = emailAddress,
-            Password = passwordHash,
             DateCreated = dateCreated,
             AccountTier = accountTier,
             AccountType = accountType,
@@ -115,13 +105,13 @@ public class UserAccount
 
     public string EmailAddress { get; private set; } = string.Empty;
 
-    public string Password { get; private set; } = string.Empty;
-
     public int AccountAge => (DateTime.UtcNow - DateCreated).Days;
 
     public string FirstName { get; private set; } = string.Empty;
 
     public string LastName { get; private set; } = string.Empty;
+    
+    public string Password { get; private set; } = string.Empty;
 
     public DateTime DateCreated { get; private set; }
 
@@ -164,27 +154,6 @@ public class UserAccount
         Array.Copy(hash, 0, hashBytes, 16, 32);
 
         return Convert.ToBase64String(hashBytes);
-    }
-
-    public bool VerifyPassword(string password)
-    {
-        var hashBytes = Convert.FromBase64String(Password);
-
-        var salt = new byte[16];
-        Array.Copy(hashBytes, 0, salt, 0, 16);
-
-        var hash = Rfc2898DeriveBytes.Pbkdf2(
-            Encoding.UTF8.GetBytes(password),
-            salt,
-            100000,
-            HashAlgorithmName.SHA256,
-            32);
-
-        for (var i = 0; i < 32; i++)
-            if (hashBytes[i + 16] != hash[i])
-                return false;
-
-        return true;
     }
 
     public void StickerOrdered()

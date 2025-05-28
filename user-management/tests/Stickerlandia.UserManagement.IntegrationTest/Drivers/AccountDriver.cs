@@ -63,28 +63,36 @@ public class AccountDriver
 
     public async Task<LoginResponse?> Login(string emailAddress, string password)
     {
-        _testOutputHelper.WriteLine("Starting login request");
-        
-        var requestBody = JsonSerializer.Serialize(new
+        _testOutputHelper.WriteLine("Starting OAuth2.0 login request");
+
+        var requestBody = new List<KeyValuePair<string, string>>
         {
-            emailAddress,
-            password
-        });
+            new("grant_type", "password"),
+            new("username", emailAddress),
+            new("password", password),
+            new("client_id", "user-authentication"),
+            new("client_secret", "388D45FA-B36B-4988-BA59-B187D329C207")
+        };
 
-        var loginResult = await _httpClient.PostAsync("api/users/v1/login",
-            new StringContent(requestBody, Encoding.Default, "application/json"));
+        var requestContent = new FormUrlEncodedContent(requestBody);
+        var tokenResult = await _httpClient.PostAsync("api/users/v1/login", requestContent); // Use the original endpoint
 
-        _testOutputHelper.WriteLine($"Login status code is {loginResult.StatusCode}");
+        _testOutputHelper.WriteLine($"OAuth2.0 token status code is {tokenResult.StatusCode}");
 
-        var loginResultBody = await loginResult.Content.ReadAsStringAsync();
+        var tokenResultBody = await tokenResult.Content.ReadAsStringAsync();
+        if (string.IsNullOrEmpty(tokenResultBody)) return null;
 
-        if (string.IsNullOrEmpty(loginResultBody)) return null;
+        using var doc = JsonDocument.Parse(tokenResultBody);
+        if (!doc.RootElement.TryGetProperty("access_token", out var accessTokenElement))
+            return null;
 
-        var parsedBody = JsonSerializer.Deserialize<ApiResponse<LoginResponse>>(loginResultBody);
+        var accessToken = accessTokenElement.GetString();
+        var expiresIn = doc.RootElement.TryGetProperty("expires_in", out var expiresInElement) ? expiresInElement.GetInt32() : 0;
 
-        return loginResult.IsSuccessStatusCode
-            ? parsedBody?.Data
-            : null;
+        return new LoginResponse
+        {
+            AuthToken = accessToken ?? string.Empty
+        };
     }
 
     public async Task<UserAccountDTO?> GetUserAccount(string authToken)

@@ -7,6 +7,8 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Stickerlandia.UserManagement.Agnostic\Stickerlandia.UserManagement.Agnostic.csproj" />
+      <ProjectReference Include="..\Stickerlandia.UserManagement.Auth\Stickerlandia.UserManagement.Auth.csproj" />
       <ProjectReference Include="..\Stickerlandia.UserManagement.Core\Stickerlandia.UserManagement.Core.csproj" />
     </ItemGroup>
 
@@ -17,8 +19,6 @@
         <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="2.0.0" />
         <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.3" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.3" />
-        <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.49.0" />
-        <PackageReference Include="Aspire.Microsoft.Azure.Cosmos" Version="9.2.1" />
         <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="9.0.3" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
         <PackageReference Include="Polly.Core" Version="8.5.2" />

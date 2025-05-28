@@ -29,8 +29,10 @@ public class KafkaMessaging : IMessaging, IAsyncDisposable
             (deliveryReport) =>
             {
                 if (deliveryReport.Error.Code != ErrorCode.NoError) {
+                    throw new Exception($"Error publishing message to Kafka: {deliveryReport.Error.Reason}");
                 }
                 else {
+                    Console.WriteLine($"Message sent to Kafka topic {queueName} with offset {deliveryReport.Offset}");
                 }
             });
                 

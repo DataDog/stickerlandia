@@ -2,6 +2,7 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
+using System.Text;
 using System.Text.Json;
 using Confluent.Kafka;
 using Datadog.Trace;
@@ -14,45 +15,65 @@ using Stickerlandia.UserManagement.Core.StickerClaimedEvent;
 namespace Stickerlandia.UserManagement.Agnostic;
 
 [AsyncApi]
-public class KafakStickerClaimedWorker : IMessagingWorker
+public class KafakStickerClaimedWorker(
+    ILogger<KafakStickerClaimedWorker> logger,
+    IServiceScopeFactory serviceScopeFactory,
+    ConsumerConfig consumerConfig,
+    ProducerConfig producerConfig)
+    : IMessagingWorker
 {
-    private readonly IServiceScopeFactory _serviceScopeFactory;
-    private readonly ILogger<KafakStickerClaimedWorker> _logger;
-    private readonly ConsumerConfig _consumerConfig;
-    const string topic = "users.stickerClaimed.v1";
-    
-    public KafakStickerClaimedWorker(ILogger<KafakStickerClaimedWorker> logger, IServiceScopeFactory serviceScopeFactory, ConsumerConfig consumerConfig)
-    {
-        _logger = logger;
-        _serviceScopeFactory = serviceScopeFactory;
-        _consumerConfig = consumerConfig;
-    }
-    
+    private readonly ProducerConfig _producerConfig = producerConfig;
+    private const string topic = "users.stickerClaimed.v1";
+    private const string dlqTopic = "users.stickerClaimed.v1.dlq";
+
     [Channel("users.stickerClaimed.v1")]
     [SubscribeOperation(typeof(StickerClaimedEventV1))]
-    private async Task<bool> ProcessMessageAsync(StickerClaimedEventHandler handler, ConsumeResult<string, string> consumeResult)
+    private async Task<bool> ProcessMessageAsync(StickerClaimedEventHandler handler,
+        ConsumeResult<string, string> consumeResult)
     {
         using var processSpan = Tracer.Instance.StartActive($"process users.stickerClaimed.v1");
-        
-        _logger.LogInformation("Received message: {body}", consumeResult.Message.Value);
-    
+
+        logger.LogInformation("Received message: {body}", consumeResult.Message.Value);
+
         var evtData = JsonSerializer.Deserialize<StickerClaimedEventV1>(consumeResult.Message.Value);
-    
-        if (evtData == null)
+
+        if (evtData == null) return false;
+
+        try
         {
-            return false;
+            await handler.Handle(evtData!);
         }
-        
-        // Process your message here
-        await handler.Handle(evtData!);
-        
+        catch (InvalidUserException ex)
+        {
+            logger.LogWarning("Invalid user in sticker claimed event: {Message}", ex.Message);
+
+            SendToDLQ(consumeResult, evtData);
+        }
+
         return true;
+    }
+
+    private void SendToDLQ(ConsumeResult<string, string> consumeResult, StickerClaimedEventV1 evtData)
+    {
+        using var producer = new ProducerBuilder<string, string>(producerConfig).Build();
+
+        producer.Produce(dlqTopic,
+            new Message<string, string> { Key = evtData.AccountId, Value = consumeResult.Message.Value },
+            (deliveryReport) =>
+            {
+                if (deliveryReport.Error.Code != ErrorCode.NoError)
+                    logger.LogError($"Failed to deliver message: {deliveryReport.Error.Reason}");
+                else
+                    logger.LogWarning($"Produced event to topic {dlqTopic}");
+            });
+
+        producer.Flush(TimeSpan.FromSeconds(10));
     }
 
     public Task StartAsync()
     {
-        _logger.LogInformation("Starting ServiceBus processor");
-        
+        logger.LogInformation("Starting Kafka processor");
+
         return Task.CompletedTask;
     }
 
@@ -61,50 +82,51 @@ public class KafakStickerClaimedWorker : IMessagingWorker
         // Check for cancellation first
         if (stoppingToken.IsCancellationRequested)
             return;
-            
-        using var scope = _serviceScopeFactory.CreateScope();
+
+        using var scope = serviceScopeFactory.CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<StickerClaimedEventHandler>();
-        
-        try 
+
+        try
         {
-            using var consumer = new ConsumerBuilder<string, string>(_consumerConfig)
-                .SetErrorHandler((_, e) => _logger.LogError("Kafka error: {Error}", e.Reason))
+            using var consumer = new ConsumerBuilder<string, string>(consumerConfig)
+                .SetErrorHandler((_, e) => logger.LogError("Kafka error: {Error}", e.Reason))
                 .Build();
-            
+
             consumer.Subscribe(topic);
-            
-            try {
+
+            try
+            {
                 var consumeResult = consumer.Consume(TimeSpan.FromSeconds(2));
-                
+
                 if (consumeResult != null)
                 {
                     var processResult = await ProcessMessageAsync(handler, consumeResult);
-                    
-                    if (processResult)
-                    {
-                        consumer.Commit(consumeResult);
-                    }
+
+                    if (processResult) consumer.Commit(consumeResult);
                 }
-            }   
-            catch (ConsumeException ex) {
-                _logger.LogError(ex, "Error consuming message");
+            }
+            catch (ConsumeException ex)
+            {
+                logger.LogError(ex, "Error consuming message");
             }
             catch (OperationCanceledException)
             {
                 // This is expected when the token is canceled
-                _logger.LogInformation("Polling canceled");
+                logger.LogInformation("Polling canceled");
             }
-            catch (Exception ex) {
-                _logger.LogError(ex, "Error processing message");
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error processing message");
             }
-            finally{
+            finally
+            {
                 // Ensure consumer is closed even if an exception occurs
                 consumer.Close();
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to create Kafka consumer");
+            logger.LogError(ex, "Failed to create Kafka consumer");
         }
     }
 
