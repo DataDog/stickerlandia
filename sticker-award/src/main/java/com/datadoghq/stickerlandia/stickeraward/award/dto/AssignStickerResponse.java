@@ -12,18 +12,18 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
     "userId",
     "stickerId",
-    "removedAt"
+    "assignedAt"
 })
 @Generated("jsonschema2pojo")
-public class StickerRemovalResponse {
+public class AssignStickerResponse {
 
     @JsonProperty("userId")
     private String userId;
     @JsonProperty("stickerId")
     private String stickerId;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
-    @JsonProperty("removedAt")
-    private Date removedAt;
+    @JsonProperty("assignedAt")
+    private Date assignedAt;
 
     @JsonProperty("userId")
     public String getUserId() {
@@ -45,14 +45,14 @@ public class StickerRemovalResponse {
         this.stickerId = stickerId;
     }
 
-    @JsonProperty("removedAt")
-    public Date getRemovedAt() {
-        return removedAt;
+    @JsonProperty("assignedAt")
+    public Date getAssignedAt() {
+        return assignedAt;
     }
 
-    @JsonProperty("removedAt")
-    public void setRemovedAt(Date removedAt) {
-        this.removedAt = removedAt;
+    @JsonProperty("assignedAt")
+    public void setAssignedAt(Date assignedAt) {
+        this.assignedAt = assignedAt;
     }
 
 }

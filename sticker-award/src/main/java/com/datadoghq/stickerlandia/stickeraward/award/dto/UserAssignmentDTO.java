@@ -12,7 +12,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
     "assignedAt",
     "reason"
 })
-public class UserAssignment {
+public class UserAssignmentDTO {
 
     @JsonProperty("userId")
     private String userId;

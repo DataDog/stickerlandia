@@ -11,14 +11,16 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
     "stickerDescription",
     "stickerQuantityRemaining"
 })
-public class CreateStickerCommand {
+public class UpdateStickerRequest {
 
     @JsonProperty("stickerName")
     private String stickerName;
-    
     @JsonProperty("stickerDescription")
     private String stickerDescription;
-    
+    /**
+     * Quantity remaining (-1 for infinite)
+     * 
+     */
     @JsonProperty("stickerQuantityRemaining")
     @JsonPropertyDescription("Quantity remaining (-1 for infinite)")
     private Integer stickerQuantityRemaining;
@@ -43,13 +45,22 @@ public class CreateStickerCommand {
         this.stickerDescription = stickerDescription;
     }
 
+    /**
+     * Quantity remaining (-1 for infinite)
+     * 
+     */
     @JsonProperty("stickerQuantityRemaining")
     public Integer getStickerQuantityRemaining() {
         return stickerQuantityRemaining;
     }
 
+    /**
+     * Quantity remaining (-1 for infinite)
+     * 
+     */
     @JsonProperty("stickerQuantityRemaining")
     public void setStickerQuantityRemaining(Integer stickerQuantityRemaining) {
         this.stickerQuantityRemaining = stickerQuantityRemaining;
     }
+
 }

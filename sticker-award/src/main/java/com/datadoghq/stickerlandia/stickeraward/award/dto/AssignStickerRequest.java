@@ -12,7 +12,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
     "reason"
 })
 @Generated("jsonschema2pojo")
-public class AssignStickerCommand {
+public class AssignStickerRequest {
 
     /**
      * 

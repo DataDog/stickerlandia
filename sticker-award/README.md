@@ -1,10 +1,37 @@
 # Sticker Award Service
 
-The Sticker Award Service manages the assignment of stickers to users in the Stickerlandia platform. It provides APIs for creating, retrieving, and deleting sticker assignments, with appropriate access controls to ensure users can only manage their own stickers, or the stickers of users to whom they have been granted access.
+The Sticker Award Service manages stickers and their assignment to users in the Stickerlandia platform. It provides APIs for sticker catalog management and user sticker assignments.
+
+## Architecture
+
+### Domain Structure
+- **`award/`** - User sticker assignment domain
+  - `StickerAwardResource.java` - HTTP API for user assignments
+  - `StickerAwardRepository.java` - Data access and entity-DTO mapping
+  - `dto/` - Request/Response DTOs (AssignStickerRequest, UserAssignmentDTO, etc.)
+  - `entity/` - Database entities (StickerAssignment)
+  - `messaging/` - Event publishing
+
+- **`sticker/`** - Sticker catalog domain
+  - `StickerResource.java` - HTTP API for sticker catalog
+  - `StickerRepository.java` - Data access and entity-DTO mapping
+  - `dto/` - Request/Response DTOs (CreateStickerRequest, StickerDTO, etc.)
+  - `entity/` - Database entities (Sticker)
+
+- **`common/`** - Shared utilities
+  - `dto/` - Common DTOs (PagedResponse)
+  - `events/` - Domain events
+
+### Separation of Concerns
+- **Resource** - HTTP layer, handles requests/responses, only works with DTOs
+- **Repository** - Data layer, maps between entities and DTOs, contains business logic
+- **Entity** - Database layer, JPA entities for persistence
+- **DTO** - API layer, request/response objects for HTTP APIs
 
 ## Features
 
-- Sticker assignment management
+- Sticker catalog management (CRUD operations)
+- User sticker assignment management
 - JWT-based authentication and authorization
 - Event-driven integration with other services
 

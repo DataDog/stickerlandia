@@ -17,7 +17,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
     "assignedAt"
 })
 @Generated("jsonschema2pojo")
-public class StickerDTO {
+public class StickerAssignmentDTO {
 
     @JsonProperty("stickerId")
     private String stickerId;

@@ -10,7 +10,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
     "stickerName",
     "imageUrl"
 })
-public class StickerCreatedResponse {
+public class CreateStickerResponse {
 
     @JsonProperty("stickerId")
     private String stickerId;
