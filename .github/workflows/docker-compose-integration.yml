@@ -1,0 +1,61 @@
+name: Docker Compose Integration
+
+on:
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  docker-compose-integration:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Start services
+      run: docker compose up -d
+      
+    - name: Wait for services to be healthy
+      run: |
+        echo "Waiting for all services to be healthy..."
+        # Wait for services with health checks to be healthy (4 services) and all services to be up
+        timeout 300 bash -c 'until [ $(docker compose ps --format "{{.Health}}" | grep -c "healthy") -ge 4 ] && [ $(docker compose ps --format "{{.Status}}" | grep -c "Up") -ge 5 ]; do sleep 5; done'
+        docker compose ps
+      
+    - name: Test dashboard endpoints
+      run: |
+        curl -f http://localhost:8081/dashboard/ || exit 1
+        curl -f http://localhost:8082 || exit 1
+      
+    - name: Test API endpoints
+      run: |
+        # Test sticker award API with sample user data
+        curl -f -X GET "http://localhost:8080/api/award/v1/users/user-001/stickers" || exit 1
+        # Test user management health endpoint
+        # TODO!
+        # curl -f -X GET "http://localhost:8080/api/users/v1/health" || exit 1
+      
+    - name: Show service logs on failure
+      if: failure()
+      run: |
+        echo "=== Docker Compose Services Status ==="
+        docker compose ps
+        echo "=== Traefik Logs ==="
+        docker compose logs traefik
+        echo "=== Sticker Award Logs ==="
+        docker compose logs sticker-award
+        echo "=== User Management Logs ==="
+        docker compose logs user-management
+        echo "=== Database Logs ==="
+        docker compose logs sticker-award-db
+        docker compose logs user-management-db
+      
+    - name: Cleanup
+      if: always()
+      run: docker compose down -v
