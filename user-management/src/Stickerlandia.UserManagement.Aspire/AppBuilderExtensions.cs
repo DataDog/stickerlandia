@@ -201,13 +201,18 @@ public static class AppBuilderExtensions
         this IDistributedApplicationBuilder builder,
         InfrastructureResources resources)
     {
+        var storage = builder.AddAzureStorage("storage")
+            .RunAsEmulator();
+        
         var functions = builder.AddAzureFunctionsProject<Projects.Stickerlandia_UserManagement_FunctionApp>("worker")
+            .WithHostStorage(storage)
             .WithEnvironment("ConnectionStrings__messaging", resources.MessagingResource)
             .WithEnvironment("ConnectionStrings__database", resources.DatabaseResource)
             .WithEnvironment("DRIVING", builder.Configuration["DRIVING"])
             .WithEnvironment("DRIVEN", builder.Configuration["DRIVEN"])
             .WaitFor(resources.MessagingResource)
-            .WaitFor(resources.DatabaseResource);
+            .WaitFor(resources.DatabaseResource)
+            .WithExternalHttpEndpoints();
 
         return builder;
     }
