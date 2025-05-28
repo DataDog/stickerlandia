@@ -1,6 +1,6 @@
 package com.datadoghq.stickerlandia.stickeraward;
 
-import com.datadoghq.stickerlandia.stickeraward.award.dto.AssignStickerCommand;
+import com.datadoghq.stickerlandia.stickeraward.award.dto.AssignStickerRequest;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 
@@ -89,8 +89,8 @@ class StickerAwardResourceTest {
         String stickerId = "sticker-002";  // Use one of the stickers from our seed data
 
         // Create sticker assignment request using a proper bean for serialization
-        AssignStickerCommand command =
-            new AssignStickerCommand();
+        AssignStickerRequest command =
+            new AssignStickerRequest();
         command.setStickerId(stickerId);
         command.setReason("Test assignment");
 
@@ -120,8 +120,8 @@ class StickerAwardResourceTest {
         String userId = "test-user-" + System.currentTimeMillis();
 
         // Create sticker assignment request with non-existing sticker
-        AssignStickerCommand command =
-            new AssignStickerCommand();
+        AssignStickerRequest command =
+            new AssignStickerRequest();
         command.setStickerId(NON_EXISTING_STICKER_ID);
         command.setReason("Test assignment");
 
@@ -139,8 +139,8 @@ class StickerAwardResourceTest {
         String userId = "test-user-" + System.currentTimeMillis();
         String stickerId = "sticker-003";  // Use one from seed data
 
-        AssignStickerCommand command =
-            new AssignStickerCommand();
+        AssignStickerRequest command =
+            new AssignStickerRequest();
         command.setStickerId(stickerId);
         command.setReason("Test assignment");
 
@@ -167,8 +167,8 @@ class StickerAwardResourceTest {
         String userId = "test-user-" + System.currentTimeMillis();
         String stickerId = "sticker-002";
 
-        AssignStickerCommand command =
-            new AssignStickerCommand();
+        AssignStickerRequest command =
+            new AssignStickerRequest();
         command.setStickerId(stickerId);
         command.setReason("Test assignment");
 

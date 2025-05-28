@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.datadoghq.stickerlandia.stickeraward.common.dto.PagedResponse;
-import com.datadoghq.stickerlandia.stickeraward.award.dto.UserAssignment;
+import com.datadoghq.stickerlandia.stickeraward.award.dto.UserAssignmentDTO;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -15,12 +15,12 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
     "assignments",
     "pagination"
 })
-public class StickerAssignmentsResponse {
+public class GetStickerAssignmentsResponse {
 
     @JsonProperty("stickerId")
     private String stickerId;
     @JsonProperty("assignments")
-    private List<UserAssignment> assignments = new ArrayList<UserAssignment>();
+    private List<UserAssignmentDTO> assignments = new ArrayList<UserAssignmentDTO>();
     @JsonProperty("pagination")
     private PagedResponse pagination;
 
@@ -35,12 +35,12 @@ public class StickerAssignmentsResponse {
     }
 
     @JsonProperty("assignments")
-    public List<UserAssignment> getAssignments() {
+    public List<UserAssignmentDTO> getAssignments() {
         return assignments;
     }
 
     @JsonProperty("assignments")
-    public void setAssignments(List<UserAssignment> assignments) {
+    public void setAssignments(List<UserAssignmentDTO> assignments) {
         this.assignments = assignments;
     }
 

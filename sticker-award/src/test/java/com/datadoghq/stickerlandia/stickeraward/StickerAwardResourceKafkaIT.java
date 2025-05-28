@@ -8,7 +8,7 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import com.datadoghq.stickerlandia.stickeraward.award.dto.AssignStickerCommand;
+import com.datadoghq.stickerlandia.stickeraward.award.dto.AssignStickerRequest;
 import com.datadoghq.stickerlandia.stickeraward.sticker.entity.Sticker;
 
 import io.quarkus.test.junit.QuarkusTest;
@@ -40,7 +40,7 @@ public class StickerAwardResourceKafkaIT {
     @Order(2)
     public void testAssignStickerToUser() {
         // Create the assign sticker command
-        AssignStickerCommand command = new AssignStickerCommand();
+        AssignStickerRequest command = new AssignStickerRequest();
         command.setStickerId(TEST_STICKER_ID);
         command.setReason("Integration test");
         

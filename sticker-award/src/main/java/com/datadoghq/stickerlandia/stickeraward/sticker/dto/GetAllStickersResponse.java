@@ -1,35 +1,24 @@
-
-package com.datadoghq.stickerlandia.stickeraward.award.dto;
+package com.datadoghq.stickerlandia.stickeraward.sticker.dto;
 
 import java.util.ArrayList;
 import java.util.List;
-import javax.annotation.processing.Generated;
+
+import com.datadoghq.stickerlandia.stickeraward.common.dto.PagedResponse;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
-    "userId",
-    "stickers"
+    "stickers",
+    "pagination"
 })
-@Generated("jsonschema2pojo")
-public class UserStickersResponse {
+public class GetAllStickersResponse {
 
-    @JsonProperty("userId")
-    private String userId;
     @JsonProperty("stickers")
     private List<StickerDTO> stickers = new ArrayList<StickerDTO>();
-
-    @JsonProperty("userId")
-    public String getUserId() {
-        return userId;
-    }
-
-    @JsonProperty("userId")
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
+    @JsonProperty("pagination")
+    private PagedResponse pagination;
 
     @JsonProperty("stickers")
     public List<StickerDTO> getStickers() {
@@ -39,6 +28,16 @@ public class UserStickersResponse {
     @JsonProperty("stickers")
     public void setStickers(List<StickerDTO> stickers) {
         this.stickers = stickers;
+    }
+
+    @JsonProperty("pagination")
+    public PagedResponse getPagination() {
+        return pagination;
+    }
+
+    @JsonProperty("pagination")
+    public void setPagination(PagedResponse pagination) {
+        this.pagination = pagination;
     }
 
 }

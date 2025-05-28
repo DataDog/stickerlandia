@@ -1,11 +1,11 @@
 package com.datadoghq.stickerlandia.stickeraward.sticker;
 
-import com.datadoghq.stickerlandia.stickeraward.sticker.dto.CreateStickerCommand;
-import com.datadoghq.stickerlandia.stickeraward.sticker.dto.StickerAssignmentsResponse;
-import com.datadoghq.stickerlandia.stickeraward.sticker.dto.StickerCatalogResponse;
-import com.datadoghq.stickerlandia.stickeraward.sticker.dto.StickerCreatedResponse;
-import com.datadoghq.stickerlandia.stickeraward.sticker.dto.StickerMetadata;
-import com.datadoghq.stickerlandia.stickeraward.sticker.dto.UpdateStickerCommand;
+import com.datadoghq.stickerlandia.stickeraward.sticker.dto.CreateStickerRequest;
+import com.datadoghq.stickerlandia.stickeraward.sticker.dto.GetStickerAssignmentsResponse;
+import com.datadoghq.stickerlandia.stickeraward.sticker.dto.GetAllStickersResponse;
+import com.datadoghq.stickerlandia.stickeraward.sticker.dto.CreateStickerResponse;
+import com.datadoghq.stickerlandia.stickeraward.sticker.dto.StickerDTO;
+import com.datadoghq.stickerlandia.stickeraward.sticker.dto.UpdateStickerRequest;
 import io.smallrye.common.constraint.NotNull;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
@@ -32,7 +32,7 @@ public class StickerResource {
     @GET
     @Produces("application/json")
     @Operation(description = "Get all stickers in the catalog")
-    public StickerCatalogResponse getAllStickers(
+    public GetAllStickersResponse getAllStickers(
             @QueryParam("page") @DefaultValue("0") int page,
             @QueryParam("size") @DefaultValue("20") int size) {
         return stickerRepository.getAllStickers(page, size);
@@ -42,8 +42,8 @@ public class StickerResource {
     @Produces("application/json")
     @Consumes("application/json")
     @Operation(description = "Create a new sticker in the catalog")
-    public Response createSticker(@NotNull CreateStickerCommand data) {
-        StickerCreatedResponse createdSticker = stickerRepository.createSticker(data);
+    public Response createSticker(@NotNull CreateStickerRequest data) {
+        CreateStickerResponse createdSticker = stickerRepository.createSticker(data);
         return Response.status(Response.Status.CREATED)
             .entity(createdSticker)
             .build();
@@ -54,7 +54,7 @@ public class StickerResource {
     @Produces("application/json")
     @Operation(description = "Get a specific sticker's metadata")
     public Response getStickerMetadata(@PathParam("stickerId") String stickerId) {
-        StickerMetadata metadata = stickerRepository.getStickerMetadata(stickerId);
+        StickerDTO metadata = stickerRepository.getStickerMetadata(stickerId);
         if (metadata == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
@@ -68,8 +68,8 @@ public class StickerResource {
     @Operation(description = "Update a sticker's metadata")
     public Response updateStickerMetadata(
             @PathParam("stickerId") String stickerId,
-            @NotNull UpdateStickerCommand data) {
-        StickerMetadata updated = stickerRepository.updateStickerMetadata(stickerId, data);
+            @NotNull UpdateStickerRequest data) {
+        StickerDTO updated = stickerRepository.updateStickerMetadata(stickerId, data);
         if (updated == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
@@ -124,7 +124,7 @@ public class StickerResource {
             @PathParam("stickerId") String stickerId,
             @QueryParam("page") @DefaultValue("0") int page,
             @QueryParam("size") @DefaultValue("20") int size) {
-        StickerAssignmentsResponse data = stickerRepository.getStickerAssignments(stickerId, page, size);
+        GetStickerAssignmentsResponse data = stickerRepository.getStickerAssignments(stickerId, page, size);
         if (data == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
