@@ -3,8 +3,12 @@ name: User Management Tests
 on:
   push:
     branches: ["main"]
+    paths:
+      - "user-management/**"
   pull_request:
     branches: ["main"]
+    paths:
+      - "user-management/**"
   workflow_dispatch:
 
 jobs:
