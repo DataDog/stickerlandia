@@ -4,11 +4,11 @@ on:
   push:
     branches: ["main"]
     paths:
-      - user-management/**
+      - "user-management/**"
   pull_request:
     branches: ["main"]
     paths:
-      - user-management/**
+      - "user-management/**"
   workflow_dispatch:
 
 jobs:
