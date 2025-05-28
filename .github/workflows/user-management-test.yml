@@ -31,8 +31,8 @@ jobs:
     strategy:
       matrix:
         DRIVING:
-          - AZURE
-          #- AGNOSTIC
+          - AGNOSTIC
+          #- AZURE
       fail-fast: false
 
     services:
@@ -77,8 +77,8 @@ jobs:
     strategy:
       matrix:
         DRIVING:
-          - AZURE
-          #- AGNOSTIC
+          - AGNOSTIC
+          #- AZURE
       fail-fast: false
 
     steps:

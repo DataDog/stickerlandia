@@ -6,4 +6,5 @@ namespace Stickerlandia.UserManagement.Aspire;
 
 public record InfrastructureResources(
     IResourceBuilder<IResourceWithConnectionString>? DatabaseResource,
-    IResourceBuilder<IResourceWithConnectionString>? MessagingResource);
+    IResourceBuilder<IResourceWithConnectionString>? MessagingResource,
+    IResourceBuilder<ProjectResource> MigrationServiceResource);

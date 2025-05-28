@@ -1,0 +1,19 @@
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+
+WORKDIR /App
+
+# Deps
+COPY src/Stickerlandia.UserManagement.Worker/Stickerlandia.UserManagement.Worker.csproj src/Stickerlandia.UserManagement.Worker/
+RUN dotnet restore src/Stickerlandia.UserManagement.Worker/Stickerlandia.UserManagement.Worker.csproj
+
+# Now copy the rest of the source code
+COPY . ./
+
+# Publish the application
+RUN dotnet publish src/Stickerlandia.UserManagement.Worker/Stickerlandia.UserManagement.Worker.csproj -o out -c Release -r linux-arm64
+
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-noble-chiseled AS runtime
+WORKDIR /App
+COPY --from=build /App/out .
+EXPOSE 80
+ENTRYPOINT [ "dotnet", "Stickerlandia.UserManagement.Worker.dll" ]

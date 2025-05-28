@@ -39,6 +39,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagemen
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.ServiceDefaults", "src\Stickerlandia.UserManagement.ServiceDefaults\Stickerlandia.UserManagement.ServiceDefaults.csproj", "{7C28228C-4B3D-4AAE-95E6-4669413BD06C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.MigrationService", "src\Stickerlandia.UserManagement.MigrationService\Stickerlandia.UserManagement.MigrationService.csproj", "{91536DB3-CBA5-44DE-943C-76F8577793FE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -100,6 +102,10 @@ Global
 		{7C28228C-4B3D-4AAE-95E6-4669413BD06C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7C28228C-4B3D-4AAE-95E6-4669413BD06C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7C28228C-4B3D-4AAE-95E6-4669413BD06C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{91536DB3-CBA5-44DE-943C-76F8577793FE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{91536DB3-CBA5-44DE-943C-76F8577793FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{91536DB3-CBA5-44DE-943C-76F8577793FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{91536DB3-CBA5-44DE-943C-76F8577793FE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{4DDC795B-2EA4-4123-B631-F0D8CAA99BA6} = {FE220876-2B87-4095-8BD2-039049503C72}
@@ -117,5 +123,6 @@ Global
 		{408EFE63-AA9C-46BD-ADD5-AB917BB4E9E6} = {FC9DDF76-8DAC-4498-8926-8883F984709C}
 		{ED36763B-8971-4CC9-A4FE-16924F1961C0} = {924749FC-98D5-40A6-8F4B-BA9BFDEDDEC3}
 		{7C28228C-4B3D-4AAE-95E6-4669413BD06C} = {924749FC-98D5-40A6-8F4B-BA9BFDEDDEC3}
+		{91536DB3-CBA5-44DE-943C-76F8577793FE} = {924749FC-98D5-40A6-8F4B-BA9BFDEDDEC3}
 	EndGlobalSection
 EndGlobal

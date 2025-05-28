@@ -46,7 +46,7 @@ public class TestSetupFixture : IDisposable
                 .GetAwaiter().GetResult();
 
             // When Azure Functions is used, the API is not available immediately even when the container is healthy.
-            Task.Delay(TimeSpan.FromSeconds(10)).GetAwaiter().GetResult();
+            Task.Delay(TimeSpan.FromSeconds(30)).GetAwaiter().GetResult();
 
             var messagingConnectionString = App.GetConnectionStringAsync(MessagingResourceName).GetAwaiter().GetResult();
             Messaging = MessagingProviderFactory.From(drivenAdapter,

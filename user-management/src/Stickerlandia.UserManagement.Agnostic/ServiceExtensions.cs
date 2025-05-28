@@ -78,7 +78,6 @@ public static class ServiceExtensions
                 .UseDbContext<UserManagementDbContext>());
         
         services.AddScoped<IAuthService, MicrosoftIdentityAuthService>();
-        services.AddHostedService<AuthenticationWorker>();
         
         services.AddScoped<IUsers, PostgresUserRepository>();
         services.AddScoped<IOutbox, PostgresUserRepository>();

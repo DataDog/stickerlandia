@@ -27,6 +27,7 @@ public static class AppBuilderExtensions
             .WithEnvironment("DRIVING", builder.Configuration["DRIVING"])
             .WithEnvironment("DRIVEN", builder.Configuration["DRIVEN"])
             .WithHttpsEndpoint(51545)
+            .WaitForCompletion(resources.MigrationServiceResource)
             .WaitFor(resources.MessagingResource)
             .WaitFor(resources.DatabaseResource);
 
@@ -47,8 +48,17 @@ public static class AppBuilderExtensions
             .AddPostgres("database")
             .WithLifetime(ContainerLifetime.Persistent)
             .AddDatabase("users");
+        
+        var migrationService = builder.AddProject<Projects.Stickerlandia_UserManagement_MigrationService>("migration-service")
+            .WithEnvironment("ConnectionStrings__database", agnosticDb)
+            .WithEnvironment("ConnectionStrings__messaging", kafka)
+            .WithEnvironment("DRIVING", builder.Configuration["DRIVING"])
+            .WithEnvironment("DRIVEN", builder.Configuration["DRIVEN"])
+            .WithHttpsEndpoint(51545)
+            .WaitFor(agnosticDb)
+            .WaitFor(kafka);
 
-        return new InfrastructureResources(agnosticDb, kafka);
+        return new InfrastructureResources(agnosticDb, kafka, migrationService);
     }
     
     public static IDistributedApplicationBuilder CreateKafkaTopicsOnReady(
@@ -151,8 +161,17 @@ public static class AppBuilderExtensions
             .AddPostgres("database")
             .WithLifetime(ContainerLifetime.Persistent)
             .AddDatabase("users");
+        
+        var migrationService = builder.AddProject<Projects.Stickerlandia_UserManagement_MigrationService>("migration-service")
+            .WithEnvironment("ConnectionStrings__database", azurePostgresDb)
+            .WithEnvironment("ConnectionStrings__messaging", serviceBus)
+            .WithEnvironment("DRIVING", builder.Configuration["DRIVING"])
+            .WithEnvironment("DRIVEN", builder.Configuration["DRIVEN"])
+            .WithHttpsEndpoint(51545)
+            .WaitFor(azurePostgresDb)
+            .WaitFor(serviceBus);
 
-        return new InfrastructureResources(azurePostgresDb, serviceBus);
+        return new InfrastructureResources(azurePostgresDb, serviceBus, migrationService);
     }
 
     public static IResourceBuilder<AzureServiceBusQueueResource> WithServiceBusTestCommands(
@@ -191,6 +210,7 @@ public static class AppBuilderExtensions
             .WithEnvironment("ConnectionStrings__database", resources.DatabaseResource)
             .WithEnvironment("DRIVING", builder.Configuration["DRIVING"])
             .WithEnvironment("DRIVEN", builder.Configuration["DRIVEN"])
+            .WaitForCompletion(resources.MigrationServiceResource)
             .WaitFor(resources.MessagingResource)
             .WaitFor(resources.DatabaseResource);
 
@@ -210,6 +230,7 @@ public static class AppBuilderExtensions
             .WithEnvironment("ConnectionStrings__database", resources.DatabaseResource)
             .WithEnvironment("DRIVING", builder.Configuration["DRIVING"])
             .WithEnvironment("DRIVEN", builder.Configuration["DRIVEN"])
+            .WaitForCompletion(resources.MigrationServiceResource)
             .WaitFor(resources.MessagingResource)
             .WaitFor(resources.DatabaseResource)
             .WithExternalHttpEndpoints();
