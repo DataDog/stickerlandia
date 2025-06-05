@@ -1,5 +1,6 @@
 package com.datadoghq.stickerlandia.stickeraward.sticker;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,7 +29,7 @@ class StickerImageServiceTest {
     @Test
     @Order(1)
     void testUploadImage() {
-        byte[] testImageData = "fake-png-image-data".getBytes();
+        byte[] testImageData = "fake-png-image-data".getBytes(UTF_8);
         InputStream imageStream = new ByteArrayInputStream(testImageData);
 
         String imageKey =
@@ -50,7 +51,7 @@ class StickerImageServiceTest {
         assertNotNull(retrievedImage);
 
         byte[] retrievedData = assertDoesNotThrow(() -> retrievedImage.readAllBytes());
-        String retrievedContent = new String(retrievedData);
+        String retrievedContent = new String(retrievedData, UTF_8);
         assertEquals("fake-png-image-data", retrievedContent);
     }
 

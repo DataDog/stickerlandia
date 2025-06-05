@@ -7,6 +7,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
 
+/** Test for the health resource. */
 @QuarkusTest
 public class HealthResourceTest {
 

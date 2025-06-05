@@ -21,7 +21,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Response;
 import java.io.InputStream;
-import java.util.Date;
+import java.time.Instant;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 
 /** REST resource for managing stickers. */
@@ -191,7 +191,7 @@ public class StickerResource {
             StickerImageUploadResponse response = new StickerImageUploadResponse();
             response.setStickerId(stickerId);
             response.setImageUrl(imageUrl);
-            response.setUploadedAt(new Date());
+            response.setUploadedAt(Instant.now());
 
             return Response.ok(response).build();
         } catch (Exception e) {

@@ -18,14 +18,10 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** REST resource for managing sticker awards and assignments. */
 @Path("/api/award/v1/users")
 public class StickerAwardResource {
-
-    private static final Logger log = LoggerFactory.getLogger(StickerAwardResource.class);
 
     @Inject StickerAwardEventPublisher eventPublisher;
 

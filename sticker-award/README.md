@@ -88,6 +88,23 @@ Run integration tests:
 
 ## Code Quality
 
+This project enforces high code quality through multiple static analysis tools:
+
+### Error Prone
+
+This project uses Error Prone to catch common Java programming mistakes at compile time.
+
+**Error Prone Integration:**
+- Runs automatically during compilation (`./mvnw compile`)
+- Catches bugs like incorrect Date usage, unused variables, and charset issues
+- Configured in the Maven compiler plugin
+- Uses Error Prone version 2.38.0
+
+**Common Error Prone checks include:**
+- `JavaUtilDate` - Flags usage of legacy `java.util.Date` API
+- `UnusedVariable` - Detects unused fields and variables
+- `DefaultCharset` - Warns about implicit charset usage in string operations
+
 ### Checkstyle
 
 This project uses Checkstyle to enforce coding standards based on the Google Java Style Guide.
