@@ -19,7 +19,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 @QuarkusTest
 @TestProfile(KafkaTestProfile.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class StickerAwardResourceKafkaIntegrationTest {
+public class StickerAwardResourceKafkaIT {
 
     private static final String TEST_STICKER_ID = "test-sticker-integration";
     private static final String TEST_USER_ID = "test-user-integration";

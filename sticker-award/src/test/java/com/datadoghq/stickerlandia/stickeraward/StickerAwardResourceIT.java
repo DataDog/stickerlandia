@@ -12,7 +12,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 /** Integration test for StickerAwardResource. */
 @QuarkusTest
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class StickerAwardResourceIntegrationTest {
+public class StickerAwardResourceIT {
     // Instead of extending StickerAwardResourceTest (which uses @Inject),
     // implement a simple standalone test
 
