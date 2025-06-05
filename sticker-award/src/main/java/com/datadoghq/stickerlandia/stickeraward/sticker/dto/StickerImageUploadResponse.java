@@ -1,24 +1,26 @@
 package com.datadoghq.stickerlandia.stickeraward.sticker.dto;
 
-import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import java.util.Date;
 
+/** Response DTO for sticker image upload operations. */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({
-    "stickerId",
-    "imageUrl",
-    "uploadedAt"
-})
+@JsonPropertyOrder({"stickerId", "imageUrl", "uploadedAt"})
 public class StickerImageUploadResponse {
 
     @JsonProperty("stickerId")
     private String stickerId;
+
     @JsonProperty("imageUrl")
     private String imageUrl;
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
+
+    @JsonFormat(
+            shape = JsonFormat.Shape.STRING,
+            pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'",
+            timezone = "UTC")
     @JsonProperty("uploadedAt")
     private Date uploadedAt;
 
@@ -51,5 +53,4 @@ public class StickerImageUploadResponse {
     public void setUploadedAt(Date uploadedAt) {
         this.uploadedAt = uploadedAt;
     }
-
 }

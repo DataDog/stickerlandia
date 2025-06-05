@@ -4,18 +4,17 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+/** Response DTO for sticker creation operations. */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({
-    "stickerId",
-    "stickerName",
-    "imageUrl"
-})
+@JsonPropertyOrder({"stickerId", "stickerName", "imageUrl"})
 public class CreateStickerResponse {
 
     @JsonProperty("stickerId")
     private String stickerId;
+
     @JsonProperty("stickerName")
     private String stickerName;
+
     @JsonProperty("imageUrl")
     private String imageUrl;
 
@@ -48,5 +47,4 @@ public class CreateStickerResponse {
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
     }
-
 }

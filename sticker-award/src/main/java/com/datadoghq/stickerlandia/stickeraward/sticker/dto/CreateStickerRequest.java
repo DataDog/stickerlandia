@@ -5,20 +5,17 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+/** Request DTO for creating a new sticker. */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({
-    "stickerName",
-    "stickerDescription",
-    "stickerQuantityRemaining"
-})
+@JsonPropertyOrder({"stickerName", "stickerDescription", "stickerQuantityRemaining"})
 public class CreateStickerRequest {
 
     @JsonProperty("stickerName")
     private String stickerName;
-    
+
     @JsonProperty("stickerDescription")
     private String stickerDescription;
-    
+
     @JsonProperty("stickerQuantityRemaining")
     @JsonPropertyDescription("Quantity remaining (-1 for infinite)")
     private Integer stickerQuantityRemaining;

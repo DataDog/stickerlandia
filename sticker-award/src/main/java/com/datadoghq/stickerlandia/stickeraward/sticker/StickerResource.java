@@ -1,14 +1,14 @@
 package com.datadoghq.stickerlandia.stickeraward.sticker;
 
 import com.datadoghq.stickerlandia.stickeraward.sticker.dto.CreateStickerRequest;
-import com.datadoghq.stickerlandia.stickeraward.sticker.dto.GetStickerAssignmentsResponse;
-import com.datadoghq.stickerlandia.stickeraward.sticker.dto.GetAllStickersResponse;
 import com.datadoghq.stickerlandia.stickeraward.sticker.dto.CreateStickerResponse;
+import com.datadoghq.stickerlandia.stickeraward.sticker.dto.GetAllStickersResponse;
+import com.datadoghq.stickerlandia.stickeraward.sticker.dto.GetStickerAssignmentsResponse;
 import com.datadoghq.stickerlandia.stickeraward.sticker.dto.StickerDTO;
 import com.datadoghq.stickerlandia.stickeraward.sticker.dto.StickerImageUploadResponse;
-import com.datadoghq.stickerlandia.stickeraward.sticker.dto.StickerMetadata;
 import com.datadoghq.stickerlandia.stickeraward.sticker.dto.UpdateStickerRequest;
 import io.smallrye.common.constraint.NotNull;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.DefaultValue;
@@ -20,45 +20,59 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Response;
-import org.eclipse.microprofile.openapi.annotations.Operation;
-import jakarta.inject.Inject;
-
 import java.io.InputStream;
 import java.util.Date;
+import org.eclipse.microprofile.openapi.annotations.Operation;
 
-@Path("/api/award/v1/stickers")
+/** REST resource for managing stickers. */
+@Path("/stickers")
 public class StickerResource {
 
-    @Inject
-    StickerRepository stickerRepository;
+    @Inject StickerRepository stickerRepository;
 
-    @Inject
-    StickerImageService stickerImageService;
+    @Inject StickerImageService stickerImageService;
 
+    /**
+     * Gets all stickers with pagination.
+     *
+     * @param page the page number (0-based)
+     * @param size the page size
+     * @return response containing paginated stickers
+     */
     @GET
     @Produces("application/json")
-    @Operation(description = "Get all stickers in the catalog")
+    @Operation(summary = "Get all stickers")
     public GetAllStickersResponse getAllStickers(
             @QueryParam("page") @DefaultValue("0") int page,
             @QueryParam("size") @DefaultValue("20") int size) {
         return stickerRepository.getAllStickers(page, size);
     }
 
+    /**
+     * Creates a new sticker.
+     *
+     * @param data the sticker creation request
+     * @return response containing the created sticker details
+     */
     @POST
     @Produces("application/json")
     @Consumes("application/json")
-    @Operation(description = "Create a new sticker in the catalog")
+    @Operation(summary = "Create a new sticker")
     public Response createSticker(@NotNull CreateStickerRequest data) {
         CreateStickerResponse createdSticker = stickerRepository.createSticker(data);
-        return Response.status(Response.Status.CREATED)
-            .entity(createdSticker)
-            .build();
+        return Response.status(Response.Status.CREATED).entity(createdSticker).build();
     }
 
+    /**
+     * Gets a specific sticker by ID.
+     *
+     * @param stickerId the ID of the sticker
+     * @return response containing the sticker details
+     */
     @GET
     @Path("/{stickerId}")
     @Produces("application/json")
-    @Operation(description = "Get a specific sticker's metadata")
+    @Operation(summary = "Get a sticker by ID")
     public Response getStickerMetadata(@PathParam("stickerId") String stickerId) {
         StickerDTO metadata = stickerRepository.getStickerMetadata(stickerId);
         if (metadata == null) {
@@ -67,14 +81,20 @@ public class StickerResource {
         return Response.ok(metadata).build();
     }
 
+    /**
+     * Updates an existing sticker.
+     *
+     * @param stickerId the ID of the sticker to update
+     * @param data the update request
+     * @return response containing the updated sticker details
+     */
     @PUT
     @Path("/{stickerId}")
     @Produces("application/json")
     @Consumes("application/json")
-    @Operation(description = "Update a sticker's metadata")
+    @Operation(summary = "Update a sticker")
     public Response updateStickerMetadata(
-            @PathParam("stickerId") String stickerId,
-            @NotNull UpdateStickerRequest data) {
+            @PathParam("stickerId") String stickerId, @NotNull UpdateStickerRequest data) {
         StickerDTO updated = stickerRepository.updateStickerMetadata(stickerId, data);
         if (updated == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
@@ -82,9 +102,15 @@ public class StickerResource {
         return Response.ok(updated).build();
     }
 
+    /**
+     * Deletes a sticker from the catalog.
+     *
+     * @param stickerId the ID of the sticker to delete
+     * @return response indicating the deletion result
+     */
     @DELETE
     @Path("/{stickerId}")
-    @Operation(description = "Delete a sticker from the catalog. A sticker can only be deleted if it is not assigned to anyone.")
+    @Operation(summary = "Delete a sticker from the catalog")
     public Response deleteSticker(@PathParam("stickerId") String stickerId) {
         try {
             boolean deleted = stickerRepository.deleteSticker(stickerId);
@@ -94,83 +120,106 @@ public class StickerResource {
             return Response.noContent().build();
         } catch (IllegalStateException e) {
             return Response.status(Response.Status.BAD_REQUEST)
-                .entity("Cannot delete sticker that is assigned to users")
-                .build();
+                    .entity("Cannot delete sticker that is assigned to users")
+                    .build();
         }
     }
 
+    /**
+     * Gets the image for a specific sticker.
+     *
+     * @param stickerId the ID of the sticker
+     * @return response containing the sticker image
+     */
     @GET
     @Path("/{stickerId}/image")
     @Produces("image/png")
-    @Operation(description = "Get the sticker image")
+    @Operation(summary = "Get the sticker image")
     public Response getStickerImage(@PathParam("stickerId") String stickerId) {
         StickerDTO metadata = stickerRepository.getStickerMetadata(stickerId);
         if (metadata == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        
+
         if (metadata.getImageKey() == null) {
             return Response.status(Response.Status.NOT_FOUND)
-                .entity("No image found for this sticker")
-                .build();
+                    .entity("No image found for this sticker")
+                    .build();
         }
-        
+
         try {
             InputStream imageStream = stickerImageService.getImage(metadata.getImageKey());
-            return Response.ok(imageStream)
-                .type("image/png")
-                .build();
+            return Response.ok(imageStream).type("image/png").build();
         } catch (Exception e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity("Failed to retrieve image")
-                .build();
+                    .entity("Failed to retrieve image")
+                    .build();
         }
     }
 
-    @PUT
+    /**
+     * Uploads an image for a sticker.
+     *
+     * @param stickerId the ID of the sticker
+     * @param data the image input stream
+     * @return response containing the upload result
+     */
+    @POST
     @Path("/{stickerId}/image")
-    @Produces("application/json")
     @Consumes("image/png")
-    @Operation(description = "Upload or update the sticker image")
+    @Produces("application/json")
+    @Operation(summary = "Upload an image for a sticker")
     public Response uploadStickerImage(
-            @PathParam("stickerId") String stickerId,
-            @NotNull InputStream data) {
+            @PathParam("stickerId") String stickerId, @NotNull InputStream data) {
         StickerDTO metadata = stickerRepository.getStickerMetadata(stickerId);
         if (metadata == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        
+
         try {
             byte[] imageBytes = data.readAllBytes();
-            String imageKey = stickerImageService.uploadImage(new java.io.ByteArrayInputStream(imageBytes), "image/png", imageBytes.length);
-            
+            String imageKey =
+                    stickerImageService.uploadImage(
+                            new java.io.ByteArrayInputStream(imageBytes),
+                            "image/png",
+                            imageBytes.length);
+
             stickerRepository.updateStickerImageKey(stickerId, imageKey);
-            
+
             String imageUrl = stickerImageService.getImageUrl(imageKey);
-            
+
             StickerImageUploadResponse response = new StickerImageUploadResponse();
             response.setStickerId(stickerId);
             response.setImageUrl(imageUrl);
             response.setUploadedAt(new Date());
-            
+
             return Response.ok(response).build();
         } catch (Exception e) {
             System.out.println(e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity("Failed to upload image")
-                .build();
+                    .entity("Failed to upload image")
+                    .build();
         }
     }
 
+    /**
+     * Gets all assignments for a specific sticker.
+     *
+     * @param stickerId the ID of the sticker
+     * @param page the page number (0-based)
+     * @param size the page size
+     * @return response containing paginated assignments
+     */
     @GET
     @Path("/{stickerId}/assignments")
     @Produces("application/json")
-    @Operation(description = "Get users to which this sticker is assigned")
+    @Operation(summary = "Get assignments for a sticker")
     public Response getStickerAssignments(
             @PathParam("stickerId") String stickerId,
             @QueryParam("page") @DefaultValue("0") int page,
             @QueryParam("size") @DefaultValue("20") int size) {
-        GetStickerAssignmentsResponse data = stickerRepository.getStickerAssignments(stickerId, page, size);
+        GetStickerAssignmentsResponse data =
+                stickerRepository.getStickerAssignments(stickerId, page, size);
         if (data == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }

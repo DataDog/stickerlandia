@@ -5,21 +5,23 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.eclipse.microprofile.openapi.annotations.Operation;
-
 import java.util.HashMap;
 import java.util.Map;
+import org.eclipse.microprofile.openapi.annotations.Operation;
 
+/** Health check resource for the sticker award service. */
 @Path("/health")
 public class HealthResource {
-    
+
     /**
-     * Check service health
+     * Basic health check endpoint.
+     *
+     * @return health status response
      */
-    @Operation(description = "Check service health")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Response checkHealth() {
+    @Operation(summary = "Health check endpoint")
+    public Response health() {
         Map<String, Object> healthStatus = new HashMap<>();
         healthStatus.put("status", "OK");
         return Response.ok(healthStatus).build();
