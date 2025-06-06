@@ -47,6 +47,7 @@ public class SqsStickerClaimedWorker : IMessagingWorker
         if (evtData == null)
         {
             await _sqsClient.SendMessageAsync(_awsConfiguration.Value.StickerClaimedDLQUrl, message.Body);
+            await _sqsClient.DeleteMessageAsync(_awsConfiguration.Value.StickerClaimedQueueUrl, message.ReceiptHandle);
             return;
         }
 
