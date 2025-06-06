@@ -4,7 +4,6 @@
 
 using System.Collections.Immutable;
 using System.Security.Claims;
-using Microsoft.AspNetCore.Http;
 
 namespace Stickerlandia.UserManagement.Core;
 

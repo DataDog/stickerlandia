@@ -3,6 +3,7 @@
 // Copyright 2025 Datadog, Inc.
 
 using System.Text.Json;
+using Aspire.Hosting.AWS.Lambda;
 using Aspire.Hosting.Azure;
 using Azure.Messaging.ServiceBus;
 using Confluent.Kafka;
@@ -48,8 +49,9 @@ public static class AppBuilderExtensions
             .AddPostgres("database")
             .WithLifetime(ContainerLifetime.Persistent)
             .AddDatabase("users");
-        
-        var migrationService = builder.AddProject<Projects.Stickerlandia_UserManagement_MigrationService>("migration-service")
+
+        var migrationService = builder
+            .AddProject<Projects.Stickerlandia_UserManagement_MigrationService>("migration-service")
             .WithEnvironment("ConnectionStrings__database", agnosticDb)
             .WithEnvironment("ConnectionStrings__messaging", kafka)
             .WithEnvironment("DRIVING", builder.Configuration["DRIVING"])
@@ -60,7 +62,7 @@ public static class AppBuilderExtensions
 
         return new InfrastructureResources(agnosticDb, kafka, migrationService);
     }
-    
+
     public static IDistributedApplicationBuilder CreateKafkaTopicsOnReady(
         this IDistributedApplicationBuilder builder,
         IResourceBuilder<KafkaServerResource> kafka)
@@ -161,8 +163,9 @@ public static class AppBuilderExtensions
             .AddPostgres("database")
             .WithLifetime(ContainerLifetime.Persistent)
             .AddDatabase("users");
-        
-        var migrationService = builder.AddProject<Projects.Stickerlandia_UserManagement_MigrationService>("migration-service")
+
+        var migrationService = builder
+            .AddProject<Projects.Stickerlandia_UserManagement_MigrationService>("migration-service")
             .WithEnvironment("ConnectionStrings__database", azurePostgresDb)
             .WithEnvironment("ConnectionStrings__messaging", serviceBus)
             .WithEnvironment("DRIVING", builder.Configuration["DRIVING"])
@@ -223,7 +226,7 @@ public static class AppBuilderExtensions
     {
         var storage = builder.AddAzureStorage("storage")
             .RunAsEmulator();
-        
+
         var functions = builder.AddAzureFunctionsProject<Projects.Stickerlandia_UserManagement_FunctionApp>("worker")
             .WithHostStorage(storage)
             .WithEnvironment("ConnectionStrings__messaging", resources.MessagingResource)
@@ -238,12 +241,23 @@ public static class AppBuilderExtensions
         return builder;
     }
 
+#pragma warning disable CA2252
+
     public static IDistributedApplicationBuilder WithAwsLambda(
         this IDistributedApplicationBuilder builder,
-        IResourceBuilder<IResourceWithConnectionString> databaseResource,
-        IResourceBuilder<IResourceWithConnectionString> messagingResource)
+        InfrastructureResources resources)
     {
-        //TODO: Implement AWS Lambda support
+        var apiLambdaFunction = builder.AddAWSLambdaFunction<Projects.Stickerlandia_UserManagement_Api>("UsersApi",
+                "Stickerlandia.UserManagement.Api")
+            .WithEnvironment("ConnectionStrings__messaging", resources.MessagingResource)
+            .WithEnvironment("ConnectionStrings__database", resources.DatabaseResource)
+            .WithEnvironment("DRIVING", builder.Configuration["DRIVING"])
+            .WithEnvironment("DRIVEN", builder.Configuration["DRIVEN"]);
+
+        builder.AddAWSAPIGatewayEmulator("api", APIGatewayType.Rest)
+            .WithReference(apiLambdaFunction, Method.Any, "{proxy+}")
+            .WithHttpsEndpoint(51660);
+        ;
 
         return builder;
     }

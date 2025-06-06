@@ -5,17 +5,13 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Saunter;
 using Serilog;
-using Serilog.Events;
 using Serilog.Formatting.Json;
-using Stickerlandia.UserManagement.Agnostic;
 using Stickerlandia.UserManagement.Api;
 using Stickerlandia.UserManagement.Api.Configurations;
 using Stickerlandia.UserManagement.Api.Middlewares;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.Login;
 using Stickerlandia.UserManagement.Core.RegisterUser;
-using Stickerlandia.UserManagement.Auth;
-using Stickerlandia.UserManagement.Azure;
 using Stickerlandia.UserManagement.ServiceDefaults;
 
 var builder = WebApplication.CreateBuilder(args);

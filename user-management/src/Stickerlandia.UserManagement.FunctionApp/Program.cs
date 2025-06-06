@@ -45,9 +45,7 @@ var logger = Log.Logger = new LoggerConfiguration()
 var appLogger = new SerilogLoggerFactory(logger)
     .CreateLogger<Program>();
 
-
 appLogger.LogInformation("Application started");
-;
 
 var app = hostBuilder.Build();
 

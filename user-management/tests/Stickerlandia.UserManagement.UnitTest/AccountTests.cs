@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Security.Claims;
+using Microsoft.Extensions.Logging;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.Login;
 using Stickerlandia.UserManagement.Core.RegisterUser;
@@ -18,19 +19,20 @@ public class AccountTests
 
         UserAccount? capturedAccount = null;
 
+        var logger = A.Fake<ILogger<RegisterCommandHandler>>();
         var userRepo = A.Fake<IUsers>();
         A.CallTo(() => userRepo.Add(A<UserAccount>.Ignored))
             .Invokes((UserAccount account) => capturedAccount = account)
             .Returns(Task.FromResult(UserAccount.From(new AccountId(testAccountId), testEmailAddress,
                 "John", "Doe", 1, DateTime.UtcNow, AccountTier.Std, AccountType.User)));
 
-        var registerCommandHandler = new RegisterCommandHandler(userRepo);
+        var registerCommandHandler = new RegisterCommandHandler(userRepo, logger);
 
         var result = await registerCommandHandler.Handle(
             new RegisterUserCommand { EmailAddress = testEmailAddress, Password = testPassword }, AccountType.User);
 
         result.AccountId.Should().NotBeEmpty();
-        capturedAccount?.Id.Value.Should().Be(result.AccountId);
+        capturedAccount?.Id!.Value.Should().Be(result.AccountId);
         capturedAccount?.DomainEvents.Count.Should().Be(1);
 
         var firstEvent = capturedAccount!.DomainEvents.First();
@@ -41,7 +43,6 @@ public class AccountTests
     public async Task GivenAUserAccountExists_ShouldBeAbleToUpdateDetails()
     {
         var testEmailAddress = "test@test.com";
-        var testPassword = "Password!234";
         var testAccountId = "1234";
 
         UserAccount? capturedAccount = null;
@@ -51,7 +52,7 @@ public class AccountTests
         var userRepo = A.Fake<IUsers>();
         A.CallTo(() => userRepo.UpdateAccount(A<UserAccount>.Ignored))
             .Invokes((UserAccount account) => capturedAccount = account);
-        A.CallTo(() => userRepo.WithIdAsync(A<AccountId>.Ignored))
+        A.CallTo(() => userRepo.WithIdAsync(A<AccountId>.Ignored))!
             .Returns(Task.FromResult(userAccountUnderTest));
 
         var handler = new UpdateUserDetailsHandler(userRepo);
@@ -59,8 +60,8 @@ public class AccountTests
         await handler.Handle(
             new UpdateUserDetailsRequest() { AccountId = new AccountId(testAccountId), FirstName = "James", LastName = "Eastham"});
 
-        capturedAccount.FirstName.Should().Be("James");
-        capturedAccount.LastName.Should().Be("Eastham");
+        capturedAccount?.FirstName.Should().Be("James");
+        capturedAccount?.LastName.Should().Be("Eastham");
         capturedAccount?.DomainEvents.Count.Should().Be(1);
 
         var firstEvent = capturedAccount!.DomainEvents.First();
@@ -73,10 +74,11 @@ public class AccountTests
         var testEmailAddress = "test@test.com";
         var testPassword = "Password!234";
 
+        var logger = A.Fake<ILogger<RegisterCommandHandler>>();
         var userRepo = A.Fake<IUsers>();
         A.CallTo(() => userRepo.DoesEmailExistAsync(A<string>.Ignored)).Returns(Task.FromResult(true));
 
-        var registerCommandHandler = new RegisterCommandHandler(userRepo);
+        var registerCommandHandler = new RegisterCommandHandler(userRepo, logger);
 
         await Assert.ThrowsAsync<UserExistsException>(async () => await registerCommandHandler.Handle(
             new RegisterUserCommand { EmailAddress = testEmailAddress, Password = testPassword }, AccountType.User));
@@ -89,8 +91,9 @@ public class AccountTests
         var testPassword = "Password!234";
 
         var userRepo = A.Fake<IUsers>();
+        var logger = A.Fake<ILogger<RegisterCommandHandler>>();
 
-        var registerCommandHandler = new RegisterCommandHandler(userRepo);
+        var registerCommandHandler = new RegisterCommandHandler(userRepo, logger);
 
         var exception = await Assert.ThrowsAsync<InvalidUserException>(async () => await registerCommandHandler.Handle(
             new RegisterUserCommand { EmailAddress = testEmailAddress, Password = testPassword }, AccountType.User));
@@ -103,7 +106,6 @@ public class AccountTests
     {
         var testEmailAddress = "test@test.com";
         var testPassword = "Password!234";
-        var testPasswordHash = "gY+ZhJfJftbzJvLmWE6grZgJv3nWkepeIigpSSnDwqY1xiQ1MkSAU16LE+3EljRw";
         var testAccountId = "1234";
 
         var userRepo = A.Fake<IUsers>();
@@ -131,12 +133,11 @@ public class AccountTests
     {
         var testEmailAddress = "test@test.com";
         var testPassword = "not the correct password4";
-        var testPasswordHash = "gY+ZhJfJftbzJvLmWE6grZgJv3nWkepeIigpSSnDwqY1xiQ1MkSAU16LE+3EljRw";
         var testAccountId = "1234";
 
         var userRepo = A.Fake<IUsers>();
 
-        A.CallTo(() => userRepo.WithEmailAsync(A<string>.Ignored)).Returns(
+        A.CallTo(() => userRepo.WithEmailAsync(A<string>.Ignored))!.Returns(
             Task.FromResult(UserAccount.From(new AccountId(testAccountId), testEmailAddress, "John",
                 "Doe", 1, DateTime.UtcNow, AccountTier.Std, AccountType.User)));
 
@@ -156,7 +157,7 @@ public class AccountTests
             
             Assert.Fail("Expected LoginFailedException to be thrown, but it was not.");
         }
-        catch (LoginFailedException ex)
+        catch (LoginFailedException)
         {
 
         }

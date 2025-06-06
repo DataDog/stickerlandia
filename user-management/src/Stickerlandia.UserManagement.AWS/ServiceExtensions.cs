@@ -2,34 +2,30 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
-using System.Globalization;
-using Azure.Messaging.ServiceBus;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.Azure.Cosmos;
-using Microsoft.EntityFrameworkCore;
+using Amazon.SimpleNotificationService;
+using Amazon.SQS;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using OpenIddict.Abstractions;
-using OpenIddict.Server;
-using OpenIddict.Validation.AspNetCore;
 using Stickerlandia.UserManagement.Agnostic;
-using Stickerlandia.UserManagement.Auth;
 using Stickerlandia.UserManagement.Core;
-using Stickerlandia.UserManagement.Core.Outbox;
 
-namespace Stickerlandia.UserManagement.Azure;
+namespace Stickerlandia.UserManagement.AWS;
 
 public static class ServiceExtensions
 {
-    public static IServiceCollection AddAzureAdapters(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddAwsAdapters(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddAWSLambdaHosting(LambdaEventSource.RestApi);
         services.AddPostgresAuthServices(configuration);
 
-        services.AddSingleton<IMessagingWorker, ServiceBusStickerClaimedWorker>();
-        services.AddSingleton(new ServiceBusClient(configuration["ConnectionStrings:messaging"]));
+        services.Configure<AwsConfiguration>(
+            configuration.GetSection("Aws"));
 
-        services.AddSingleton<IUserEventPublisher, ServiceBusEventPublisher>();
+        services.AddSingleton<IMessagingWorker, SqsStickerClaimedWorker>();
+        services.AddSingleton(new AmazonSQSClient());
+        services.AddSingleton(new AmazonSimpleNotificationServiceClient());
+
+        services.AddSingleton<IUserEventPublisher, SnsEventPublisher>();
 
         return services;
     }

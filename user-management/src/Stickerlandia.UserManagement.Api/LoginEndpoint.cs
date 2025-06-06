@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
+using Serilog;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.Login;
 
@@ -14,11 +15,15 @@ public static class LoginEndpoint
         LoginCommandHandler loginCommandHandler,
         HttpContext httpContext)
     {
+        Log.Logger.Information("Executing login command");
+
         var request = httpContext.GetOpenIddictServerRequest();
 
         if (request.IsPasswordGrantType())
         {
-            var identity = await authService.VerifyPassword(request.Username, request.Password, request.GetScopes());
+            Log.Logger.Information("Is password grant, verifying user credentials");
+
+            var identity = await authService.VerifyPassword(request.Username!, request.Password!, request.GetScopes());
             var signInResult = TypedResults.SignIn(new ClaimsPrincipal(identity), null,
                 OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
             return signInResult;

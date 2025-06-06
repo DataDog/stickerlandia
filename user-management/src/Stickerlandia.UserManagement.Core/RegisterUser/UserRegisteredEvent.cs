@@ -13,7 +13,7 @@ public record UserRegisteredEvent : DomainEvent
     
     public UserRegisteredEvent(UserAccount account)
     {
-        AccountId = account.Id.Value;
+        AccountId = account.Id!.Value;
     }
     
     [JsonPropertyName("eventName")]

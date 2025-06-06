@@ -10,7 +10,7 @@ public record UserAccountDTO
 {
     public UserAccountDTO(UserAccount userAccount)
     {
-        AccountId = userAccount.Id.Value;
+        AccountId = userAccount.Id!.Value;
         EmailAddress = userAccount.EmailAddress;
         FirstName = userAccount.FirstName;
         LastName = userAccount.LastName;

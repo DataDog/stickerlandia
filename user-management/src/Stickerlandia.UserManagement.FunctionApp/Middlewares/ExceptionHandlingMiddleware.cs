@@ -44,10 +44,6 @@ public class ExceptionHandlingMiddleware(ILogger<ExceptionHandlingMiddleware> lo
         }
         catch (Exception ex)
         {
-            var activeSpan = Tracer.Instance.ActiveScope?.Span;
-            activeSpan?.SetException(ex);
-            activeSpan?.SetTag("error", "true");
-            activeSpan?.SetTag("error.message", ex.Message);
             logger.LogError(ex, $"Unknown error: {ex.Message} : {ex.StackTrace}");
             await ProcessError(ex, context, new ApiResponse<string>(false, "Error", "Unknown error"));
         }
@@ -55,6 +51,11 @@ public class ExceptionHandlingMiddleware(ILogger<ExceptionHandlingMiddleware> lo
 
     private async Task ProcessError(Exception ex, FunctionContext context, ApiResponse<string> apiResponse)
     {
+        var activeSpan = Tracer.Instance.ActiveScope?.Span;
+        activeSpan?.SetException(ex);
+        activeSpan?.SetTag("error", "true");
+        activeSpan?.SetTag("error.message", ex.Message);
+        
         logger.LogError(ex, "Error processing invocation");
 
         var httpReqData = await context.GetHttpRequestDataAsync();

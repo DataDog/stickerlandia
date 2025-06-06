@@ -6,8 +6,6 @@ using System.Collections.Immutable;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
@@ -53,17 +51,26 @@ public class MicrosoftIdentityAuthService(
 
     public async Task<ClaimsIdentity?> VerifyPassword(string username, string password, ImmutableArray<string> scopes)
     {
+        logger.LogInformation("Attempting to verify password");
+        
         var identity = new ClaimsIdentity(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
             OpenIddictConstants.Claims.Name, OpenIddictConstants.Claims.Role);
         var user = await userManager.FindByEmailAsync(username);
         AuthenticationProperties properties = new();
 
         if (user == null)
+        {
+            logger.LogWarning("User not found");
             return null;
+        }
 
         // Validate the username/password parameters and ensure the account is not locked out.
         var result = await userManager.CheckPasswordAsync(user, password);
-        if (!result) return null;
+        if (!result)
+        {
+            logger.LogInformation("Password invalid");
+            return null;
+        };
 
         // The user is now validated, so reset lockout counts, if necessary
         if (userManager.SupportsUserLockout) await userManager.ResetAccessFailedCountAsync(user);
@@ -83,6 +90,8 @@ public class MicrosoftIdentityAuthService(
 
         // Setting destinations of claims i.e. identity token or access token
         identity.SetDestinations(GetDestinations);
+        
+        logger.LogInformation("Password verified, returning identity");
 
         return identity;
     }

@@ -56,7 +56,7 @@ public class UserAccount
     }
 
     // Async version for better performance in web contexts
-    public static async Task<UserAccount> Register(string emailAddress, string password, string firstName,
+    public static UserAccount Register(string emailAddress, string password, string firstName,
         string lastName, AccountType accountType)
     {
         if (!IsValidEmail(emailAddress)) throw new InvalidUserException("Invalid email address");
@@ -101,7 +101,7 @@ public class UserAccount
         };
     }
 
-    public AccountId Id { get; private set; }
+    public AccountId? Id { get; private set; }
 
     public string EmailAddress { get; private set; } = string.Empty;
 

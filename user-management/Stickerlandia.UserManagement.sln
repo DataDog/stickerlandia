@@ -27,7 +27,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{FC9DDF76-8
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.Agnostic", "src\Stickerlandia.UserManagement.Agnostic\Stickerlandia.UserManagement.Agnostic.csproj", "{295E8315-2CD2-4CD8-B7F4-21EF587B74A9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.Lambda", "src\Stickerlandia.UserManagement.Lambda\src\Stickerlandia.UserManagement.Lambda\Stickerlandia.UserManagement.Lambda.csproj", "{5C770F92-B6E7-4270-A041-A32F385DA6C4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.Lambda", "src\Stickerlandia.UserManagement.Lambda\Stickerlandia.UserManagement.Lambda.csproj", "{5C770F92-B6E7-4270-A041-A32F385DA6C4}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Driving", "Driving", "{924749FC-98D5-40A6-8F4B-BA9BFDEDDEC3}"
 EndProject
@@ -40,6 +40,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.ServiceDefaults", "src\Stickerlandia.UserManagement.ServiceDefaults\Stickerlandia.UserManagement.ServiceDefaults.csproj", "{7C28228C-4B3D-4AAE-95E6-4669413BD06C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.MigrationService", "src\Stickerlandia.UserManagement.MigrationService\Stickerlandia.UserManagement.MigrationService.csproj", "{91536DB3-CBA5-44DE-943C-76F8577793FE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UserManagementService", "infra\aws\src\UserManagementService.csproj", "{57FBF8EA-3559-45A5-ACE1-823B2225E370}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -106,6 +108,10 @@ Global
 		{91536DB3-CBA5-44DE-943C-76F8577793FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{91536DB3-CBA5-44DE-943C-76F8577793FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{91536DB3-CBA5-44DE-943C-76F8577793FE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{57FBF8EA-3559-45A5-ACE1-823B2225E370}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{57FBF8EA-3559-45A5-ACE1-823B2225E370}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{57FBF8EA-3559-45A5-ACE1-823B2225E370}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{57FBF8EA-3559-45A5-ACE1-823B2225E370}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{4DDC795B-2EA4-4123-B631-F0D8CAA99BA6} = {FE220876-2B87-4095-8BD2-039049503C72}
