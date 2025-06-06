@@ -12,6 +12,28 @@ version: '3.8'
 # - Traefik Dashboard:      http://localhost:8081/dashboard/
 # - Redpanda Console:       http://localhost:8082
 #
+# 
+# Signing Up
+# ---------
+# curl -X POST http://localhost:8080/api/users/v1/register \
+#    -H "Content-Type: application/json" \
+#    -d '{
+#      "firstName": "John",
+#      "lastName": "Doe",
+#      "emailAddress": "john.doe@example.com",
+#      "password": "ValidPass123!"
+#    }'
+#
+# 
+# Logging In
+# ----------
+# curl -X POST http://localhost:8080/api/users/v1/login \
+#   -H "Content-Type:  application/x-www-form-urlencoded" \
+#   -d "grant_type=password&username=john.doe@example.com&password=ValidPass123!&client_id=user-authentication&client_secret=388D45FA-B36B-4988-BA59-B187D329C207"
+
+# 
+
+
 services:
   traefik:
     image: traefik:v3.0
