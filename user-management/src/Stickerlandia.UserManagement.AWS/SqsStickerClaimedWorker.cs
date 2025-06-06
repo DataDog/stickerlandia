@@ -73,9 +73,14 @@ public class SqsStickerClaimedWorker : IMessagingWorker
 
     public async Task PollAsync(CancellationToken cancellationToken)
     {
-        var messages =
-            await _sqsClient.ReceiveMessageAsync(_awsConfiguration.Value.StickerClaimedQueueUrl, cancellationToken);
+        var request = new ReceiveMessageRequest
+        {
+            QueueUrl = _awsConfiguration.Value.StickerClaimedQueueUrl,
+            WaitTimeSeconds = 20, // Enable long polling with a 20-second wait time
+            MaxNumberOfMessages = 10 // Fetch up to 10 messages per call
+        };
 
+        var messages = await _sqsClient.ReceiveMessageAsync(request, cancellationToken);
         foreach (var message in messages.Messages) await ProcessMessageAsync(message);
     }
 
