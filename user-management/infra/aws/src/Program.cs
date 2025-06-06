@@ -2,7 +2,7 @@
 
 namespace UserManagementService
 {
-    sealed class Program
+    sealed static class Program
     {
         public static void Main(string[] args)
         {
