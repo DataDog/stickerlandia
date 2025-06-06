@@ -1,7 +1,5 @@
 using System.Text.Json;
-using Amazon.Lambda.Core;
 using Amazon.Lambda.Annotations;
-using Amazon.Lambda.KafkaEvents;
 using Amazon.Lambda.SQSEvents;
 using Datadog.Trace;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,11 +8,9 @@ using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.Outbox;
 using Stickerlandia.UserManagement.Core.StickerClaimedEvent;
 
-[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
-
 namespace Stickerlandia.UserManagement.Lambda;
 
-public class Functions(ILogger<Functions> logger, IServiceScopeFactory serviceScopeFactory, OutboxProcessor outboxProcessor)
+public class Sqs(ILogger<Sqs> logger, IServiceScopeFactory serviceScopeFactory, OutboxProcessor outboxProcessor)
 {
     [LambdaFunction]
     public async Task<SQSBatchResponse> StickerClaimed(SQSEvent sqsEvent)
@@ -52,13 +48,5 @@ public class Functions(ILogger<Functions> logger, IServiceScopeFactory serviceSc
             logger.LogWarning(ex, "User with account in this event not found");
             failedMessages.Add(new SQSBatchResponse.BatchItemFailure { ItemIdentifier = message.MessageId });
         }
-    }
-
-    [LambdaFunction]
-    public async Task OutboxWorker(object evtData)
-    {
-        logger.LogInformation("Running outbox timer");
-        
-        await outboxProcessor.ProcessAsync();
     }
 }
