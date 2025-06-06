@@ -43,6 +43,30 @@ jobs:
         run: |
           cd sticker-award
           ./mvnw verify -Dskip.unit.tests=true -DskipITs=false
+      
+      - name: Install CodeQL CLI
+        run: |
+          # Download and install CodeQL CLI
+          wget -q https://github.com/github/codeql-cli-binaries/releases/latest/download/codeql-linux64.zip
+          unzip -q codeql-linux64.zip
+          sudo mv codeql /opt/codeql
+          echo "/opt/codeql" >> $GITHUB_PATH
+          /opt/codeql/codeql version --format=text
+      
+      - name: Create CodeQL Database
+        run: |
+          cd sticker-award
+          codeql database create cql-db --language=java --source-root=.
+      
+      - name: Install CodeQL Packs
+        run: |
+          cd sticker-award
+          codeql pack install cql-queries/
+      
+      - name: Validate Architecture Rules
+        run: |
+          cd sticker-award
+          ./scripts/validate-architecture.sh
 
   push-image:
     runs-on: ubuntu-latest
