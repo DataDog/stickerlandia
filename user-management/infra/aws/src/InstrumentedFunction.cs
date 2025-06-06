@@ -2,12 +2,12 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2024 Datadog, Inc.
 
+using System;
 using Amazon.CDK;
 using Amazon.CDK.AWS.IAM;
 using Amazon.CDK.AWS.Lambda;
 using Amazon.CDK.AWS.Lambda.DotNet;
 using Amazon.CDK.AWS.Logs;
-using Amazon.CDK.AWS.SecretsManager;
 using Constructs;
 using Environment = System.Environment;
 
@@ -27,7 +27,7 @@ public class InstrumentedFunction : Construct
     public InstrumentedFunction(Construct scope, string id, FunctionProps props) : base(scope, id)
     {
         if (props.Handler.Length > 128)
-            throw new Exception(
+            throw new ArgumentException(
                 "Function handler cannot be greater than 128 chars. https://docs.aws.amazon.com/lambda/latest/api/API_CreateFunction.html#lambda-CreateFunction-request-Handler");
         var functionName = $"{props.Shared.ServiceName}-{props.FunctionName}-{props.Shared.Env}";
 
