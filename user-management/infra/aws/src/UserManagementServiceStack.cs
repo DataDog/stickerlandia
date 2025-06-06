@@ -52,7 +52,8 @@ public class UserManagementServiceStack : Stack
         {
             {
                 "ConnectionStrings__database",
-                "Host=ep-weathered-wave-ab469hjs-pooler.eu-west-2.aws.neon.tech;Port=5432;Username=stickerlandia-users_owner;Password=npg_buwe2PoK1NgV;Database=stickerlandia-users"
+                // TODO: Replace with storing connection string in SSM/Secrets Manager and loading at runtime
+                Environment.GetEnvironmentVariable("DB_CONNECTION_STRING") ?? throw new ArgumentNullException*("DB_CONNECTION_STRING environment variable cnanot be null.")
             },
             { "Aws__UserRegisteredTopicArn", userRegisteredTopic.TopicArn },
             { "Aws__StickerClaimedQueueUrl", stickerClaimedQueue.QueueUrl },
