@@ -17,8 +17,8 @@ Stickerlandia will support both serverless and container-based platforms, self-h
 
 | Platform | Description | IaC | Messaging | Blob Storage | Database | Ingress | Ingress Features |
 |----------|-------------|-----|-----------|--------------|----------|---------|------------------|
-| AWS (EKS) | Kubernetes on Elastic Kubernetes Service | K8S Manifests | Apache Kafka on MSK | Amazon S3 | Amazon RDS | ALB + Ingress Controller | Path routing, SSL termination (No native OIDC) |
+| AWS (EKS) | Kubernetes on Elastic Kubernetes Service | K8S Manifests, CDK | Apache Kafka on MSK | Amazon S3 | Amazon RDS | ALB + Ingress Controller | Path routing, SSL termination (No native OIDC) |
 | Docker-Compose | Local development environment | docker-compose.yml | Kafka | MinIO | PostgreSQL | Traefik | Path routing, SSL (No native OIDC) |
-| Kubernetes | Generic Kubernetes deployment | K8S Manifests, CDK | Kafka | MinIO | PostgreSQL | Ingress Controller | SSL termination, path routing (No native OIDC) |
+| Kubernetes | Generic Kubernetes deployment | K8S Manifests | Kafka | MinIO | PostgreSQL | Ingress Controller | SSL termination, path routing (No native OIDC) |
 
 
