@@ -10,7 +10,7 @@ Stickerlandia will support both serverless and container-based platforms, self-h
 
 | Platform | Description | IaC | Messaging | Blob Storage | Database | Ingress | Ingress Features |
 |----------|-------------|-----|-----------|--------------|----------|---------|------------------|
-| AWS (Serverless) | Containers on Amazon ECS & Lambda functions with managed services | CDK | Amazon SQS/SNS/EventBridge | Amazon S3 | Amazon RDS/DynamoDB | API Gateway | Rate limiting, CORS, JWT/OIDC validation, API keys |
+| AWS (Serverless) | Containers on Amazon ECS/Fargate & Lambda functions with managed services | CDK | Amazon SQS/SNS/EventBridge | Amazon S3 | Amazon RDS/DynamoDB | API Gateway | Rate limiting, CORS, JWT/OIDC validation, API keys |
 | Azure (Serverless) | Azure Container Apps & Azure Functions with managed services | Terraform | Azure Service Bus | Azure Blob Storage | Azure SQL | Azure API Management | Path routing, rate limiting, JWT/OIDC validation |
 
 ### Containerised
