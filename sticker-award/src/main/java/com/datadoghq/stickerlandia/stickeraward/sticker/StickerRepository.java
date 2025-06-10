@@ -1,18 +1,15 @@
 package com.datadoghq.stickerlandia.stickeraward.sticker;
 
-import com.datadoghq.stickerlandia.stickeraward.award.dto.UserAssignmentDTO;
-import com.datadoghq.stickerlandia.stickeraward.award.entity.StickerAssignment;
-import com.datadoghq.stickerlandia.stickeraward.common.dto.PagedResponse;
 import com.datadoghq.stickerlandia.stickeraward.sticker.dto.CreateStickerRequest;
 import com.datadoghq.stickerlandia.stickeraward.sticker.dto.CreateStickerResponse;
 import com.datadoghq.stickerlandia.stickeraward.sticker.dto.GetAllStickersResponse;
-import com.datadoghq.stickerlandia.stickeraward.sticker.dto.GetStickerAssignmentsResponse;
 import com.datadoghq.stickerlandia.stickeraward.sticker.dto.StickerDTO;
 import com.datadoghq.stickerlandia.stickeraward.sticker.dto.StickerImageUploadResponse;
 import com.datadoghq.stickerlandia.stickeraward.sticker.dto.UpdateStickerRequest;
 import com.datadoghq.stickerlandia.stickeraward.sticker.entity.Sticker;
 import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.persistence.PersistenceException;
 import jakarta.transaction.Transactional;
 import java.io.InputStream;
 import java.time.Instant;
@@ -20,6 +17,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.hibernate.exception.ConstraintViolationException;
 
 /** Repository class for managing sticker operations. */
 @ApplicationScoped
@@ -155,34 +153,19 @@ public class StickerRepository {
     }
 
     /**
-     * Gets assignments for a specific sticker.
+     * Updates the image key for a sticker.
      *
      * @param stickerId the ID of the sticker
-     * @param page the page number (0-based)
-     * @param size the page size
-     * @return response containing paginated assignments
+     * @param imageKey the new image key
      */
-    public GetStickerAssignmentsResponse getStickerAssignments(
-            String stickerId, int page, int size) {
-        final List<UserAssignmentDTO> userAssignments =
-                StickerAssignment.findActiveByStickerId(stickerId).stream()
-                        .skip((long) page * size)
-                        .limit(size)
-                        .map(this::convertToUserAssignmentDto)
-                        .collect(Collectors.toList());
-
-        PagedResponse pagination = new PagedResponse();
-        pagination.setPage(page);
-        pagination.setSize(size);
-        pagination.setTotal((int) StickerAssignment.countActiveByStickerId(stickerId));
-        final long totalCount = StickerAssignment.countActiveByStickerId(stickerId);
-        pagination.setTotalPages((int) Math.ceil((double) totalCount / size));
-
-        GetStickerAssignmentsResponse response = new GetStickerAssignmentsResponse();
-        response.setStickerId(stickerId);
-        response.setAssignments(userAssignments);
-        response.setPagination(pagination);
-        return response;
+    @Transactional
+    public void updateStickerImageKey(String stickerId, String imageKey) {
+        Sticker sticker = Sticker.findById(stickerId);
+        if (sticker != null) {
+            sticker.setImageKey(imageKey);
+            sticker.setUpdatedAt(Instant.now());
+            sticker.persist();
+        }
     }
 
     private StickerDTO toStickerMetadata(Sticker sticker) {
@@ -214,19 +197,6 @@ public class StickerRepository {
     }
 
     /**
-     * Converts a StickerAssignment entity to a UserAssignmentDTO.
-     *
-     * @param assignment the sticker assignment entity to convert
-     * @return the converted UserAssignmentDTO
-     */
-    private UserAssignmentDTO convertToUserAssignmentDto(StickerAssignment assignment) {
-        UserAssignmentDTO dto = new UserAssignmentDTO();
-        dto.setUserId(assignment.getUserId());
-        dto.setAssignedAt(Date.from(assignment.getAssignedAt()));
-        return dto;
-    }
-
-    /**
      * Updates sticker metadata (alias for updateSticker).
      *
      * @param stickerId the ID of the sticker to update
@@ -252,29 +222,16 @@ public class StickerRepository {
             return false;
         }
 
-        // Check if sticker is assigned to any users
-        long assignmentCount = StickerAssignment.countActiveByStickerId(stickerId);
-        if (assignmentCount > 0) {
-            throw new IllegalStateException("Cannot delete sticker that is assigned to users");
-        }
-
-        sticker.delete();
-        return true;
-    }
-
-    /**
-     * Updates the image key for a sticker.
-     *
-     * @param stickerId the ID of the sticker
-     * @param imageKey the new image key
-     */
-    @Transactional
-    public void updateStickerImageKey(String stickerId, String imageKey) {
-        Sticker sticker = Sticker.findById(stickerId);
-        if (sticker != null) {
-            sticker.setImageKey(imageKey);
-            sticker.setUpdatedAt(Instant.now());
-            sticker.persist();
+        try {
+            sticker.delete();
+            return true;
+        } catch (PersistenceException e) {
+            // If we can't delete because of a constraint violation, the
+            // sticker must be assigned
+            if (e.getCause() instanceof ConstraintViolationException) {
+                throw new IllegalStateException("Cannot delete sticker that is assigned to users");
+            }
+            throw e;
         }
     }
 }

@@ -5,8 +5,13 @@ import com.datadoghq.stickerlandia.stickeraward.award.dto.AssignStickerResponse;
 import com.datadoghq.stickerlandia.stickeraward.award.dto.GetUserStickersResponse;
 import com.datadoghq.stickerlandia.stickeraward.award.dto.RemoveStickerFromUserResponse;
 import com.datadoghq.stickerlandia.stickeraward.award.dto.StickerAssignmentDTO;
+import com.datadoghq.stickerlandia.stickeraward.award.dto.UserAssignmentDTO;
 import com.datadoghq.stickerlandia.stickeraward.award.entity.StickerAssignment;
+import com.datadoghq.stickerlandia.stickeraward.common.dto.PagedResponse;
+import com.datadoghq.stickerlandia.stickeraward.sticker.dto.GetStickerAssignmentsResponse;
 import com.datadoghq.stickerlandia.stickeraward.sticker.entity.Sticker;
+import io.quarkus.hibernate.orm.panache.PanacheQuery;
+import io.quarkus.panache.common.Page;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import java.time.Instant;
@@ -116,6 +121,51 @@ public class StickerAwardRepository {
         response.setStickerId(stickerId);
         response.setRemovedAt(Date.from(assignment.getRemovedAt()));
 
+        return response;
+    }
+
+    /**
+     * Gets assignments for a specific sticker.
+     *
+     * @param stickerId the ID of the sticker
+     * @param page the page number (0-based)
+     * @param size the page size
+     * @return response containing paginated assignments
+     */
+    public GetStickerAssignmentsResponse getStickerAssignments(
+            String stickerId, int page, int size) {
+        Sticker sticker = Sticker.findById(stickerId);
+        if (sticker == null) {
+            return null;
+        }
+
+        PanacheQuery<StickerAssignment> query =
+                StickerAssignment.find("sticker.stickerId = ?1 AND removedAt IS NULL", stickerId);
+        List<StickerAssignment> assignments = query.page(Page.of(page, size)).list();
+        long totalCount = query.count();
+
+        final List<UserAssignmentDTO> userAssignments =
+                assignments.stream()
+                        .map(
+                                assignment -> {
+                                    UserAssignmentDTO ua = new UserAssignmentDTO();
+                                    ua.setUserId(assignment.getUserId());
+                                    ua.setAssignedAt(Date.from(assignment.getAssignedAt()));
+                                    ua.setReason(assignment.getReason());
+                                    return ua;
+                                })
+                        .collect(Collectors.toList());
+
+        PagedResponse pagination = new PagedResponse();
+        pagination.setPage(page);
+        pagination.setSize(size);
+        pagination.setTotal((int) totalCount);
+        pagination.setTotalPages((int) Math.ceil((double) totalCount / size));
+
+        GetStickerAssignmentsResponse response = new GetStickerAssignmentsResponse();
+        response.setStickerId(stickerId);
+        response.setAssignments(userAssignments);
+        response.setPagination(pagination);
         return response;
     }
 }

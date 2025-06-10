@@ -3,7 +3,6 @@ package com.datadoghq.stickerlandia.stickeraward.sticker;
 import com.datadoghq.stickerlandia.stickeraward.sticker.dto.CreateStickerRequest;
 import com.datadoghq.stickerlandia.stickeraward.sticker.dto.CreateStickerResponse;
 import com.datadoghq.stickerlandia.stickeraward.sticker.dto.GetAllStickersResponse;
-import com.datadoghq.stickerlandia.stickeraward.sticker.dto.GetStickerAssignmentsResponse;
 import com.datadoghq.stickerlandia.stickeraward.sticker.dto.StickerDTO;
 import com.datadoghq.stickerlandia.stickeraward.sticker.dto.StickerImageUploadResponse;
 import com.datadoghq.stickerlandia.stickeraward.sticker.dto.UpdateStickerRequest;
@@ -200,29 +199,5 @@ public class StickerResource {
                     .entity("Failed to upload image")
                     .build();
         }
-    }
-
-    /**
-     * Gets all assignments for a specific sticker.
-     *
-     * @param stickerId the ID of the sticker
-     * @param page the page number (0-based)
-     * @param size the page size
-     * @return response containing paginated assignments
-     */
-    @GET
-    @Path("/{stickerId}/assignments")
-    @Produces("application/json")
-    @Operation(summary = "Get assignments for a sticker")
-    public Response getStickerAssignments(
-            @PathParam("stickerId") String stickerId,
-            @QueryParam("page") @DefaultValue("0") int page,
-            @QueryParam("size") @DefaultValue("20") int size) {
-        GetStickerAssignmentsResponse data =
-                stickerRepository.getStickerAssignments(stickerId, page, size);
-        if (data == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-        return Response.ok(data).build();
     }
 }
