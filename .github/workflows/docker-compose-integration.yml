@@ -23,33 +23,8 @@ jobs:
       
     - name: Wait for services to be healthy
       run: |
-        echo "Waiting for all services to be healthy..."
-        # Wait for services with health checks to be healthy (7 services) and all services to be up
-        # Increased timeout to 10 minutes for CI environment
-        timeout 600 bash -c 'while true; do
-          echo "=== Detailed Service Status ==="
-          docker compose ps --format "table {{.Name}}\t{{.Status}}\t{{.Health}}"
-          echo "=== Unhealthy Services ==="
-          unhealthy_services=$(docker compose ps --format "{{.Name}} {{.Health}}" | grep -v healthy | grep -v "^[[:space:]]*$" || echo "")
-          if [ -n "$unhealthy_services" ]; then
-            echo "$unhealthy_services"
-            echo "=== Logs for unhealthy services ==="
-            for service in $(echo "$unhealthy_services" | awk "{print \$1}"); do
-              echo "--- Logs for $service ---"
-              docker compose logs --tail=10 "$service" || echo "No logs for $service"
-            done
-          else
-            echo "All services healthy or no health check"
-          fi
-          healthy_count=$(docker compose ps --format "{{.Health}}" | grep -c "healthy" || echo "0")
-          up_count=$(docker compose ps --format "{{.Status}}" | grep -c "Up" || echo "0")
-          echo "Progress: $healthy_count/7 healthy, $up_count services up"
-          if [ "$healthy_count" -ge 7 ] && [ "$up_count" -ge 7 ]; then
-            echo "All services are healthy!"
-            break
-          fi
-          sleep 10
-        done'
+        echo Pausing for 60s to allow services to start
+        sleep 60
         docker compose ps
       
     - name: Test dashboard endpoints
@@ -61,8 +36,7 @@ jobs:
       run: |
         # Test sticker award API with sample user data
         curl -f -X GET "http://localhost:8080/api/award/v1/users/user-001/stickers" || exit 1
-        # TODO!
-        # curl -f -X GET "http://localhost:8080/api/users/v1/health" || exit 1
+        curl -f -X GET "http://localhost:8080/api/users/v1/health" || exit 1
       
     - name: Show service logs on failure
       if: failure()

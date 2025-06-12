@@ -27,6 +27,8 @@ As a reference application, Stickerlandia showcases **platform adaptability** by
 
 Comprehensive documentation is available in the [docs](./docs/README.md).
 
+For deployment options and platform-specific configurations, see the [deployment guide](./docs/deploy.md).
+
 ## High-Level Architecture
 
 Stickerlandia follows a microservice architecture that can run in various configurations across different types of modern infrastructure:
