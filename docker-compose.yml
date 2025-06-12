@@ -237,6 +237,11 @@ services:
       KAFKA__BOOTSTRAPSERVERS: "redpanda:9092"
       KAFKA__SCHEMAREGISTRY: "http://redpanda:8082"
       KAFKA__GROUPID: "stickerlandia-user-management"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/users/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.user-management.rule=PathPrefix(`/api/users`)"

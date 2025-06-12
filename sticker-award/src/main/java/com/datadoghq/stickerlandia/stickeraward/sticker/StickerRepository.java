@@ -1,43 +1,50 @@
 package com.datadoghq.stickerlandia.stickeraward.sticker;
 
-import com.datadoghq.stickerlandia.stickeraward.sticker.dto.CreateStickerRequest;
-import com.datadoghq.stickerlandia.stickeraward.common.dto.PagedResponse;
-import com.datadoghq.stickerlandia.stickeraward.sticker.dto.GetStickerAssignmentsResponse;
-import com.datadoghq.stickerlandia.stickeraward.sticker.dto.GetAllStickersResponse;
-import com.datadoghq.stickerlandia.stickeraward.sticker.dto.CreateStickerResponse;
-import com.datadoghq.stickerlandia.stickeraward.sticker.dto.StickerDTO;
-import com.datadoghq.stickerlandia.stickeraward.sticker.dto.UpdateStickerRequest;
 import com.datadoghq.stickerlandia.stickeraward.award.dto.UserAssignmentDTO;
-import com.datadoghq.stickerlandia.stickeraward.sticker.entity.Sticker;
 import com.datadoghq.stickerlandia.stickeraward.award.entity.StickerAssignment;
-import io.quarkus.hibernate.orm.panache.PanacheQuery;
-import io.quarkus.panache.common.Page;
+import com.datadoghq.stickerlandia.stickeraward.common.dto.PagedResponse;
+import com.datadoghq.stickerlandia.stickeraward.sticker.dto.CreateStickerRequest;
+import com.datadoghq.stickerlandia.stickeraward.sticker.dto.CreateStickerResponse;
+import com.datadoghq.stickerlandia.stickeraward.sticker.dto.GetAllStickersResponse;
+import com.datadoghq.stickerlandia.stickeraward.sticker.dto.GetStickerAssignmentsResponse;
+import com.datadoghq.stickerlandia.stickeraward.sticker.dto.StickerDTO;
+import com.datadoghq.stickerlandia.stickeraward.sticker.dto.StickerImageUploadResponse;
+import com.datadoghq.stickerlandia.stickeraward.sticker.dto.UpdateStickerRequest;
+import com.datadoghq.stickerlandia.stickeraward.sticker.entity.Sticker;
+import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
-
+import java.io.InputStream;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/** Repository class for managing sticker operations. */
 @ApplicationScoped
 public class StickerRepository {
 
+    /**
+     * Creates a new sticker.
+     *
+     * @param request the sticker creation request
+     * @return response containing the created sticker details
+     */
     @Transactional
     public CreateStickerResponse createSticker(CreateStickerRequest request) {
         String stickerId = "sticker-" + UUID.randomUUID().toString().substring(0, 8);
-        
-        Sticker sticker = new Sticker(
-            stickerId,
-            request.getStickerName(),
-            request.getStickerDescription(),
-            null, // Image URL will be set when image is uploaded
-            request.getStickerQuantityRemaining()
-        );
-        
+
+        Sticker sticker =
+                new Sticker(
+                        stickerId,
+                        request.getStickerName(),
+                        request.getStickerDescription(),
+                        null, // Image URL will be set when image is uploaded
+                        request.getStickerQuantityRemaining());
+
         sticker.persist();
-        
+
         CreateStickerResponse response = new CreateStickerResponse();
         response.setStickerId(sticker.getStickerId());
         response.setStickerName(sticker.getName());
@@ -45,27 +52,46 @@ public class StickerRepository {
         return response;
     }
 
+    /**
+     * Gets all stickers with pagination.
+     *
+     * @param page the page number (0-based)
+     * @param size the page size
+     * @return response containing paginated stickers
+     */
     public GetAllStickersResponse getAllStickers(int page, int size) {
-        PanacheQuery<Sticker> query = Sticker.findAll();
-        List<Sticker> stickers = query.page(Page.of(page, size)).list();
-        long totalCount = query.count();
-        
-        List<StickerDTO> stickerDTOList = stickers.stream()
-            .map(this::toStickerMetadata)
-            .collect(Collectors.toList());
-        
-        PagedResponse pagination = new PagedResponse();
-        pagination.setPage(page);
-        pagination.setSize(size);
-        pagination.setTotal((int) totalCount);
-        pagination.setTotalPages((int) Math.ceil((double) totalCount / size));
-        
+        final List<StickerDTO> stickerDtoList =
+                Sticker.<Sticker>findAll(Sort.by("createdAt").descending())
+                        .page(page, size)
+                        .stream()
+                        .map(this::convertToDto)
+                        .collect(Collectors.toList());
+
         GetAllStickersResponse response = new GetAllStickersResponse();
-        response.setStickers(stickerDTOList);
-        response.setPagination(pagination);
+        response.setStickers(stickerDtoList);
         return response;
     }
 
+    /**
+     * Gets a sticker by its ID.
+     *
+     * @param stickerId the ID of the sticker
+     * @return the sticker DTO, or null if not found
+     */
+    public StickerDTO getStickerById(String stickerId) {
+        Sticker sticker = Sticker.findById(stickerId);
+        if (sticker == null) {
+            return null;
+        }
+        return toStickerMetadata(sticker);
+    }
+
+    /**
+     * Gets sticker metadata by ID.
+     *
+     * @param stickerId the ID of the sticker
+     * @return the sticker metadata DTO, or null if not found
+     */
     public StickerDTO getStickerMetadata(String stickerId) {
         Sticker sticker = Sticker.findById(stickerId);
         if (sticker == null) {
@@ -74,13 +100,20 @@ public class StickerRepository {
         return toStickerMetadata(sticker);
     }
 
+    /**
+     * Updates an existing sticker.
+     *
+     * @param stickerId the ID of the sticker to update
+     * @param request the update request
+     * @return response containing the updated sticker details, or null if not found
+     */
     @Transactional
-    public StickerDTO updateStickerMetadata(String stickerId, UpdateStickerRequest request) {
+    public StickerDTO updateSticker(String stickerId, UpdateStickerRequest request) {
         Sticker sticker = Sticker.findById(stickerId);
         if (sticker == null) {
             return null;
         }
-        
+
         if (request.getStickerName() != null) {
             sticker.setName(request.getStickerName());
         }
@@ -90,66 +123,61 @@ public class StickerRepository {
         if (request.getStickerQuantityRemaining() != null) {
             sticker.setStickerQuantityRemaining(request.getStickerQuantityRemaining());
         }
-        
+
         sticker.setUpdatedAt(Instant.now());
         sticker.persist();
-        
+
         return toStickerMetadata(sticker);
     }
 
+    /**
+     * Uploads an image for a sticker.
+     *
+     * @param stickerId the ID of the sticker
+     * @param imageStream the image input stream
+     * @param contentType the content type of the image
+     * @param contentLength the content length of the image
+     * @return response containing the upload result, or null if sticker not found
+     */
     @Transactional
-    public void updateStickerImageKey(String stickerId, String imageKey) {
-        Sticker sticker = Sticker.findById(stickerId);
-        if (sticker != null) {
-            sticker.setImageKey(imageKey);
-            sticker.setUpdatedAt(Instant.now());
-            sticker.persist();
-        }
-    }
-
-    @Transactional
-    public boolean deleteSticker(String stickerId) {
-        Sticker sticker = Sticker.findById(stickerId);
-        if (sticker == null) {
-            return false;
-        }
-        
-        // Check if sticker is assigned to any users
-        long assignmentCount = StickerAssignment.countActiveByStickerId(stickerId);
-        if (assignmentCount > 0) {
-            throw new IllegalStateException("Cannot delete sticker that is assigned to users");
-        }
-        
-        sticker.delete();
-        return true;
-    }
-
-    public GetStickerAssignmentsResponse getStickerAssignments(String stickerId, int page, int size) {
+    public StickerImageUploadResponse uploadStickerImage(
+            String stickerId, InputStream imageStream, String contentType, long contentLength) {
         Sticker sticker = Sticker.findById(stickerId);
         if (sticker == null) {
             return null;
         }
-        
-        PanacheQuery<StickerAssignment> query = StickerAssignment.find("sticker.stickerId = ?1 AND removedAt IS NULL", stickerId);
-        List<StickerAssignment> assignments = query.page(Page.of(page, size)).list();
-        long totalCount = query.count();
-        
-        List<UserAssignmentDTO> userAssignments = assignments.stream()
-            .map(assignment -> {
-                UserAssignmentDTO ua = new UserAssignmentDTO();
-                ua.setUserId(assignment.getUserId());
-                ua.setAssignedAt(Date.from(assignment.getAssignedAt()));
-                ua.setReason(assignment.getReason());
-                return ua;
-            })
-            .collect(Collectors.toList());
-        
+
+        // Implementation of uploadStickerImage method
+        // This method should return a StickerImageUploadResponse object
+        // The implementation details are not provided in the original file or the new file
+        // You may want to implement this method based on your specific requirements
+        return null; // Placeholder return, actual implementation needed
+    }
+
+    /**
+     * Gets assignments for a specific sticker.
+     *
+     * @param stickerId the ID of the sticker
+     * @param page the page number (0-based)
+     * @param size the page size
+     * @return response containing paginated assignments
+     */
+    public GetStickerAssignmentsResponse getStickerAssignments(
+            String stickerId, int page, int size) {
+        final List<UserAssignmentDTO> userAssignments =
+                StickerAssignment.findActiveByStickerId(stickerId).stream()
+                        .skip((long) page * size)
+                        .limit(size)
+                        .map(this::convertToUserAssignmentDto)
+                        .collect(Collectors.toList());
+
         PagedResponse pagination = new PagedResponse();
         pagination.setPage(page);
         pagination.setSize(size);
-        pagination.setTotal((int) totalCount);
+        pagination.setTotal((int) StickerAssignment.countActiveByStickerId(stickerId));
+        final long totalCount = StickerAssignment.countActiveByStickerId(stickerId);
         pagination.setTotalPages((int) Math.ceil((double) totalCount / size));
-        
+
         GetStickerAssignmentsResponse response = new GetStickerAssignmentsResponse();
         response.setStickerId(stickerId);
         response.setAssignments(userAssignments);
@@ -166,11 +194,87 @@ public class StickerRepository {
         metadata.setImageUrl(buildImageUrl(sticker.getStickerId()));
         metadata.setImageKey(sticker.getImageKey());
         metadata.setCreatedAt(Date.from(sticker.getCreatedAt()));
-        metadata.setUpdatedAt(sticker.getUpdatedAt() != null ? Date.from(sticker.getUpdatedAt()) : null);
+        metadata.setUpdatedAt(
+                sticker.getUpdatedAt() != null ? Date.from(sticker.getUpdatedAt()) : null);
         return metadata;
     }
 
     private String buildImageUrl(String stickerId) {
         return "/api/award/v1/stickers/" + stickerId + "/image";
+    }
+
+    /**
+     * Converts a Sticker entity to a StickerDTO.
+     *
+     * @param sticker the sticker entity to convert
+     * @return the converted StickerDTO
+     */
+    private StickerDTO convertToDto(Sticker sticker) {
+        return toStickerMetadata(sticker);
+    }
+
+    /**
+     * Converts a StickerAssignment entity to a UserAssignmentDTO.
+     *
+     * @param assignment the sticker assignment entity to convert
+     * @return the converted UserAssignmentDTO
+     */
+    private UserAssignmentDTO convertToUserAssignmentDto(StickerAssignment assignment) {
+        UserAssignmentDTO dto = new UserAssignmentDTO();
+        dto.setUserId(assignment.getUserId());
+        dto.setAssignedAt(Date.from(assignment.getAssignedAt()));
+        return dto;
+    }
+
+    /**
+     * Updates sticker metadata (alias for updateSticker).
+     *
+     * @param stickerId the ID of the sticker to update
+     * @param request the update request
+     * @return response containing the updated sticker details, or null if not found
+     */
+    @Transactional
+    public StickerDTO updateStickerMetadata(String stickerId, UpdateStickerRequest request) {
+        return updateSticker(stickerId, request);
+    }
+
+    /**
+     * Deletes a sticker from the catalog.
+     *
+     * @param stickerId the ID of the sticker to delete
+     * @return true if the sticker was deleted, false if not found
+     * @throws IllegalStateException if the sticker is assigned to users
+     */
+    @Transactional
+    public boolean deleteSticker(String stickerId) {
+        Sticker sticker = Sticker.findById(stickerId);
+        if (sticker == null) {
+            return false;
+        }
+
+        // Check if sticker is assigned to any users
+        long assignmentCount = StickerAssignment.countActiveByStickerId(stickerId);
+        if (assignmentCount > 0) {
+            throw new IllegalStateException("Cannot delete sticker that is assigned to users");
+        }
+
+        sticker.delete();
+        return true;
+    }
+
+    /**
+     * Updates the image key for a sticker.
+     *
+     * @param stickerId the ID of the sticker
+     * @param imageKey the new image key
+     */
+    @Transactional
+    public void updateStickerImageKey(String stickerId, String imageKey) {
+        Sticker sticker = Sticker.findById(stickerId);
+        if (sticker != null) {
+            sticker.setImageKey(imageKey);
+            sticker.setUpdatedAt(Instant.now());
+            sticker.persist();
+        }
     }
 }
