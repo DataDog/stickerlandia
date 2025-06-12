@@ -1,4 +1,4 @@
-name: User Management Tests
+name: User Management
 
 on:
   push:
@@ -118,6 +118,7 @@ jobs:
   push-image:
     runs-on: ubuntu-latest
     needs: [integration-test-azure, integration-test-agnostic]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
