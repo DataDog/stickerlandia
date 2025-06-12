@@ -22,6 +22,7 @@ WORKDIR /build
 
 # The context needs to be the root of the sticker-award directory, not the Dockerfile location
 COPY pom.xml .
+COPY checkstyle.xml .
 COPY src ./src
 
 # Make sure mvnw is executable and then build

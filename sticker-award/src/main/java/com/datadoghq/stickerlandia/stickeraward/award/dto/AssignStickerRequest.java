@@ -1,44 +1,29 @@
-
 package com.datadoghq.stickerlandia.stickeraward.award.dto;
 
-import javax.annotation.processing.Generated;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import javax.annotation.processing.Generated;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({
-    "stickerId",
-    "reason"
-})
+@JsonPropertyOrder({"stickerId", "reason"})
 @Generated("jsonschema2pojo")
 public class AssignStickerRequest {
 
-    /**
-     * 
-     * (Required)
-     * 
-     */
+    /** (Required). */
     @JsonProperty("stickerId")
     private String stickerId;
+
     @JsonProperty("reason")
     private String reason;
 
-    /**
-     * 
-     * (Required)
-     * 
-     */
+    /** (Required). */
     @JsonProperty("stickerId")
     public String getStickerId() {
         return stickerId;
     }
 
-    /**
-     * 
-     * (Required)
-     * 
-     */
+    /** (Required). */
     @JsonProperty("stickerId")
     public void setStickerId(String stickerId) {
         this.stickerId = stickerId;
@@ -53,5 +38,4 @@ public class AssignStickerRequest {
     public void setReason(String reason) {
         this.reason = reason;
     }
-
 }

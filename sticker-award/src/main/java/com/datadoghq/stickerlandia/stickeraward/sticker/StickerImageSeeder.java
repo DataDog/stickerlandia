@@ -6,29 +6,38 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import java.io.InputStream;
 import org.jboss.logging.Logger;
 
-import java.io.InputStream;
-
+/**
+ * Service responsible for seeding sticker images during application startup. This class loads
+ * default sticker images from the classpath and uploads them to the configured storage service,
+ * associating them with existing stickers.
+ */
 @ApplicationScoped
 public class StickerImageSeeder {
 
     private static final Logger LOG = Logger.getLogger(StickerImageSeeder.class);
 
-    @Inject
-    StickerImageService stickerImageService;
+    @Inject StickerImageService stickerImageService;
 
-    @Inject
-    StickerRepository stickerRepository;
+    @Inject StickerRepository stickerRepository;
 
+    /**
+     * Handles the startup event to seed sticker images. This method is called during application
+     * startup and ensures that default sticker images are loaded and associated with existing
+     * stickers.
+     *
+     * @param ev the startup event
+     */
     @Transactional
     public void onStartup(@Observes StartupEvent ev) {
         LOG.info("Starting sticker image seeding...");
-        
+
         try {
             seedStickerImage("sticker-001", "/stickers/dd_icon_rgb.png", "Datadog Purple Logo");
             seedStickerImage("sticker-002", "/stickers/dd_icon_white.png", "Datadog White Logo");
-            
+
             LOG.info("Sticker image seeding completed successfully");
         } catch (Exception e) {
             LOG.error("Failed to seed sticker images", e);
@@ -44,7 +53,9 @@ public class StickerImageSeeder {
         }
 
         if (sticker.getImageKey() != null && !sticker.getImageKey().isEmpty()) {
-            LOG.infof("Sticker %s already has image key %s, skipping", stickerId, sticker.getImageKey());
+            LOG.infof(
+                    "Sticker %s already has image key %s, skipping",
+                    stickerId, sticker.getImageKey());
             return;
         }
 
@@ -62,14 +73,16 @@ public class StickerImageSeeder {
 
             // Upload image to our storage service
             InputStream uploadStream = getClass().getResourceAsStream(resourcePath);
-            String imageKey = stickerImageService.uploadImage(uploadStream, "image/png", imageData.length);
+            String imageKey =
+                    stickerImageService.uploadImage(uploadStream, "image/png", imageData.length);
             uploadStream.close();
 
             // Update sticker with image key
             stickerRepository.updateStickerImageKey(stickerId, imageKey);
 
-            LOG.infof("Successfully seeded image for sticker %s with key %s (%s)", 
-                     stickerId, imageKey, description);
+            LOG.infof(
+                    "Successfully seeded image for sticker %s with key %s (%s)",
+                    stickerId, imageKey, description);
 
         } catch (Exception e) {
             LOG.errorf(e, "Failed to seed image for sticker %s from %s", stickerId, resourcePath);

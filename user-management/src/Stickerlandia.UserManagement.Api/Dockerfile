@@ -10,7 +10,7 @@ RUN dotnet restore src/Stickerlandia.UserManagement.Api/Stickerlandia.UserManage
 COPY . ./
 
 # Publish the application
-RUN dotnet publish src/Stickerlandia.UserManagement.Api/Stickerlandia.UserManagement.Api.csproj -o out -c Release -r linux-arm64
+RUN dotnet publish src/Stickerlandia.UserManagement.Api/Stickerlandia.UserManagement.Api.csproj -o out -c Release
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0-noble-chiseled AS runtime
 ARG DD_GIT_REPOSITORY_URL

@@ -1,27 +1,27 @@
-
 package com.datadoghq.stickerlandia.stickeraward.award.dto;
 
-import java.util.Date;
-import javax.annotation.processing.Generated;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import java.util.Date;
+import javax.annotation.processing.Generated;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({
-    "userId",
-    "stickerId",
-    "assignedAt"
-})
+@JsonPropertyOrder({"userId", "stickerId", "assignedAt"})
 @Generated("jsonschema2pojo")
 public class AssignStickerResponse {
 
     @JsonProperty("userId")
     private String userId;
+
     @JsonProperty("stickerId")
     private String stickerId;
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
+
+    @JsonFormat(
+            shape = JsonFormat.Shape.STRING,
+            pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'",
+            timezone = "UTC")
     @JsonProperty("assignedAt")
     private Date assignedAt;
 
@@ -54,5 +54,4 @@ public class AssignStickerResponse {
     public void setAssignedAt(Date assignedAt) {
         this.assignedAt = assignedAt;
     }
-
 }
