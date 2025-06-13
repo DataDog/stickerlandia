@@ -3,9 +3,6 @@ name: Sticker Award Service
 on:
   push:
     branches: ["main"]
-    paths:
-      - "sticker-award/**"
-      - ".github"
   pull_request:
     branches: ["main"]
     paths:
@@ -49,7 +46,7 @@ jobs:
   push-image:
     runs-on: ubuntu-latest
     needs: build-and-test
-    # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
