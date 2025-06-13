@@ -12,8 +12,11 @@ COPY . ./
 # Publish the application
 RUN dotnet publish src/Stickerlandia.UserManagement.Api/Stickerlandia.UserManagement.Api.csproj -o out -c Release
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-noble-chiseled AS runtime
+ARG DD_GIT_REPOSITORY_URL
+ARG DD_GIT_COMMIT_SHA
+ENV DD_GIT_REPOSITORY_URL=${DD_GIT_REPOSITORY_URL} 
+ENV DD_GIT_COMMIT_SHA=${DD_GIT_COMMIT_SHA}
 WORKDIR /App
 COPY --from=build /App/out .
 EXPOSE 80
