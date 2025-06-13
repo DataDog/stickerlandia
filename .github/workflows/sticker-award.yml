@@ -5,6 +5,7 @@ on:
     branches: ["main"]
     paths:
       - "sticker-award/**"
+      - ".github"
   pull_request:
     branches: ["main"]
     paths:
