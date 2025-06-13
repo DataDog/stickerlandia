@@ -3,13 +3,11 @@ name: User Management
 on:
   push:
     branches: ["main"]
-    paths:
-      - "user-management/**"
-      - ".github"
   pull_request:
     branches: ["main"]
     paths:
       - "user-management/**"
+      - ".github/**"
   workflow_dispatch:
 
 env:
