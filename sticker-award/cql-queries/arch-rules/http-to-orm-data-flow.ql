@@ -1,15 +1,3 @@
-/**
- * @name HTTP Parameters Flowing to Panache ORM Operations - TAINT TRACKING
- * @description Tracks actual taint flows from HTTP parameters to Panache database operations
- * @kind problem
- * @problem.severity info
- * @precision medium
- * @id java/http-to-panache-taint-tracking
- * @tags security
- *       data-flow
- *       taint-tracking
- */
-
 import java
 
 /*
@@ -44,12 +32,9 @@ where
   (httpParam.getAnAnnotation().getType().hasQualifiedName("jakarta.ws.rs", "PathParam") or
    httpParam.getAnAnnotation().getType().hasQualifiedName("jakarta.ws.rs", "QueryParam")) and
 
-  // SINK: Panache operations
+  // SINK: Panache operations that accept raw query strings (vulnerable to SQL injection)
   (panacheCall.getMethod().getDeclaringType().getASupertype*().hasQualifiedName("io.quarkus.hibernate.orm.panache", "PanacheEntityBase") and
-   (panacheCall.getMethod().getName().matches("find%") or
-    panacheCall.getMethod().getName() = "list" or 
-    panacheCall.getMethod().getName() = "count" or
-    panacheCall.getMethod().getName() = "persist")) and
+   panacheCall.getMethod().getName() in ["find", "list", "count", "delete", "update"]) and
 
   // FLOW: HTTP parameter flows to Panache call
   simpleFlow(httpParam, panacheCall.getAnArgument()) and
@@ -62,13 +47,4 @@ select panacheCall,
        httpParam.getCallable().getName() + " - HTTP parameter " + httpParam.getName() + " flows to " +
        panacheCall.getMethod().getName() + "()"
 
-/*
- * THIS IS NOW ACTUAL TAINT TRACKING:
- * 
- * ✅ SOURCES: HTTP parameters (@PathParam, @QueryParam)
- * ✅ SINKS: Panache database operations (find*, persist, list, etc.)
- * ✅ FLOW: Tracks how HTTP data reaches database operations  
- * ✅ SECURITY RELEVANT: Shows potential injection/validation issues
- * 
- * The query finds actual security-relevant data flows, not just all Panache operations.
- */
+

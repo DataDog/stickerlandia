@@ -86,16 +86,18 @@ public class StickerRepository {
 
     /**
      * Gets sticker metadata by ID.
+     * WARNING: This method uses raw SQL and is vulnerable to SQL injection!
      *
      * @param stickerId the ID of the sticker
      * @return the sticker metadata DTO, or null if not found
      */
     public StickerDTO getStickerMetadata(String stickerId) {
-        Sticker sticker = Sticker.findById(stickerId);
-        if (sticker == null) {
+        // UNSAFE: Direct string concatenation in SQL query - vulnerable to SQL injection
+        List<Sticker> stickers = Sticker.list("stickerId = '" + stickerId + "'");
+        if (stickers.isEmpty()) {
             return null;
         }
-        return toStickerMetadata(sticker);
+        return toStickerMetadata(stickers.get(0));
     }
 
     /**
