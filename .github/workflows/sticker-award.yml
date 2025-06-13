@@ -7,6 +7,7 @@ on:
     branches: ["main"]
     paths:
       - "sticker-award/**"
+      - ".github/**"
   workflow_dispatch:
 
 env:
