@@ -5,16 +5,19 @@ import com.datadoghq.stickerlandia.stickeraward.award.dto.AssignStickerResponse;
 import com.datadoghq.stickerlandia.stickeraward.award.dto.GetUserStickersResponse;
 import com.datadoghq.stickerlandia.stickeraward.award.dto.RemoveStickerFromUserResponse;
 import com.datadoghq.stickerlandia.stickeraward.award.messaging.StickerAwardEventPublisher;
+import com.datadoghq.stickerlandia.stickeraward.sticker.dto.GetStickerAssignmentsResponse;
 import io.smallrye.common.constraint.NotNull;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -109,5 +112,29 @@ public class StickerAwardResource {
         // }
 
         return Response.ok(response).build();
+    }
+
+    /**
+     * Gets users to which this sticker is assigned.
+     *
+     * @param stickerId the ID of the sticker
+     * @param page the page number (0-based)
+     * @param size the page size
+     * @return response containing paginated assignments
+     */
+    @Operation(description = "Get users to which this sticker is assigned")
+    @Path("/award/v1/stickers/{stickerId}/assignments")
+    @GET
+    @Produces("application/json")
+    public Response getStickerAssignments(
+            @PathParam("stickerId") String stickerId,
+            @QueryParam("page") @DefaultValue("0") int page,
+            @QueryParam("size") @DefaultValue("20") int size) {
+        GetStickerAssignmentsResponse data =
+                stickerAwardRepository.getStickerAssignments(stickerId, page, size);
+        if (data == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.ok(data).build();
     }
 }
