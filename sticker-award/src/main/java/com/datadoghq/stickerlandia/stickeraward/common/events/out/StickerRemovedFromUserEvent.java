@@ -37,7 +37,7 @@ public class StickerRemovedFromUserEvent extends DomainEvent {
 
         StickerRemovedFromUserEvent event = new StickerRemovedFromUserEvent();
         event.setAccountId(assignment.getUserId());
-        event.setStickerId(assignment.getSticker().getStickerId());
+        event.setStickerId(assignment.getStickerId());
         event.setRemovedAt(assignment.getRemovedAt());
         return event;
     }

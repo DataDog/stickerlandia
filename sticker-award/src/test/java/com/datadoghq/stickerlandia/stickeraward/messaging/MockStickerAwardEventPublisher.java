@@ -22,7 +22,7 @@ public class MockStickerAwardEventPublisher extends StickerAwardEventPublisher {
         log.info(
                 "MOCK: Publishing sticker assigned event: userId={}, stickerId={}",
                 assignment.getUserId(),
-                assignment.getSticker().getStickerId());
+                assignment.getStickerId());
         // No-op in tests
     }
 
@@ -31,7 +31,7 @@ public class MockStickerAwardEventPublisher extends StickerAwardEventPublisher {
         log.info(
                 "MOCK: Publishing sticker removed event: userId={}, stickerId={}",
                 assignment.getUserId(),
-                assignment.getSticker().getStickerId());
+                assignment.getStickerId());
         // No-op in tests
     }
 }

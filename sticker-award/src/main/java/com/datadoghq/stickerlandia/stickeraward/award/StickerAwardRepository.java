@@ -5,14 +5,10 @@ import com.datadoghq.stickerlandia.stickeraward.award.dto.AssignStickerResponse;
 import com.datadoghq.stickerlandia.stickeraward.award.dto.GetUserStickersResponse;
 import com.datadoghq.stickerlandia.stickeraward.award.dto.RemoveStickerFromUserResponse;
 import com.datadoghq.stickerlandia.stickeraward.award.dto.StickerAssignmentDTO;
-import com.datadoghq.stickerlandia.stickeraward.award.dto.UserAssignmentDTO;
 import com.datadoghq.stickerlandia.stickeraward.award.entity.StickerAssignment;
-import com.datadoghq.stickerlandia.stickeraward.common.dto.PagedResponse;
-import com.datadoghq.stickerlandia.stickeraward.sticker.dto.GetStickerAssignmentsResponse;
-import com.datadoghq.stickerlandia.stickeraward.sticker.entity.Sticker;
-import io.quarkus.hibernate.orm.panache.PanacheQuery;
-import io.quarkus.panache.common.Page;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import java.time.Instant;
 import java.util.Date;
@@ -22,6 +18,8 @@ import java.util.stream.Collectors;
 /** Repository class for managing sticker award operations. */
 @ApplicationScoped
 public class StickerAwardRepository {
+
+    @Inject EntityManager entityManager;
 
     /**
      * Gets all sticker assignments for a specific user.
@@ -36,13 +34,10 @@ public class StickerAwardRepository {
                 assignments.stream()
                         .map(
                                 assignment -> {
-                                    Sticker sticker = assignment.getSticker();
                                     StickerAssignmentDTO dto = new StickerAssignmentDTO();
-                                    dto.setStickerId(sticker.getStickerId());
-                                    dto.setName(sticker.getName());
-                                    dto.setDescription(sticker.getDescription());
-                                    dto.setImageUrl(sticker.getImageUrl());
-                                    dto.setAssignedAt(Date.from(assignment.getAssignedAt()));
+                                    dto.setStickerId(assignment.getStickerId());
+                                    dto.setAssignedAt(assignment.getAssignedAt());
+                                    dto.setReason(assignment.getReason());
                                     return dto;
                                 })
                         .collect(Collectors.toList());
@@ -65,9 +60,8 @@ public class StickerAwardRepository {
     @Transactional
     public AssignStickerResponse assignStickerToUser(
             String userId, String stickerId, AssignStickerRequest request) {
-        // Find the sticker to assign
-        Sticker sticker = Sticker.findById(stickerId);
-        if (sticker == null) {
+        // Check if sticker exists
+        if (!stickerExists(stickerId)) {
             return null; // Sticker not found
         }
 
@@ -78,12 +72,9 @@ public class StickerAwardRepository {
             throw new IllegalStateException("User already has this sticker assigned");
         }
 
-        // Create new assignment
-        StickerAssignment assignment = new StickerAssignment();
-        assignment.setUserId(userId);
-        assignment.setSticker(sticker);
-        assignment.setReason(request.getReason());
-        assignment.setAssignedAt(Instant.now());
+        // Create new assignment using sticker ID only
+        StickerAssignment assignment =
+                new StickerAssignment(userId, stickerId, request.getReason());
         assignment.persist();
 
         // Create response
@@ -125,47 +116,18 @@ public class StickerAwardRepository {
     }
 
     /**
-     * Gets assignments for a specific sticker.
+     * Checks if a sticker exists without importing the Sticker entity. Uses a native query to avoid
+     * cross-domain violations.
      *
-     * @param stickerId the ID of the sticker
-     * @param page the page number (0-based)
-     * @param size the page size
-     * @return response containing paginated assignments
+     * @param stickerId the ID of the sticker to check
+     * @return true if the sticker exists, false otherwise
      */
-    public GetStickerAssignmentsResponse getStickerAssignments(
-            String stickerId, int page, int size) {
-        Sticker sticker = Sticker.findById(stickerId);
-        if (sticker == null) {
-            return null;
-        }
-
-        PanacheQuery<StickerAssignment> query =
-                StickerAssignment.find("sticker.stickerId = ?1 AND removedAt IS NULL", stickerId);
-        List<StickerAssignment> assignments = query.page(Page.of(page, size)).list();
-        long totalCount = query.count();
-
-        final List<UserAssignmentDTO> userAssignments =
-                assignments.stream()
-                        .map(
-                                assignment -> {
-                                    UserAssignmentDTO ua = new UserAssignmentDTO();
-                                    ua.setUserId(assignment.getUserId());
-                                    ua.setAssignedAt(Date.from(assignment.getAssignedAt()));
-                                    ua.setReason(assignment.getReason());
-                                    return ua;
-                                })
-                        .collect(Collectors.toList());
-
-        PagedResponse pagination = new PagedResponse();
-        pagination.setPage(page);
-        pagination.setSize(size);
-        pagination.setTotal((int) totalCount);
-        pagination.setTotalPages((int) Math.ceil((double) totalCount / size));
-
-        GetStickerAssignmentsResponse response = new GetStickerAssignmentsResponse();
-        response.setStickerId(stickerId);
-        response.setAssignments(userAssignments);
-        response.setPagination(pagination);
-        return response;
+    private boolean stickerExists(String stickerId) {
+        Object result =
+                entityManager
+                        .createNativeQuery("SELECT COUNT(*) FROM stickers WHERE sticker_id = ?")
+                        .setParameter(1, stickerId)
+                        .getSingleResult();
+        return ((Number) result).longValue() > 0;
     }
 }

@@ -29,7 +29,7 @@ public class StickerClaimedEvent extends DomainEvent {
     public static StickerClaimedEvent fromAssignment(StickerAssignment assignment) {
         StickerClaimedEvent event = new StickerClaimedEvent();
         event.setAccountId(assignment.getUserId());
-        event.setStickerId(assignment.getSticker().getStickerId());
+        event.setStickerId(assignment.getStickerId());
         return event;
     }
 

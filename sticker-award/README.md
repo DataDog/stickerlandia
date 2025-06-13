@@ -1,18 +1,21 @@
 # Sticker Award Service
 
-The Sticker Award Service manages stickers and their assignment to users in the Stickerlandia platform. It provides APIs for sticker catalog management and user sticker assignments.
+The Sticker Award Service manages stickers and their assignment to users in the Stickerlandia platform. It provides two distinct API domains:
+
+- **Assignment API** (`/api/awards/v1/assignments`) - Manages user sticker assignments
+- **Catalog API** (`/api/stickers/v1`) - Manages the sticker catalog (metadata, images, CRUD)
 
 ## Architecture
 
 ### Domain Structure
-- **`award/`** - User sticker assignment domain
+- **`award/`** - User sticker assignment domain (`/api/awards/v1`)
   - `StickerAwardResource.java` - HTTP API for user assignments
   - `StickerAwardRepository.java` - Data access and entity-DTO mapping
   - `dto/` - Request/Response DTOs (AssignStickerRequest, UserAssignmentDTO, etc.)
   - `entity/` - Database entities (StickerAssignment)
   - `messaging/` - Event publishing
 
-- **`sticker/`** - Sticker catalog domain
+- **`sticker/`** - Sticker catalog domain (`/api/stickers/v1`)
   - `StickerResource.java` - HTTP API for sticker catalog
   - `StickerRepository.java` - Data access and entity-DTO mapping
   - `dto/` - Request/Response DTOs (CreateStickerRequest, StickerDTO, etc.)
@@ -28,10 +31,27 @@ The Sticker Award Service manages stickers and their assignment to users in the 
 - **Entity** - Database layer, JPA entities for persistence
 - **DTO** - API layer, request/response objects for HTTP APIs
 
+## API Endpoints
+
+### Assignment API (`/api/awards/v1/assignments`)
+- `GET /api/awards/v1/assignments/{userId}` - Get user's sticker assignments
+- `POST /api/awards/v1/assignments/{userId}` - Assign a sticker to a user
+- `DELETE /api/awards/v1/assignments/{userId}/{stickerId}` - Remove sticker assignment
+
+### Catalog API (`/api/stickers/v1`)
+- `GET /api/stickers/v1` - List all stickers (paginated)
+- `POST /api/stickers/v1` - Create new sticker
+- `GET /api/stickers/v1/{stickerId}` - Get sticker metadata
+- `PUT /api/stickers/v1/{stickerId}` - Update sticker metadata
+- `DELETE /api/stickers/v1/{stickerId}` - Delete sticker
+- `GET /api/stickers/v1/{stickerId}/image` - Get sticker image
+- `PUT /api/stickers/v1/{stickerId}/image` - Upload/update sticker image
+
 ## Features
 
 - Sticker catalog management (CRUD operations)
 - User sticker assignment management
+- Sticker image storage and retrieval
 - JWT-based authentication and authorization
 - Event-driven integration with other services
 

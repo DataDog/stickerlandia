@@ -1,15 +1,11 @@
 package com.datadoghq.stickerlandia.stickeraward.award.entity;
 
-import com.datadoghq.stickerlandia.stickeraward.sticker.entity.Sticker;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
@@ -30,9 +26,8 @@ public class StickerAssignment extends PanacheEntityBase {
     @Column(name = "user_id", nullable = false)
     private String userId;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "sticker_id", nullable = false)
-    private Sticker sticker;
+    @Column(name = "sticker_id", nullable = false)
+    private String stickerId;
 
     @Column(name = "assigned_at", nullable = false)
     private Instant assignedAt;
@@ -50,12 +45,12 @@ public class StickerAssignment extends PanacheEntityBase {
      * Constructor with fields for creating a new sticker assignment.
      *
      * @param userId the ID of the user
-     * @param sticker the sticker to assign
+     * @param stickerId the ID of the sticker to assign
      * @param reason the reason for the assignment
      */
-    public StickerAssignment(String userId, Sticker sticker, String reason) {
+    public StickerAssignment(String userId, String stickerId, String reason) {
         this.userId = userId;
-        this.sticker = sticker;
+        this.stickerId = stickerId;
         this.reason = reason;
         this.assignedAt = Instant.now();
     }
@@ -77,12 +72,12 @@ public class StickerAssignment extends PanacheEntityBase {
         this.userId = userId;
     }
 
-    public Sticker getSticker() {
-        return sticker;
+    public String getStickerId() {
+        return stickerId;
     }
 
-    public void setSticker(Sticker sticker) {
-        this.sticker = sticker;
+    public void setStickerId(String stickerId) {
+        this.stickerId = stickerId;
     }
 
     public Instant getAssignedAt() {
@@ -138,18 +133,15 @@ public class StickerAssignment extends PanacheEntityBase {
      * @return the active assignment, or null if not found
      */
     public static StickerAssignment findActiveByUserAndSticker(String userId, String stickerId) {
-        return find(
-                        "userId = ?1 AND sticker.stickerId = ?2 AND removedAt IS NULL",
-                        userId,
-                        stickerId)
+        return find("userId = ?1 AND stickerId = ?2 AND removedAt IS NULL", userId, stickerId)
                 .firstResult();
     }
 
     public static List<StickerAssignment> findActiveByStickerId(String stickerId) {
-        return list("sticker.stickerId = ?1 AND removedAt IS NULL", stickerId);
+        return list("stickerId = ?1 AND removedAt IS NULL", stickerId);
     }
 
     public static long countActiveByStickerId(String stickerId) {
-        return count("sticker.stickerId = ?1 AND removedAt IS NULL", stickerId);
+        return count("stickerId = ?1 AND removedAt IS NULL", stickerId);
     }
 }

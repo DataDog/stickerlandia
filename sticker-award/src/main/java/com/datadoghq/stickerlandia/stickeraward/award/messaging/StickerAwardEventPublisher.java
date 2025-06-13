@@ -61,7 +61,7 @@ public class StickerAwardEventPublisher {
             log.warn(
                     "Cannot publish removal event for active assignment: userId={}, stickerId={}",
                     assignment.getUserId(),
-                    assignment.getSticker().getStickerId());
+                    assignment.getStickerId());
             return;
         }
 

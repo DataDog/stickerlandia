@@ -51,7 +51,8 @@ public class StickerAwardEventPublisherTest {
                         "Test Description",
                         "https://example.com/image.png",
                         100);
-        StickerAssignment assignment = new StickerAssignment("user-123", sticker, "For testing");
+        StickerAssignment assignment =
+                new StickerAssignment("user-123", sticker.getStickerId(), "For testing");
 
         // Execute the method
         publisher.publishStickerAssigned(assignment);
@@ -85,7 +86,8 @@ public class StickerAwardEventPublisherTest {
                         "Test Description",
                         "https://example.com/image.png",
                         100);
-        StickerAssignment assignment = new StickerAssignment("user-456", sticker, "For testing");
+        StickerAssignment assignment =
+                new StickerAssignment("user-456", sticker.getStickerId(), "For testing");
         Instant removedAt = Instant.now();
         assignment.setRemovedAt(removedAt);
 
@@ -113,7 +115,8 @@ public class StickerAwardEventPublisherTest {
                         "Test Description",
                         "https://example.com/image.png",
                         100);
-        StickerAssignment assignment = new StickerAssignment("user-789", sticker, "For testing");
+        StickerAssignment assignment =
+                new StickerAssignment("user-789", sticker.getStickerId(), "For testing");
 
         // Execute the method - should log a warning but not throw exception
         publisher.publishStickerRemoved(assignment);
@@ -133,7 +136,8 @@ public class StickerAwardEventPublisherTest {
                         "Test Description",
                         "https://example.com/image.png",
                         100);
-        StickerAssignment assignment = new StickerAssignment("user-fail", sticker, "For testing");
+        StickerAssignment assignment =
+                new StickerAssignment("user-fail", sticker.getStickerId(), "For testing");
 
         // Simulate emitter failure
         doThrow(new RuntimeException("Test failure"))

@@ -6,7 +6,6 @@ import com.datadoghq.stickerlandia.stickeraward.sticker.dto.GetAllStickersRespon
 import com.datadoghq.stickerlandia.stickeraward.sticker.dto.StickerDTO;
 import com.datadoghq.stickerlandia.stickeraward.sticker.dto.StickerImageUploadResponse;
 import com.datadoghq.stickerlandia.stickeraward.sticker.dto.UpdateStickerRequest;
-import com.datadoghq.stickerlandia.stickeraward.sticker.entity.Sticker;
 import io.smallrye.common.constraint.NotNull;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -25,7 +24,7 @@ import java.time.Instant;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 
 /** REST resource for managing stickers. */
-@Path("/stickers")
+@Path("/api/stickers/v1")
 public class StickerResource {
 
     @Inject StickerRepository stickerRepository;
