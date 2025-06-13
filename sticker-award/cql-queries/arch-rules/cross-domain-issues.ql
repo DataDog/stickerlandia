@@ -1,10 +1,10 @@
 /**
- * @name Sticker Repository Domain Boundary Violations
- * @description Finds violations where StickerRepository imports classes from the award domain
+ * @name Cross-Domain Boundary Violations
+ * @description Finds violations where sticker and award domains import from each other
  * @kind problem
  * @problem.severity warning
  * @precision high
- * @id java/sticker-repository-domain-violation
+ * @id java/cross-domain-boundary-violation
  * @tags maintainability
  *       architecture
  *       domain-driven-design
@@ -12,22 +12,26 @@
 
 import java
 
-from CompilationUnit file, Import imp
+from CompilationUnit file, ImportType imp
 where
-  // Match StickerRepository files by path
-  file.getAbsolutePath().matches("%StickerRepository.java") and
-  
   // Find imports in these files
   imp.getCompilationUnit() = file and
   
-  // Check if import is specifically the problematic award domain types
+  // Check for bidirectional violations
   (
-    imp.toString() = "import UserAssignmentDTO" or
-    imp.toString() = "import StickerAssignment"
+    // Sticker domain importing from award domain
+    (
+      file.getAbsolutePath().matches("%/stickeraward/sticker/%.java") and
+      imp.getImportedType().getPackage().getName().matches("%.stickeraward.award.%")
+    ) or
+    // Award domain importing from sticker domain
+    (
+      file.getAbsolutePath().matches("%/stickeraward/award/%.java") and
+      imp.getImportedType().getPackage().getName().matches("%.stickeraward.sticker.%")
+    )
   )
 
 select imp, 
-  "StickerRepository file '" + file.getBaseName() + 
-  "' should not import '" + imp.toString() + 
-  "' from the award domain. Use DTOs or events instead." 
-
+  "Domain boundary violation in '" + file.getBaseName() + 
+  "': should not import '" + imp.toString() + 
+  "' from another domain. Use DTOs or events instead."
