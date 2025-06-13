@@ -1,0 +1,10 @@
+rules:
+  - id: rest-api-no-entity-imports
+    message: |
+      REST API file should not import entity type '$MODULE.entity.$TYPE'. Use DTOs instead.
+    severity: ERROR
+    languages: [java]
+    paths:
+      include:
+        - "*Resource.java"
+    pattern: import com.datadoghq.stickerlandia.stickeraward.$MODULE.entity.$TYPE;

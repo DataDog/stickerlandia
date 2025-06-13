@@ -6,6 +6,7 @@ import com.datadoghq.stickerlandia.stickeraward.sticker.dto.GetAllStickersRespon
 import com.datadoghq.stickerlandia.stickeraward.sticker.dto.StickerDTO;
 import com.datadoghq.stickerlandia.stickeraward.sticker.dto.StickerImageUploadResponse;
 import com.datadoghq.stickerlandia.stickeraward.sticker.dto.UpdateStickerRequest;
+import com.datadoghq.stickerlandia.stickeraward.sticker.entity.Sticker;
 import io.smallrye.common.constraint.NotNull;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
