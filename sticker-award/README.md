@@ -60,3 +60,86 @@ The API returns standard HTTP status codes and follows the RFC 7807 Problem Deta
 Full API documentation is available in OpenAPI format:
 - Synchronous API: [api.yaml](./docs/api.yaml)
 - Asynchronous API: [async_api.json](./docs/async_api.json)
+
+## Building and Running
+
+### Prerequisites
+- Java 21+
+- Maven 3.8+
+
+### Development
+
+Run in development mode:
+```bash
+./mvnw compile quarkus:dev
+```
+
+### Testing
+
+Run tests:
+```bash
+./mvnw test
+```
+
+Run integration tests:
+```bash
+./mvnw verify
+```
+
+## Code Quality
+
+This project enforces high code quality through multiple static analysis tools:
+
+### Error Prone
+
+This project uses Error Prone to catch common Java programming mistakes at compile time.
+
+**Error Prone Integration:**
+- Runs automatically during compilation (`./mvnw compile`)
+- Catches bugs like incorrect Date usage, unused variables, and charset issues
+- Configured in the Maven compiler plugin
+- Uses Error Prone version 2.38.0
+
+**Common Error Prone checks include:**
+- `JavaUtilDate` - Flags usage of legacy `java.util.Date` API
+- `UnusedVariable` - Detects unused fields and variables
+- `DefaultCharset` - Warns about implicit charset usage in string operations
+
+### Checkstyle
+
+This project uses Checkstyle to enforce coding standards based on the Google Java Style Guide.
+
+**Run Checkstyle validation:**
+```bash
+# Check code style (runs automatically during build)
+./mvnw validate
+
+# Run only Checkstyle check
+./mvnw checkstyle:check
+
+# Generate Checkstyle report (creates HTML report at target/reports/checkstyle.html)
+./mvnw checkstyle:checkstyle
+```
+
+### Spotless (Code Formatting)
+
+This project uses Spotless with Google Java Format to automatically fix code style issues. 
+
+**Format your code:**
+```bash
+# Check if code formatting is correct
+./mvnw spotless:check
+
+# Automatically fix code formatting issues
+./mvnw spotless:apply
+
+# Format and then validate with Checkstyle
+./mvnw spotless:apply validate
+```
+
+**Checkstyle Configuration:**
+- Configuration file: `checkstyle.xml`
+- Suppressions file: `checkstyle-suppressions.xml`
+- Based on Google Java Style Guide (modified for 4-space indentation)
+- Enforces 4-space indentation, 100-character line limit
+- Checks import ordering, Javadoc completeness, and naming conventions

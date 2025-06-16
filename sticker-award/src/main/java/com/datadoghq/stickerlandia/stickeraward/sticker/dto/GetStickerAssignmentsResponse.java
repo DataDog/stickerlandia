@@ -1,26 +1,24 @@
 package com.datadoghq.stickerlandia.stickeraward.sticker.dto;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import com.datadoghq.stickerlandia.stickeraward.common.dto.PagedResponse;
 import com.datadoghq.stickerlandia.stickeraward.award.dto.UserAssignmentDTO;
+import com.datadoghq.stickerlandia.stickeraward.common.dto.PagedResponse;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import java.util.ArrayList;
+import java.util.List;
 
+/** Response DTO for getting sticker assignments. */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({
-    "stickerId",
-    "assignments",
-    "pagination"
-})
+@JsonPropertyOrder({"stickerId", "assignments", "pagination"})
 public class GetStickerAssignmentsResponse {
 
     @JsonProperty("stickerId")
     private String stickerId;
+
     @JsonProperty("assignments")
     private List<UserAssignmentDTO> assignments = new ArrayList<UserAssignmentDTO>();
+
     @JsonProperty("pagination")
     private PagedResponse pagination;
 
@@ -53,5 +51,4 @@ public class GetStickerAssignmentsResponse {
     public void setPagination(PagedResponse pagination) {
         this.pagination = pagination;
     }
-
 }

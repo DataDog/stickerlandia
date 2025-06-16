@@ -1,26 +1,28 @@
 package com.datadoghq.stickerlandia.stickeraward.sticker.dto;
 
-import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import java.time.Instant;
 
+/** Response DTO for sticker image upload operations. */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({
-    "stickerId",
-    "imageUrl",
-    "uploadedAt"
-})
+@JsonPropertyOrder({"stickerId", "imageUrl", "uploadedAt"})
 public class StickerImageUploadResponse {
 
     @JsonProperty("stickerId")
     private String stickerId;
+
     @JsonProperty("imageUrl")
     private String imageUrl;
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
+
+    @JsonFormat(
+            shape = JsonFormat.Shape.STRING,
+            pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'",
+            timezone = "UTC")
     @JsonProperty("uploadedAt")
-    private Date uploadedAt;
+    private Instant uploadedAt;
 
     @JsonProperty("stickerId")
     public String getStickerId() {
@@ -43,13 +45,12 @@ public class StickerImageUploadResponse {
     }
 
     @JsonProperty("uploadedAt")
-    public Date getUploadedAt() {
+    public Instant getUploadedAt() {
         return uploadedAt;
     }
 
     @JsonProperty("uploadedAt")
-    public void setUploadedAt(Date uploadedAt) {
+    public void setUploadedAt(Instant uploadedAt) {
         this.uploadedAt = uploadedAt;
     }
-
 }

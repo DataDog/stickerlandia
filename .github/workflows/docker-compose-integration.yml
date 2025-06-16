@@ -23,9 +23,8 @@ jobs:
       
     - name: Wait for services to be healthy
       run: |
-        echo "Waiting for all services to be healthy..."
-        # Wait for services with health checks to be healthy (4 services) and all services to be up
-        timeout 300 bash -c 'until [ $(docker compose ps --format "{{.Health}}" | grep -c "healthy") -ge 4 ] && [ $(docker compose ps --format "{{.Status}}" | grep -c "Up") -ge 5 ]; do sleep 5; done'
+        echo Pausing for 60s to allow services to start
+        sleep 60
         docker compose ps
       
     - name: Test dashboard endpoints
@@ -37,23 +36,19 @@ jobs:
       run: |
         # Test sticker award API with sample user data
         curl -f -X GET "http://localhost:8080/api/award/v1/users/user-001/stickers" || exit 1
-        # TODO!
-        # curl -f -X GET "http://localhost:8080/api/users/v1/health" || exit 1
+        curl -f -X GET "http://localhost:8080/api/users/v1/health" || exit 1
       
     - name: Show service logs on failure
       if: failure()
       run: |
         echo "=== Docker Compose Services Status ==="
         docker compose ps
-        echo "=== Traefik Logs ==="
-        docker compose logs traefik
-        echo "=== Sticker Award Logs ==="
-        docker compose logs sticker-award
-        echo "=== User Management Logs ==="
-        docker compose logs user-management
-        echo "=== Database Logs ==="
-        docker compose logs sticker-award-db
-        docker compose logs user-management-db
+        echo "=== All Service Logs ==="
+        docker compose logs --tail=50
+        echo "=== Health Check Details ==="
+        docker compose ps --format "table {{.Name}}\t{{.Status}}\t{{.Health}}"
+        echo "=== Resource Usage ==="
+        docker stats --no-stream
       
     - name: Cleanup
       if: always()

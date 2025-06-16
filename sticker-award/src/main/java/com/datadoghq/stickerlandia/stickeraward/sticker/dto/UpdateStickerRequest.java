@@ -5,26 +5,23 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+/** Request DTO for updating an existing sticker. */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({
-    "stickerName",
-    "stickerDescription",
-    "stickerQuantityRemaining"
-})
+@JsonPropertyOrder({"stickerName", "stickerDescription", "stickerQuantityRemaining"})
 public class UpdateStickerRequest {
 
     @JsonProperty("stickerName")
     private String stickerName;
+
     @JsonProperty("stickerDescription")
     private String stickerDescription;
-    /**
-     * Quantity remaining (-1 for infinite)
-     * 
-     */
+
+    /** Quantity remaining (-1 for infinite). */
     @JsonProperty("stickerQuantityRemaining")
     @JsonPropertyDescription("Quantity remaining (-1 for infinite)")
     private Integer stickerQuantityRemaining;
 
+    /** The name of the sticker. */
     @JsonProperty("stickerName")
     public String getStickerName() {
         return stickerName;
@@ -35,6 +32,7 @@ public class UpdateStickerRequest {
         this.stickerName = stickerName;
     }
 
+    /** The description of the sticker. */
     @JsonProperty("stickerDescription")
     public String getStickerDescription() {
         return stickerDescription;
@@ -45,22 +43,15 @@ public class UpdateStickerRequest {
         this.stickerDescription = stickerDescription;
     }
 
-    /**
-     * Quantity remaining (-1 for infinite)
-     * 
-     */
+    /** The quantity remaining for the sticker. */
     @JsonProperty("stickerQuantityRemaining")
     public Integer getStickerQuantityRemaining() {
         return stickerQuantityRemaining;
     }
 
-    /**
-     * Quantity remaining (-1 for infinite)
-     * 
-     */
+    /** Quantity remaining (-1 for infinite). */
     @JsonProperty("stickerQuantityRemaining")
     public void setStickerQuantityRemaining(Integer stickerQuantityRemaining) {
         this.stickerQuantityRemaining = stickerQuantityRemaining;
     }
-
 }

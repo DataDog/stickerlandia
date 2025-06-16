@@ -207,6 +207,11 @@ services:
       QUARKUS_S3_AWS_CREDENTIALS_STATIC_PROVIDER_SECRET_ACCESS_KEY: minioadmin
       QUARKUS_S3_PATH_STYLE_ACCESS: "true"
       STICKER_IMAGES_BUCKET: sticker-images
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.sticker-award.rule=PathPrefix(`/api/award`)"

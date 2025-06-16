@@ -12,13 +12,14 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-
 import java.time.Instant;
 import java.util.List;
 
+/** Entity representing the assignment of a sticker to a user. */
 @Entity
-@Table(name = "sticker_assignments", 
-       uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "sticker_id"}))
+@Table(
+        name = "sticker_assignments",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "sticker_id"}))
 public class StickerAssignment extends PanacheEntityBase {
 
     @Id
@@ -43,10 +44,15 @@ public class StickerAssignment extends PanacheEntityBase {
     private String reason;
 
     // Default constructor for JPA
-    public StickerAssignment() {
-    }
+    public StickerAssignment() {}
 
-    // Constructor with fields
+    /**
+     * Constructor with fields for creating a new sticker assignment.
+     *
+     * @param userId the ID of the user
+     * @param sticker the sticker to assign
+     * @param reason the reason for the assignment
+     */
     public StickerAssignment(String userId, Sticker sticker, String reason) {
         this.userId = userId;
         this.sticker = sticker;
@@ -104,17 +110,38 @@ public class StickerAssignment extends PanacheEntityBase {
     }
 
     // Helper methods
+    /**
+     * Checks if this assignment is currently active (not removed).
+     *
+     * @return true if the assignment is active, false otherwise
+     */
     public boolean isActive() {
         return removedAt == null;
     }
 
     // Repository methods
+    /**
+     * Finds all active sticker assignments for a specific user.
+     *
+     * @param userId the ID of the user
+     * @return list of active sticker assignments
+     */
     public static List<StickerAssignment> findActiveByUserId(String userId) {
         return list("userId = ?1 AND removedAt IS NULL", userId);
     }
 
+    /**
+     * Finds an active sticker assignment for a specific user and sticker.
+     *
+     * @param userId the ID of the user
+     * @param stickerId the ID of the sticker
+     * @return the active assignment, or null if not found
+     */
     public static StickerAssignment findActiveByUserAndSticker(String userId, String stickerId) {
-        return find("userId = ?1 AND sticker.stickerId = ?2 AND removedAt IS NULL", userId, stickerId)
+        return find(
+                        "userId = ?1 AND sticker.stickerId = ?2 AND removedAt IS NULL",
+                        userId,
+                        stickerId)
                 .firstResult();
     }
 

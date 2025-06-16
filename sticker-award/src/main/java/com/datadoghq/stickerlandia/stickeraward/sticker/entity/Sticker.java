@@ -5,9 +5,9 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-
 import java.time.Instant;
 
+/** Entity representing a sticker in the system. */
 @Entity
 @Table(name = "stickers")
 public class Sticker extends PanacheEntityBase {
@@ -37,12 +37,24 @@ public class Sticker extends PanacheEntityBase {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
-    // Default constructor for JPA
-    public Sticker() {
-    }
+    /** Default constructor for JPA. */
+    public Sticker() {}
 
-    // Constructor with fields
-    public Sticker(String stickerId, String name, String description, String imageUrl, Integer stickerQuantityRemaining) {
+    /**
+     * Constructor with fields for creating a new sticker.
+     *
+     * @param stickerId the unique identifier for the sticker
+     * @param name the name of the sticker
+     * @param description the description of the sticker
+     * @param imageUrl the URL of the sticker image
+     * @param stickerQuantityRemaining the quantity remaining for the sticker
+     */
+    public Sticker(
+            String stickerId,
+            String name,
+            String description,
+            String imageUrl,
+            Integer stickerQuantityRemaining) {
         this.stickerId = stickerId;
         this.name = name;
         this.description = description;
@@ -116,22 +128,34 @@ public class Sticker extends PanacheEntityBase {
         this.updatedAt = updatedAt;
     }
 
-    // Helper methods for quantity management
+    /**
+     * Checks if this sticker is available for assignment.
+     *
+     * @return true if the sticker is available, false otherwise
+     */
     public boolean isAvailable() {
-        return stickerQuantityRemaining == null || stickerQuantityRemaining == -1 || stickerQuantityRemaining > 0;
+        return stickerQuantityRemaining == null
+                || stickerQuantityRemaining == -1
+                || stickerQuantityRemaining > 0;
     }
 
+    /**
+     * Checks if this sticker has unlimited quantity.
+     *
+     * @return true if the sticker has unlimited quantity, false otherwise
+     */
     public boolean hasUnlimitedQuantity() {
         return stickerQuantityRemaining == null || stickerQuantityRemaining == -1;
     }
 
+    /** Decrements the quantity remaining by 1. */
     public void decrementQuantity() {
         if (stickerQuantityRemaining != null && stickerQuantityRemaining > 0) {
             stickerQuantityRemaining--;
         }
     }
 
-    // Increase quantity by 1 (for removal)
+    /** Increases the quantity remaining by 1 (for removal). */
     public void increaseQuantity() {
         if (stickerQuantityRemaining != null && stickerQuantityRemaining >= 0) {
             stickerQuantityRemaining++;
@@ -139,8 +163,22 @@ public class Sticker extends PanacheEntityBase {
         // If -1 (infinite), do nothing
     }
 
-    // Helper methods for finding stickers
-    public static Sticker findById(String id) {
-        return find("stickerId", id).firstResult();
+    /**
+     * Updates the quantity remaining for this sticker.
+     *
+     * @param newQuantity the new quantity remaining
+     */
+    public void updateQuantityRemaining(Integer newQuantity) {
+        this.stickerQuantityRemaining = newQuantity;
+    }
+
+    /**
+     * Finds a sticker by its unique identifier.
+     *
+     * @param stickerId the unique identifier of the sticker
+     * @return the sticker if found, null otherwise
+     */
+    public static Sticker findByStickerId(String stickerId) {
+        return find("stickerId", stickerId).firstResult();
     }
 }
