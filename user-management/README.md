@@ -1,92 +1,82 @@
 # User Management Service
 
-[![User Management Tests](https://github.com/DataDog/stickerlandia/actions/workflows/user-management-test.yml/badge.svg)](https://github.com/DataDog/stickerlandia/actions/workflows/user-management-test.yml)
+The User Management Service manages users. It provides one primary API:
 
-The User Management Service manages user accounts, credentials and details about a user. It provides APIs allowing users to register and login as well as retrieve and update their user account details. The API also generates JWT's for use by other services on a succesful login. Endpoints for interacting with a users account have appropriate access controls to ensure users can only access their own accounts.
+- **User Management API** (`/api/users/v1`) - Manages users and provides OAuth 2.0 endpoints for AuthN/Z
+
+## Architecture
+
+### Domain Structure
+- **`users/`** - User sticker assignment domain (`/api/users/v1`)
+  - `StickerAwardResource.java` - HTTP API for user assignments
+  - `StickerAwardRepository.java` - Data access and entity-DTO mapping
+  - `dto/` - Request/Response DTOs (AssignStickerRequest, UserAssignmentDTO, etc.)
+  - `entity/` - Database entities (StickerAssignment)
+  - `messaging/` - Event publishing
+
+### Separation of Concerns
+- **Resource** - HTTP layer, handles requests/responses, only works with DTOs
+- **Repository** - Data layer, maps between entities and DTOs, contains business logic
+- **Entity** - Database layer, JPA entities for persistence
+- **DTO** - API layer, request/response objects for HTTP APIs
+
+## API Endpoints
+
+### User Management API (`/api/users/v1`)
+
+You can find th full [Open API specification in the docs folder](./docs/api.yaml).
 
 ## Features
 
-- User registration and login
-- JWT-based authentication and authorization
-- Event-driven integration with other services
+- Register users
+- OAuth2.0 with password and client credential grant types
+- Get and update user accounts
+
+## Events
+
+You can find the full [Async API specification for events published and received in the docs folder](./docs/async_api.yaml)
 
 ## Authentication
 
-All API endpoints (except `/health`, `/login` and `/register`) require authentication via JWT token in the Authorization header. 
-Access controls ensure users can only operate on their own accounts.
+All API endpoints (except `/health` and `/register`) require authentication via JWT token in the Authorization header. 
+Access controls ensure users can only operate on their own accounts unless they have admin privileges.
 
 ## Error Handling
 
 The API returns standard HTTP status codes and follows the RFC 7807 Problem Details specification for error responses.
 
-## API Documentation
+## Building and Running
 
-Full API documentation is available in OpenAPI format:
-- Synchronous API: [api.yaml](./docs/api.yaml)
-- Asynchronous API: [async_api.json](./docs/async_api.yaml)
+### Prerequisites
+- .NET 8.0
+- .NET Aspire
 
-## Code Structure
+### Development
 
-The code is structured around the ports and adapters architecture style, allowing the same business logic to run on a variety of different hosting providers and connecting to a variety of external services (databases, message brokers etc).
-
-The code is roughly broken down into three sections:
-
-- application *(driving adapters)*
-    - [Stickerlandia.UserManagement.AspNet](./src/Stickerlandia.UserManagement.AspNet/)
-    - [Stickerlandia.UserManagement.FunctionApp](./src/Stickerlandia.UserManagement.AspNet/)
-    - [Stickerlandia.UserManagement.Lambda](./src/Stickerlandia.UserManagement.Lambda/)
-- core
-    - [Stickerlandia.UserManagement.Core](./src/Stickerlandia.UserManagement.Core/)
-- infrastructure *(driven adapters)*
-    - [Stickerlandia.UserManagement.Agnostic](./src/Stickerlandia.UserManagement.Agnostic/)
-    - [Stickerlandia.UserManagement.Azure](./src/Stickerlandia.UserManagement.Azure/)
-    - [Stickerlandia.UserManagement.AWS](./src/Stickerlandia.UserManagement.AWS/)
-
-## Local Development
-
-The application uses [.NET Aspire](https://learn.microsoft.com/en-us/dotnet/aspire/get-started/aspire-overview) to simplify local development, allowing you to run the application and all it's dependencies locally using `dotnet run` or `dotnet test`.
-
-The [Stickerlandia.UserManagement.Aspire](./src/Stickerlandia.UserManagement.Aspire/) project contains all of the .NET Aspire setup. The project also includes various different launch profiles so that you can launch the application locally using your preferred driving and driven adapters.
-
-### Configuration Options
-
-```
-export DRIVING=ASPNET
-export DRIVEN=AGNOSTIC
+Run in development mode:
+```bash
+cd src/Stickerlandia.UserManagement.Aspire
+dotnet run
 ```
 
-## Driving
+### Testing
 
-The `DRIVING` option determine where this application is actually going to run. Whether that is leveraging serverless functions like AWS Lambda or simply running in a container using a web framework like ASP.NET. It can be configured to either
+Run tests:
+```bash
+cd tests/Stickerlandia.UserManagement.UnitTest
+dotnet test
+```
 
-### AZURE_FUNCTIONS
+Run integration tests:
+```bash
+cd tests/Stickerlandia.UserManagement.IntegrationTest
+dotnet test
+```
 
-The Azure native hosting option uses Azure Functions to host both the HTTP endpoints and any event handlers
+## Code Quality
 
-### ASPNET
+This project enforces high code quality through multiple static analysis tools:
 
-The ASPNET option hosts the API endpoints using the ASPNET web framework, and also uses `BackgroundServices` to run event handlers on a background thread inside the same running process.
+### Built in Static Analyis Tools
 
-### AWS_LAMBDA
-
-TODO:
-
-### KUBERNETES
-
-TODO:
-
-## Driven
-
-The `DRIVEN` option determines the implementations for any driven adapters inside the application, things like the database and messaging middlewares.
-
-### Azure 
-
-When set to `AZURE`, uses CosmosDB and Azure Service Bus.
-
-### Agnostic
-
-When set to `AGNOSTIC`, uses Postgres and Kafka.
-
-### AWS
-
-TODO:
+.NET has built-in Roslyn analyzers that inspect your C# code for code style and quality issues. To enforce these styles, a [`Directory.build.props`](./Directory.build.props) file is included in the repository root that turns on all static analysis tools.
