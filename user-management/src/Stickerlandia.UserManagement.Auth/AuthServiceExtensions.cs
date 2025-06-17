@@ -15,7 +15,7 @@ namespace Stickerlandia.UserManagement.Auth;
 public static class AuthServiceExtensions
 {
     public static IServiceCollection AddCoreAuthentication(this IServiceCollection services,
-        Action<OpenIddictCoreBuilder> configuration, bool enableSsl)
+        Action<OpenIddictCoreBuilder> configuration, bool disableSsl)
     {
         services.AddOpenIddict()
             .AddCore(configuration)
@@ -47,12 +47,12 @@ public static class AuthServiceExtensions
                     .AddEphemeralSigningKey();
 
                 // Register the ASP.NET Core host and configure the ASP.NET Core options.
-                if (enableSsl)
+                if (disableSsl)
                     options.UseAspNetCore()
+                        .DisableTransportSecurityRequirement()
                         .EnableTokenEndpointPassthrough();
                 else
                     options.UseAspNetCore()
-                        .DisableTransportSecurityRequirement()
                         .EnableTokenEndpointPassthrough();
 
 

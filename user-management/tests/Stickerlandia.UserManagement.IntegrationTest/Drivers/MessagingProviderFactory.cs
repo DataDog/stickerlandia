@@ -14,6 +14,7 @@ public static class MessagingProviderFactory
         {
             "AZURE" => new AzureServiceBusMessaging(connectionString),
             "AGNOSTIC" => new KafkaMessaging(connectionString),
+            "AWS" => new EventBridgeMessaging(Environment.GetEnvironmentVariable("ENV") ?? "dev"),
             _ => throw new NotSupportedException($"Unsupported messaging provider: {connectionString}")
         };
     }

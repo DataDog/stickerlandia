@@ -3,6 +3,7 @@
 // Copyright 2025 Datadog, Inc.
 
 using System.Text.Json;
+using Aspire.Hosting.AWS.Lambda;
 using Aspire.Hosting.Azure;
 using Azure.Messaging.ServiceBus;
 using Confluent.Kafka;
@@ -238,12 +239,23 @@ public static class AppBuilderExtensions
         return builder;
     }
 
+#pragma warning disable CA2252
+
     public static IDistributedApplicationBuilder WithAwsLambda(
         this IDistributedApplicationBuilder builder,
-        IResourceBuilder<IResourceWithConnectionString> databaseResource,
-        IResourceBuilder<IResourceWithConnectionString> messagingResource)
+        InfrastructureResources resources)
     {
-        //TODO: Implement AWS Lambda support
+        var apiLambdaFunction = builder.AddAWSLambdaFunction<Projects.Stickerlandia_UserManagement_Api>("UsersApi",
+                "Stickerlandia.UserManagement.Api")
+            .WithEnvironment("ConnectionStrings__messaging", resources.MessagingResource)
+            .WithEnvironment("ConnectionStrings__database", resources.DatabaseResource)
+            .WithEnvironment("DRIVING", builder.Configuration["DRIVING"])
+            .WithEnvironment("DRIVEN", builder.Configuration["DRIVEN"]);
+
+        builder.AddAWSAPIGatewayEmulator("api", APIGatewayType.Rest)
+            .WithReference(apiLambdaFunction, Method.Any, "{proxy+}")
+            .WithHttpsEndpoint(51660);
+        ;
 
         return builder;
     }

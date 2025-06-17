@@ -27,7 +27,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{FC9DDF76-8
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.Agnostic", "src\Stickerlandia.UserManagement.Agnostic\Stickerlandia.UserManagement.Agnostic.csproj", "{295E8315-2CD2-4CD8-B7F4-21EF587B74A9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.Lambda", "src\Stickerlandia.UserManagement.Lambda\src\Stickerlandia.UserManagement.Lambda\Stickerlandia.UserManagement.Lambda.csproj", "{5C770F92-B6E7-4270-A041-A32F385DA6C4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.Lambda", "src\Stickerlandia.UserManagement.Lambda\Stickerlandia.UserManagement.Lambda.csproj", "{5C770F92-B6E7-4270-A041-A32F385DA6C4}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Driving", "Driving", "{924749FC-98D5-40A6-8F4B-BA9BFDEDDEC3}"
 EndProject
