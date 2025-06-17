@@ -16,6 +16,11 @@ export class UserServiceStack extends cdk.Stack {
     const serviceName = "user-service";
     const environment = process.env.ENV || "dev";
     const version = process.env.VERSION || "latest";
+    const connectionString = process.env.CONNECTION_STRING;
+
+    if (!connectionString) {
+      throw new Error("CONNECTION_STRING environment variable is required");
+    }
 
     const network = new Network(this, "Network", {
       networkName: `${serviceName}-${environment}-vpc`,
@@ -30,8 +35,7 @@ export class UserServiceStack extends cdk.Stack {
     });
 
     const sharedProps: SharedProps = {
-      connectionString:
-        "Server=ep-divine-snow-abgipduo-pooler.eu-west-2.aws.neon.tech;Port=5432;Database=stickerlandia-users;User Id=stickerlandia-users_owner;Password=npg_buwe2PoK1NgV;sslmode=require;",
+      connectionString,
       serviceName: "user-service",
       environment: process.env.ENV || "dev",
       version: process.env.VERSION || "latest",
