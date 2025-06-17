@@ -30,13 +30,13 @@ internal class AuthorizeOperationFilter
 
             var oauth2SecurityScheme = new OpenApiSecurityScheme()
             {
-                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "OAuth2" },
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "oauth2" },
             };
 
 
             operation.Security.Add(new OpenApiSecurityRequirement()
             {
-                [oauth2SecurityScheme] = new[] { "OAuth2" }
+                [oauth2SecurityScheme] = new[] { "oauth2" }
             });
         }
     }
