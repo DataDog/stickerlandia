@@ -30,7 +30,7 @@ The project follows a ports and adapters architecture style, split down into `Dr
 
 ### User Management API (`/api/users/v1`)
 
-You can find th full [Open API specification in the docs folder](./docs/api.yaml).
+You can find the full [Open API specification in the docs folder](./docs/api.yaml).
 
 ## Features
 
