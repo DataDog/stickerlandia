@@ -23,6 +23,7 @@ switch (DrivenAdapterSettings.DrivenAdapter)
         resources = builder.WithAgnosticServices();
         break;
     case DrivenAdapters.AWS:
+        resources = builder.WithAgnosticServices();
         break;
 }
 
@@ -39,7 +40,7 @@ switch (DrivingAdapterSettings.DrivingAdapter)
             .WithBackgroundWorker(resources);
         break;
     case DrivingAdapter.AWS:
-        builder.WithContainerizedApi(resources);
+        builder.WithAwsLambda(resources);
         break;
 }
 

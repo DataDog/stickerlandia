@@ -69,13 +69,13 @@ public static class ServiceExtensions
             .AddEntityFrameworkStores<UserManagementDbContext>()
             .AddDefaultTokenProviders();
 
-        var enableSsl = true;
+        var disableSsl = false;
 
-        if (configuration.GetValue<bool>("DISABLE_SSL")) enableSsl = false;
+        if (configuration.GetValue<bool>("DISABLE_SSL")) disableSsl = true;
 
         services.AddCoreAuthentication(options =>
             options.UseEntityFrameworkCore()
-                .UseDbContext<UserManagementDbContext>(), enableSsl);
+                .UseDbContext<UserManagementDbContext>(), disableSsl);
 
         services.AddScoped<IAuthService, MicrosoftIdentityAuthService>();
 
