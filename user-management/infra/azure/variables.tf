@@ -6,44 +6,21 @@ variable "resourceGroupName" {
   description = "The Azure Resource Group name in which all resources in this example should be created."
 }
 
+variable "database_connection_string" {
+  description = "The connection string to the database used by the application."
+}
+
 variable "location" {
   description = "The Azure Region in which all resources in this example should be created."
-}
-
-variable "functionAppName" {
-  description = "Your Flex Consumption app name."
-}
-
-variable "functionPlanName" {
-  description = "Your Flex Consumption plan name."
-}
-
-variable "storageAccountName" {
-  description = "Your storage account name."
 }
 
 variable "env" {
   description = "The environment you are deploying to"
 }
 
-variable "maximumInstanceCount" {
-  default = 100
-  description = "The maximum instance count for the app"
-}
-
-variable "instanceMemoryMB" {
-  default = 2048
-  description = "The instance memory for the instances of the app: 2048 or 4096"
-}
-
-variable "functionAppRuntime" {
-  default = "dotnet-isolated"
-  description = "The runtime for your app. One of the following: 'dotnet-isolated', 'python', 'java', 'node', 'powershell'"
-}
-
-variable "functionAppRuntimeVersion" {
-  default = "9.0"
-  description = "The runtime and version for your app. One of the following: '3.10', '3.11', '7.4', '8.0', '10', '11', '17', '20'"
+variable "app_version" {
+  description = "The version of the application to deploy"
+  default     = "latest"
 }
 
 variable "dd_api_key" {
