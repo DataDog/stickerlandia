@@ -6,10 +6,11 @@ using Microsoft.OpenApi.Models;
 using Saunter;
 using Saunter.AsyncApiSchema.v2;
 using Stickerlandia.UserManagement.Azure;
+using SecuritySchemeType = Microsoft.OpenApi.Models.SecuritySchemeType;
 
 namespace Stickerlandia.UserManagement.Api.Configurations;
 
-public static class DocumentationConfig
+internal static class DocumentationConfig
 {
     public static IHostApplicationBuilder AddDocumentationEndpoints(this IHostApplicationBuilder builder)
     {
@@ -29,10 +30,40 @@ public static class DocumentationConfig
         builder.Services.AddSwaggerGen(options =>
         {
             options.SwaggerDoc("v1", new OpenApiInfo { Title = serviceName, Version = "v1" });
+            options.OperationFilter<AuthorizeOperationFilter>();
 
             // Include XML comments for Swagger
             var xmlFiles = Directory.GetFiles(AppContext.BaseDirectory, "*.xml");
             foreach (var xmlFile in xmlFiles) options.IncludeXmlComments(xmlFile);
+            
+            options.DocumentFilter<RemoveSwaggerDefinitionsFilter>();
+            options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
+            {
+                Description = "OAuth 2.0",
+                Name = "oauth2",
+                Type = SecuritySchemeType.OAuth2,
+                Flows = new OpenApiOAuthFlows
+                {
+                    Password = new OpenApiOAuthFlow()
+                    {
+                        AuthorizationUrl = new Uri($"http://localhost:5139/authorize"),
+                        TokenUrl = new Uri("http://localhost:5139/api/users/v1/login"),
+                        Scopes = new Dictionary<string, string>
+                        {
+                            { "User", "Read" }
+                        }
+                    },
+                    AuthorizationCode = new OpenApiOAuthFlow
+                    {
+                        AuthorizationUrl = new Uri($"/authorize"),
+                        TokenUrl = new Uri("/api/users/v1/login"),
+                        Scopes = new Dictionary<string, string>
+                        {
+                            { "User", "Read" }
+                        }
+                    }
+                }
+            });
         });
 
         return builder;

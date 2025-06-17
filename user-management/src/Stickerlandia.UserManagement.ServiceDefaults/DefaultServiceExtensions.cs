@@ -11,10 +11,12 @@ using Stickerlandia.UserManagement.Core;
 
 namespace Stickerlandia.UserManagement.ServiceDefaults;
 
-public static class ServiceDefaults
+public static class DefaultServiceExtensions
 {
     public static IHostApplicationBuilder AddServiceDefaults(this IHostApplicationBuilder builder)
     {
+        ArgumentNullException.ThrowIfNull(builder);
+        
         builder.Configuration.AddEnvironmentVariables();
         builder.Services.AddLogging();
         builder.Services.ConfigureDefaultUserManagementServices(builder.Configuration);
@@ -36,7 +38,7 @@ public static class ServiceDefaults
     {
         var drivenAdapters = Environment.GetEnvironmentVariable("DRIVEN") ?? "";
 
-        switch (drivenAdapters.ToUpper())
+        switch (drivenAdapters.ToUpperInvariant())
         {
             case "AZURE":
                 services.AddAzureAdapters(configuration);

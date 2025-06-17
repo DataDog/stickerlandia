@@ -2,10 +2,13 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
+// Catching generic exceptions is not recommended, but in this case we want to catch all exceptions so that a failure in outbox processing does not crash the application.
+#pragma warning disable CA1031
 using System.Text.Json;
 using Datadog.Trace;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Stickerlandia.UserManagement.Core.Observability;
 using Stickerlandia.UserManagement.Core.RegisterUser;
 
 namespace Stickerlandia.UserManagement.Core.Outbox;
@@ -31,12 +34,13 @@ public class OutboxProcessor(IServiceScopeFactory serviceScope, ILogger<OutboxPr
                     await ProcessOutboxItemAsync(outbox, eventPublisher, item);
                 }
 
-                logger.LogTrace("There are {Count} unprocessed outbox items", outboxItems.Count);
+                LogMessages.LogUnprocessedOutboxItems(logger, 5, null);
             }
+
             catch (Exception ex)
             {
                 // Log the exception
-                logger.LogError(ex, $"Error processing outbox items: {ex.Message}");
+                LogMessages.LogErrorProcessingOutboxItems(logger, ex);
             }
         }
     }
@@ -54,8 +58,7 @@ public class OutboxProcessor(IServiceScopeFactory serviceScope, ILogger<OutboxPr
                             JsonSerializer.Deserialize<UserRegisteredEvent>(item.EventData);
                         if (userRegisteredEvent == null)
                         {
-                            logger.LogWarning("Contents of outbox item cannot be deserialized {ItemId}",
-                                item.ItemId);
+                            LogMessages.LogOutboxItemDeserializationWarning(logger, item.ItemId, null);
                             item.FailureReason = "Contents of outbox item cannot be deserialized.";
                             item.Failed = true;
                             messageProcessingScope.Span.SetTag("outbox.item.error", item.FailureReason);
@@ -76,7 +79,7 @@ public class OutboxProcessor(IServiceScopeFactory serviceScope, ILogger<OutboxPr
             {
                 messageProcessingScope.Span.SetException(e);
                 
-                logger.LogError(e, "Failure processing outbox item {ItemId}", item.ItemId);
+                LogMessages.LogFailureProcessingOutboxItem(logger, item.ItemId, e);
                 item.FailureReason = e.Message;
                 item.Failed = true;
             }

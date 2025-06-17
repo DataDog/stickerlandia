@@ -8,8 +8,10 @@ namespace Stickerlandia.UserManagement.Core.GetUserDetails;
 
 public class GetUserDetailsQueryHandler(IUsers users)
 {
-    public async Task<UserAccountDTO> Handle(GetUserDetailsQuery query)
+    public async Task<UserAccountDto> Handle(GetUserDetailsQuery query)
     {
+        ArgumentNullException.ThrowIfNull(query);
+        
         try
         {
             if (query.AccountId is null)
@@ -24,7 +26,7 @@ public class GetUserDetailsQueryHandler(IUsers users)
                 throw new InvalidUserException("User not found");
             }
 
-            return new UserAccountDTO(account);
+            return new UserAccountDto(account);
         }
         catch (InvalidUserException ex)
         {

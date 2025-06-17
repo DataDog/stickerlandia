@@ -6,9 +6,9 @@ using Stickerlandia.UserManagement.Core.GetUserDetails;
 
 namespace Stickerlandia.UserManagement.Api;
 
-public static class GetUserDetails
+internal static class GetUserDetails
 {
-    public static async Task<ApiResponse<UserAccountDTO?>> HandleAsync(
+    public static async Task<ApiResponse<UserAccountDto?>> HandleAsync(
         HttpContext context,
         ClaimsPrincipal? user,
         [FromServices] IAuthService authService,
@@ -16,11 +16,11 @@ public static class GetUserDetails
     {
         if (user?.Identity?.Name == null)
         {
-            return new ApiResponse<UserAccountDTO?>(false, null, "User not authenticated", HttpStatusCode.Unauthorized);
+            return new ApiResponse<UserAccountDto?>(false, null, "User not authenticated", HttpStatusCode.Unauthorized);
         }
         
         var result = await handler.Handle(new GetUserDetailsQuery(new AccountId(user.Identity.Name)));
 
-        return new ApiResponse<UserAccountDTO?>(result);
+        return new ApiResponse<UserAccountDto?>(result);
     }
 }

@@ -5,26 +5,21 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Saunter;
 using Serilog;
-using Serilog.Events;
 using Serilog.Formatting.Json;
-using Stickerlandia.UserManagement.Agnostic;
 using Stickerlandia.UserManagement.Api;
 using Stickerlandia.UserManagement.Api.Configurations;
 using Stickerlandia.UserManagement.Api.Middlewares;
 using Stickerlandia.UserManagement.Core;
-using Stickerlandia.UserManagement.Core.Login;
 using Stickerlandia.UserManagement.Core.RegisterUser;
-using Stickerlandia.UserManagement.Auth;
-using Stickerlandia.UserManagement.Azure;
 using Stickerlandia.UserManagement.ServiceDefaults;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
 var logger = Log.Logger = new LoggerConfiguration()
-        .MinimumLevel.Information()
-        .Enrich.FromLogContext()
-        .WriteTo.Console(new JsonFormatter())
+    .MinimumLevel.Information()
+    .Enrich.FromLogContext()
+    .WriteTo.Console(new JsonFormatter())
     .CreateLogger();
 
 builder.AddDocumentationEndpoints();
@@ -102,7 +97,7 @@ v1ApiEndpoints.MapHealthChecks("/health", new HealthCheckOptions
 v1ApiEndpoints.MapGet("details", GetUserDetails.HandleAsync)
     .RequireAuthorization()
     .WithDescription("Get the current authenticated users details")
-    .Produces<ApiResponse<UserAccountDTO>>(200)
+    .Produces<ApiResponse<UserAccountDto>>(200)
     .ProducesProblem(401);
 
 v1ApiEndpoints.MapPut("details", UpdateUserDetailsEndpoint.HandleAsync)
@@ -113,10 +108,7 @@ v1ApiEndpoints.MapPut("details", UpdateUserDetailsEndpoint.HandleAsync)
 
 v1ApiEndpoints.MapPost("login", LoginEndpoint.HandleAsync)
     .AllowAnonymous()
-    .WithDescription("Login")
-    .Produces<ApiResponse<LoginResponse>>(200)
-    .ProducesProblem(401)
-    .ProducesProblem(404);
+    .ExcludeFromDescription();
 
 v1ApiEndpoints.MapPost("register", RegisterUserEndpoint.HandleAsync)
     .AllowAnonymous()
@@ -127,10 +119,10 @@ v1ApiEndpoints.MapPost("register", RegisterUserEndpoint.HandleAsync)
 try
 {
     await app.StartAsync();
-    
+
     var urlList = app.Urls;
     var urls = string.Join(" ", urlList);
-    
+
     logger.Information("UserManagement API started on {Urls}", urls);
 }
 catch (Exception ex)

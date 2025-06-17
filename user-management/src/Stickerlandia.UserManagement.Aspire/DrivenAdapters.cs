@@ -4,14 +4,14 @@
 
 namespace Stickerlandia.UserManagement.Aspire;
 
-public enum DrivenAdapters
+internal enum DrivenAdapters
 {
     AGNOSTIC,
     AWS,
     AZURE
 }
 
-public static class DrivenAdapterSettings
+internal static class DrivenAdapterSettings
 {
     private static DrivenAdapters? _drivenAdapter;
 

@@ -28,7 +28,7 @@ public class OutboxItem
     
     public DateTime EventTime { get; set; }
 
-    public bool Processed { get; set; } = false;
+    public bool Processed { get; set; }
 
     public bool Failed { get; set; }
     

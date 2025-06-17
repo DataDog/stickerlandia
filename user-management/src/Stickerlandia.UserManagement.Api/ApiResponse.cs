@@ -9,7 +9,7 @@ using Microsoft.Azure.Functions.Worker.Http;
 
 namespace Stickerlandia.UserManagement.Api;
 
-public record ApiResponse<T>
+internal sealed record ApiResponse<T>
 {
     public ApiResponse(T body)
     {
