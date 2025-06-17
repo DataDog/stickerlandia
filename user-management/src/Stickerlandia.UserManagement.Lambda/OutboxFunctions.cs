@@ -5,7 +5,7 @@ using Stickerlandia.UserManagement.Core.Outbox;
 
 namespace Stickerlandia.UserManagement.Lambda;
 
-public class OutboxFunctions(ILogger<Sqs> logger, IServiceScopeFactory serviceScopeFactory, OutboxProcessor outboxProcessor)
+public class OutboxFunctions(ILogger<Sqs> logger, OutboxProcessor outboxProcessor)
 {
     [LambdaFunction]
     public async Task Worker(object evtData)

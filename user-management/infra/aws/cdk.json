@@ -1,5 +1,5 @@
 {
-  "app": "dotnet run --project src/UserManagementService.csproj",
+  "app": "npx ts-node --prefer-ts-exts bin/user-service.ts",
   "watch": {
     "include": [
       "**"
@@ -7,11 +7,13 @@
     "exclude": [
       "README.md",
       "cdk*.json",
-      "src/*/obj",
-      "src/*/bin",
-      "src/*.sln",
-      "src/*/GlobalSuppressions.cs",
-      "src/*/*.csproj"
+      "**/*.d.ts",
+      "**/*.js",
+      "tsconfig.json",
+      "package*.json",
+      "yarn.lock",
+      "node_modules",
+      "test"
     ]
   },
   "context": {

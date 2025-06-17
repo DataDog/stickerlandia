@@ -41,8 +41,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagemen
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.MigrationService", "src\Stickerlandia.UserManagement.MigrationService\Stickerlandia.UserManagement.MigrationService.csproj", "{91536DB3-CBA5-44DE-943C-76F8577793FE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UserManagementService", "infra\aws\src\UserManagementService.csproj", "{57FBF8EA-3559-45A5-ACE1-823B2225E370}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
