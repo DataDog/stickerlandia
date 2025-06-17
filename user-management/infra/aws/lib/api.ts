@@ -198,5 +198,3 @@ export class Api extends Construct {
     });
   }
 }
-
-//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
