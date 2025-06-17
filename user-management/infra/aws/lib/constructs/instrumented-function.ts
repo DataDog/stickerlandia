@@ -6,7 +6,12 @@
 //
 
 import { Construct } from "constructs";
-import { IDestination, LayerVersion, Runtime } from "aws-cdk-lib/aws-lambda";
+import {
+  Architecture,
+  IDestination,
+  LayerVersion,
+  Runtime,
+} from "aws-cdk-lib/aws-lambda";
 import { Duration, RemovalPolicy, Stack, Tags } from "aws-cdk-lib";
 import { Alias } from "aws-cdk-lib/aws-kms";
 import { SharedProps } from "./shared-props";
@@ -42,6 +47,7 @@ export class InstrumentedLambdaFunction extends Construct {
       functionName: `${props.sharedProps.serviceName}-${props.functionName}-${props.sharedProps.environment}`,
       projectDir: props.buildDef,
       handler: props.handler,
+      architecture: Architecture.ARM_64,
       memorySize: props.memorySize ?? 512,
       timeout: props.timeout ?? Duration.seconds(29),
       onFailure: props.onFailure,
@@ -56,6 +62,8 @@ export class InstrumentedLambdaFunction extends Construct {
         BUILD_ID: props.sharedProps.version,
         TEAM: props.sharedProps.team,
         DOMAIN: props.sharedProps.domain,
+        DD_API_KEY: props.sharedProps.datadog.apiKey,
+        DD_SITE: props.sharedProps.datadog.site,
         DD_DATA_STREAMS_ENABLED: "true",
         DD_APM_REPLACE_TAGS: `[
       {

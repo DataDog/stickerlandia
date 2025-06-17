@@ -14,10 +14,7 @@ public static class MessagingProviderFactory
         {
             "AZURE" => new AzureServiceBusMessaging(connectionString),
             "AGNOSTIC" => new KafkaMessaging(connectionString),
-            "AWS" => new SqsMessaging(new Dictionary<string, string>(1)
-            {
-                { "users.stickerClaimed.v1", "https://sqs.eu-west-1.amazonaws.com/772954894450/user-service-dev-sticker-claimed" }
-            }),
+            "AWS" => new EventBridgeMessaging(Environment.GetEnvironmentVariable("ENV") ?? "dev"),
             _ => throw new NotSupportedException($"Unsupported messaging provider: {connectionString}")
         };
     }

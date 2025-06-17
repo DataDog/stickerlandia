@@ -94,7 +94,7 @@ export class BackgroundWorkers extends Construct {
         memorySize: 1024,
         timeout: Duration.seconds(50),
         logLevel: props.sharedProps.environment === "prod" ? "WARN" : "INFO",
-        onFailure: new SqsDestination(props.stickerClaimedDLQ),
+        onFailure: undefined,
       }
     );
     props.userRegisteredTopic.grantPublish(outboxWorker.function);

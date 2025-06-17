@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Amazon.Lambda.Annotations;
+using Amazon.Lambda.CloudWatchEvents;
 using Amazon.Lambda.SQSEvents;
 using Datadog.Trace;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,6 +13,8 @@ namespace Stickerlandia.UserManagement.Lambda;
 
 public class Sqs(ILogger<Sqs> logger, IServiceScopeFactory serviceScopeFactory, OutboxProcessor outboxProcessor)
 {
+    private readonly JsonSerializerOptions _jsonSerializerOptions = new JsonSerializerOptions
+        { PropertyNameCaseInsensitive = true };
     [LambdaFunction]
     public async Task<SQSBatchResponse> StickerClaimed(SQSEvent sqsEvent)
     {
@@ -31,7 +34,7 @@ public class Sqs(ILogger<Sqs> logger, IServiceScopeFactory serviceScopeFactory, 
         List<SQSBatchResponse.BatchItemFailure> failedMessages,
         StickerClaimedEventHandler handler)
     {
-        var evtData = JsonSerializer.Deserialize<StickerClaimedEventV1>(message.Body);
+        var evtData = JsonSerializer.Deserialize<CloudWatchEvent<StickerClaimedEventV1>>(message.Body, _jsonSerializerOptions);
 
         if (evtData == null)
         {
@@ -41,7 +44,7 @@ public class Sqs(ILogger<Sqs> logger, IServiceScopeFactory serviceScopeFactory, 
 
         try
         {
-            await handler.Handle(evtData!);
+            await handler.Handle(evtData.Detail!);
         }
         catch (InvalidUserException ex)
         {
