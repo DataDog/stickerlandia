@@ -45,37 +45,77 @@
   },
   "components": {
     "schemas": {
-      "domainEvent": {
-        "id": "domainEvent",
+      "cloudEventV1": {
+        "id": "cloudEventV1",
         "type": "object",
-        "x-abstract": true,
-        "additionalProperties": false
+        "required": ["specversion", "type", "source", "id"],
+        "additionalProperties": true,
+        "properties": {
+          "specversion": {
+            "type": "string",
+            "const": "1.0"
+          },
+          "type": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "format": "uri-reference"
+          },
+          "id": {
+            "type": "string"
+          },
+          "time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "datacontenttype": {
+            "type": "string",
+            "default": "application/json"
+          },
+          "dataschema": {
+            "type": "string",
+            "format": "uri"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object"
+          }
+        }
       },
       "stickerAssignedToUserEvent": {
         "id": "stickerAssignedToUserEvent",
         "allOf": [
           {
-            "$ref": "#/components/schemas/domainEvent"
+            "$ref": "#/components/schemas/cloudEventV1"
           },
           {
             "type": "object",
-            "additionalProperties": false,
             "properties": {
-              "eventName": {
-                "type": "string"
+              "type": {
+                "const": "com.datadoghq.stickerlandia.sticker.assigned.v1"
               },
-              "eventVersion": {
-                "type": "string"
+              "source": {
+                "const": "/sticker-award-service"
               },
-              "accountId": {
-                "type": "string"
-              },
-              "stickerId": {
-                "type": "string"
-              },
-              "assignedAt": {
-                "type": "string",
-                "format": "date-time"
+              "data": {
+                "type": "object",
+                "required": ["accountId", "stickerId", "assignedAt"],
+                "additionalProperties": false,
+                "properties": {
+                  "accountId": {
+                    "type": "string"
+                  },
+                  "stickerId": {
+                    "type": "string"
+                  },
+                  "assignedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
               }
             }
           }
@@ -85,27 +125,33 @@
         "id": "stickerRemovedFromUserEvent",
         "allOf": [
           {
-            "$ref": "#/components/schemas/domainEvent"
+            "$ref": "#/components/schemas/cloudEventV1"
           },
           {
             "type": "object",
-            "additionalProperties": false,
             "properties": {
-              "eventName": {
-                "type": "string"
+              "type": {
+                "const": "com.datadoghq.stickerlandia.sticker.removed.v1"
               },
-              "eventVersion": {
-                "type": "string"
+              "source": {
+                "const": "/sticker-award-service"
               },
-              "accountId": {
-                "type": "string"
-              },
-              "stickerId": {
-                "type": "string"
-              },
-              "removedAt": {
-                "type": "string",
-                "format": "date-time"
+              "data": {
+                "type": "object",
+                "required": ["accountId", "stickerId", "removedAt"],
+                "additionalProperties": false,
+                "properties": {
+                  "accountId": {
+                    "type": "string"
+                  },
+                  "stickerId": {
+                    "type": "string"
+                  },
+                  "removedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
               }
             }
           }
@@ -113,33 +159,68 @@
       },
       "certificationCompletedEventV1": {
         "id": "certificationCompletedEventV1",
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "accountId": {
-            "type": "string"
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/cloudEventV1"
           },
-          "certificationId": {
-            "type": "string"
-          },
-          "completedAt": {
-            "type": "string",
-            "format": "date-time"
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "com.datadoghq.stickerlandia.certification.completed.v1"
+              },
+              "data": {
+                "type": "object",
+                "required": ["accountId", "certificationId", "completedAt"],
+                "additionalProperties": false,
+                "properties": {
+                  "accountId": {
+                    "type": "string"
+                  },
+                  "certificationId": {
+                    "type": "string"
+                  },
+                  "completedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
           }
-        }
+        ]
       },
       "stickerClaimedEventV1": {
         "id": "stickerClaimedEventV1",
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "accountId": {
-            "type": "string"
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/cloudEventV1"
           },
-          "stickerId": {
-            "type": "string"
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "com.datadoghq.stickerlandia.sticker.claimed.v1"
+              },
+              "source": {
+                "const": "/sticker-award-service"
+              },
+              "data": {
+                "type": "object",
+                "required": ["accountId", "stickerId"],
+                "additionalProperties": false,
+                "properties": {
+                  "accountId": {
+                    "type": "string"
+                  },
+                  "stickerId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
           }
-        }
+        ]
       }
     },
     "messages": {
