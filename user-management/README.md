@@ -24,7 +24,7 @@ The User Management Service manages users. It provides one primary API:
 
 ### User Management API (`/api/users/v1`)
 
-You can find th full [Open API specification in the docs folder](./docs/api.yaml).
+You can find the full [Open API specification in the docs folder](./docs/api.yaml).
 
 ## Features
 
