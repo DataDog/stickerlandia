@@ -16,7 +16,7 @@ COPY . ./
 # Publish the application
 RUN dotnet publish src/Stickerlandia.UserManagement.Api/Stickerlandia.UserManagement.Api.csproj -o out -c Release
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0-noble-chiseled AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 
 # Copy the tracer from build target
 COPY --from=build /tmp/datadog-dotnet-apm.deb /tmp/datadog-dotnet-apm.deb
