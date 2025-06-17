@@ -2,8 +2,10 @@ version: '3.8'
 
 # Stickerlandia Service Endpoints
 # -------------------------------
-# - Sticker Award API:      http://localhost:8080/api/award
-#   - User stickers:        http://localhost:8080/api/award/v1/users/user-001/stickers
+# - Sticker Award API:      
+#   - User stickers:        http://localhost:8080/api/awardss/v1/assignments/user-001
+#   - Sticker catalog:      http://localhost:8080/api/stickers/v1
+#   - Sticker image:        http://localhost:8080/api/stickers/v1/sticker-001/image 
 # 
 # - User Management API:    http://localhost:8080/api/users
 #   - Registration:         http://localhost:8080/api/users/v1/register
@@ -214,7 +216,8 @@ services:
       retries: 5
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.sticker-award.rule=PathPrefix(`/api/award`)"
+      - "traefik.http.routers.sticker-award.rule=PathPrefix(`/api/awards`)"
+      - "traefik.http.routers.sticker-award-sticker.rule=PathPrefix(`/api/sticker`)"
       - "traefik.http.services.sticker-award.loadbalancer.server.port=8080"
 
   user-management:

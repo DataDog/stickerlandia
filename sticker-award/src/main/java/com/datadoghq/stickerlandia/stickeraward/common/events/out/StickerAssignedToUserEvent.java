@@ -32,7 +32,7 @@ public class StickerAssignedToUserEvent extends DomainEvent {
     public static StickerAssignedToUserEvent fromAssignment(StickerAssignment assignment) {
         StickerAssignedToUserEvent event = new StickerAssignedToUserEvent();
         event.setAccountId(assignment.getUserId());
-        event.setStickerId(assignment.getSticker().getStickerId());
+        event.setStickerId(assignment.getStickerId());
         event.setAssignedAt(assignment.getAssignedAt());
         return event;
     }

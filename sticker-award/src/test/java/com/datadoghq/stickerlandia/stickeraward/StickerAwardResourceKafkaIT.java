@@ -51,7 +51,7 @@ public class StickerAwardResourceKafkaIT {
         given().contentType(MediaType.APPLICATION_JSON)
                 .body(command)
                 .when()
-                .post("/api/award/v1/users/" + TEST_USER_ID + "/stickers")
+                .post("/api/awards/v1/assignments/" + TEST_USER_ID + "")
                 .then()
                 .statusCode(Status.CREATED.getStatusCode())
                 .body("userId", is(TEST_USER_ID))
@@ -63,7 +63,7 @@ public class StickerAwardResourceKafkaIT {
     public void testGetUserStickers() {
         // Verify the user has the sticker
         given().when()
-                .get("/api/award/v1/users/" + TEST_USER_ID + "/stickers")
+                .get("/api/awards/v1/assignments/" + TEST_USER_ID + "")
                 .then()
                 .statusCode(Status.OK.getStatusCode())
                 .body("userId", is(TEST_USER_ID))
@@ -76,7 +76,7 @@ public class StickerAwardResourceKafkaIT {
     public void testRemoveStickerFromUser() {
         // Call the API to remove the sticker
         given().when()
-                .delete("/api/award/v1/users/" + TEST_USER_ID + "/stickers/" + TEST_STICKER_ID)
+                .delete("/api/awards/v1/assignments/" + TEST_USER_ID + "/" + TEST_STICKER_ID)
                 .then()
                 .statusCode(Status.OK.getStatusCode())
                 .body("userId", is(TEST_USER_ID))
@@ -84,7 +84,7 @@ public class StickerAwardResourceKafkaIT {
 
         // Verify the user no longer has the sticker
         given().when()
-                .get("/api/award/v1/users/" + TEST_USER_ID + "/stickers")
+                .get("/api/awards/v1/assignments/" + TEST_USER_ID + "")
                 .then()
                 .statusCode(Status.OK.getStatusCode())
                 .body("userId", is(TEST_USER_ID))

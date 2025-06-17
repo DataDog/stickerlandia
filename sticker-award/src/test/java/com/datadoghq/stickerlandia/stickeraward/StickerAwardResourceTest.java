@@ -69,7 +69,8 @@ class StickerAwardResourceTest {
         StickerAssignment assignment =
                 StickerAssignment.findActiveByUserAndSticker(TEST_USER_ID, EXISTING_STICKER_ID);
         if (assignment == null) {
-            assignment = new StickerAssignment(TEST_USER_ID, sticker1, "For test setup");
+            assignment =
+                    new StickerAssignment(TEST_USER_ID, sticker1.getStickerId(), "For test setup");
             assignment.persist();
         }
     }
@@ -77,7 +78,7 @@ class StickerAwardResourceTest {
     @Test
     void testGetUserStickers() {
         given().when()
-                .get("/api/award/v1/users/{userId}/stickers", TEST_USER_ID)
+                .get("/api/awards/v1/assignments/{userId}", TEST_USER_ID)
                 .then()
                 .statusCode(200)
                 .contentType(ContentType.JSON)
@@ -90,7 +91,7 @@ class StickerAwardResourceTest {
     void testGetUserStickersForUserWithNoStickers() {
         String unknownUserId = "unknown-user";
         given().when()
-                .get("/api/award/v1/users/{userId}/stickers", unknownUserId)
+                .get("/api/awards/v1/assignments/{userId}", unknownUserId)
                 .then()
                 .statusCode(200)
                 .contentType(ContentType.JSON)
@@ -111,7 +112,7 @@ class StickerAwardResourceTest {
         given().contentType(ContentType.JSON)
                 .body(command)
                 .when()
-                .post("/api/award/v1/users/{userId}/stickers", userId)
+                .post("/api/awards/v1/assignments/{userId}", userId)
                 .then()
                 .statusCode(201)
                 .contentType(ContentType.JSON)
@@ -121,7 +122,7 @@ class StickerAwardResourceTest {
 
         // Verify the sticker is now assigned by getting user stickers
         given().when()
-                .get("/api/award/v1/users/{userId}/stickers", userId)
+                .get("/api/awards/v1/assignments/{userId}", userId)
                 .then()
                 .statusCode(200)
                 .contentType(ContentType.JSON)
@@ -141,7 +142,7 @@ class StickerAwardResourceTest {
         given().contentType(ContentType.JSON)
                 .body(command)
                 .when()
-                .post("/api/award/v1/users/{userId}/stickers", userId)
+                .post("/api/awards/v1/assignments/{userId}", userId)
                 .then()
                 .statusCode(400);
     }
@@ -160,7 +161,7 @@ class StickerAwardResourceTest {
         given().contentType(ContentType.JSON)
                 .body(command)
                 .when()
-                .post("/api/award/v1/users/{userId}/stickers", userId)
+                .post("/api/awards/v1/assignments/{userId}", userId)
                 .then()
                 .statusCode(201);
 
@@ -168,7 +169,7 @@ class StickerAwardResourceTest {
         given().contentType(ContentType.JSON)
                 .body(command)
                 .when()
-                .post("/api/award/v1/users/{userId}/stickers", userId)
+                .post("/api/awards/v1/assignments/{userId}", userId)
                 .then()
                 .statusCode(409);
     }
@@ -187,13 +188,13 @@ class StickerAwardResourceTest {
         given().contentType(ContentType.JSON)
                 .body(command)
                 .when()
-                .post("/api/award/v1/users/{userId}/stickers", userId)
+                .post("/api/awards/v1/assignments/{userId}", userId)
                 .then()
                 .statusCode(201);
 
         // Remove the sticker
         given().when()
-                .delete("/api/award/v1/users/{userId}/stickers/{stickerId}", userId, stickerId)
+                .delete("/api/awards/v1/assignments/{userId}/{stickerId}", userId, stickerId)
                 .then()
                 .statusCode(200)
                 .contentType(ContentType.JSON)
@@ -203,7 +204,7 @@ class StickerAwardResourceTest {
 
         // Verify the sticker is no longer assigned
         given().when()
-                .get("/api/award/v1/users/{userId}/stickers", userId)
+                .get("/api/awards/v1/assignments/{userId}", userId)
                 .then()
                 .statusCode(200)
                 .contentType(ContentType.JSON)
@@ -216,7 +217,7 @@ class StickerAwardResourceTest {
         String stickerId = "sticker-001";
 
         given().when()
-                .delete("/api/award/v1/users/{userId}/stickers/{stickerId}", userId, stickerId)
+                .delete("/api/awards/v1/assignments/{userId}/{stickerId}", userId, stickerId)
                 .then()
                 .statusCode(404);
     }

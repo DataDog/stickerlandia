@@ -24,7 +24,7 @@ import java.time.Instant;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 
 /** REST resource for managing stickers. */
-@Path("/stickers")
+@Path("/api/stickers/v1")
 public class StickerResource {
 
     @Inject StickerRepository stickerRepository;
