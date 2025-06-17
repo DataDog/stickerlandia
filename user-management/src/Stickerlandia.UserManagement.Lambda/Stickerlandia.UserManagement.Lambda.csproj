@@ -10,6 +10,8 @@
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
         <!-- Generate ready to run images during publishing to improvement cold starts. -->
         <PublishReadyToRun>true</PublishReadyToRun>
+        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+        <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="Amazon.Lambda.Core" Version="2.6.0" />
@@ -26,9 +28,6 @@
       dependencies like Microsoft.Extensions.DependencyInjection. The Microsoft.AspNetCore.App
       which is available in the Managed .NET Lambda runtime already includes those assemblies.
     -->
-    <ItemGroup>
-        <FrameworkReference Include="Microsoft.AspNetCore.App"/>
-    </ItemGroup>
     <ItemGroup>
       <ProjectReference Include="..\Stickerlandia.UserManagement.Core\Stickerlandia.UserManagement.Core.csproj" />
       <ProjectReference Include="..\Stickerlandia.UserManagement.ServiceDefaults\Stickerlandia.UserManagement.ServiceDefaults.csproj" />

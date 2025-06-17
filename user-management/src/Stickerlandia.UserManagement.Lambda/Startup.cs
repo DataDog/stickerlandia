@@ -1,3 +1,4 @@
+using Amazon.Lambda.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -6,6 +7,8 @@ using Serilog.Events;
 using Serilog.Extensions.Logging;
 using Serilog.Formatting.Json;
 using Stickerlandia.UserManagement.ServiceDefaults;
+
+[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 
 namespace Stickerlandia.UserManagement.Lambda;
 

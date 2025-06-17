@@ -18,6 +18,7 @@ public static class TestConstants
             "AZURE" =>
                 "Endpoint=sb://localhost:60001;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;",
             "AGNOSTIC" => "localhost:53477",
+            "AWS" => "", // SQS does not require a connection string in this context
             _ => throw new NotSupportedException($"Unsupported messaging provider: {hostOn}")
         };
     }
