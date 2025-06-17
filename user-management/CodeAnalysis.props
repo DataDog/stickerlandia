@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup Condition=" '$(MSBuildProjectExtension)' == '.csproj' ">
+        <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    </PropertyGroup>
+    <ItemGroup Condition=" '$(MSBuildProjectExtension)' == '.csproj' ">
+        <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0" />
+    </ItemGroup>
+    <PropertyGroup Condition=" '$(MSBuildProjectExtension)' == '.csproj' ">
+        <AnalysisMode>All</AnalysisMode>
+        <AnalysisLevel>9.0</AnalysisLevel>
+        <_SkipUpgradeNetAnalyzersNuGetWarning>false</_SkipUpgradeNetAnalyzersNuGetWarning>
+        <CodeAnalysisTreatWarningsAsErrors>true</CodeAnalysisTreatWarningsAsErrors>
+        <!-- CA2007 is calling .ConfigureAwait(false), which isn't required for non-libraries -->
+        <NoWarn>$(NoWarn);CA2007</NoWarn>
+    </PropertyGroup>
+</Project>
