@@ -15,6 +15,6 @@ public class RemoveSwaggerDefinitionsFilter : IDocumentFilter
     {
         swaggerDoc.Components.Schemas.Remove(nameof(Claim));
         swaggerDoc.Components.Schemas.Remove(nameof(ClaimsIdentity));
-        swaggerDoc.Components.Schemas.Remove(nameof(ClaimsIdentity));
+        swaggerDoc.Components.Schemas.Remove(nameof(ClaimsPrincipal));
     }
 }
