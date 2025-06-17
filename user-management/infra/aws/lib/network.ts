@@ -1,7 +1,5 @@
 import { SubnetType, Vpc } from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
-import { SharedProps } from "./constructs/shared-props";
-
 export interface NetworkProps {
     networkName: string;
 }
