@@ -2,29 +2,25 @@ package com.datadoghq.stickerlandia.stickeraward.common.events.out;
 
 import com.datadoghq.stickerlandia.stickeraward.award.entity.StickerAssignment;
 import com.datadoghq.stickerlandia.stickeraward.common.events.DomainEvent;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * Event published when a sticker is removed from a user. Published to the
+ * CloudEvent published when a sticker is removed from a user. Published to the
  * 'stickers.stickerRemovedFromUser.v1' topic.
  */
 public class StickerRemovedFromUserEvent extends DomainEvent {
 
-    private static final String EVENT_NAME = "StickerRemovedFromUser";
-    private static final String EVENT_VERSION = "v1";
-
-    private String accountId;
-    private String stickerId;
-    private Instant removedAt;
+    private static final String EVENT_TYPE = "com.datadoghq.stickerlandia.sticker.removed.v1";
+    private static final String EVENT_SOURCE = "/sticker-award-service";
 
     /** Default constructor for serialization frameworks. */
     public StickerRemovedFromUserEvent() {
-        super(EVENT_NAME, EVENT_VERSION);
+        super(EVENT_TYPE, EVENT_SOURCE);
     }
 
     /**
-     * Create a new event from a sticker assignment entity.
+     * Create a new CloudEvent from a sticker assignment entity.
      *
      * @param assignment The sticker assignment entity with removed status
      * @return A new event instance
@@ -36,41 +32,15 @@ public class StickerRemovedFromUserEvent extends DomainEvent {
         }
 
         StickerRemovedFromUserEvent event = new StickerRemovedFromUserEvent();
-        event.setAccountId(assignment.getUserId());
-        event.setStickerId(assignment.getStickerId());
-        event.setRemovedAt(assignment.getRemovedAt());
+        event.setSubject("user/" + assignment.getUserId() 
+                + "/sticker/" + assignment.getStickerId());
+        
+        Map<String, Object> eventData = new HashMap<>();
+        eventData.put("accountId", assignment.getUserId());
+        eventData.put("stickerId", assignment.getStickerId());
+        eventData.put("removedAt", assignment.getRemovedAt());
+        
+        event.setData(eventData);
         return event;
-    }
-
-    /** The ID of the user from whom the sticker was removed. */
-    @JsonProperty("userId")
-    public String getUserId() {
-        return accountId;
-    }
-
-    public void setAccountId(String accountId) {
-        this.accountId = accountId;
-    }
-
-    public String getAccountId() {
-        return accountId;
-    }
-
-    /** The ID of the sticker that was removed. */
-    @JsonProperty("stickerId")
-    public String getStickerId() {
-        return stickerId;
-    }
-
-    public void setStickerId(String stickerId) {
-        this.stickerId = stickerId;
-    }
-
-    public Instant getRemovedAt() {
-        return removedAt;
-    }
-
-    public void setRemovedAt(Instant removedAt) {
-        this.removedAt = removedAt;
     }
 }

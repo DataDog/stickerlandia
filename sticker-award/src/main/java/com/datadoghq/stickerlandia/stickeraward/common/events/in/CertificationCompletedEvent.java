@@ -1,38 +1,59 @@
 package com.datadoghq.stickerlandia.stickeraward.common.events.in;
 
+import com.datadoghq.stickerlandia.stickeraward.common.events.DomainEvent;
 import java.time.Instant;
+import java.util.Map;
 
 /**
- * Event received when a certification is completed. Subscribed from the
+ * CloudEvent received when a certification is completed. Subscribed from the
  * 'certifications.certificationCompleted.v1' topic.
  */
-public class CertificationCompletedEvent {
+public class CertificationCompletedEvent extends DomainEvent {
 
-    private String accountId;
-    private String certificationId;
-    private Instant completedAt;
+    private static final String EVENT_TYPE =
+            "com.datadoghq.stickerlandia.certification.completed.v1";
+    private static final String EVENT_SOURCE = "/certification-service";
 
+    /** Default constructor for serialization frameworks. */
+    public CertificationCompletedEvent() {
+        super(EVENT_TYPE, EVENT_SOURCE);
+    }
+
+    /**
+     * Get the account ID from the event data.
+     *
+     * @return The account ID
+     */
     public String getAccountId() {
-        return accountId;
+        Map<String, Object> data = (Map<String, Object>) getData();
+        return data != null ? (String) data.get("accountId") : null;
     }
 
-    public void setAccountId(String accountId) {
-        this.accountId = accountId;
-    }
-
+    /**
+     * Get the certification ID from the event data.
+     *
+     * @return The certification ID
+     */
     public String getCertificationId() {
-        return certificationId;
+        Map<String, Object> data = (Map<String, Object>) getData();
+        return data != null ? (String) data.get("certificationId") : null;
     }
 
-    public void setCertificationId(String certificationId) {
-        this.certificationId = certificationId;
-    }
-
+    /**
+     * Get the completion timestamp from the event data.
+     *
+     * @return The completion timestamp
+     */
     public Instant getCompletedAt() {
-        return completedAt;
-    }
-
-    public void setCompletedAt(Instant completedAt) {
-        this.completedAt = completedAt;
+        Map<String, Object> data = (Map<String, Object>) getData();
+        if (data != null && data.get("completedAt") != null) {
+            Object completedAt = data.get("completedAt");
+            if (completedAt instanceof String) {
+                return Instant.parse((String) completedAt);
+            } else if (completedAt instanceof Instant) {
+                return (Instant) completedAt;
+            }
+        }
+        return null;
     }
 }

@@ -40,8 +40,8 @@ public class StickerAwardEventPublisher {
                     StickerAssignedToUserEvent.fromAssignment(assignment);
             log.info(
                     "Publishing sticker assigned event: userId={}, stickerId={}",
-                    event.getAccountId(),
-                    event.getStickerId());
+                    assignment.getUserId(),
+                    assignment.getStickerId());
             stickerAssignedEmitter.send(event);
 
             // Also publish sticker claimed event for the user management service
@@ -70,8 +70,8 @@ public class StickerAwardEventPublisher {
                     StickerRemovedFromUserEvent.fromAssignment(assignment);
             log.info(
                     "Publishing sticker removed event: userId={}, stickerId={}",
-                    event.getAccountId(),
-                    event.getStickerId());
+                    assignment.getUserId(),
+                    assignment.getStickerId());
             stickerRemovedEmitter.send(event);
         } catch (Exception e) {
             log.error("Error publishing sticker removed event", e);
@@ -88,8 +88,8 @@ public class StickerAwardEventPublisher {
             StickerClaimedEvent event = StickerClaimedEvent.fromAssignment(assignment);
             log.info(
                     "Publishing sticker claimed event: userId={}, stickerId={}",
-                    event.getAccountId(),
-                    event.getStickerId());
+                    assignment.getUserId(),
+                    assignment.getStickerId());
             stickerClaimedEmitter.send(event);
         } catch (Exception e) {
             log.error("Error publishing sticker claimed event", e);

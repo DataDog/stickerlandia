@@ -17,6 +17,7 @@ import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import java.time.Instant;
+import java.util.Map;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -63,17 +64,19 @@ public class StickerAwardEventPublisherTest {
         verify(stickerAssignedEmitter, times(1)).send(assignedCaptor.capture());
 
         StickerAssignedToUserEvent assignedEvent = assignedCaptor.getValue();
-        assertEquals("user-123", assignedEvent.getAccountId());
-        assertEquals("sticker-123", assignedEvent.getStickerId());
-        assertEquals(assignment.getAssignedAt(), assignedEvent.getAssignedAt());
+        Map<String, Object> assignedData = (Map<String, Object>) assignedEvent.getData();
+        assertEquals("user-123", assignedData.get("accountId"));
+        assertEquals("sticker-123", assignedData.get("stickerId"));
+        assertEquals(assignment.getAssignedAt(), assignedData.get("assignedAt"));
 
         // Verify claimed event is also published
         ArgumentCaptor<StickerClaimedEvent> claimedCaptor = forClass(StickerClaimedEvent.class);
         verify(stickerClaimedEmitter, times(1)).send(claimedCaptor.capture());
 
         StickerClaimedEvent claimedEvent = claimedCaptor.getValue();
-        assertEquals("user-123", claimedEvent.getAccountId());
-        assertEquals("sticker-123", claimedEvent.getStickerId());
+        Map<String, Object> claimedData = (Map<String, Object>) claimedEvent.getData();
+        assertEquals("user-123", claimedData.get("accountId"));
+        assertEquals("sticker-123", claimedData.get("stickerId"));
     }
 
     @Test
@@ -100,9 +103,10 @@ public class StickerAwardEventPublisherTest {
         verify(stickerRemovedEmitter, times(1)).send(removedCaptor.capture());
 
         StickerRemovedFromUserEvent removedEvent = removedCaptor.getValue();
-        assertEquals("user-456", removedEvent.getAccountId());
-        assertEquals("sticker-456", removedEvent.getStickerId());
-        assertEquals(removedAt, removedEvent.getRemovedAt());
+        Map<String, Object> removedData = (Map<String, Object>) removedEvent.getData();
+        assertEquals("user-456", removedData.get("accountId"));
+        assertEquals("sticker-456", removedData.get("stickerId"));
+        assertEquals(removedAt, removedData.get("removedAt"));
     }
 
     @Test
