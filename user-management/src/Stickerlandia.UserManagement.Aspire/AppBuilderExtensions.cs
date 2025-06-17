@@ -2,6 +2,8 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
+#pragma warning disable CA2012 // Accessing ValueTasks directly is ok in the Aspire project
+
 using System.Text.Json;
 using Aspire.Hosting.Azure;
 using Azure.Messaging.ServiceBus;
@@ -11,7 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Stickerlandia.UserManagement.Aspire;
 
-public static class AppBuilderExtensions
+internal static class AppBuilderExtensions
 {
     private const string TEST_COMMAND_ACCOUNT_ID = "ii2ieniu23hrri23";
     private const string TEST_COMMAND_STICKER_ID = "dnqwiufb2f2";
@@ -20,6 +22,10 @@ public static class AppBuilderExtensions
         this IDistributedApplicationBuilder builder,
         InfrastructureResources resources)
     {
+        ArgumentNullException.ThrowIfNull(resources.MessagingResource, nameof(resources.MessagingResource));
+        ArgumentNullException.ThrowIfNull(resources.DatabaseResource, nameof(resources.DatabaseResource));
+        
+        // Add the API project to the distributed application builder
         var application = builder.AddProject<Projects.Stickerlandia_UserManagement_Api>("api")
             .WithReference(resources.MessagingResource)
             .WithEnvironment("ConnectionStrings__messaging", resources.MessagingResource)
@@ -117,19 +123,13 @@ public static class AppBuilderExtensions
             var config = c.ServiceProvider.GetRequiredService<ProducerConfig>();
             using var producer = new ProducerBuilder<string, string>(config).Build();
 
-            producer.Produce("users.stickerClaimed.v1", new Message<string, string>
+            await producer.ProduceAsync("users.stickerClaimed.v1", new Message<string, string>
                 {
                     Key = "", Value = JsonSerializer.Serialize(new
                     {
                         accountId = TEST_COMMAND_ACCOUNT_ID,
                         stickerId = TEST_COMMAND_STICKER_ID
                     })
-                },
-                (deliveryReport) =>
-                {
-                    if (deliveryReport.Error.Code != ErrorCode.NoError)
-                    {
-                    }
                 });
 
             producer.Flush(TimeSpan.FromSeconds(10));
@@ -205,6 +205,9 @@ public static class AppBuilderExtensions
         this IDistributedApplicationBuilder builder,
         InfrastructureResources resources)
     {
+        ArgumentNullException.ThrowIfNull(resources.MessagingResource, nameof(resources.MessagingResource));
+        ArgumentNullException.ThrowIfNull(resources.DatabaseResource, nameof(resources.DatabaseResource));
+        
         var application = builder.AddProject<Projects.Stickerlandia_UserManagement_Worker>("worker")
             .WithReference(resources.MessagingResource)
             .WithEnvironment("ConnectionStrings__messaging", resources.MessagingResource)
@@ -222,6 +225,9 @@ public static class AppBuilderExtensions
         this IDistributedApplicationBuilder builder,
         InfrastructureResources resources)
     {
+        ArgumentNullException.ThrowIfNull(resources.MessagingResource, nameof(resources.MessagingResource));
+        ArgumentNullException.ThrowIfNull(resources.DatabaseResource, nameof(resources.DatabaseResource));
+        
         var storage = builder.AddAzureStorage("storage")
             .RunAsEmulator();
         

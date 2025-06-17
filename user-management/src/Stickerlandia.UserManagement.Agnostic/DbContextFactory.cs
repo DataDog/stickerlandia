@@ -1,8 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Stickerlandia.UserManagement.Core;
-using Stickerlandia.UserManagement.Core.Outbox;
 
 namespace Stickerlandia.UserManagement.Agnostic;
 

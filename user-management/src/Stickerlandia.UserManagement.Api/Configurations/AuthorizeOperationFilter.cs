@@ -2,6 +2,9 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
+// This is a class that is not intended to be instantiated directly, so we suppress the warning.
+#pragma warning disable CA1812
+
 using System.Net;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.OpenApi.Models;
@@ -9,22 +12,26 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Stickerlandia.UserManagement.Api.Configurations;
 
-internal class AuthorizeOperationFilter
+internal sealed class AuthorizeOperationFilter
     : IOperationFilter
 {
+    internal static readonly string[] item = new[] { "OAuth2" };
+
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
     {
-        var authAttributes = context.MethodInfo.DeclaringType.GetCustomAttributes(true)
+        ArgumentNullException.ThrowIfNull(context, nameof(context.MethodInfo.DeclaringType));
+        var authAttributes = context.MethodInfo.DeclaringType!.GetCustomAttributes(true)
             .Union(context.MethodInfo.GetCustomAttributes(true))
-            .OfType<AuthorizeAttribute>();
+            .OfType<AuthorizeAttribute>()
+            .ToList();
 
-        if (authAttributes.Any())
+        if (authAttributes.Count > 0)
         {
             operation.Responses.Add(StatusCodes.Status401Unauthorized.ToString(), new OpenApiResponse { Description = nameof(HttpStatusCode.Unauthorized) });
             operation.Responses.Add(StatusCodes.Status403Forbidden.ToString(), new OpenApiResponse { Description = nameof(HttpStatusCode.Forbidden) });
         }
 
-        if (authAttributes.Any())
+        if (authAttributes.Count > 0)
         {
             operation.Security = new List<OpenApiSecurityRequirement>();
 
@@ -36,7 +43,7 @@ internal class AuthorizeOperationFilter
 
             operation.Security.Add(new OpenApiSecurityRequirement()
             {
-                [oauth2SecurityScheme] = new[] { "OAuth2" }
+                [oauth2SecurityScheme] = item
             });
         }
     }

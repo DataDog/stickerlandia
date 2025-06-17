@@ -2,11 +2,13 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
+#pragma warning disable CA1812 // Used for JSON manipulation
+
 using System.Text.Json.Serialization;
 
 namespace Stickerlandia.UserManagement.IntegrationTest.ViewModels;
 
-public record UserAccountDTO
+internal sealed record UserAccountDTO
 {
     [JsonPropertyName("accountId")]
     public string AccountId { get; set; } = "";

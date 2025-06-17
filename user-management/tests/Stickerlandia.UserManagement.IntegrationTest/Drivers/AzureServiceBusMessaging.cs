@@ -8,7 +8,7 @@ using Azure.Messaging.ServiceBus;
 
 namespace Stickerlandia.UserManagement.IntegrationTest.Drivers;
 
-public class AzureServiceBusMessaging(string connectionString) : IMessaging, IAsyncDisposable
+internal sealed class AzureServiceBusMessaging(string connectionString) : IMessaging, IAsyncDisposable
 {
     private readonly ServiceBusClient _client = new(connectionString);
 

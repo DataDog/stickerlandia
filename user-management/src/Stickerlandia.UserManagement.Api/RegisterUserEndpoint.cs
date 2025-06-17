@@ -4,7 +4,7 @@ using Stickerlandia.UserManagement.Core.RegisterUser;
 
 namespace Stickerlandia.UserManagement.Api;
 
-public static class RegisterUserEndpoint
+internal static class RegisterUserEndpoint
 {
     public static async Task<ApiResponse<RegisterResponse>> HandleAsync(
         [FromServices] RegisterCommandHandler registerCommandHandler,

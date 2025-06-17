@@ -20,9 +20,8 @@ public record AccountId
         // for use as an identifier. Or if an already hashed Id is passed in, it will be used as is.
         if (UserAccount.IsValidEmail(value))
         {
-            using var sha256 = SHA256.Create();
-            var emailBytes = Encoding.UTF8.GetBytes(value.ToLowerInvariant());
-            var hashBytes = sha256.ComputeHash(emailBytes);
+            var emailBytes = Encoding.UTF8.GetBytes(value.ToUpperInvariant());
+            var hashBytes = SHA256.HashData(emailBytes);
 
             // Convert to hex string
             Value = Convert.ToHexString(hashBytes);
@@ -54,9 +53,8 @@ public class UserAccount
     {
         _domainEvents = new List<DomainEvent>();
     }
-
-    // Async version for better performance in web contexts
-    public static async Task<UserAccount> Register(string emailAddress, string password, string firstName,
+    
+    public static UserAccount Register(string emailAddress, string password, string firstName,
         string lastName, AccountType accountType)
     {
         if (!IsValidEmail(emailAddress)) throw new InvalidUserException("Invalid email address");
@@ -101,7 +99,7 @@ public class UserAccount
         };
     }
 
-    public AccountId Id { get; private set; }
+    public AccountId? Id { get; private set; }
 
     public string EmailAddress { get; private set; } = string.Empty;
 
@@ -123,7 +121,7 @@ public class UserAccount
 
     public int ClaimedStickerCount { get; private set; }
 
-    internal bool Changed { get; private set; } = false;
+    internal bool Changed { get; private set; }
 
     public string AsAuthenticatedRole()
     {

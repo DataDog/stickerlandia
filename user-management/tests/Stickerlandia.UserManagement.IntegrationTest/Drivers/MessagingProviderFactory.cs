@@ -4,7 +4,7 @@
 
 namespace Stickerlandia.UserManagement.IntegrationTest.Drivers;
 
-public static class MessagingProviderFactory
+internal static class MessagingProviderFactory
 {
     public static IMessaging From(string hostOn, string? connectionString)
     {

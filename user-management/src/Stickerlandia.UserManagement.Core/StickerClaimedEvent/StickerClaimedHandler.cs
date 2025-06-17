@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace Stickerlandia.UserManagement.Core.StickerClaimedEvent;
 
-public class StickerClaimedEventHandler(IUsers users)
+public class StickerClaimedHandler(IUsers users)
 {
     public async Task Handle(StickerClaimedEventV1 eventV1)
     {

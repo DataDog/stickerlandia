@@ -2,6 +2,9 @@ using Amazon.Lambda.Core;
 using Amazon.Lambda.Annotations;
 using Amazon.Lambda.Annotations.APIGateway;
 
+// Static analysis warnings are disabled for this file, it is temporary
+#pragma warning disable CA1822
+
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 
 namespace Stickerlandia.UserManagement.Lambda;

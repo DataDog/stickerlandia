@@ -7,7 +7,7 @@ using Confluent.Kafka;
 
 namespace Stickerlandia.UserManagement.IntegrationTest.Drivers;
 
-public class KafkaMessaging : IMessaging, IAsyncDisposable
+internal sealed class KafkaMessaging : IMessaging, IAsyncDisposable
 {
     private readonly ProducerConfig config;
     public KafkaMessaging(string connectionString)
@@ -21,28 +21,17 @@ public class KafkaMessaging : IMessaging, IAsyncDisposable
             Acks             = Acks.All
         };
     }
-    public Task SendMessageAsync(string queueName, object message)
+    public async Task SendMessageAsync(string queueName, object message)
     {
         using var producer = new ProducerBuilder<string, string>(config).Build();
             
-        producer.Produce(queueName, new Message<string, string> { Key = "", Value = JsonSerializer.Serialize(message) },
-            (deliveryReport) =>
-            {
-                if (deliveryReport.Error.Code != ErrorCode.NoError) {
-                    throw new Exception($"Error publishing message to Kafka: {deliveryReport.Error.Reason}");
-                }
-                else {
-                    Console.WriteLine($"Message sent to Kafka topic {queueName} with offset {deliveryReport.Offset}");
-                }
-            });
+        await producer.ProduceAsync(queueName, new Message<string, string> { Key = "", Value = JsonSerializer.Serialize(message) });
                 
         producer.Flush(TimeSpan.FromSeconds(10));
-
-        return Task.CompletedTask;
     }
 
-    public async ValueTask DisposeAsync()
+    public ValueTask DisposeAsync()
     {
-        // Nothing to dispose
+        return ValueTask.CompletedTask;
     }
 }

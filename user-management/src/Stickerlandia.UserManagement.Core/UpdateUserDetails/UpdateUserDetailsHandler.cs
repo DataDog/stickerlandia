@@ -10,6 +10,8 @@ public class UpdateUserDetailsHandler(IUsers users)
 {
     public async Task Handle(UpdateUserDetailsRequest command)
     {
+        ArgumentNullException.ThrowIfNull(command);
+        
         try
         {
             if (!command.IsValid())

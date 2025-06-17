@@ -2,6 +2,8 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
+// This is a class that is not intended to be instantiated directly, so we suppress the warning.
+#pragma warning disable CA1812
 
 using System.Security.Claims;
 using Microsoft.OpenApi.Models;
@@ -9,7 +11,7 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Stickerlandia.UserManagement.Api.Configurations;
 
-public class RemoveSwaggerDefinitionsFilter : IDocumentFilter
+internal sealed class RemoveSwaggerDefinitionsFilter : IDocumentFilter
 {
     public void Apply(OpenApiDocument swaggerDoc, DocumentFilterContext context)
     {

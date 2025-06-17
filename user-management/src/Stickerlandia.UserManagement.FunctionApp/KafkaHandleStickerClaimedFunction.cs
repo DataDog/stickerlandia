@@ -2,6 +2,9 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
+// This is a class that is not intended to be instantiated directly, so we suppress the warning.
+#pragma warning disable CA1812
+
 using System.Text.Json;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
@@ -10,9 +13,9 @@ using Stickerlandia.UserManagement.Core.StickerClaimedEvent;
 
 namespace Stickerlandia.UserManagement.FunctionApp;
 
-public class KafkaHandleStickerClaimedFunction(
+internal sealed class KafkaHandleStickerClaimedFunction(
     ILogger<KafkaHandleStickerClaimedFunction> logger,
-    StickerClaimedEventHandler stickerClaimedHandler)
+    StickerClaimedHandler stickerClaimedHandler)
 {
     [Function(nameof(KafkaHandleStickerClaimedFunction))]
     public async Task Run(
@@ -56,6 +59,7 @@ public class KafkaHandleStickerClaimedFunction(
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error processing sticker claimed event");
+                throw;
             }
         }
     }

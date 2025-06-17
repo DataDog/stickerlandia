@@ -12,7 +12,7 @@ public class AccountTests(ITestOutputHelper testOutputHelper, TestSetupFixture t
         testSetupFixture.Messaging);
 
     [Fact]
-    public async Task WhenStickerIsClaimed_ThenAUsersStickerCountShouldIncrement()
+    public async Task WhenStickerIsClaimedThenAUsersStickerCountShouldIncrement()
     {
         // Arrange
         var emailAddress = $"{Guid.NewGuid()}@test.com";
@@ -21,11 +21,11 @@ public class AccountTests(ITestOutputHelper testOutputHelper, TestSetupFixture t
         // Act
         var registerResult = await _driver.RegisterUser(emailAddress, password);
 
-        if (registerResult is null) throw new Exception("Registration failed");
+        if (registerResult is null) throw new ArgumentException("Registration failed");
 
         var loginResponse = await _driver.Login(emailAddress, password);
 
-        if (loginResponse is null) throw new Exception("Login response is null");
+        if (loginResponse is null) throw new ArgumentException("Login response is null");
         await _driver.InjectStickerClaimedMessage(registerResult.AccountId, Guid.NewGuid().ToString());
 
         await Task.Delay(TimeSpan.FromSeconds(5));
@@ -40,7 +40,7 @@ public class AccountTests(ITestOutputHelper testOutputHelper, TestSetupFixture t
             var user = await _driver.GetUserAccount(loginResponse.AuthToken);
 
             // Expect the claimed sticker count to be 1, break after completed.
-            if (user.ClaimedStickerCount == 1)
+            if (user!.ClaimedStickerCount == 1)
             {
                 break;
             }
@@ -54,7 +54,7 @@ public class AccountTests(ITestOutputHelper testOutputHelper, TestSetupFixture t
     }
 
     [Fact]
-    public async Task WhenAUserRegisters_ThenTheyShouldBeAbleToLogin()
+    public async Task WhenAUserRegistersThenTheyShouldBeAbleToLogin()
     {
         try
         {
@@ -83,7 +83,7 @@ public class AccountTests(ITestOutputHelper testOutputHelper, TestSetupFixture t
     }
 
     [Fact]
-    public async Task WhenAUserRegisters_TheyShouldBeAbleToUpdateTheirDetails()
+    public async Task WhenAUserRegistersTheyShouldBeAbleToUpdateTheirDetails()
     {
         // Arrange
         var emailAddress = $"{Guid.NewGuid()}@test.com";
@@ -98,12 +98,12 @@ public class AccountTests(ITestOutputHelper testOutputHelper, TestSetupFixture t
         var userDetails = await _driver.GetUserAccount(loginResponse!.AuthToken);
 
         // Assert
-        userDetails.FirstName.Should().Be("James");
-        userDetails.LastName.Should().Be("Eastham");
+        userDetails!.FirstName.Should().Be("James");
+        userDetails!.LastName.Should().Be("Eastham");
     }
 
     [Fact]
-    public async Task WhenAUserRegisters_ThenCanRetrieveTheirAccountDetails()
+    public async Task WhenAUserRegistersThenCanRetrieveTheirAccountDetails()
     {
         // Arrange
         var emailAddress = $"{Guid.NewGuid()}@test.com";
@@ -122,7 +122,7 @@ public class AccountTests(ITestOutputHelper testOutputHelper, TestSetupFixture t
     }
 
     [Fact]
-    public async Task WhenAUserLogsInWithAnInvalidPassword_ThenLoginFails()
+    public async Task WhenAUserLogsInWithAnInvalidPasswordThenLoginFails()
     {
         // Arrange
         var emailAddress = $"{Guid.NewGuid()}@test.com";
@@ -139,7 +139,7 @@ public class AccountTests(ITestOutputHelper testOutputHelper, TestSetupFixture t
     }
 
     [Fact]
-    public async Task WhenAUserLogsInWithAnUnregisteredEmail_LoginShouldFail()
+    public async Task WhenAUserLogsInWithAnUnregisteredEmailLoginShouldFail()
     {
         // Arrange
         var unregisteredEmail = $"{Guid.NewGuid()}@test.com";
@@ -157,7 +157,7 @@ public class AccountTests(ITestOutputHelper testOutputHelper, TestSetupFixture t
     [InlineData("@missingusername.com")]
     [InlineData("missing@tld")]
     [InlineData("")]
-    public async Task WhenAUserUsesAnInvalidEmail_RegistrationShouldFail(string invalidEmail)
+    public async Task WhenAUserUsesAnInvalidEmailRegistrationShouldFail(string invalidEmail)
     {
         // Arrange
         var password = "ValidPassword123!";
@@ -176,7 +176,7 @@ public class AccountTests(ITestOutputHelper testOutputHelper, TestSetupFixture t
     [InlineData("NoSpecialChars123")] // No special chars
     [InlineData("NoNumbers!")] // No numbers
     [InlineData("")] // Empty
-    public async Task WhenAUserRegistersWithAnInvalidPassword_RegistrationShouldFail(string invalidPassword)
+    public async Task WhenAUserRegistersWithAnInvalidPasswordRegistrationShouldFail(string invalidPassword)
     {
         // Arrange
         var emailAddress = $"{Guid.NewGuid()}@test.com";
@@ -189,7 +189,7 @@ public class AccountTests(ITestOutputHelper testOutputHelper, TestSetupFixture t
     }
 
     [Fact]
-    public async Task WhenAUserUsesAnExtremelyLongEmailAddress_RegistrationShouldFail()
+    public async Task WhenAUserUsesAnExtremelyLongEmailAddressRegistrationShouldFail()
     {
         // Arrange
         var longLocalPart = new string('a', 300);
@@ -208,7 +208,7 @@ public class AccountTests(ITestOutputHelper testOutputHelper, TestSetupFixture t
     [InlineData("test.email")] // Dots in local part
     [InlineData("email-with-hyphen")] // Hyphens
     [InlineData("email_with_underscore")] // Underscores
-    public async Task WhenAUserUsesASpecialEmailFormat_RegistrationShouldBeSuccessful(string email)
+    public async Task WhenAUserUsesASpecialEmailFormatRegistrationShouldBeSuccessful(string email)
     {
         var emailUnderTest = $"{email}{Guid.NewGuid()}@example.com";
         // Arrange

@@ -10,7 +10,7 @@ using SecuritySchemeType = Microsoft.OpenApi.Models.SecuritySchemeType;
 
 namespace Stickerlandia.UserManagement.Api.Configurations;
 
-public static class DocumentationConfig
+internal static class DocumentationConfig
 {
     public static IHostApplicationBuilder AddDocumentationEndpoints(this IHostApplicationBuilder builder)
     {

@@ -9,6 +9,7 @@ using Confluent.Kafka;
 using Datadog.Trace;
 using Microsoft.Extensions.Logging;
 using Saunter.Attributes;
+using Stickerlandia.UserManagement.Core.Observability;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.RegisterUser;
 
@@ -20,19 +21,21 @@ public class KafkaEventPublisher(ProducerConfig config, ILogger<KafkaEventPublis
     [PublishOperation(typeof(UserRegisteredEvent))]
     public async Task PublishUserRegisteredEventV1(UserRegisteredEvent userRegisteredEvent)
     {
+        ArgumentNullException.ThrowIfNull(userRegisteredEvent, nameof(userRegisteredEvent));
+
         var cloudEvent = new CloudEvent(CloudEventsSpecVersion.V1_0)
         {
             Id = Guid.NewGuid().ToString(),
             Source = new Uri("https://stickerlandia.com"),
             Type = userRegisteredEvent.EventName,
             Time = DateTime.UtcNow,
-            Data = userRegisteredEvent,
+            Data = userRegisteredEvent
         };
-        
-        await this.Publish(cloudEvent);
+
+        await Publish(cloudEvent);
     }
 
-    private Task Publish(CloudEvent cloudEvent)
+    private async Task Publish(CloudEvent cloudEvent)
     {
         var activeSpan = Tracer.Instance.ActiveScope?.Span;
         IScope? processScope = null;
@@ -41,42 +44,58 @@ public class KafkaEventPublisher(ProducerConfig config, ILogger<KafkaEventPublis
         {
             if (activeSpan != null)
             {
-                processScope = Tracer.Instance.StartActive($"publish {cloudEvent.Type}", new SpanCreationSettings()
+                processScope = Tracer.Instance.StartActive($"publish {cloudEvent.Type}", new SpanCreationSettings
                 {
                     Parent = activeSpan.Context
                 });
 
                 cloudEvent.SetAttributeFromString("traceparent", $"00-{activeSpan.TraceId}-{activeSpan.SpanId}[01");
             }
-            
+
             var formatter = new JsonEventFormatter<UserRegisteredEvent>();
             var data = formatter.EncodeBinaryModeEventData(cloudEvent);
 
             using var producer = new ProducerBuilder<string, string>(config).Build();
+
+            try
+            {
+                var deliveryReport = await producer.ProduceAsync(cloudEvent.Type,
+                    new Message<string, string> { Key = cloudEvent.Id!, Value = Encoding.UTF8.GetString(data.Span) },
+                    default);
             
-            producer.Produce(cloudEvent.Type, new Message<string, string> { Key = cloudEvent.Id!, Value = Encoding.UTF8.GetString(data.Span) },
-                (deliveryReport) =>
+                if (deliveryReport.Status == PersistenceStatus.PossiblyPersisted) {
+                    // Handle potential timeout errors
+                    throw new MessageProcessingException("Kafka message possibly persisted, but not confirmed.");
+                }
+                else if (deliveryReport.Status == PersistenceStatus.NotPersisted) {
+                    // Handle message not persisted errors.
+                    throw new MessageProcessingException($"Message not persisted: {deliveryReport.TopicPartitionOffset}");
+                }
+            }
+            catch (ProduceException<string, string> ex)
+            {
+                switch (ex.Error.Code)
                 {
-                    if (deliveryReport.Error.Code != ErrorCode.NoError) {
-                        logger.LogError($"Failed to deliver message: {deliveryReport.Error.Reason}");
-                    }
-                    else {
-                        logger.LogInformation($"Produced event to topic {cloudEvent.Type}");
-                    }
-                });
-                
+                    case ErrorCode.ClusterAuthorizationFailed:
+                        throw new MessageProcessingException("Cluster authorization failed", ex);
+                    case ErrorCode.BrokerNotAvailable:
+                        throw new MessageProcessingException("Broker not available", ex);
+                    default:
+                        throw new MessageProcessingException("Error publishing messages", ex);
+                }
+            }
+
             producer.Flush(TimeSpan.FromSeconds(10));
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failure publishing message");
+            Log.MessagePublishingError(logger, "Error publishing message", ex);
             processScope?.Span.SetException(ex);
+            throw;
         }
         finally
         {
             processScope?.Close();
         }
-
-        return Task.CompletedTask;
     }
 }

@@ -42,12 +42,13 @@ var logger = Log.Logger = new LoggerConfiguration()
     .WriteTo.Console(new JsonFormatter())
     .CreateLogger();
 
-var appLogger = new SerilogLoggerFactory(logger)
+using var loggerFactory = new SerilogLoggerFactory(logger);
+
+var appLogger = loggerFactory
     .CreateLogger<Program>();
 
 
 appLogger.LogInformation("Application started");
-;
 
 var app = hostBuilder.Build();
 

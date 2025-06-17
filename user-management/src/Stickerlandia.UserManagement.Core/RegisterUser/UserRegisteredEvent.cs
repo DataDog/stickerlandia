@@ -13,7 +13,9 @@ public record UserRegisteredEvent : DomainEvent
     
     public UserRegisteredEvent(UserAccount account)
     {
-        AccountId = account.Id.Value;
+        ArgumentNullException.ThrowIfNull(account, nameof(account));
+        
+        AccountId = account?.Id?.Value ?? "";
     }
     
     [JsonPropertyName("eventName")]
