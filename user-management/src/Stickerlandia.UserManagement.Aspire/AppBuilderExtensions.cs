@@ -26,6 +26,7 @@ public static class AppBuilderExtensions
             .WithEnvironment("ConnectionStrings__database", resources.DatabaseResource)
             .WithEnvironment("DRIVING", builder.Configuration["DRIVING"])
             .WithEnvironment("DRIVEN", builder.Configuration["DRIVEN"])
+            .WithEnvironment("DISABLE_SSL", "true")
             .WithHttpsEndpoint(51545)
             .WaitForCompletion(resources.MigrationServiceResource)
             .WaitFor(resources.MessagingResource)
