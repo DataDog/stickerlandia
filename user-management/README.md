@@ -6,9 +6,6 @@ The User Management Service manages users. It provides one primary API:
 
 ## Architecture
 
-### Domain Structure
-- **`users/`** - User management domain (`/api/users/v1`)
-
 ### Separation of Concerns
 
 The project follows a ports and adapters architecture style, split down into `Driving` and `Driven` adapters, as well as a `Core` library.
@@ -35,7 +32,7 @@ You can find the full [Open API specification in the docs folder](./docs/api.yam
 ## Features
 
 - Register users
-- OAuth2.0 with password and client credential grant types
+- OIDC authorization code flow (frontend app) and client credentials flow (service->service) 
 - Get and update user accounts
 
 ## Events
@@ -116,7 +113,5 @@ dotnet test
 ## Code Quality
 
 This project enforces high code quality through the use of static analysis tools:
-
-### Built in Static Analyis Tools
 
 .NET has built-in Roslyn analyzers that inspect your C# code for code style and quality issues. To enforce these styles, a [`Directory.build.props`](./Directory.build.props) file is included in the repository root that turns on all static analysis tools.

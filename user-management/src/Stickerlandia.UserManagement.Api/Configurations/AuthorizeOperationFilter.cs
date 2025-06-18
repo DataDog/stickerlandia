@@ -9,6 +9,9 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Stickerlandia.UserManagement.Api.Configurations;
 
+/// <summary>
+/// Operation filter to add authorization responses and security requirements to Swagger operations.
+/// </summary>
 internal class AuthorizeOperationFilter
     : IOperationFilter
 {
