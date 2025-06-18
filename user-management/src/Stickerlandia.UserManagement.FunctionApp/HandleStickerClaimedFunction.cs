@@ -2,6 +2,9 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
+// This is a class that is not intended to be instantiated directly, so we suppress the warning.
+#pragma warning disable CA1812
+
 using System.Text.Json;
 using Azure.Messaging.ServiceBus;
 using Microsoft.Azure.Functions.Worker;
@@ -11,9 +14,9 @@ using Stickerlandia.UserManagement.Core.StickerClaimedEvent;
 
 namespace Stickerlandia.UserManagement.FunctionApp;
 
-public class HandleStickerClaimedFunction(
+internal sealed class HandleStickerClaimedFunction(
     ILogger<HandleStickerClaimedFunction> logger,
-    StickerClaimedEventHandler stickerClaimedHandler)
+    StickerClaimedHandler stickerClaimedHandler)
 {
     [Function(nameof(HandleStickerClaimedFunction))]
     public async Task Run(
@@ -51,6 +54,7 @@ public class HandleStickerClaimedFunction(
         {
             logger.LogError(ex, "Error processing sticker claimed event");
             await messageActions.DeadLetterMessageAsync(message);
+            throw;
         }
     }
 }

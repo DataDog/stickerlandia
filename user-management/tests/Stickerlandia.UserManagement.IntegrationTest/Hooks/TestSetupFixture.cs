@@ -2,6 +2,8 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
+#pragma warning disable CA1515,CA1063,CA2012
+
 using Aspire.Hosting;
 using Aspire.Hosting.Testing;
 using Stickerlandia.UserManagement.IntegrationTest.Drivers;
@@ -10,12 +12,11 @@ namespace Stickerlandia.UserManagement.IntegrationTest.Hooks;
 
 public class TestSetupFixture : IDisposable
 {
-    public readonly IMessaging Messaging;
-    public readonly HttpClient HttpClient;
-    public readonly DistributedApplication? App;
+    public IMessaging Messaging { get; init; }
+    public HttpClient HttpClient { get; init; }
+    public DistributedApplication? App { get; init; }
 
     private const string ApiApplicationName = "api";
-    private const string DatabaseResourceName = "database";
     private const string MessagingResourceName = "messaging";
 
     public TestSetupFixture()
@@ -67,5 +68,6 @@ public class TestSetupFixture : IDisposable
     public void Dispose()
     {
         App?.StopAsync().GetAwaiter().GetResult();
+        GC.SuppressFinalize(this);
     }
 }

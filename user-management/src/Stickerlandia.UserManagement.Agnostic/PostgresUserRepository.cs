@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Stickerlandia.UserManagement.Core.Observability;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.Outbox;
 
@@ -17,6 +17,8 @@ public class PostgresUserRepository(
     {
         try
         {
+            ArgumentNullException.ThrowIfNull(userAccount, nameof(userAccount));
+            
             // Check if user already exists
             if (await userManager.FindByEmailAsync(userAccount.EmailAddress) is not null)
                 throw new UserExistsException();
@@ -27,7 +29,7 @@ public class PostgresUserRepository(
                 // Create user entity
                 var userEntity = new PostgresUserAccount
                 {
-                    Id = userAccount.Id.Value,
+                    Id = userAccount.Id!.Value,
                     UserName = userAccount.EmailAddress,
                     Email = userAccount.EmailAddress,
                     FirstName = userAccount.FirstName,
@@ -71,14 +73,14 @@ public class PostgresUserRepository(
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, ex.Message);
+                Log.UnknownException(logger, ex);
                 await transaction.RollbackAsync();
-                throw;
+                throw new DatabaseFailureException("Failed to create account", ex);
             }
         }
         catch (DbUpdateException ex)
         {
-            logger.LogError(ex, "Failed to create account due to database error");
+            Log.UnknownException(logger, ex);
             throw new DatabaseFailureException("Failed to create account", ex);
         }
         catch (UserExistsException)
@@ -87,7 +89,7 @@ public class PostgresUserRepository(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to create account");
+            Log.UnknownException(logger, ex);
             throw new DatabaseFailureException("Failed to create account", ex);
         }
     }
@@ -96,11 +98,13 @@ public class PostgresUserRepository(
     {
         try
         {
+            ArgumentNullException.ThrowIfNull(userAccount, nameof(userAccount));
+            
             using var transaction = await dbContext.Database.BeginTransactionAsync();
             try
             {
                 // Find existing user
-                var existingUser = await dbContext.Users.FindAsync(userAccount.Id.Value);
+                var existingUser = await dbContext.Users.FindAsync(userAccount.Id!.Value);
                 if (existingUser == null) throw new DatabaseFailureException("User account not found");
 
                 // Update properties
@@ -142,7 +146,7 @@ public class PostgresUserRepository(
         }
         catch (DbUpdateException ex)
         {
-            logger.LogError(ex, "Failed to update account due to database error");
+            Log.UnknownException(logger, ex);
             throw new DatabaseFailureException("Failed to update account", ex);
         }
         catch (DatabaseFailureException)
@@ -151,7 +155,7 @@ public class PostgresUserRepository(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to update account");
+            Log.UnknownException(logger, ex);
             throw new DatabaseFailureException("Failed to update account", ex);
         }
     }
@@ -166,7 +170,7 @@ public class PostgresUserRepository(
 
             return UserAccount.From(
                 new AccountId(user.Id),
-                user.Email,
+                user.Email ?? "",
                 user.FirstName,
                 user.LastName,
                 user.ClaimedStickerCount,
@@ -176,8 +180,8 @@ public class PostgresUserRepository(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error retrieving user by ID {Id}", accountId.Value);
-            return null;
+            Log.UnknownException(logger, ex);
+            throw new DatabaseFailureException("Error retrieving user by ID", ex);
         }
     }
 
@@ -191,7 +195,7 @@ public class PostgresUserRepository(
 
             return UserAccount.From(
                 new AccountId(user.Id),
-                user.Email,
+                user.Email ?? "",
                 user.FirstName,
                 user.LastName,
                 user.ClaimedStickerCount,
@@ -201,8 +205,8 @@ public class PostgresUserRepository(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error retrieving user by email {Email}", emailAddress);
-            return null;
+            Log.UnknownException(logger, ex);
+            throw new DatabaseFailureException("Error retrieving user by email", ex);
         }
     }
 
@@ -214,8 +218,8 @@ public class PostgresUserRepository(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error checking if email exists {Email}", emailAddress);
-            return false;
+            Log.UnknownException(logger, ex);
+            throw new DatabaseFailureException("Error retrieving user by ID", ex);
         }
     }
 
@@ -243,8 +247,8 @@ public class PostgresUserRepository(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error retrieving unprocessed outbox items");
-            return new List<OutboxItem>();
+            Log.UnknownException(logger, ex);
+            throw new DatabaseFailureException("Error retrieving unprocessed outbox items", ex);
         }
     }
 
@@ -252,6 +256,7 @@ public class PostgresUserRepository(
     {
         try
         {
+            ArgumentNullException.ThrowIfNull(outboxItem, nameof(outboxItem));
             var item = await dbContext.OutboxItems.FindAsync(outboxItem.ItemId);
 
             if (item == null) throw new DatabaseFailureException($"Outbox item with ID {outboxItem.ItemId} not found");
@@ -266,7 +271,7 @@ public class PostgresUserRepository(
         }
         catch (Exception ex)
         {
-            throw new DatabaseFailureException($"Failed to update outbox item with ID {outboxItem.ItemId}", ex);
+            throw new DatabaseFailureException($"Failed to update outbox item with ID {outboxItem?.ItemId}", ex);
         }
     }
 }

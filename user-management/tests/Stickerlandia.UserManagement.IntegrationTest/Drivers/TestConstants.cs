@@ -1,6 +1,6 @@
 namespace Stickerlandia.UserManagement.IntegrationTest.Drivers;
 
-public static class TestConstants
+internal static class TestConstants
 {
     public static string DefaultTestUrl =
         Environment.GetEnvironmentVariable("API_ENDPOINT") ?? "https://localhost:51545";

@@ -8,28 +8,33 @@ using CloudNative.CloudEvents.SystemTextJson;
 using Datadog.Trace;
 using Microsoft.Extensions.Logging;
 using Saunter.Attributes;
+using Stickerlandia.UserManagement.Agnostic.Observability;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.RegisterUser;
+using Log = Stickerlandia.UserManagement.Core.Observability.Log;
 
 namespace Stickerlandia.UserManagement.Azure;
 
 [AsyncApi]
-public class ServiceBusEventPublisher(ILogger<ServiceBusEventPublisher> logger, ServiceBusClient client) : IUserEventPublisher
+public class ServiceBusEventPublisher(ILogger<ServiceBusEventPublisher> logger, ServiceBusClient client)
+    : IUserEventPublisher
 {
     [Channel("users.userRegistered.v1")]
     [PublishOperation(typeof(UserRegisteredEvent))]
     public async Task PublishUserRegisteredEventV1(UserRegisteredEvent userRegisteredEvent)
     {
+        ArgumentNullException.ThrowIfNull(userRegisteredEvent, nameof(userRegisteredEvent));
+
         var cloudEvent = new CloudEvent(CloudEventsSpecVersion.V1_0)
         {
             Id = Guid.NewGuid().ToString(),
             Source = new Uri("https://stickerlandia.com"),
             Type = userRegisteredEvent.EventName,
             Time = DateTime.UtcNow,
-            Data = userRegisteredEvent,
+            Data = userRegisteredEvent
         };
-        
-        await this.Publish(cloudEvent);
+
+        await Publish(cloudEvent);
     }
 
     private async Task Publish(CloudEvent cloudEvent)
@@ -41,7 +46,7 @@ public class ServiceBusEventPublisher(ILogger<ServiceBusEventPublisher> logger, 
         {
             if (activeSpan != null)
             {
-                processScope = Tracer.Instance.StartActive($"publish {cloudEvent.Type}", new SpanCreationSettings()
+                processScope = Tracer.Instance.StartActive($"publish {cloudEvent.Type}", new SpanCreationSettings
                 {
                     Parent = activeSpan.Context
                 });
@@ -56,15 +61,16 @@ public class ServiceBusEventPublisher(ILogger<ServiceBusEventPublisher> logger, 
 
             var serviceBusMessage = new ServiceBusMessage(data)
             {
-                ContentType = "application/json",
+                ContentType = "application/json"
             };
 
             await sender.SendMessageAsync(serviceBusMessage);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failure publishing message");
+            Log.MessagePublishingError(logger, "Error publishing event", ex);
             processScope?.Span.SetException(ex);
+            throw;
         }
         finally
         {

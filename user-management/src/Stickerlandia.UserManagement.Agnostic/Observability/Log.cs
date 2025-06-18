@@ -2,11 +2,11 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
-#pragma warning disable CA1515
+using Microsoft.Extensions.Logging;
+using Stickerlandia.UserManagement.Core;
 
-namespace Stickerlandia.UserManagement.IntegrationTest.Drivers;
+namespace Stickerlandia.UserManagement.Agnostic.Observability;
 
-public interface IMessaging
+public static partial class Log
 {
-    Task SendMessageAsync(string queueName, object message);
 }

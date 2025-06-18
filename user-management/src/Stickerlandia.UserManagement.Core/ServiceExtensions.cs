@@ -20,7 +20,7 @@ public static class ServiceExtensions
         services.AddTransient<RegisterCommandHandler>();
         services.AddTransient<LoginCommandHandler>();
         services.AddTransient<GetUserDetailsQueryHandler>();
-        services.AddTransient<StickerClaimedEventHandler>();
+        services.AddTransient<StickerClaimedHandler>();
         
         services.AddTransient<OutboxProcessor>();
         

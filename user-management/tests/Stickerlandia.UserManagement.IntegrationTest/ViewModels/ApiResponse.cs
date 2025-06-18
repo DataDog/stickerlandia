@@ -2,13 +2,14 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
-using System.Security.Claims;
+#pragma warning disable CA1812 // Used for JSON manipulation
+
 using System.Text.Json.Serialization;
 
-namespace Stickerlandia.UserManagement.Core.Login;
+namespace Stickerlandia.UserManagement.IntegrationTest.ViewModels;
 
-public class LoginResponse
+internal sealed record ApiResponse<T>
 {
-    [JsonPropertyName("identity")]
-    public ClaimsIdentity? Identity { get; set; }
+    [JsonPropertyName("data")]
+    public T? Data { get; set; }
 }

@@ -6,7 +6,7 @@ using Stickerlandia.UserManagement.Core.UpdateUserDetails;
 
 namespace Stickerlandia.UserManagement.Api;
 
-public static class UpdateUserDetailsEndpoint
+internal static class UpdateUserDetailsEndpoint
 {
     public static async Task<ApiResponse<string>> HandleAsync(
         HttpContext context,

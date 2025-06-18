@@ -2,13 +2,16 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
+// This is a class that is not intended to be instantiated directly, so we suppress the warning.
+#pragma warning disable CA1812
+
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using Stickerlandia.UserManagement.Core.Outbox;
 
 namespace Stickerlandia.UserManagement.FunctionApp;
 
-public class OutboxWorkerFunction(
+internal sealed class OutboxWorkerFunction(
     OutboxProcessor outboxProcessor,
     ILogger<OutboxWorkerFunction> logger)
 {

@@ -3,8 +3,6 @@
 // Copyright 2025 Datadog, Inc.
 
 using System.Globalization;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OpenIddict.Abstractions;
 using OpenIddict.Server;

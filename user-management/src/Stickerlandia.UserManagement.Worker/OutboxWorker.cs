@@ -2,17 +2,20 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
+// Allow catch of a generic exception in the worker to ensure the worker failing doesn't crash the entire application.
+#pragma warning disable CA1031
+// This is a worker service that is not intended to be instantiated directly, so we suppress the warning.
+#pragma warning disable CA1812
+
 using Stickerlandia.UserManagement.Core.Outbox;
 
 namespace Stickerlandia.UserManagement.Worker;
 
-public class OutboxWorker(OutboxProcessor outboxProcessor, ILogger<OutboxWorker> logger)
+internal sealed class OutboxWorker(OutboxProcessor outboxProcessor)
     : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        logger.LogInformation("Outbox worker started. Processing unprocessed outbox items every 5 seconds.");
-
         while (!stoppingToken.IsCancellationRequested)
         {
             await outboxProcessor.ProcessAsync();

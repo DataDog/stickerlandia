@@ -3,7 +3,6 @@
 // Copyright 2025 Datadog, Inc.
 
 using System.Diagnostics;
-using Microsoft.AspNetCore.Identity;
 
 namespace Stickerlandia.UserManagement.Core.RegisterUser;
 
@@ -20,14 +19,14 @@ public class RegisterCommandHandler(IUsers users)
             if (emailExists) throw new UserExistsException();
 
             // Use async version for better performance
-            var userAccount = await UserAccount.Register(command.EmailAddress, command.Password, command.FirstName,
+            var userAccount = UserAccount.Register(command.EmailAddress, command.Password, command.FirstName,
                 command.LastName, accountType);
 
             await users.Add(userAccount);
 
             return new RegisterResponse
             {
-                AccountId = userAccount.Id.Value
+                AccountId = userAccount.Id?.Value
             };
         }
         catch (UserExistsException ex)
