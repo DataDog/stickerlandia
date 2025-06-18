@@ -1,92 +1,117 @@
 # User Management Service
 
-[![User Management Tests](https://github.com/DataDog/stickerlandia/actions/workflows/user-management-test.yml/badge.svg)](https://github.com/DataDog/stickerlandia/actions/workflows/user-management-test.yml)
+The User Management Service manages users. It provides one primary API:
 
-The User Management Service manages user accounts, credentials and details about a user. It provides APIs allowing users to register and login as well as retrieve and update their user account details. The API also generates JWT's for use by other services on a succesful login. Endpoints for interacting with a users account have appropriate access controls to ensure users can only access their own accounts.
+- **User Management API** (`/api/users/v1`) - Manages users and provides OAuth 2.0 endpoints for AuthN/Z
+
+## Architecture
+
+### Separation of Concerns
+
+The project follows a ports and adapters architecture style, split down into `Driving` and `Driven` adapters, as well as a `Core` library.
+
+- **Stickerlandia.UserManagement.Agnostic** - Driven adapters for Agnostic services
+- **Stickerlandia.UserManagement.AWS** - Driven adapters for AWS native services
+- **Stickerlandia.UserManagement.Azure** - Driven adapters for Azure native services
+
+- **Stickerlandia.UserManagement.Api** - Driving adapters for a containerized ASP.NET minimal API
+- **Stickerlandia.UserManagement.Worker** - A seperate background worker service for agnostic background workers
+- **Stickerlandia.UserManagement.FunctionApp** - Driving adapters for a Azure function app background workers
+- **Stickerlandia.UserManagement.Lambda** - Driving adapters for AWS Lambda background workers
+
+- **Stickerlandia.UserManagement.Core** - Core library for domain services
+- **Stickerlandia.UserManagement.Auth** - Core library for auth concerns using [OpenIddict](https://documentation.openiddict.com/)
+
+
+## API Endpoints
+
+### User Management API (`/api/users/v1`)
+
+You can find the full [Open API specification in the docs folder](./docs/api.yaml).
 
 ## Features
 
-- User registration and login
-- JWT-based authentication and authorization
-- Event-driven integration with other services
+- Register users
+- OIDC authorization code flow (frontend app) and client credentials flow (service->service) 
+- Get and update user accounts
+
+## Events
+
+You can find the full [Async API specification for events published and received in the docs folder](./docs/async_api.yaml)
 
 ## Authentication
 
-All API endpoints (except `/health`, `/login` and `/register`) require authentication via JWT token in the Authorization header. 
-Access controls ensure users can only operate on their own accounts.
+All API endpoints (except `/health` and `/register`) require authentication via JWT token in the Authorization header. 
+Access controls ensure users can only operate on their own accounts unless they have admin privileges.
 
 ## Error Handling
 
 The API returns standard HTTP status codes and follows the RFC 7807 Problem Details specification for error responses.
 
-## API Documentation
+## Building and Running
 
-Full API documentation is available in OpenAPI format:
-- Synchronous API: [api.yaml](./docs/api.yaml)
-- Asynchronous API: [async_api.json](./docs/async_api.yaml)
+### Prerequisites
+- .NET 8.0
+- .NET Aspire
 
-## Code Structure
+### Development
 
-The code is structured around the ports and adapters architecture style, allowing the same business logic to run on a variety of different hosting providers and connecting to a variety of external services (databases, message brokers etc).
+One of the core principles of Stickerlandia is **platform adaptability** by design. That means the user service can run on Azure, AWS or any cloud agnostic container orchestrator. When developing locally, you can use [.NET Aspire](https://learn.microsoft.com/en-us/dotnet/aspire/get-started/aspire-overview) to run and debug the application locally whichever stack you want to deploy against. The .NET Aspire project has different launch profiles for each of the different hosting models.
 
-The code is roughly broken down into three sections:
-
-- application *(driving adapters)*
-    - [Stickerlandia.UserManagement.AspNet](./src/Stickerlandia.UserManagement.AspNet/)
-    - [Stickerlandia.UserManagement.FunctionApp](./src/Stickerlandia.UserManagement.AspNet/)
-    - [Stickerlandia.UserManagement.Lambda](./src/Stickerlandia.UserManagement.Lambda/)
-- core
-    - [Stickerlandia.UserManagement.Core](./src/Stickerlandia.UserManagement.Core/)
-- infrastructure *(driven adapters)*
-    - [Stickerlandia.UserManagement.Agnostic](./src/Stickerlandia.UserManagement.Agnostic/)
-    - [Stickerlandia.UserManagement.Azure](./src/Stickerlandia.UserManagement.Azure/)
-    - [Stickerlandia.UserManagement.AWS](./src/Stickerlandia.UserManagement.AWS/)
-
-## Local Development
-
-The application uses [.NET Aspire](https://learn.microsoft.com/en-us/dotnet/aspire/get-started/aspire-overview) to simplify local development, allowing you to run the application and all it's dependencies locally using `dotnet run` or `dotnet test`.
-
-The [Stickerlandia.UserManagement.Aspire](./src/Stickerlandia.UserManagement.Aspire/) project contains all of the .NET Aspire setup. The project also includes various different launch profiles so that you can launch the application locally using your preferred driving and driven adapters.
-
-### Configuration Options
-
+Run with Agnostic services *(Kafka, Postgres)*:
+```bash
+cd src/Stickerlandia.UserManagement.Aspire
+dotnet run -lp agnostic
 ```
-export DRIVING=ASPNET
+
+Run with Azure services *(Azure Functions, Azure Service Bus, Postgres)*:
+```bash
+cd src/Stickerlandia.UserManagement.Aspire
+dotnet run -lp azure_native
+```
+
+Run with AWS services *(AWS Lambda, Amazon SNS, Aamzon SQS, Postgres)*:
+```bash
+cd src/Stickerlandia.UserManagement.Aspire
+dotnet run -lp aws_native
+```
+
+### Testing
+
+Run unit tests:
+```bash
+cd tests/Stickerlandia.UserManagement.UnitTest
+dotnet test
+```
+
+The integration tests use [.NET Aspire testing support](https://learn.microsoft.com/en-us/dotnet/aspire/testing/write-your-first-test?pivots=xunit). This enables you to run full integration tests for each of the individual hosting models. To run the tests, you need to set the `DRIVING` and `DRIVEN` environment variables.
+
+Run Agnostic integration tests:
+```bash
+cd tests/Stickerlandia.UserManagement.IntegrationTest
+export DRIVING=AGNOSTIC
 export DRIVEN=AGNOSTIC
+dotnet test
 ```
 
-## Driving
+Run Azure integration tests:
+```bash
+cd tests/Stickerlandia.UserManagement.IntegrationTest
+export DRIVING=AZURE
+export DRIVEN=AZURE
+dotnet test
+```
 
-The `DRIVING` option determine where this application is actually going to run. Whether that is leveraging serverless functions like AWS Lambda or simply running in a container using a web framework like ASP.NET. It can be configured to either
+Run AWS integration tests:
+```bash
+cd tests/Stickerlandia.UserManagement.IntegrationTest
+export DRIVING=AWS
+export DRIVEN=AWS
+dotnet test
+```
 
-### AZURE_FUNCTIONS
+## Code Quality
 
-The Azure native hosting option uses Azure Functions to host both the HTTP endpoints and any event handlers
+This project enforces high code quality through the use of static analysis tools:
 
-### ASPNET
-
-The ASPNET option hosts the API endpoints using the ASPNET web framework, and also uses `BackgroundServices` to run event handlers on a background thread inside the same running process.
-
-### AWS_LAMBDA
-
-TODO:
-
-### KUBERNETES
-
-TODO:
-
-## Driven
-
-The `DRIVEN` option determines the implementations for any driven adapters inside the application, things like the database and messaging middlewares.
-
-### Azure 
-
-When set to `AZURE`, uses CosmosDB and Azure Service Bus.
-
-### Agnostic
-
-When set to `AGNOSTIC`, uses Postgres and Kafka.
-
-### AWS
-
-TODO:
+.NET has built-in Roslyn analyzers that inspect your C# code for code style and quality issues. To enforce these styles, a [`Directory.build.props`](./Directory.build.props) file is included in the repository root that turns on all static analysis tools.

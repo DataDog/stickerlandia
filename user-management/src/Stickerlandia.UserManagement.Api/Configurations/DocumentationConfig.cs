@@ -26,7 +26,7 @@ internal static class DocumentationConfig
             };
         });
 
-// Add API documentation
+        // Add API documentation
         builder.Services.AddSwaggerGen(options =>
         {
             options.SwaggerDoc("v1", new OpenApiInfo { Title = serviceName, Version = "v1" });
@@ -36,6 +36,10 @@ internal static class DocumentationConfig
             var xmlFiles = Directory.GetFiles(AppContext.BaseDirectory, "*.xml");
             foreach (var xmlFile in xmlFiles) options.IncludeXmlComments(xmlFile);
             
+<<<<<<< chore/update-user-docs
+            // This manually removes some types from the auth-gen Swagger definitions that aren't required.
+=======
+>>>>>>> main
             options.DocumentFilter<RemoveSwaggerDefinitionsFilter>();
             options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
             {

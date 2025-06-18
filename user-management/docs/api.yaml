@@ -3,7 +3,7 @@ info:
   title: User Management API
   version: v1
 paths:
-  /api/users/v{version}/details:
+  '/api/users/v{version}/details':
     get:
       tags:
         - api
@@ -44,37 +44,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
-  /api/users/v{version}/login:
-    post:
-      tags:
-        - api
-      description: Login
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LoginCommand'
-        required: true
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/LoginResponseApiResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '404':
-          description: Not Found
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-  /api/users/v{version}/register:
+  '/api/users/v{version}/register':
     post:
       tags:
         - api
@@ -100,34 +70,6 @@ paths:
                 $ref: '#/components/schemas/ProblemDetails'
 components:
   schemas:
-    LoginCommand:
-      type: object
-      properties:
-        emailAddress:
-          type: string
-          nullable: true
-        password:
-          type: string
-          nullable: true
-      additionalProperties: false
-    LoginResponse:
-      type: object
-      properties:
-        authToken:
-          type: string
-          nullable: true
-      additionalProperties: false
-    LoginResponseApiResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-        message:
-          type: string
-          nullable: true
-        data:
-          $ref: '#/components/schemas/LoginResponse'
-      additionalProperties: false
     ProblemDetails:
       type: object
       properties:
@@ -147,7 +89,7 @@ components:
         instance:
           type: string
           nullable: true
-      additionalProperties: {}
+      additionalProperties: { }
     RegisterResponse:
       type: object
       properties:
@@ -234,3 +176,18 @@ components:
         data:
           $ref: '#/components/schemas/UserAccountDTO'
       additionalProperties: false
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      description: OAuth 2.0
+      flows:
+        password:
+          authorizationUrl: http://localhost:5139/authorize
+          tokenUrl: http://localhost:5139/api/users/v1/login
+          scopes:
+            User: Read
+        authorizationCode:
+          authorizationUrl: file:///authorize
+          tokenUrl: file:///api/users/v1/login
+          scopes:
+            User: Read
