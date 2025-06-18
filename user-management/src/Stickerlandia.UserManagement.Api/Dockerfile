@@ -17,6 +17,8 @@ ARG DD_GIT_REPOSITORY_URL
 ARG DD_GIT_COMMIT_SHA
 ENV DD_GIT_REPOSITORY_URL=${DD_GIT_REPOSITORY_URL} 
 ENV DD_GIT_COMMIT_SHA=${DD_GIT_COMMIT_SHA}
+LABEL com.datadoghq.tags.service="user-service"
+LABEL com.datadoghq.tags.version=${DD_GIT_COMMIT_SHA}
 WORKDIR /App
 COPY --from=build /App/out .
 EXPOSE 80
