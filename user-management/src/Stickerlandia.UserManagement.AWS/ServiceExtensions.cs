@@ -15,7 +15,6 @@ public static class ServiceExtensions
 {
     public static IServiceCollection AddAwsAdapters(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddAWSLambdaHosting(LambdaEventSource.RestApi);
         services.AddPostgresAuthServices(configuration);
 
         services.Configure<AwsConfiguration>(
