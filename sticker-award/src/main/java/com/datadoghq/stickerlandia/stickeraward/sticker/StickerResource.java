@@ -1,5 +1,6 @@
 package com.datadoghq.stickerlandia.stickeraward.sticker;
 
+import com.datadoghq.stickerlandia.stickeraward.common.exception.ProblemDetailsResponseBuilder;
 import com.datadoghq.stickerlandia.stickeraward.sticker.dto.CreateStickerRequest;
 import com.datadoghq.stickerlandia.stickeraward.sticker.dto.CreateStickerResponse;
 import com.datadoghq.stickerlandia.stickeraward.sticker.dto.GetAllStickersResponse;
@@ -75,7 +76,8 @@ public class StickerResource {
     public Response getStickerMetadata(@PathParam("stickerId") String stickerId) {
         StickerDTO metadata = stickerRepository.getStickerMetadata(stickerId);
         if (metadata == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            return ProblemDetailsResponseBuilder.notFound(
+                    "Sticker with ID " + stickerId + " not found");
         }
         return Response.ok(metadata).build();
     }
@@ -96,7 +98,8 @@ public class StickerResource {
             @PathParam("stickerId") String stickerId, @NotNull UpdateStickerRequest data) {
         StickerDTO updated = stickerRepository.updateStickerMetadata(stickerId, data);
         if (updated == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            return ProblemDetailsResponseBuilder.notFound(
+                    "Sticker with ID " + stickerId + " not found");
         }
         return Response.ok(updated).build();
     }
@@ -114,13 +117,13 @@ public class StickerResource {
         try {
             boolean deleted = stickerRepository.deleteSticker(stickerId);
             if (!deleted) {
-                return Response.status(Response.Status.NOT_FOUND).build();
+                return ProblemDetailsResponseBuilder.notFound(
+                        "Sticker with ID " + stickerId + " not found");
             }
             return Response.noContent().build();
         } catch (IllegalStateException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("Cannot delete sticker that is assigned to users")
-                    .build();
+            return ProblemDetailsResponseBuilder.badRequest(
+                    "Cannot delete sticker that is assigned to users");
         }
     }
 
@@ -137,22 +140,21 @@ public class StickerResource {
     public Response getStickerImage(@PathParam("stickerId") String stickerId) {
         StickerDTO metadata = stickerRepository.getStickerMetadata(stickerId);
         if (metadata == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            return ProblemDetailsResponseBuilder.notFound(
+                    "Sticker with ID " + stickerId + " not found");
         }
 
         if (metadata.getImageKey() == null) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity("No image found for this sticker")
-                    .build();
+            return ProblemDetailsResponseBuilder.notFound(
+                    "No image found for sticker " + stickerId);
         }
 
         try {
             InputStream imageStream = stickerImageService.getImage(metadata.getImageKey());
             return Response.ok(imageStream).type("image/png").build();
         } catch (Exception e) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("Failed to retrieve image")
-                    .build();
+            return ProblemDetailsResponseBuilder.internalServerError(
+                    "Failed to retrieve image for sticker " + stickerId);
         }
     }
 
@@ -172,7 +174,8 @@ public class StickerResource {
             @PathParam("stickerId") String stickerId, @NotNull InputStream data) {
         StickerDTO metadata = stickerRepository.getStickerMetadata(stickerId);
         if (metadata == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            return ProblemDetailsResponseBuilder.notFound(
+                    "Sticker with ID " + stickerId + " not found");
         }
 
         try {
@@ -195,9 +198,8 @@ public class StickerResource {
             return Response.ok(response).build();
         } catch (Exception e) {
             System.out.println(e);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("Failed to upload image")
-                    .build();
+            return ProblemDetailsResponseBuilder.internalServerError(
+                    "Failed to upload image for sticker " + stickerId);
         }
     }
 }

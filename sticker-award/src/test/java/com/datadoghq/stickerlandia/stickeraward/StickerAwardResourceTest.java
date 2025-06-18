@@ -144,7 +144,11 @@ class StickerAwardResourceTest {
                 .when()
                 .post("/api/awards/v1/assignments/{userId}", userId)
                 .then()
-                .statusCode(400);
+                .statusCode(400)
+                .contentType("application/problem+json")
+                .body("status", is(400))
+                .body("title", is("Bad Request"))
+                .body("detail", is("Invalid request or sticker assignment failed"));
     }
 
     @Test
@@ -171,7 +175,15 @@ class StickerAwardResourceTest {
                 .when()
                 .post("/api/awards/v1/assignments/{userId}", userId)
                 .then()
-                .statusCode(409);
+                .statusCode(409)
+                .contentType("application/problem+json")
+                .body("status", is(409))
+                .body("title", is("Conflict"))
+                .body(
+                        "detail",
+                        is(
+                                "Sticker assignment conflict: "
+                                        + "User already has this sticker assigned"));
     }
 
     @Test
@@ -219,6 +231,16 @@ class StickerAwardResourceTest {
         given().when()
                 .delete("/api/awards/v1/assignments/{userId}/{stickerId}", userId, stickerId)
                 .then()
-                .statusCode(404);
+                .statusCode(404)
+                .contentType("application/problem+json")
+                .body("status", is(404))
+                .body("title", is("Not Found"))
+                .body(
+                        "detail",
+                        is(
+                                "Sticker assignment not found for user "
+                                        + userId
+                                        + " and sticker "
+                                        + stickerId));
     }
 }
