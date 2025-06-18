@@ -7,8 +7,7 @@ WORKDIR /App
 COPY ./scripts ./scripts
 
 # Download the latest version of the tracer but don't install yet
-RUN . scripts/target.sh && TRACER_VERSION=$(curl -s \https://api.github.com/repos/DataDog/dd-trace-dotnet/releases/latest | grep tag_name | cut -d '"' -f 4 | cut -c2-) \
-&& curl -Lo /tmp/datadog-dotnet-apm.deb https://github.com/DataDog/dd-trace-dotnet/releases/download/v${TRACER_VERSION}/datadog-dotnet-apm_${TRACER_VERSION}_${TRACER_ARCHITECTURE}.deb
+RUN . scripts/target.sh && curl -Lo /tmp/datadog-dotnet-apm.deb https://github.com/DataDog/dd-trace-dotnet/releases/download/v3.19.0/datadog-dotnet-apm_3.19.0_${TRACER_ARCHITECTURE}.deb
 
 # Deps
 COPY src/Stickerlandia.UserManagement.Api/Stickerlandia.UserManagement.Api.csproj src/Stickerlandia.UserManagement.Api/
@@ -43,6 +42,7 @@ ENV DD_DOTNET_TRACER_HOME=/opt/datadog
 ENV DD_INTEGRATIONS=/opt/datadog/integrations.json
 ENV DD_LOGS_INJECTION=true
 ENV DD_RUNTIME_METRICS_ENABLED=true
+
 WORKDIR /App
 COPY --from=build /App/out .
 EXPOSE 80
