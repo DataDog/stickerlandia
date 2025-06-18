@@ -8,6 +8,8 @@ using Serilog.Extensions.Logging;
 using Serilog.Formatting.Json;
 using Stickerlandia.UserManagement.ServiceDefaults;
 
+#pragma warning disable CA1822
+
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 
 namespace Stickerlandia.UserManagement.Lambda;
@@ -29,10 +31,5 @@ public class Startup
             .CreateLogger();
 
         services.ConfigureDefaultUserManagementServices(configuration);
-        
-        var appLogger = new SerilogLoggerFactory(logger)
-            .CreateLogger<Startup>();
-
-        appLogger.LogInformation("Application configured");
     }
 }

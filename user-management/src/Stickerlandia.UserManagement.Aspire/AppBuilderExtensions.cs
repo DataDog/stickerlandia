@@ -252,6 +252,8 @@ internal static class AppBuilderExtensions
         this IDistributedApplicationBuilder builder,
         InfrastructureResources resources)
     {
+        ArgumentNullException.ThrowIfNull(resources.MessagingResource, nameof(resources.MessagingResource));
+        ArgumentNullException.ThrowIfNull(resources.DatabaseResource, nameof(resources.DatabaseResource));
         var apiLambdaFunction = builder.AddAWSLambdaFunction<Projects.Stickerlandia_UserManagement_Api>("UsersApi",
                 "Stickerlandia.UserManagement.Api")
             .WithEnvironment("ConnectionStrings__messaging", resources.MessagingResource)

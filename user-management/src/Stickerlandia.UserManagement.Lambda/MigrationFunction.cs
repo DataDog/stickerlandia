@@ -8,10 +8,7 @@ using Stickerlandia.UserManagement.Core.Outbox;
 
 namespace Stickerlandia.UserManagement.Lambda;
 
-public class MigrationFunction(
-    ILogger<Sqs> logger,
-    IServiceScopeFactory serviceScopeFactory,
-    OutboxProcessor outboxProcessor)
+public class MigrationFunction(IServiceScopeFactory serviceScopeFactory)
 {
     [LambdaFunction]
     public async Task Migrate(object evtData)
@@ -38,7 +35,7 @@ public class MigrationFunction(
         CancellationToken cancellationToken)
     {
         // Add seeding logic here if needed.
-        if (await manager.FindByClientIdAsync("user-authentication") is null)
+        if (await manager.FindByClientIdAsync("user-authentication", cancellationToken) is null)
             await manager.CreateAsync(new OpenIddictApplicationDescriptor
             {
                 ClientId = "user-authentication",
@@ -49,9 +46,9 @@ public class MigrationFunction(
                     OpenIddictConstants.Permissions.GrantTypes.Password,
                     OpenIddictConstants.Permissions.GrantTypes.RefreshToken
                 }
-            });
+            }, cancellationToken);
 
-        if (await manager.FindByClientIdAsync("internal-service") is null)
+        if (await manager.FindByClientIdAsync("internal-service", cancellationToken) is null)
             await manager.CreateAsync(new OpenIddictApplicationDescriptor
             {
                 ClientId = "internal-service",
@@ -62,6 +59,6 @@ public class MigrationFunction(
                     OpenIddictConstants.Permissions.GrantTypes.Password,
                     OpenIddictConstants.Permissions.GrantTypes.ClientCredentials
                 }
-            });
+            }, cancellationToken);
     }
 }

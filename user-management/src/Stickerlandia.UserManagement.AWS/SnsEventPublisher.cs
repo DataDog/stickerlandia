@@ -10,8 +10,10 @@ using Datadog.Trace;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Saunter.Attributes;
+using Stickerlandia.UserManagement.Agnostic.Observability;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.RegisterUser;
+using Log = Stickerlandia.UserManagement.Core.Observability.Log;
 
 namespace Stickerlandia.UserManagement.AWS;
 
@@ -25,6 +27,8 @@ public class SnsEventPublisher(
     [PublishOperation(typeof(UserRegisteredEvent))]
     public async Task PublishUserRegisteredEventV1(UserRegisteredEvent userRegisteredEvent)
     {
+        ArgumentNullException.ThrowIfNull(userRegisteredEvent, nameof(userRegisteredEvent));
+        
         var cloudEvent = new CloudEvent(CloudEventsSpecVersion.V1_0)
         {
             Id = Guid.NewGuid().ToString(),
@@ -62,8 +66,9 @@ public class SnsEventPublisher(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failure publishing message");
+            Log.MessagePublishingError(logger, "Failure publishing event", ex);
             processScope?.Span.SetException(ex);
+            throw;
         }
         finally
         {

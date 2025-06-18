@@ -11,6 +11,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Saunter.Attributes;
 using Stickerlandia.UserManagement.Core;
+using Stickerlandia.UserManagement.Core.Observability;
 using Stickerlandia.UserManagement.Core.StickerClaimedEvent;
 
 namespace Stickerlandia.UserManagement.AWS;
@@ -40,7 +41,7 @@ public class SqsStickerClaimedWorker : IMessagingWorker
         using var processSpan = Tracer.Instance.StartActive($"process users.stickerClaimed.v1");
 
         using var scope = _serviceScopeFactory.CreateScope();
-        var handler = scope.ServiceProvider.GetRequiredService<StickerClaimedEventHandler>();
+        var handler = scope.ServiceProvider.GetRequiredService<StickerClaimedHandler>();
 
         var evtData = JsonSerializer.Deserialize<StickerClaimedEventV1>(message.Body);
 
@@ -58,7 +59,8 @@ public class SqsStickerClaimedWorker : IMessagingWorker
         }
         catch (InvalidUserException ex)
         {
-            _logger.LogWarning(ex, "User with account in this event not found");
+            Log.InvalidUser(_logger, ex);
+            
             await _sqsClient.SendMessageAsync(_awsConfiguration.Value.StickerClaimedDLQUrl, message.Body);
         }
         
@@ -67,12 +69,11 @@ public class SqsStickerClaimedWorker : IMessagingWorker
 
     public Task StartAsync()
     {
-        _logger.LogInformation("Starting SQS processor");
-        
+        Log.StartingMessageProcessor(_logger, "sqs");
         return Task.CompletedTask;
     }
 
-    public async Task PollAsync(CancellationToken cancellationToken)
+    public async Task PollAsync(CancellationToken stoppingToken)
     {
         var request = new ReceiveMessageRequest
         {
@@ -81,13 +82,13 @@ public class SqsStickerClaimedWorker : IMessagingWorker
             MaxNumberOfMessages = 10 // Fetch up to 10 messages per call
         };
 
-        var messages = await _sqsClient.ReceiveMessageAsync(request, cancellationToken);
+        var messages = await _sqsClient.ReceiveMessageAsync(request, stoppingToken);
         foreach (var message in messages.Messages) await ProcessMessageAsync(message);
     }
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Stopping SQS processor");
+        Log.StoppingMessageProcessor(_logger, "sqs");
         // No specific stop logic for SQS, as it is a pull-based system.
         await Task.CompletedTask;
     }

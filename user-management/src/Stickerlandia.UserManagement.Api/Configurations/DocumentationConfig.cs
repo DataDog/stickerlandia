@@ -36,10 +36,7 @@ internal static class DocumentationConfig
             var xmlFiles = Directory.GetFiles(AppContext.BaseDirectory, "*.xml");
             foreach (var xmlFile in xmlFiles) options.IncludeXmlComments(xmlFile);
             
-<<<<<<< chore/update-user-docs
             // This manually removes some types from the auth-gen Swagger definitions that aren't required.
-=======
->>>>>>> main
             options.DocumentFilter<RemoveSwaggerDefinitionsFilter>();
             options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
             {

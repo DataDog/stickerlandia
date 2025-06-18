@@ -15,14 +15,16 @@ public static class ServiceExtensions
 {
     public static IServiceCollection AddAwsAdapters(this IServiceCollection services, IConfiguration configuration)
     {
+        ArgumentNullException.ThrowIfNull(configuration);
+        
         services.AddPostgresAuthServices(configuration);
 
         services.Configure<AwsConfiguration>(
             configuration.GetSection("Aws"));
 
         services.AddSingleton<IMessagingWorker, SqsStickerClaimedWorker>();
-        services.AddSingleton(new AmazonSQSClient());
-        services.AddSingleton(new AmazonSimpleNotificationServiceClient());
+        services.AddSingleton(sp => new AmazonSQSClient());
+        services.AddSingleton(sp => new AmazonSimpleNotificationServiceClient());
 
         services.AddSingleton<IUserEventPublisher, SnsEventPublisher>();
 

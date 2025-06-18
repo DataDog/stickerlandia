@@ -9,20 +9,20 @@ using Confluent.Kafka;
 
 namespace Stickerlandia.UserManagement.IntegrationTest.Drivers;
 
-public class EventBridgeMessaging : IMessaging, IAsyncDisposable
+internal sealed class EventBridgeMessaging : IMessaging, IAsyncDisposable
 {
     private readonly string _environment;
-    private readonly AmazonEventBridgeClient client;
+    private readonly AmazonEventBridgeClient _client;
 
     public EventBridgeMessaging(string environment)
     {
         _environment = environment;
-        client = new AmazonEventBridgeClient();
+        _client = new AmazonEventBridgeClient();
     }
 
     public async Task SendMessageAsync(string queueName, object message)
     {
-        await client.PutEventsAsync(new PutEventsRequest
+        await _client.PutEventsAsync(new PutEventsRequest
         {
             Entries = new List<PutEventsRequestEntry>
             {
@@ -37,8 +37,12 @@ public class EventBridgeMessaging : IMessaging, IAsyncDisposable
         });
     }
 
-    public async ValueTask DisposeAsync()
+    public ValueTask DisposeAsync()
     {
-        // Nothing to dispose
+        _client.Dispose();
+        
+        GC.SuppressFinalize(this);
+        
+        return ValueTask.CompletedTask;
     }
 }
