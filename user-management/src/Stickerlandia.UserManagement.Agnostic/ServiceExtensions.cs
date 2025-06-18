@@ -2,15 +2,11 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
-using System.Globalization;
-using System.Text.Json;
 using Confluent.Kafka;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Stickerlandia.UserManagement.Auth;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.Outbox;

@@ -3,9 +3,11 @@ using System.Text.Json;
 using Stickerlandia.UserManagement.IntegrationTest.ViewModels;
 using Xunit.Abstractions;
 
+#pragma warning disable CA2234
+
 namespace Stickerlandia.UserManagement.IntegrationTest.Drivers;
 
-public class AccountDriver
+internal sealed class AccountDriver
 {
     private readonly ITestOutputHelper _testOutputHelper;
     private readonly HttpClient _httpClient;
@@ -30,8 +32,10 @@ public class AccountDriver
             lastName = "Doe"
         });
 
+        using var postBody = new StringContent(requestBody, Encoding.Default, "application/json");
+
         var registerResult = await _httpClient.PostAsync("api/users/v1/register",
-            new StringContent(requestBody, Encoding.Default, "application/json"));
+            postBody);
 
         var body = await registerResult.Content.ReadAsStringAsync();
 
@@ -49,7 +53,7 @@ public class AccountDriver
             lastName,
         });
 
-        var request = new HttpRequestMessage(HttpMethod.Put, "api/users/v1/details");
+        using var request = new HttpRequestMessage(HttpMethod.Put, "api/users/v1/details");
         request.Headers.Add("Authorization", $"Bearer {authToken}");
         request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
 
@@ -74,7 +78,7 @@ public class AccountDriver
             new("client_secret", "388D45FA-B36B-4988-BA59-B187D329C207")
         };
 
-        var requestContent = new FormUrlEncodedContent(requestBody);
+        using var requestContent = new FormUrlEncodedContent(requestBody);
         var tokenResult = await _httpClient.PostAsync("api/users/v1/login", requestContent); // Use the original endpoint
 
         _testOutputHelper.WriteLine($"OAuth2.0 token status code is {tokenResult.StatusCode}");
@@ -99,7 +103,7 @@ public class AccountDriver
     {
         _testOutputHelper.WriteLine("Getting user account");
         
-        var request = new HttpRequestMessage(HttpMethod.Get, "api/users/v1/details");
+        using var request = new HttpRequestMessage(HttpMethod.Get, "api/users/v1/details");
         request.Headers.Add("Authorization", $"Bearer {authToken}");
 
         var response = await _httpClient.SendAsync(request);

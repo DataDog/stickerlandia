@@ -26,6 +26,8 @@ switch (DrivenAdapterSettings.DrivenAdapter)
         break;
 }
 
+ArgumentNullException.ThrowIfNull(resources, nameof(resources));
+
 switch (DrivingAdapterSettings.DrivingAdapter)
 {
     case DrivingAdapter.AZURE:

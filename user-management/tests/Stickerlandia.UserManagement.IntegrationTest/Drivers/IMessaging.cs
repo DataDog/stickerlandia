@@ -2,6 +2,8 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
+#pragma warning disable CA1515
+
 namespace Stickerlandia.UserManagement.IntegrationTest.Drivers;
 
 public interface IMessaging

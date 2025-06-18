@@ -3,9 +3,14 @@ using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
 using Stickerlandia.UserManagement.Agnostic;
 
+// Allow catch of a generic exception in the worker to ensure the worker failing doesn't crash the entire application.
+#pragma warning disable CA1031
+// This is a worker service that is not intended to be instantiated directly, so we suppress the warning.
+#pragma warning disable CA1812
+
 namespace Stickerlandia.UserManagement.MigrationService;
 
-public class Worker(
+internal sealed class Worker(
     IServiceProvider serviceProvider,
     IHostApplicationLifetime hostApplicationLifetime) : IHostedService
 {
@@ -25,7 +30,7 @@ public class Worker(
             await RunMigrationAsync(dbContext, cancellationToken);
             await SeedDataAsync(dbContext, manager, cancellationToken);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             throw;
         }
@@ -53,7 +58,7 @@ public class Worker(
         CancellationToken cancellationToken)
     {
         // Add seeding logic here if needed.
-        if (await manager.FindByClientIdAsync("user-authentication") is null)
+        if (await manager.FindByClientIdAsync("user-authentication", cancellationToken) is null)
             await manager.CreateAsync(new OpenIddictApplicationDescriptor
             {
                 ClientId = "user-authentication",
@@ -64,9 +69,9 @@ public class Worker(
                     OpenIddictConstants.Permissions.GrantTypes.Password,
                     OpenIddictConstants.Permissions.GrantTypes.RefreshToken
                 }
-            });
+            }, cancellationToken);
 
-        if (await manager.FindByClientIdAsync("internal-service") is null)
+        if (await manager.FindByClientIdAsync("internal-service", cancellationToken) is null)
             await manager.CreateAsync(new OpenIddictApplicationDescriptor
             {
                 ClientId = "internal-service",
@@ -77,6 +82,6 @@ public class Worker(
                     OpenIddictConstants.Permissions.GrantTypes.Password,
                     OpenIddictConstants.Permissions.GrantTypes.ClientCredentials
                 }
-            });
+            }, cancellationToken);
     }
 }

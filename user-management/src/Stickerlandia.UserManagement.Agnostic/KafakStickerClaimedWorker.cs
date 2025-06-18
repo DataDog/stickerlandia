@@ -2,13 +2,16 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
-using System.Text;
+// Catching generic exceptions is not recommended, but in this case we want to catch all exceptions so that a failure in outbox processing does not crash the application.
+#pragma warning disable CA1031
+
 using System.Text.Json;
 using Confluent.Kafka;
 using Datadog.Trace;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Saunter.Attributes;
+using Stickerlandia.UserManagement.Core.Observability;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.StickerClaimedEvent;
 
@@ -22,18 +25,17 @@ public class KafakStickerClaimedWorker(
     ProducerConfig producerConfig)
     : IMessagingWorker
 {
-    private readonly ProducerConfig _producerConfig = producerConfig;
     private const string topic = "users.stickerClaimed.v1";
     private const string dlqTopic = "users.stickerClaimed.v1.dlq";
 
     [Channel("users.stickerClaimed.v1")]
     [SubscribeOperation(typeof(StickerClaimedEventV1))]
-    private async Task<bool> ProcessMessageAsync(StickerClaimedEventHandler handler,
+    private async Task<bool> ProcessMessageAsync(StickerClaimedHandler handler,
         ConsumeResult<string, string> consumeResult)
     {
         using var processSpan = Tracer.Instance.StartActive($"process users.stickerClaimed.v1");
 
-        logger.LogInformation("Received message: {body}", consumeResult.Message.Value);
+        Log.ReceivedMessage(logger, "kafka");
 
         var evtData = JsonSerializer.Deserialize<StickerClaimedEventV1>(consumeResult.Message.Value);
 
@@ -45,7 +47,7 @@ public class KafakStickerClaimedWorker(
         }
         catch (InvalidUserException ex)
         {
-            logger.LogWarning("Invalid user in sticker claimed event: {Message}", ex.Message);
+            Log.InvalidUser(logger, ex);
 
             SendToDLQ(consumeResult, evtData);
         }
@@ -62,9 +64,9 @@ public class KafakStickerClaimedWorker(
             (deliveryReport) =>
             {
                 if (deliveryReport.Error.Code != ErrorCode.NoError)
-                    logger.LogError($"Failed to deliver message: {deliveryReport.Error.Reason}");
+                    Log.MessageDeliveryFailure(logger, deliveryReport.Error.Reason, null);
                 else
-                    logger.LogWarning($"Produced event to topic {dlqTopic}");
+                    Log.MessageSentToDlq(logger, "", null);
             });
 
         producer.Flush(TimeSpan.FromSeconds(10));
@@ -72,7 +74,7 @@ public class KafakStickerClaimedWorker(
 
     public Task StartAsync()
     {
-        logger.LogInformation("Starting Kafka processor");
+        Log.StartingMessageProcessor(logger, "kafka");
 
         return Task.CompletedTask;
     }
@@ -84,12 +86,12 @@ public class KafakStickerClaimedWorker(
             return;
 
         using var scope = serviceScopeFactory.CreateScope();
-        var handler = scope.ServiceProvider.GetRequiredService<StickerClaimedEventHandler>();
+        var handler = scope.ServiceProvider.GetRequiredService<StickerClaimedHandler>();
 
         try
         {
             using var consumer = new ConsumerBuilder<string, string>(consumerConfig)
-                .SetErrorHandler((_, e) => logger.LogError("Kafka error: {Error}", e.Reason))
+                .SetErrorHandler((_, e) => Log.MessageProcessingException(logger, e.Reason, null))
                 .Build();
 
             consumer.Subscribe(topic);
@@ -107,16 +109,16 @@ public class KafakStickerClaimedWorker(
             }
             catch (ConsumeException ex)
             {
-                logger.LogError(ex, "Error consuming message");
+                Log.MessageProcessingException(logger, "Error consuming message", ex);
             }
             catch (OperationCanceledException)
             {
                 // This is expected when the token is canceled
-                logger.LogInformation("Polling canceled");
+                Log.TokenCancelled(logger);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error processing message");
+                Log.MessageProcessingException(logger, "Error consuming message", ex);
             }
             finally
             {
@@ -126,7 +128,8 @@ public class KafakStickerClaimedWorker(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to create Kafka consumer");
+            Log.FailureStartingWorker(logger, "kafka", ex);
+            throw;
         }
     }
 

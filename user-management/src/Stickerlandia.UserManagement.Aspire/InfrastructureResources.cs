@@ -4,7 +4,7 @@
 
 namespace Stickerlandia.UserManagement.Aspire;
 
-public record InfrastructureResources(
+internal sealed record InfrastructureResources(
     IResourceBuilder<IResourceWithConnectionString>? DatabaseResource,
     IResourceBuilder<IResourceWithConnectionString>? MessagingResource,
     IResourceBuilder<ProjectResource> MigrationServiceResource);

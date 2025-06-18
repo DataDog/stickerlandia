@@ -2,7 +2,6 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,20 +9,22 @@ namespace Stickerlandia.UserManagement.Agnostic;
 
 public class UserManagementDbContext : IdentityDbContext<PostgresUserAccount>
 {
-    public DbSet<PostgresUserAccount> Users { get; set; } = null!;
+    public new DbSet<PostgresUserAccount> Users { get; set; } = null!;
     public DbSet<PostgresOutboxItem> OutboxItems { get; set; } = null!;
 
     public UserManagementDbContext(DbContextOptions options) : base(options)
     {
     }
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    protected override void OnModelCreating(ModelBuilder builder)
     {
-        base.OnModelCreating(modelBuilder);
+        ArgumentNullException.ThrowIfNull(builder);
         
-        modelBuilder.UseOpenIddict();
+        base.OnModelCreating(builder);
+        
+        builder.UseOpenIddict();
 
-        modelBuilder.Entity<PostgresUserAccount>(entity =>
+        builder.Entity<PostgresUserAccount>(entity =>
         {
             entity.ToTable("users");
             entity.HasKey(e => e.Id);
@@ -37,7 +38,7 @@ public class UserManagementDbContext : IdentityDbContext<PostgresUserAccount>
             entity.Property(e => e.AccountType).HasColumnName("account_type");
         });
 
-        modelBuilder.Entity<PostgresOutboxItem>(entity =>
+        builder.Entity<PostgresOutboxItem>(entity =>
         {
             entity.ToTable("outbox_items");
             entity.HasKey(e => e.Id);

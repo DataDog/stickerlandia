@@ -2,7 +2,6 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
-using System.Collections.Immutable;
 using System.Diagnostics;
 
 namespace Stickerlandia.UserManagement.Core.Login;
@@ -21,6 +20,8 @@ public class LoginCommandHandler(IUsers users, IAuthService authService)
 
             var identity =
                 await authService.VerifyPassword(request.EmailAddress, request.Password, request.Scopes);
+            
+            if (identity == null) throw new LoginFailedException("User not found.");
 
             return new LoginResponse
             {

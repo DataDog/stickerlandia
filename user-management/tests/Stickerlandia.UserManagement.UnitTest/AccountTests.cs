@@ -10,7 +10,7 @@ namespace Stickerlandia.UserManagement.UnitTest;
 public class AccountTests
 {
     [Fact]
-    public async Task GivenAUserHasValidDetails_ShouldRegisterSuccessfully()
+    public async Task GivenAUserHasValidDetailsShouldRegisterSuccessfully()
     {
         var testEmailAddress = "test@test.com";
         var testPassword = "Password!234";
@@ -30,7 +30,7 @@ public class AccountTests
             new RegisterUserCommand { EmailAddress = testEmailAddress, Password = testPassword }, AccountType.User);
 
         result.AccountId.Should().NotBeEmpty();
-        capturedAccount?.Id.Value.Should().Be(result.AccountId);
+        capturedAccount?.Id!.Value.Should().Be(result.AccountId);
         capturedAccount?.DomainEvents.Count.Should().Be(1);
 
         var firstEvent = capturedAccount!.DomainEvents.First();
@@ -38,10 +38,9 @@ public class AccountTests
     }
     
     [Fact]
-    public async Task GivenAUserAccountExists_ShouldBeAbleToUpdateDetails()
+    public async Task GivenAUserAccountExistsShouldBeAbleToUpdateDetails()
     {
         var testEmailAddress = "test@test.com";
-        var testPassword = "Password!234";
         var testAccountId = "1234";
 
         UserAccount? capturedAccount = null;
@@ -52,23 +51,23 @@ public class AccountTests
         A.CallTo(() => userRepo.UpdateAccount(A<UserAccount>.Ignored))
             .Invokes((UserAccount account) => capturedAccount = account);
         A.CallTo(() => userRepo.WithIdAsync(A<AccountId>.Ignored))
-            .Returns(Task.FromResult(userAccountUnderTest));
+            .ReturnsLazily(() => Task.FromResult<UserAccount?>(userAccountUnderTest));
 
         var handler = new UpdateUserDetailsHandler(userRepo);
 
         await handler.Handle(
             new UpdateUserDetailsRequest() { AccountId = new AccountId(testAccountId), FirstName = "James", LastName = "Eastham"});
 
-        capturedAccount.FirstName.Should().Be("James");
-        capturedAccount.LastName.Should().Be("Eastham");
-        capturedAccount?.DomainEvents.Count.Should().Be(1);
+        capturedAccount!.FirstName.Should().Be("James");
+        capturedAccount!.LastName.Should().Be("Eastham");
+        capturedAccount!.DomainEvents.Count.Should().Be(1);
 
         var firstEvent = capturedAccount!.DomainEvents.First();
         firstEvent.Should().BeOfType<UserDetailsUpdatedEvent>();
     }
 
     [Fact]
-    public async Task GivenAnEmailAlreadyExists_RegistrationShouldFail()
+    public async Task GivenAnEmailAlreadyExistsRegistrationShouldFail()
     {
         var testEmailAddress = "test@test.com";
         var testPassword = "Password!234";
@@ -83,7 +82,7 @@ public class AccountTests
     }
 
     [Fact]
-    public async Task GivenAUserRegistersWithAnInvalidEmail_RegistrationShouldFail()
+    public async Task GivenAUserRegistersWithAnInvalidEmailRegistrationShouldFail()
     {
         var testEmailAddress = "@test.com";
         var testPassword = "Password!234";
@@ -99,11 +98,10 @@ public class AccountTests
     }
 
     [Fact]
-    public async Task GivenAUserLogsInSuccessfully_AValidJwtShouldBeReturned()
+    public async Task GivenAUserLogsInSuccessfullyAValidJwtShouldBeReturned()
     {
         var testEmailAddress = "test@test.com";
         var testPassword = "Password!234";
-        var testPasswordHash = "gY+ZhJfJftbzJvLmWE6grZgJv3nWkepeIigpSSnDwqY1xiQ1MkSAU16LE+3EljRw";
         var testAccountId = "1234";
 
         var userRepo = A.Fake<IUsers>();
@@ -127,17 +125,16 @@ public class AccountTests
     }
 
     [Fact]
-    public async Task GivenAUserLoginFails_ALoginFailedExceptionIsCalled()
+    public async Task GivenAUserLoginFailsALoginFailedExceptionIsCalled()
     {
         var testEmailAddress = "test@test.com";
         var testPassword = "not the correct password4";
-        var testPasswordHash = "gY+ZhJfJftbzJvLmWE6grZgJv3nWkepeIigpSSnDwqY1xiQ1MkSAU16LE+3EljRw";
         var testAccountId = "1234";
 
         var userRepo = A.Fake<IUsers>();
-
-        A.CallTo(() => userRepo.WithEmailAsync(A<string>.Ignored)).Returns(
-            Task.FromResult(UserAccount.From(new AccountId(testAccountId), testEmailAddress, "John",
+        
+        A.CallTo(() => userRepo.WithEmailAsync(A<string>.Ignored))
+            .ReturnsLazily(() => Task.FromResult<UserAccount?>(UserAccount.From(new AccountId(testAccountId), testEmailAddress, "John",
                 "Doe", 1, DateTime.UtcNow, AccountTier.Std, AccountType.User)));
 
         var authService = A.Fake<IAuthService>();
@@ -156,9 +153,8 @@ public class AccountTests
             
             Assert.Fail("Expected LoginFailedException to be thrown, but it was not.");
         }
-        catch (LoginFailedException ex)
+        catch (LoginFailedException)
         {
-
         }
         catch (Exception ex)
         {

@@ -9,5 +9,5 @@ namespace Stickerlandia.UserManagement.Core.RegisterUser;
 public class RegisterResponse
 {
     [JsonPropertyName("accountId")]
-    public string AccountId { get; set; } = string.Empty;
+    public string? AccountId { get; set; } = string.Empty;
 }

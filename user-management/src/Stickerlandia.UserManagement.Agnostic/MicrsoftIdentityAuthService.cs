@@ -6,9 +6,6 @@ using System.Collections.Immutable;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
 using Stickerlandia.UserManagement.Core;
@@ -16,10 +13,8 @@ using Stickerlandia.UserManagement.Core;
 namespace Stickerlandia.UserManagement.Agnostic;
 
 public class MicrosoftIdentityAuthService(
-    ILogger<MicrosoftIdentityAuthService> logger,
     IOpenIddictApplicationManager applicationManager,
     IOpenIddictScopeManager scopeManager,
-    UserManagementDbContext dbContext,
     UserManager<PostgresUserAccount> userManager) : IAuthService
 {
     public async Task<ClaimsIdentity?> VerifyClient(string clientId)
@@ -40,7 +35,7 @@ public class MicrosoftIdentityAuthService(
         {
             // Allow the "name" claim to be stored in both the access and identity tokens
             // when the "profile" scope was granted (by calling principal.SetScopes(...)).
-            OpenIddictConstants.Claims.Name when claim.Subject.HasScope(OpenIddictConstants.Permissions.Scopes
+            OpenIddictConstants.Claims.Name when claim.Subject!.HasScope(OpenIddictConstants.Permissions.Scopes
                     .Profile)
                 => [OpenIddictConstants.Destinations.AccessToken, OpenIddictConstants.Destinations.IdentityToken],
 
@@ -78,7 +73,7 @@ public class MicrosoftIdentityAuthService(
         identity.AddClaim(new Claim(OpenIddictConstants.Claims.Name, user.Id));
         identity.AddClaim(new Claim(OpenIddictConstants.Claims.Subject, user.Id));
         identity.AddClaim(new Claim(OpenIddictConstants.Claims.Audience, "Resource"));
-        identity.AddClaim(new Claim(OpenIddictConstants.Claims.Email, user.Email));
+        identity.AddClaim(new Claim(OpenIddictConstants.Claims.Email, user.Email ?? ""));
         identity.AddClaim(new Claim(OpenIddictConstants.Claims.Username, user.Id));
 
         // Setting destinations of claims i.e. identity token or access token

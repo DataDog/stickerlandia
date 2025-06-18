@@ -1,11 +1,24 @@
+
+// Catching generic exceptions is not recommended, but in this case we want to catch all exceptions so that a failure in outbox processing does not crash the application and we can return a 500 error.
+#pragma warning disable CA1031
+// This is a global exception handler that is not intended instantiated directly, so we suppress the warning.
+#pragma warning disable CA1812
+
+
 using System.Net;
 using System.Text.Json;
 using Stickerlandia.UserManagement.Core;
+using Log = Stickerlandia.UserManagement.Core.Observability.Log;
 
 namespace Stickerlandia.UserManagement.Api.Middlewares;
 
-public class GlobalExceptionHandler
+internal sealed class GlobalExceptionHandler
 {
+    private static readonly JsonSerializerOptions options = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        WriteIndented = true
+    };
     private readonly RequestDelegate _next;
     private readonly ILogger<GlobalExceptionHandler> _logger;
 
@@ -17,33 +30,40 @@ public class GlobalExceptionHandler
 
     public async Task InvokeAsync(HttpContext context)
     {
+        ArgumentNullException.ThrowIfNull(context);
+        
         try
         {
             await _next(context);
         }
         catch (LoginFailedException ex)
         {
-            _logger.LogWarning(ex, "Login failed");
+            Log.GenericWarning(_logger, "Login failed", ex);
             await HandleExceptionAsync(context, ex);
         }
         catch (InvalidUserException ex)
         {
-            _logger.LogWarning(ex, "User not found");
+            Log.GenericWarning(_logger, "User not found", ex);
             await HandleExceptionAsync(context, ex);
         }
         catch (UserExistsException ex)
         {
-            _logger.LogWarning(ex, "Tried to create a user that already exists");
+            Log.GenericWarning(_logger, "Tried to create a user that already exists", ex);
+            await HandleExceptionAsync(context, ex);
+        }
+        catch (ArgumentNullException ex)
+        {
+            Log.GenericWarning(_logger, "Failed to retrieve user details", ex);   
             await HandleExceptionAsync(context, ex);
         }
         catch (ArgumentException ex)
         {
-            _logger.LogWarning(ex, "failed to retrieve user details");
+            Log.GenericWarning(_logger, "Failed to retrieve user details", ex);   
             await HandleExceptionAsync(context, ex);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An unhandled exception occurred during request processing");
+            Log.GenericWarning(_logger, "An unhandled exception occurred during request processing", ex);
             await HandleExceptionAsync(context, ex);
         }
     }
@@ -60,7 +80,7 @@ public class GlobalExceptionHandler
 
         context.Response.StatusCode = DetermineStatusCode(exception);
 
-        var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+        
         await context.Response.WriteAsync(JsonSerializer.Serialize(response, options));
     }
 

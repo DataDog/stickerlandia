@@ -5,6 +5,7 @@ import com.datadoghq.stickerlandia.stickeraward.award.dto.AssignStickerResponse;
 import com.datadoghq.stickerlandia.stickeraward.award.dto.GetUserStickersResponse;
 import com.datadoghq.stickerlandia.stickeraward.award.dto.RemoveStickerFromUserResponse;
 import com.datadoghq.stickerlandia.stickeraward.award.messaging.StickerAwardEventPublisher;
+import com.datadoghq.stickerlandia.stickeraward.common.exception.ProblemDetailsResponseBuilder;
 import io.smallrye.common.constraint.NotNull;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -58,7 +59,8 @@ public class StickerAwardResource {
             AssignStickerResponse response =
                     stickerAwardRepository.assignStickerToUser(userId, stickerId, request);
             if (response == null) {
-                return Response.status(Response.Status.BAD_REQUEST).build();
+                return ProblemDetailsResponseBuilder.badRequest(
+                        "Invalid request or sticker assignment failed");
             }
 
             // Publish events - Note: We'll need to modify event publisher to work with DTOs
@@ -73,7 +75,8 @@ public class StickerAwardResource {
 
             return Response.status(Response.Status.CREATED).entity(response).build();
         } catch (IllegalStateException e) {
-            return Response.status(Response.Status.CONFLICT).build();
+            return ProblemDetailsResponseBuilder.conflict(
+                    "Sticker assignment conflict: " + e.getMessage());
         }
     }
 
@@ -95,7 +98,11 @@ public class StickerAwardResource {
         RemoveStickerFromUserResponse response =
                 stickerAwardRepository.removeStickerFromUser(userId, stickerId);
         if (response == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            return ProblemDetailsResponseBuilder.notFound(
+                    "Sticker assignment not found for user "
+                            + userId
+                            + " and sticker "
+                            + stickerId);
         }
 
         // Publish events - Note: We'll need to modify event publisher to work with DTOs

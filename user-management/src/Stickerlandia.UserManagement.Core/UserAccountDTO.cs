@@ -6,11 +6,13 @@ using System.Text.Json.Serialization;
 
 namespace Stickerlandia.UserManagement.Core;
 
-public record UserAccountDTO
+public record UserAccountDto
 {
-    public UserAccountDTO(UserAccount userAccount)
+    public UserAccountDto(UserAccount userAccount)
     {
-        AccountId = userAccount.Id.Value;
+        ArgumentNullException.ThrowIfNull(userAccount);
+        
+        AccountId = userAccount.Id?.Value ?? "";
         EmailAddress = userAccount.EmailAddress;
         FirstName = userAccount.FirstName;
         LastName = userAccount.LastName;

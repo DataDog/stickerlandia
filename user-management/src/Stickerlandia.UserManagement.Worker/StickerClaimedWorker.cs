@@ -2,11 +2,17 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
+// Allow catch of a generic exception in the worker to ensure the worker failing doesn't crash the entire application.
+#pragma warning disable CA1031
+// This is a worker service that is not intended to be instantiated directly, so we suppress the warning.
+#pragma warning disable CA1812
+
 using Stickerlandia.UserManagement.Core;
+using Stickerlandia.UserManagement.Core.Observability;
 
 namespace Stickerlandia.UserManagement.Worker;
 
-public class StickerClaimedWorker : BackgroundService
+internal sealed class StickerClaimedWorker : BackgroundService
 {
     private readonly ILogger<OutboxWorker> _logger;
     private readonly IMessagingWorker _messagingWorker;
@@ -35,7 +41,7 @@ public class StickerClaimedWorker : BackgroundService
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Error running worker");
+                    Log.GenericWarning(_logger, "Error processing message", ex);
                     failureCount++;
 
                     if (failureCount > 10)
@@ -47,7 +53,7 @@ public class StickerClaimedWorker : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error running worker");
+            Log.GenericWarning(_logger, "Error processing message", ex);
         }
         finally
         {

@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Saunter.Attributes;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.StickerClaimedEvent;
+using Log = Stickerlandia.UserManagement.Core.Observability.Log;
 
 namespace Stickerlandia.UserManagement.Azure;
 
@@ -23,6 +24,8 @@ public class ServiceBusStickerClaimedWorker : IMessagingWorker
     public ServiceBusStickerClaimedWorker(ILogger<ServiceBusStickerClaimedWorker> logger,
         ServiceBusClient serviceBusClient, IServiceScopeFactory serviceScopeFactory)
     {
+        ArgumentNullException.ThrowIfNull(serviceBusClient, nameof(serviceBusClient));
+        
         _logger = logger;
         _serviceScopeFactory = serviceScopeFactory;
 
@@ -41,10 +44,10 @@ public class ServiceBusStickerClaimedWorker : IMessagingWorker
         using var processSpan = Tracer.Instance.StartActive($"process users.stickerClaimed.v1");
 
         using var scope = _serviceScopeFactory.CreateScope();
-        var handler = scope.ServiceProvider.GetRequiredService<StickerClaimedEventHandler>();
+        var handler = scope.ServiceProvider.GetRequiredService<StickerClaimedHandler>();
 
         var messageBody = args.Message.Body.ToString();
-        _logger.LogInformation("Received message: {body}", messageBody);
+        Log.ReceivedMessage(_logger, "ServiceBus");
 
         var evtData = JsonSerializer.Deserialize<StickerClaimedEventV1>(messageBody);
 
@@ -57,7 +60,7 @@ public class ServiceBusStickerClaimedWorker : IMessagingWorker
         }
         catch (InvalidUserException ex)
         {
-            _logger.LogWarning(ex, "User with account in this event not found");
+            Log.InvalidUser(_logger, ex);
             await args.DeadLetterMessageAsync(args.Message, "Invalid account id");
         }
 
@@ -67,18 +70,18 @@ public class ServiceBusStickerClaimedWorker : IMessagingWorker
 
     private Task ProcessErrorAsync(ProcessErrorEventArgs args)
     {
-        _logger.LogError(args.Exception, "Error processing message: {source}", args.ErrorSource);
+        Log.MessageProcessingException(_logger, args.ErrorSource.ToString(), null);
         return Task.CompletedTask;
     }
 
     public Task StartAsync()
     {
-        _logger.LogInformation("Starting ServiceBus processor");
+        Log.StartingMessageProcessor(_logger, "ServiceBus");
         _processor.StartProcessingAsync();
         return Task.CompletedTask;
     }
 
-    public Task PollAsync(CancellationToken cancellationToken)
+    public Task PollAsync(CancellationToken stoppingToken)
     {
         // This should be a no-op;
         return Task.CompletedTask;
@@ -86,7 +89,7 @@ public class ServiceBusStickerClaimedWorker : IMessagingWorker
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
-        await _processor.StopProcessingAsync();
+        await _processor.StopProcessingAsync(cancellationToken);
         await _processor.CloseAsync(cancellationToken);
     }
 }

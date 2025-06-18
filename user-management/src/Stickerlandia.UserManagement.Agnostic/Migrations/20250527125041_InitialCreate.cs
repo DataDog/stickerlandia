@@ -2,6 +2,8 @@
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
+// Disable warnings for the migration code, it is auto-generated and may not follow all conventions.
+#pragma warning disable
 #nullable disable
 
 namespace Stickerlandia.UserManagement.Agnostic.Migrations

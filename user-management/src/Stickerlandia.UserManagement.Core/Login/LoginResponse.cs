@@ -10,5 +10,5 @@ namespace Stickerlandia.UserManagement.Core.Login;
 public class LoginResponse
 {
     [JsonPropertyName("identity")]
-    public ClaimsIdentity Identity { get; set; }
+    public ClaimsIdentity? Identity { get; set; }
 }
