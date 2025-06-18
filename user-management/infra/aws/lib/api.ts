@@ -5,10 +5,8 @@ import {
   Cluster,
   ContainerImage,
   CpuArchitecture,
-  FargateService,
   FargateTaskDefinition,
   FirelensLogRouterType,
-  LogDriver,
   LogDrivers,
   OperatingSystemFamily,
   Protocol,
@@ -17,14 +15,10 @@ import { Repository } from "aws-cdk-lib/aws-ecr";
 import { Topic } from "aws-cdk-lib/aws-sns";
 import { Queue } from "aws-cdk-lib/aws-sqs";
 import {
-  ApplicationLoadBalancer,
-  ApplicationTargetGroup,
-  TargetType,
   ApplicationProtocol,
-  HealthCheck,
   Protocol as HealthCheckProtocol,
 } from "aws-cdk-lib/aws-elasticloadbalancingv2";
-import { Duration, CfnOutput } from "aws-cdk-lib";
+import { Duration } from "aws-cdk-lib";
 import { ApplicationLoadBalancedFargateService } from "aws-cdk-lib/aws-ecs-patterns";
 
 export class ApiProps {

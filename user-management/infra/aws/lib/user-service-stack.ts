@@ -2,7 +2,7 @@ import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { SharedProps } from "./constructs/shared-props";
 import { DatadogECSFargate, DatadogLambda } from "datadog-cdk-constructs-v2";
-import { Network } from "./network";
+import { SharedResources } from "./sharedResources";
 import { Api } from "./api";
 import { Cluster } from "aws-cdk-lib/aws-ecs";
 import { BackgroundWorkers } from "./background-workers";
@@ -22,7 +22,7 @@ export class UserServiceStack extends cdk.Stack {
       throw new Error("CONNECTION_STRING environment variable is required");
     }
 
-    const network = new Network(this, "Network", {
+    const sharedResources = new SharedResources(this, "SharedResources", {
       networkName: `${serviceName}-${environment}-vpc`,
     });
 
@@ -30,7 +30,7 @@ export class UserServiceStack extends cdk.Stack {
     const ddApiKey = process.env.DD_API_KEY || "";
 
     const cluster = new Cluster(this, "ApiCluster", {
-      vpc: network.vpc,
+      vpc: sharedResources.vpc,
       clusterName: `${serviceName}-${environment}`,
     });
 
@@ -86,12 +86,13 @@ export class UserServiceStack extends cdk.Stack {
 
     const api = new Api(this, "Api", {
       sharedProps: sharedProps,
-      vpc: network.vpc,
+      vpc: sharedResources.vpc,
       cluster: cluster,
     });
 
     const backgroundWorkers = new BackgroundWorkers(this, "BackgroundWorkers", {
       sharedProps: sharedProps,
+      sharedEventBus: sharedResources.sharedEventBus,
       stickerClaimedQueue: api.stickerClaimedQueue,
       stickerClaimedDLQ: api.stickerClaimedDLQ,
       userRegisteredTopic: api.userRegisteredTopic,

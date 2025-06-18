@@ -1,4 +1,3 @@
-import { SubnetType, Vpc } from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
 import { SharedProps } from "./constructs/shared-props";
 import { InstrumentedLambdaFunction } from "./constructs/instrumented-function";
@@ -7,7 +6,7 @@ import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import { SqsDestination } from "aws-cdk-lib/aws-lambda-destinations";
 import {
-  EventBus,
+  IEventBus,
   Rule,
   RuleTargetInput,
   Schedule,
@@ -17,6 +16,7 @@ import { ITopic } from "aws-cdk-lib/aws-sns";
 
 export interface BackgroundWorkersProps {
   sharedProps: SharedProps;
+  sharedEventBus: IEventBus;
   stickerClaimedQueue: IQueue;
   stickerClaimedDLQ: IQueue;
   userRegisteredTopic: ITopic;
@@ -25,10 +25,6 @@ export interface BackgroundWorkersProps {
 export class BackgroundWorkers extends Construct {
   constructor(scope: Construct, id: string, props: BackgroundWorkersProps) {
     super(scope, id);
-
-    const eventBus = new EventBus(this, "UserManagementEventBus", {
-      eventBusName: `${props.sharedProps.serviceName}-${props.sharedProps.environment}-bus`,
-    });
 
     const environmentVariables = {
       POWERTOOLS_SERVICE_NAME: props.sharedProps.serviceName,
@@ -71,7 +67,7 @@ export class BackgroundWorkers extends Construct {
     );
 
     const rule = new Rule(this, "StickerClaimedEventRule", {
-      eventBus: eventBus,
+      eventBus: props.sharedEventBus,
       ruleName: `${props.sharedProps.serviceName}-${props.sharedProps.environment}-sticker-claimed-rule`,
       eventPattern: {
         source: [`${props.sharedProps.environment}.stickers`],

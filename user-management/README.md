@@ -23,6 +23,23 @@ The project follows a ports and adapters architecture style, split down into `Dr
 - **Stickerlandia.UserManagement.Auth** - Core library for auth concerns using [OpenIddict](https://documentation.openiddict.com/)
 
 
+### AWS Architecture
+
+![AWS architecture diagram](./docs/aws_arch.png)
+
+The AWS native implementation of the user management service uses a combination of containers and functions as a service (FaaS), as well as native messaging services. The different components on this diagram tie to specific classes in the AWS CDK IaC project:
+
+- [API](./infra/aws/lib/api.ts)
+    - Amazon ECS for container orchestration, with Fargate providing the underlying compute
+    - A traditional Postgres database, for use with the [OpenIddict](https://documentation.openiddict.com/) auth libraries
+- [Background Workers](./infra/aws/lib/background-workers.ts)
+    - AWS Lambda for the compute, both handling external events and running on a schedule to process items from the outbox
+    - Rules are defined on a shared external Amazon Event Bridge event bus
+    - Amazon SQS provides durability at the boundaries of the system
+    - Internal domian events are published to Amazon SNS
+- [Shared](./infra/aws/lib/sharedResources.ts)
+    - Currently, these are manually created. Eventually these will be created in an external stack and this construct will pull from 
+
 ## API Endpoints
 
 ### User Management API (`/api/users/v1`)
