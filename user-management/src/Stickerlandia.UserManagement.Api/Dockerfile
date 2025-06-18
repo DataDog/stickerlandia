@@ -46,6 +46,7 @@ ENV DD_RUNTIME_METRICS_ENABLED=true
 ENV DD_PROFILING_ENABLED=1
 LABEL com.datadoghq.tags.service="user-service"
 LABEL com.datadoghq.tags.version=${DD_GIT_COMMIT_SHA}
+
 WORKDIR /App
 COPY --from=build /App/out .
 EXPOSE 80
