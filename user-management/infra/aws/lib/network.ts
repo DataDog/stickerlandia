@@ -4,6 +4,7 @@ export interface NetworkProps {
     networkName: string;
 }
 
+// TODO: move this to a shared infra project to allow one network across multiple services
 export class Network extends Construct {
   vpc: Vpc;
   constructor(scope: Construct, id: string, props: NetworkProps) {

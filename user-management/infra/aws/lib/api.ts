@@ -52,6 +52,8 @@ export class Api extends Construct {
     this.stickerClaimedDLQ = new Queue(this, "StickerClaimedDLQ", {
       queueName: `${props.sharedProps.serviceName}-${props.sharedProps.environment}-sticker-claimed-dlq`,
     });
+
+    //TODO: Add EventBridge rule mapping to subscribe to sticker claimed events published to the shared EventBus.
     this.stickerClaimedQueue = new Queue(this, "StickerClaimedQueue", {
       queueName: `${props.sharedProps.serviceName}-${props.sharedProps.environment}-sticker-claimed`,
       deadLetterQueue: {
@@ -169,6 +171,7 @@ export class Api extends Construct {
     this.stickerClaimedQueue.grantConsumeMessages(applicationTaskDef.taskRole);
     this.stickerClaimedDLQ.grantConsumeMessages(applicationTaskDef.taskRole);
 
+    // TODO: move this to a shared infra project to allow one ALB across multiple services
     const service = new ApplicationLoadBalancedFargateService(
       this,
       "UserServiceFargateService",
