@@ -6,6 +6,7 @@ using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Json;
 using Stickerlandia.UserManagement.Agnostic;
+using Stickerlandia.UserManagement.AWS;
 using Stickerlandia.UserManagement.Azure;
 using Stickerlandia.UserManagement.Core;
 
@@ -47,6 +48,7 @@ public static class DefaultServiceExtensions
                 services.AddAgnosticAdapters(configuration);
                 break;
             case "AWS":
+                services.AddAwsAdapters(configuration);
                 break;
             default:
                 throw new ArgumentException($"Unknown driven adapters {drivenAdapters}");

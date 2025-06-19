@@ -85,6 +85,13 @@ public static partial class Log
         Message = "{Message}")]
     public static partial void GenericWarning(
         ILogger logger, string  message, Exception? exception);
+    
+    [LoggerMessage(
+        EventId = 5,
+        Level = LogLevel.Trace,
+        Message = "Stopping message processor for transport: {MessageTransport}")]
+    public static partial void StoppingMessageProcessor(
+        ILogger logger, string messageTransport);
 }
 
 public static class LogMessages
