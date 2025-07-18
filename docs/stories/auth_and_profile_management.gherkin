@@ -1,0 +1,20 @@
+Feature: User Authentication
+  As a Datadog user
+  I want to sign in with my preferred identity provider
+  So that I can start collecting stickers
+
+  Scenario: First-time user registration
+    Given I am not registered in Stickerlandia
+    When I click "Sign In" and select my identity provider
+    And I authorize Stickerlandia to access my basic profile
+    Then I should be registered with a new profile
+    And I should receive a welcome sticker automatically
+    And I should see an onboarding tutorial
+
+  Scenario: Returning user login
+    Given I have an existing Stickerlandia account
+    When I sign in with my registered identity provider
+    Then I should be redirected to my profile dashboard
+    And I should see my current sticker collection
+    And I should see any unclaimed rewards
+

@@ -1,0 +1,18 @@
+Feature: Multi-platform Deployment
+  As a developer
+  I want to deploy Stickerlandia to different platforms
+  So that I can demonstrate platform flexibility
+
+  Scenario: AWS Serverless deployment
+    Given the application is packaged for serverless
+    When I run the deployment script for AWS
+    Then all microservices should deploy as Lambda functions
+    And the frontend should deploy to CloudFront
+    And all services should be monitored in Datadog
+
+  Scenario: Kubernetes deployment
+    Given the application is containerized
+    When I deploy to a K8s cluster
+    Then all microservices should run as separate pods
+    And services should communicate via service mesh
+    And Datadog agents should collect all metrics

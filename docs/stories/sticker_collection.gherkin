@@ -1,0 +1,30 @@
+Feature: Sticker Collection
+  As a registered user
+  I want to collect stickers through various activities
+  So that I can build my collection and show achievements
+
+  Scenario: Claiming certification reward
+    Given I have completed a Datadog certification
+    And the certification is verified in the training platform
+    When I navigate to the "Claim Rewards" section
+    Then I should see my unclaimed certification sticker
+    And I should be able to claim it with one click
+    And the sticker should appear in my collection with a "New" badge
+
+  Scenario: Scheduled sticker drop
+    Given a scheduled drop is occurring
+    And I am logged in during the drop window
+    When I visit the drops page
+    Then I should see the available sticker
+    And I should be able to claim it if I haven't already
+    And I should see a countdown to the next drop
+
+  Scenario: Limited supply sticker
+    Given a limited edition sticker with 1000 total supply
+    And 950 have already been claimed
+    When I view the sticker details
+    Then I should see "50 remaining out of 1000"
+    And I should see a real-time counter updating
+    And once claimed, it should show my serial number (e.g., "#951 of 1000")
+	And once claimed, my serial number should be baked into any images of the sticker I see, and the sticker images should be crytographically signed
+

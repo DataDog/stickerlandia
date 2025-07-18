@@ -1,0 +1,27 @@
+Feature: Sticker Printing at Events
+  As an event attendee
+  I want to print my digital stickers
+  So that I can have physical versions
+
+  Scenario: Event check-in with QR code
+    Given I am at a Datadog event with printing stations
+    And I have stickers in my collection
+    When I generate my personal QR code in the app
+    And scan it at the printing station
+    Then the station should display my sticker collection
+    And I should be able to select up to 10 stickers to print
+    And the printer should produce physical stickers
+
+  Scenario: Print history tracking
+    Given I have printed stickers at previous events
+    When I view my print history
+    Then I should see which stickers were printed
+    And I should see the event location and date
+    And I should see my remaining print credits for current event
+
+  Scenario: Event sticker collection with NFC badge
+    Given I am at a Datadog event with printing stations
+    And I have signed in to the event with my QR code
+    When I scan my NFC badge at the printing station
+    Then the station should grant me an event-specific sticker
+
