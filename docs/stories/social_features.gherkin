@@ -1,0 +1,22 @@
+Feature: Social Sharing
+  As a sticker collector
+  I want to share my collection publicly
+  So that I can showcase my achievements
+
+  Scenario: Public profile creation
+    Given I have collected at least 5 stickers
+    When I enable my public profile
+    And I customize my display name and bio
+    And I customize my highlighted stickers
+    Then my profile should be accessible at /users/{username}
+    And it should display my sticker collection
+    And it should show my collection statistics
+
+  Scenario: Social media integration
+    Given I have a rare sticker in my collection
+    When I click "Share" on the sticker
+    And I select Twitter/LinkedIn/etc
+    Then a pre-formatted post should be created
+    And it should include a preview image of the sticker
+    And it should link back to my public profile
+
