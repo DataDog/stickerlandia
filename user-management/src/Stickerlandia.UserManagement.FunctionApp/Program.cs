@@ -11,7 +11,7 @@ using Stickerlandia.UserManagement.ServiceDefaults;
 
 var configuration = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())
-    .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
+    .AddJsonFile("local.settings.json", true, true)
     .AddEnvironmentVariables()
     .Build();
 
@@ -20,7 +20,7 @@ var hostBuilder = new HostBuilder()
     .ConfigureServices((hostContext, services) =>
         services.AddApplicationInsightsTelemetryWorkerService()
             .ConfigureFunctionsApplicationInsights()
-            .ConfigureDefaultUserManagementServices(hostContext.Configuration)
+            .ConfigureDefaultUserManagementServices(hostContext.Configuration, false)
             .Configure<LoggerFilterOptions>(options =>
             {
                 // The Application Insights SDK adds a default logging filter that instructs ILogger to capture only Warning and more severe logs. Application Insights requires an explicit override.

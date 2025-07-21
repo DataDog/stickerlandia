@@ -51,7 +51,8 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddResponseCompression(options => { options.EnableForHttps = true; });
 
-builder.Services.AddControllers();
+builder.Services.AddControllersWithViews();
+builder.Services.AddRazorPages();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll",
@@ -83,9 +84,15 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("AllowAll");
 
+app.UseRouting();
+app.UseStaticFiles();
+
 app
     .UseAuthentication()
     .UseAuthorization();
+
+app.MapRazorPages();
+app.MapControllers();
 
 var api = app.NewVersionedApi("api");
 var v1ApiEndpoints = api.MapGroup("api/users/v{version:apiVersion}")
@@ -94,6 +101,13 @@ v1ApiEndpoints.MapHealthChecks("/health", new HealthCheckOptions
 {
     ResponseWriter = WriteHealthCheckResponse
 });
+
+v1ApiEndpoints.MapGet("authorize", GetUserDetails.HandleAsync)
+    .RequireAuthorization()
+    .WithDescription("OAuth authorization endpoint");
+v1ApiEndpoints.MapPost("authorize", GetUserDetails.HandleAsync)
+    .RequireAuthorization()
+    .WithDescription("OAuth authorization endpoint");
 
 v1ApiEndpoints.MapGet("details", GetUserDetails.HandleAsync)
     .RequireAuthorization()

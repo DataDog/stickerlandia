@@ -30,6 +30,6 @@ public class Startup
             .WriteTo.Console(new JsonFormatter())
             .CreateLogger();
 
-        services.ConfigureDefaultUserManagementServices(configuration);
+        services.ConfigureDefaultUserManagementServices(configuration, enableDefaultUi: false);
     }
 }

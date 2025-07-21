@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Stickerlandia.UserManagement.Auth;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.Outbox;
@@ -15,10 +16,10 @@ namespace Stickerlandia.UserManagement.Agnostic;
 
 public static class ServiceExtensions
 {
-    public static IServiceCollection AddAgnosticAdapters(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddAgnosticAdapters(this IServiceCollection services, IConfiguration configuration, bool enableDefaultUi = true)
     {
         services.AddKafkaMessaging(configuration);
-        services.AddPostgresAuthServices(configuration);
+        services.AddPostgresAuthServices(configuration, enableDefaultUi);
 
         return services;
     }
@@ -56,7 +57,8 @@ public static class ServiceExtensions
     }
 
     public static IServiceCollection AddPostgresAuthServices(this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        bool enableDefaultUi = true)
     {
         services.AddDbContext<UserManagementDbContext>(options =>
         {
@@ -65,9 +67,14 @@ public static class ServiceExtensions
             options.UseOpenIddict();
         });
 
-        services.AddIdentityCore<PostgresUserAccount>()
+        var identityOptions = services.AddIdentity<PostgresUserAccount, IdentityRole>()
             .AddEntityFrameworkStores<UserManagementDbContext>()
             .AddDefaultTokenProviders();
+
+        if (enableDefaultUi)
+        {
+            identityOptions.AddDefaultUI();
+        }
 
         var disableSsl = false;
 

@@ -62,26 +62,46 @@ internal sealed class Worker(
             await manager.CreateAsync(new OpenIddictApplicationDescriptor
             {
                 ClientId = "user-authentication",
-                ClientSecret = "388D45FA-B36B-4988-BA59-B187D329C207",
+                ConsentType = OpenIddictConstants.ConsentTypes.Explicit,
+                ClientType = OpenIddictConstants.ClientTypes.Public,
+                PostLogoutRedirectUris =
+                {
+                    new Uri("https://localhost:3000")
+                },
+                RedirectUris =
+                {
+                    new Uri("https://localhost:3000/callback")
+                },
                 Permissions =
                 {
+                    OpenIddictConstants.Permissions.Endpoints.Authorization,
+                    OpenIddictConstants.Permissions.Endpoints.EndSession,
                     OpenIddictConstants.Permissions.Endpoints.Token,
-                    OpenIddictConstants.Permissions.GrantTypes.Password,
-                    OpenIddictConstants.Permissions.GrantTypes.RefreshToken
-                }
-            }, cancellationToken);
-
-        if (await manager.FindByClientIdAsync("internal-service", cancellationToken) is null)
-            await manager.CreateAsync(new OpenIddictApplicationDescriptor
-            {
-                ClientId = "internal-service",
-                ClientSecret = "8E1167EF-5C44-4209-A803-3A109155FDD3",
-                Permissions =
+                    OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode,
+                    OpenIddictConstants.Permissions.GrantTypes.RefreshToken,
+                    OpenIddictConstants.Permissions.ResponseTypes.Code,
+                    OpenIddictConstants.Permissions.Scopes.Email,
+                    OpenIddictConstants.Permissions.Scopes.Profile,
+                    OpenIddictConstants.Permissions.Scopes.Roles
+                },
+                Requirements =
                 {
-                    OpenIddictConstants.Permissions.Endpoints.Token,
-                    OpenIddictConstants.Permissions.GrantTypes.Password,
-                    OpenIddictConstants.Permissions.GrantTypes.ClientCredentials
+                    OpenIddictConstants.Requirements.Features.ProofKeyForCodeExchange
                 }
             }, cancellationToken);
+        //
+        // if (await manager.FindByClientIdAsync("internal-service", cancellationToken) is null)
+        //     await manager.CreateAsync(new OpenIddictApplicationDescriptor
+        //     {
+        //         ClientId = "internal-service",
+        //         ClientSecret = "8E1167EF-5C44-4209-A803-3A109155FDD3",
+        //         Permissions =
+        //         {
+        //             OpenIddictConstants.Permissions.Endpoints.Token,
+        //             OpenIddictConstants.Permissions.Endpoints.Authorization,
+        //             OpenIddictConstants.Permissions.GrantTypes.ClientCredentials
+        //         },
+        //         RedirectUris = { new Uri("http://localhost:3000") }
+        //     }, cancellationToken);
     }
 }
