@@ -1,4 +1,3 @@
-using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using FluentAssertions;
 using Stickerlandia.UserManagement.IntegrationTest.Drivers;

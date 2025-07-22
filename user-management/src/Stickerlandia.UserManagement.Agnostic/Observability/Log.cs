@@ -2,9 +2,6 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
-using Microsoft.Extensions.Logging;
-using Stickerlandia.UserManagement.Core;
-
 namespace Stickerlandia.UserManagement.Agnostic.Observability;
 
 public static partial class Log

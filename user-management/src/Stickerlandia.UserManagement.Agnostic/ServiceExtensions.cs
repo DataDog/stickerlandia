@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Stickerlandia.UserManagement.Auth;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.Outbox;
@@ -16,7 +15,8 @@ namespace Stickerlandia.UserManagement.Agnostic;
 
 public static class ServiceExtensions
 {
-    public static IServiceCollection AddAgnosticAdapters(this IServiceCollection services, IConfiguration configuration, bool enableDefaultUi = true)
+    public static IServiceCollection AddAgnosticAdapters(this IServiceCollection services, IConfiguration configuration,
+        bool enableDefaultUi = true)
     {
         services.AddKafkaMessaging(configuration);
         services.AddPostgresAuthServices(configuration, enableDefaultUi);
@@ -88,7 +88,7 @@ public static class ServiceExtensions
                 .UseDbContext<UserManagementDbContext>(), disableSsl);
 
         services.AddScoped<IAuthService, MicrosoftIdentityAuthService>();
-        
+
         services.AddScoped<IOutbox, PostgresOutbox>();
 
         return services;

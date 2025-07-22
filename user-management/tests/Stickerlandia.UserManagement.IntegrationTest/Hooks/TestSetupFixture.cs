@@ -4,7 +4,6 @@
 
 #pragma warning disable CA1515,CA1063,CA2012,CA2000
 
-using System.Net;
 using Aspire.Hosting;
 using Aspire.Hosting.Testing;
 using Stickerlandia.UserManagement.IntegrationTest.Drivers;

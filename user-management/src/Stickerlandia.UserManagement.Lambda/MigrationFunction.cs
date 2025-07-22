@@ -1,10 +1,8 @@
 using Amazon.Lambda.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using OpenIddict.Abstractions;
 using Stickerlandia.UserManagement.Agnostic;
-using Stickerlandia.UserManagement.Core.Outbox;
 
 namespace Stickerlandia.UserManagement.Lambda;
 

@@ -6,7 +6,6 @@ using System.Globalization;
 using Microsoft.Extensions.DependencyInjection;
 using OpenIddict.Abstractions;
 using OpenIddict.Server;
-using OpenIddict.Validation.AspNetCore;
 
 namespace Stickerlandia.UserManagement.Auth;
 
@@ -53,8 +52,7 @@ public static class AuthServiceExtensions
                         .EnableEndSessionEndpointPassthrough()
                         .EnableStatusCodePagesIntegration()
                         .EnableTokenEndpointPassthrough();
-
-
+                
                 options.AddEventHandler<OpenIddictServerEvents.HandleUserInfoRequestContext>(options =>
                     options.UseInlineHandler(context =>
                     {

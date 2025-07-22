@@ -3,7 +3,6 @@
 // Copyright 2025 Datadog, Inc.
 
 using System.Diagnostics;
-using System.Transactions;
 using Microsoft.AspNetCore.Identity;
 using Stickerlandia.UserManagement.Core.Outbox;
 

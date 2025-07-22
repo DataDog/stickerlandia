@@ -20,25 +20,14 @@ public class RegisterModel : PageModel
 {
     private readonly RegisterCommandHandler _registerCommandHandler;
     private readonly SignInManager<PostgresUserAccount> _signInManager;
-    private readonly UserManager<PostgresUserAccount> _userManager;
-    private readonly IUserStore<PostgresUserAccount> _userStore;
-    private readonly IUserEmailStore<PostgresUserAccount> _emailStore;
-    private readonly ILogger<RegisterModel> _logger;
-    private readonly IEmailSender _emailSender;
 
     public RegisterModel(
         UserManager<PostgresUserAccount> userManager,
-        IUserStore<PostgresUserAccount> userStore,
         SignInManager<PostgresUserAccount> signInManager,
         ILogger<RegisterModel> logger,
         IEmailSender emailSender, RegisterCommandHandler registerCommandHandler)
     {
-        _userManager = userManager;
-        _userStore = userStore;
-        _emailStore = GetEmailStore();
         _signInManager = signInManager;
-        _logger = logger;
-        _emailSender = emailSender;
         this._registerCommandHandler = registerCommandHandler;
     }
 
@@ -112,8 +101,7 @@ public class RegisterModel : PageModel
         [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
         public string ConfirmPassword { get; set; }
     }
-
-
+    
     public async Task OnGetAsync(string returnUrl = null)
     {
         ReturnUrl = returnUrl;
@@ -141,39 +129,11 @@ public class RegisterModel : PageModel
                 return Page();
             }
 
-            if (_userManager.Options.SignIn.RequireConfirmedAccount)
-            {
-                return RedirectToPage("RegisterConfirmation", new { email = Input.Email, returnUrl = returnUrl });
-            }
-            else
-            {
-                await _signInManager.SignInAsync(registerResult.Account!, false);
-                return LocalRedirect(returnUrl);
-            }
+            await _signInManager.SignInAsync(registerResult.Account!, false);
+            return LocalRedirect(returnUrl);
         }
 
         // If we got this far, something failed, redisplay form
         return Page();
-    }
-
-    private PostgresUserAccount CreateUser()
-    {
-        try
-        {
-            return Activator.CreateInstance<PostgresUserAccount>();
-        }
-        catch
-        {
-            throw new InvalidOperationException($"Can't create an instance of '{nameof(PostgresUserAccount)}'. " +
-                                                $"Ensure that '{nameof(PostgresUserAccount)}' is not an abstract class and has a parameterless constructor, or alternatively " +
-                                                $"override the register page in /Areas/Identity/Pages/Account/Register.cshtml");
-        }
-    }
-
-    private IUserEmailStore<PostgresUserAccount> GetEmailStore()
-    {
-        if (!_userManager.SupportsUserEmail)
-            throw new NotSupportedException("The default UI requires a user store with email support.");
-        return (IUserEmailStore<PostgresUserAccount>)_userStore;
     }
 }

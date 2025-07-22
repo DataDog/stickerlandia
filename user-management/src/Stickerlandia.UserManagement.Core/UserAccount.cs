@@ -2,11 +2,8 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.RegularExpressions;
 using Stickerlandia.UserManagement.Core.RegisterUser;
-using Stickerlandia.UserManagement.Core.UpdateUserDetails;
 
 namespace Stickerlandia.UserManagement.Core;
 

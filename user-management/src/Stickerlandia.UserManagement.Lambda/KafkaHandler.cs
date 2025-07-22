@@ -6,7 +6,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.Observability;
-using Stickerlandia.UserManagement.Core.Outbox;
 using Stickerlandia.UserManagement.Core.StickerClaimedEvent;
 
 namespace Stickerlandia.UserManagement.Lambda;

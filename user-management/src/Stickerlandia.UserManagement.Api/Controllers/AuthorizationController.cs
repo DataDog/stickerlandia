@@ -81,15 +81,8 @@ public class AuthorizationController : Controller
 
             // To avoid endless login endpoint -> authorization endpoint redirects, a special temp data entry is
             // used to skip the challenge if the user agent has already been redirected to the login endpoint.
-            //
-            // Note: this flag doesn't guarantee that the user has accepted to re-authenticate. If such a guarantee
-            // is needed, the existing authentication cookie MUST be deleted AND revoked (e.g using ASP.NET Core
-            // Identity's security stamp feature with an extremely short revalidation time span) before triggering
-            // a challenge to redirect the user agent to the login endpoint.
             TempData["IgnoreAuthenticationChallenge"] = true;
-
-            // For scenarios where the default challenge handler configured in the ASP.NET Core
-            // authentication options shouldn't be used, a specific scheme can be specified here.
+            
             return Challenge(new AuthenticationProperties
             {
                 RedirectUri = Request.PathBase + Request.Path + QueryString.Create(
