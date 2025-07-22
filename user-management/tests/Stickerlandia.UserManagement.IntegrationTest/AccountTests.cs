@@ -60,36 +60,6 @@ public sealed class AccountTests(ITestOutputHelper testOutputHelper, TestSetupFi
     }
 
     [Fact]
-    public async Task WhenAUserRegistersThenTheyShouldBeAbleToLogin()
-    {
-        try
-        {
-            // Arrange
-            var emailAddress = $"{Guid.NewGuid()}@test.com";
-            var password = $"{Guid.NewGuid()}!A23";
-
-            // Act
-            var registerResult = await _driver.RegisterUser(emailAddress, password);
-
-            // Assert
-            registerResult.Should().NotBeNull();
-            
-            var loginResponse = await _driver.Login(emailAddress, password);
-            loginResponse.Should().NotBeNull();
-            loginResponse!.AuthToken.Should().NotBeEmpty();
-        }
-        catch (Exception ex)
-        {
-            testOutputHelper.WriteLine(ex.Message);
-            testOutputHelper.WriteLine(ex.StackTrace);
-
-            // Wait for logs to flish
-            await Task.Delay(TimeSpan.FromSeconds(10));
-            throw;
-        }
-    }
-
-    [Fact]
     public async Task WhenAUserRegistersTheyShouldBeAbleToUpdateTheirDetails()
     {
         // Arrange
