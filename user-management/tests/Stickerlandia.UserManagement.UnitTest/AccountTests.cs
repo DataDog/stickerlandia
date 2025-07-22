@@ -61,7 +61,9 @@ public class AccountTests
         A.CallTo(() => userManager.GetUserIdAsync(A<PostgresUserAccount>.Ignored))
             .ReturnsLazily(() => Task.FromResult(capturedAccount!.Id));
 
-        var handler = new UpdateUserDetailsHandler(userManager);
+        var outbox = A.Fake<IOutbox>();
+
+        var handler = new UpdateUserDetailsHandler(userManager, outbox);
 
         await handler.Handle(
             new UpdateUserDetailsRequest
@@ -80,7 +82,7 @@ public class AccountTests
         var userManager = A.Fake<UserManager<PostgresUserAccount>>();
         A.CallTo(() => userManager.FindByEmailAsync(A<string>.Ignored))
             .Returns(Task.FromResult<PostgresUserAccount?>(new PostgresUserAccount()));
-        
+
         var outbox = A.Fake<IOutbox>();
 
         var registerCommandHandler = new RegisterCommandHandler(userManager, outbox);
@@ -88,5 +90,4 @@ public class AccountTests
         await Assert.ThrowsAsync<UserExistsException>(async () => await registerCommandHandler.Handle(
             new RegisterUserCommand { EmailAddress = testEmailAddress, Password = testPassword }, AccountType.User));
     }
-
 }
