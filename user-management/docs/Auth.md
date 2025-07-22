@@ -18,10 +18,10 @@ The service exposes standard OAuth 2.0 endpoints:
 
 | Endpoint | URL | Purpose |
 |----------|-----|---------|
-| Authorization | `/connect/authorize` | Initiate OAuth authorization flow |
-| Token | `/connect/token` | Exchange authorization codes for tokens |
-| UserInfo | `/connect/userinfo` | Retrieve user information using access token |
-| Logout | `/connect/logout` | End user session |
+| Authorization | `/api/users/v1/connect/authorize` | Initiate OAuth authorization flow |
+| Token | `/api/users/v1/connect/token` | Exchange authorization codes for tokens |
+| UserInfo | `/api/users/v1/connect/userinfo` | Retrieve user information using access token |
+| Logout | `/api/users/v1/connect/logout` | End user session |
 
 ## Supported Authentication Flows
 
@@ -77,8 +77,8 @@ sequenceDiagram
 
     Note over U,AS: 2. Authorization Request
     U->>C: Click "Login"
-    C->>B: Redirect to /connect/authorize?<br/>response_type=code&<br/>client_id=spa-client&<br/>redirect_uri=https://app.com/callback&<br/>scope=email profile&<br/>code_challenge=xyz&<br/>code_challenge_method=S256&<br/>state=random-state
-    B->>AS: GET /connect/authorize
+    C->>B: Redirect to /api/users/v1/connect/authorize?<br/>response_type=code&<br/>client_id=spa-client&<br/>redirect_uri=https://app.com/callback&<br/>scope=email profile&<br/>code_challenge=xyz&<br/>code_challenge_method=S256&<br/>state=random-state
+    B->>AS: GET /api/users/v1/connect/authorize
 
     Note over AS,B: 3. User Authentication & Consent
     AS->>B: Show login page
@@ -94,7 +94,7 @@ sequenceDiagram
     B->>C: Follow redirect with authorization code
 
     Note over C,AS: 5. Token Exchange
-    C->>AS: POST /connect/token<br/>grant_type=authorization_code&<br/>code=auth-code-123&<br/>client_id=spa-client&<br/>code_verifier=original-verifier&<br/>redirect_uri=https://app.com/callback
+    C->>AS: POST /api/users/v1/connect/token<br/>grant_type=authorization_code&<br/>code=auth-code-123&<br/>client_id=spa-client&<br/>code_verifier=original-verifier&<br/>redirect_uri=https://app.com/callback
     AS->>AS: Validate code_verifier against code_challenge
     AS->>C: Return tokens:<br/>{<br/>  "access_token": "...",<br/>  "refresh_token": "...",<br/>  "id_token": "...",<br/>  "token_type": "Bearer",<br/>  "expires_in": 3600<br/>}
 
@@ -148,7 +148,7 @@ sequenceDiagram
     RS->>C: 401 Unauthorized (token expired)
     
     C->>C: Check if refresh token available
-    C->>AS: POST /connect/token<br/>grant_type=refresh_token&<br/>refresh_token=refresh-token-123&<br/>client_id=spa-client
+    C->>AS: POST /api/users/v1/connect/token<br/>grant_type=refresh_token&<br/>refresh_token=refresh-token-123&<br/>client_id=spa-client
     
     AS->>AS: Validate refresh token
     AS->>AS: Generate new tokens
@@ -170,7 +170,7 @@ sequenceDiagram
 
     Note over U,DB: User Logout Process
     U->>C: Click "Logout"
-    C->>AS: POST /connect/logout<br/>id_token_hint=user-id-token&<br/>post_logout_redirect_uri=https://app.com/logged-out
+    C->>AS: POST /api/users/v1/connect/logout<br/>id_token_hint=user-id-token&<br/>post_logout_redirect_uri=https://app.com/logged-out
     
     AS->>DB: Revoke user session
     AS->>DB: Invalidate refresh tokens

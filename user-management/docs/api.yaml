@@ -3,6 +3,39 @@ info:
   title: User Management API
   version: v1
 paths:
+  /api/users/v1/connect/authorize:
+    get:
+      tags:
+        - Authorization
+      responses:
+        '200':
+          description: OK
+    post:
+      tags:
+        - Authorization
+      responses:
+        '200':
+          description: OK
+  /api/users/v1/connect/logout:
+    get:
+      tags:
+        - Authorization
+      responses:
+        '200':
+          description: OK
+    post:
+      tags:
+        - Authorization
+      responses:
+        '200':
+          description: OK
+  /api/users/v1/connect/token:
+    post:
+      tags:
+        - Authorization
+      responses:
+        '200':
+          description: OK
   '/api/users/v{version}/details':
     get:
       tags:
@@ -14,7 +47,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserAccountDTOApiResponse'
+                $ref: '#/components/schemas/UserAccountDtoApiResponse'
         '401':
           description: Unauthorized
           content:
@@ -44,30 +77,6 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
-  '/api/users/v{version}/register':
-    post:
-      tags:
-        - api
-      description: RegisterUser as a new user
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RegisterUserCommand'
-        required: true
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RegisterResponseApiResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
 components:
   schemas:
     ProblemDetails:
@@ -90,40 +99,6 @@ components:
           type: string
           nullable: true
       additionalProperties: { }
-    RegisterResponse:
-      type: object
-      properties:
-        accountId:
-          type: string
-          nullable: true
-      additionalProperties: false
-    RegisterResponseApiResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-        message:
-          type: string
-          nullable: true
-        data:
-          $ref: '#/components/schemas/RegisterResponse'
-      additionalProperties: false
-    RegisterUserCommand:
-      type: object
-      properties:
-        firstName:
-          type: string
-          nullable: true
-        lastName:
-          type: string
-          nullable: true
-        emailAddress:
-          type: string
-          nullable: true
-        password:
-          type: string
-          nullable: true
-      additionalProperties: false
     StringApiResponse:
       type: object
       properties:
@@ -146,7 +121,7 @@ components:
           type: string
           nullable: true
       additionalProperties: false
-    UserAccountDTO:
+    UserAccountDto:
       type: object
       properties:
         accountId:
@@ -165,7 +140,7 @@ components:
           type: integer
           format: int32
       additionalProperties: false
-    UserAccountDTOApiResponse:
+    UserAccountDtoApiResponse:
       type: object
       properties:
         success:
@@ -174,20 +149,15 @@ components:
           type: string
           nullable: true
         data:
-          $ref: '#/components/schemas/UserAccountDTO'
+          $ref: '#/components/schemas/UserAccountDto'
       additionalProperties: false
   securitySchemes:
     oauth2:
       type: oauth2
       description: OAuth 2.0
       flows:
-        password:
-          authorizationUrl: http://localhost:5139/authorize
-          tokenUrl: http://localhost:5139/api/users/v1/login
-          scopes:
-            User: Read
         authorizationCode:
-          authorizationUrl: file:///authorize
-          tokenUrl: file:///api/users/v1/login
+          authorizationUrl: file:///api/users/v1/connect/authorize
+          tokenUrl: file:///api/users/v1/connect/token
           scopes:
             User: Read

@@ -94,7 +94,7 @@ internal sealed class MockHttpMessageHandler : HttpMessageHandler
         }
         
         // Mock OAuth2.0 authorize endpoint
-        if (method == "GET" && path.Contains("connect/authorize", StringComparison.OrdinalIgnoreCase))
+        if (method == "GET" && path.Contains("api/users/v1/connect/authorize", StringComparison.OrdinalIgnoreCase))
         {
             // Return redirect with auth code
             var response = new HttpResponseMessage(HttpStatusCode.Redirect);

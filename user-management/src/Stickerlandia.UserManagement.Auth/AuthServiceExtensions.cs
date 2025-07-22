@@ -20,10 +20,10 @@ public static class AuthServiceExtensions
             {
                 // Enable the token endpoint.
                 // Enable the authorization, logout, token and userinfo endpoints.
-                options.SetAuthorizationEndpointUris("connect/authorize")
-                    .SetEndSessionEndpointUris("connect/logout")
-                    .SetTokenEndpointUris("connect/token")
-                    .SetUserInfoEndpointUris("connect/userinfo") ;
+                options.SetAuthorizationEndpointUris("api/users/v1/connect/authorize")
+                    .SetEndSessionEndpointUris("api/users/v1/connect/logout")
+                    .SetTokenEndpointUris("api/users/v1/connect/token")
+                    .SetUserInfoEndpointUris("api/users/v1/connect/userinfo") ;
 
                 // Mark the "email", "profile" and "roles" scopes as supported scopes.
                 options.RegisterScopes(OpenIddictConstants.Permissions.Scopes.Email, OpenIddictConstants.Permissions.Scopes.Profile, OpenIddictConstants.Permissions.Scopes.Roles);

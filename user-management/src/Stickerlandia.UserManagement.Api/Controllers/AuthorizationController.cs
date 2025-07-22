@@ -51,8 +51,8 @@ public class AuthorizationController : Controller
     /// The IgnoreAntiforgeryToken attribute is used to disable the CSRF protection for this endpoint,
     /// as the connect endpoints are going to be called by an external client, which won't be able to provide an anti-forgery token.
     /// </summary>
-    [HttpGet("~/connect/authorize")]
-    [HttpPost("~/connect/authorize")]
+    [HttpGet("~/api/users/v1/connect/authorize")]
+    [HttpPost("~/api/users/v1/connect/authorize")]
     [IgnoreAntiforgeryToken]
     public async Task<IActionResult> Authorize()
     {
@@ -186,14 +186,14 @@ public class AuthorizationController : Controller
         }
     }
 
-    [HttpGet("~/connect/logout")]
+    [HttpGet("~/api/users/v1/connect/logout")]
     public IActionResult Logout()
     {
         return View();
     }
 
     [ActionName(nameof(Logout))]
-    [HttpPost("~/connect/logout")]
+    [HttpPost("~/api/users/v1/connect/logout")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> LogoutPost()
     {
@@ -214,104 +214,12 @@ public class AuthorizationController : Controller
     }
     
     /// <summary>
-    /// This action is invoked when the 'submit.Accept' form value is present in the request.
-    /// It is called when a user denies the authorization request as part of the auth flow.
-    /// </summary>
-    [Authorize]
-    [FormValueRequired("submit.Accept")]
-    [HttpPost("~/connect/authorize")]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Accept()
-    {
-        var request = HttpContext.GetOpenIddictServerRequest() ??
-                      throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
-
-        // Retrieve the profile of the logged in user.
-        var user = await _userManager.GetUserAsync(User) ??
-                   throw new InvalidOperationException("The user details cannot be retrieved.");
-
-        // Retrieve the application details from the database.
-        var application = await _applicationManager.FindByClientIdAsync(request.ClientId!) ??
-                          throw new InvalidOperationException(
-                              "Details concerning the calling client application cannot be found.");
-
-        // Retrieve the permanent authorizations associated with the user and the calling client application.
-        var authorizations = await _authorizationManager.FindAsync(
-            await _userManager.GetUserIdAsync(user),
-            await _applicationManager.GetIdAsync(application),
-            OpenIddictConstants.Statuses.Valid,
-            OpenIddictConstants.AuthorizationTypes.Permanent,
-            request.GetScopes()).ToListAsync();
-
-        // Note: the same check is already made in the other action but is repeated
-        // here to ensure a malicious user can't abuse this POST-only endpoint and
-        // force it to return a valid response without the external authorization.
-        if (authorizations.Count is 0 &&
-            await _applicationManager.HasConsentTypeAsync(application, OpenIddictConstants.ConsentTypes.External))
-            return Forbid(
-                authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
-                properties: new AuthenticationProperties(new Dictionary<string, string?>
-                {
-                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = OpenIddictConstants.Errors.ConsentRequired,
-                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
-                        "The logged in user is not allowed to access this client application."
-                }));
-
-        // Create the claims-based identity that will be used by OpenIddict to generate tokens.
-        var identity = new ClaimsIdentity(
-            TokenValidationParameters.DefaultAuthenticationType,
-            OpenIddictConstants.Claims.Name,
-            OpenIddictConstants.Claims.Role);
-
-        // Add the claims that will be persisted in the tokens.
-        identity.SetClaim(OpenIddictConstants.Claims.Subject, await _userManager.GetUserIdAsync(user))
-            .SetClaim(OpenIddictConstants.Claims.Email, await _userManager.GetEmailAsync(user))
-            .SetClaim(OpenIddictConstants.Claims.Name, await _userManager.GetUserNameAsync(user))
-            .SetClaim(OpenIddictConstants.Claims.PreferredUsername, await _userManager.GetUserNameAsync(user))
-            .SetClaims(OpenIddictConstants.Claims.Role, [.. await _userManager.GetRolesAsync(user)]);
-        
-        identity.SetScopes(request.GetScopes());
-        identity.SetResources(await _scopeManager.ListResourcesAsync(identity.GetScopes()).ToListAsync());
-
-        // Automatically create a permanent authorization to avoid requiring explicit consent
-        // for future authorization or token requests containing the same scopes.
-        var authorization = authorizations.LastOrDefault();
-        authorization ??= await _authorizationManager.CreateAsync(
-            identity,
-            await _userManager.GetUserIdAsync(user),
-            (await _applicationManager.GetIdAsync(application))!,
-            OpenIddictConstants.AuthorizationTypes.Permanent,
-            identity.GetScopes());
-
-        identity.SetAuthorizationId(await _authorizationManager.GetIdAsync(authorization));
-        identity.SetDestinations(GetDestinations);
-
-        // Returning a SignInResult will ask OpenIddict to issue the appropriate access/identity tokens.
-        return SignIn(new ClaimsPrincipal(identity), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
-    }
-
-    /// <summary>
-    /// This action is invoked when the 'submit.Deny' form value is present in the request.
-    /// It is called when a user denies the authorization request as part of the auth flow.
-    /// </summary>
-    [Authorize]
-    [FormValueRequired("submit.Deny")]
-    [HttpPost("~/connect/authorize")]
-    [ValidateAntiForgeryToken]
-    // Notify OpenIddict that the authorization grant has been denied by the resource owner
-    // to redirect the user agent to the client application using the appropriate response_mode.
-    public IActionResult Deny()
-    {
-        return Forbid(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
-    }
-
-    /// <summary>
     /// This action is invoked when a POST is sent to the token endpoint as part of the OAuth 2.0
     /// authorization code or refresh token flows, to exchange an authorization code or a refresh token
     /// The IgnoreAntiforgeryToken attribute is used to disable the CSRF protection for this endpoint,
     /// as the endpoints is going to be called by an external client, which won't be able to provide an anti-forgery token.
     /// </summary>
-    [HttpPost("~/connect/token")]
+    [HttpPost("~/api/users/v1/connect/token")]
     [IgnoreAntiforgeryToken]
     [Produces("application/json")]
     public async Task<IActionResult> Exchange()
