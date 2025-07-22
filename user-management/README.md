@@ -1,8 +1,46 @@
-# User Management Service
+# Stickerlandia User Management Service
 
-The User Management Service manages users. It provides one primary API:
+The **Stickerlandia User Management Service** is a comprehensive, cloud-native user authentication and management system built with .NET 8. It serves as a complete OAuth 2.0 authorization server and user management platform, designed with **platform adaptability** as a core principle to run seamlessly on Azure, AWS, or any cloud-agnostic container orchestrator.
 
-- **User Management API** (`/api/users/v1`) - Manages users and provides OAuth 2.0 endpoints for AuthN/Z
+## What This Application Does
+
+The User Management Service provides a complete identity and access management solution for the Stickerlandia ecosystem:
+
+### 🔐 **OAuth 2.0 Authorization Server**
+- Full OAuth 2.0 authorization server implementation using [OpenIddict](https://documentation.openiddict.com/)
+- Authorization Code Flow with PKCE support for frontend applications (SPAs, mobile apps)
+- Refresh token support for seamless user experience
+- Secure user authentication and authorization
+- Standard OAuth 2.0 endpoints: `/connect/authorize`, `/connect/token`, `/connect/logout`, `/connect/userinfo`
+
+### 👥 **User Account Management**
+- User registration and profile management
+- ASP.NET Core Identity integration with custom user models
+- Account tiers and types support
+- Sticker tracking and gamification features
+- Self-service account updates
+
+### 🚀 **Event-Driven Architecture**
+- Publishes user lifecycle events (registration, profile updates)
+- Processes external events (sticker claiming)
+- Implements outbox pattern for reliable event delivery
+- Platform-specific messaging: SNS/SQS (AWS), Service Bus (Azure), Kafka (Agnostic)
+
+### 🌐 **Multi-Platform Support**
+- **Azure Native**: Azure Functions, Service Bus, PostgreSQL
+- **AWS Native**: Lambda functions, SNS/SQS, PostgreSQL  
+- **Cloud Agnostic**: Kafka, PostgreSQL, containerized workers
+
+### 📊 **Production-Ready Features**
+- Comprehensive health monitoring and observability
+- Structured logging and error handling (RFC 7807 Problem Details)
+- Static code analysis and quality enforcement
+- Full test coverage with platform-specific integration tests
+- Infrastructure as Code for AWS (CDK) and Azure (Terraform)
+
+The service provides one primary API:
+
+- **User Management API** (`/api/users/v1`) - RESTful API for user operations and OAuth 2.0 endpoints
 
 ## Architecture
 
@@ -46,11 +84,33 @@ The AWS native implementation of the user management service uses a combination 
 
 You can find the full [Open API specification in the docs folder](./docs/api.yaml).
 
-## Features
+## Key Features
 
-- Register users
-- OIDC authorization code flow (frontend app) and client credentials flow (service->service) 
-- Get and update user accounts
+### Authentication & Authorization
+- **OAuth 2.0 Authorization Server** - Complete implementation with OpenIddict
+- **Authorization Code Flow with PKCE** - Secure authentication for SPAs and mobile apps
+- **Refresh Token Support** - Seamless token refresh for better UX
+- **Multiple Scopes** - Support for `email`, `profile`, and `roles` scopes
+- **ASP.NET Core Identity Integration** - Robust user management with custom models
+
+### User Management
+- **User Registration** - Self-service account creation with validation
+- **Profile Management** - Update user details, preferences, and settings  
+- **Account Tiers & Types** - Support for different user account levels
+- **Sticker Gamification** - Track and manage user sticker collections
+- **Security** - JWT-based API authentication with proper access controls
+
+### Platform Adaptability
+- **Multi-Cloud Support** - Deploy on Azure, AWS, or cloud-agnostic platforms
+- **Flexible Architecture** - Ports and adapters pattern for clean separation
+- **Event-Driven Design** - Reliable event publishing with outbox pattern
+- **Background Processing** - Platform-specific workers (Functions, Lambda, containers)
+
+### Developer Experience
+- **.NET Aspire Integration** - Local development with different platform profiles
+- **Comprehensive Testing** - Unit and integration tests for all platforms
+- **API Documentation** - OpenAPI and AsyncAPI specifications
+- **Infrastructure as Code** - AWS CDK and Azure Terraform templates
 
 ## Events
 
@@ -58,8 +118,17 @@ You can find the full [Async API specification for events published and received
 
 ## Authentication
 
-All API endpoints (except `/health` and `/register`) require authentication via JWT token in the Authorization header. 
-Access controls ensure users can only operate on their own accounts unless they have admin privileges.
+The service implements a complete OAuth 2.0 authorization server using [OpenIddict](https://documentation.openiddict.com/). For detailed authentication flows and integration guidance, see [Authentication Documentation](./docs/Auth.md).
+
+### Quick Overview
+- **Endpoints**: Authorization (`/connect/authorize`), Token (`/connect/token`), Logout (`/connect/logout`), UserInfo (`/connect/userinfo`)
+- **Supported Flows**: Authorization Code with PKCE, Refresh Token
+- **Scopes**: `email`, `profile`, `roles`
+- **API Authentication**: JWT Bearer tokens required for all endpoints except `/health` and `/register`
+- **Access Control**: Users can only operate on their own accounts unless they have admin privileges
+
+### For Client Applications
+To integrate with this OAuth 2.0 server, client applications should implement the Authorization Code Flow with PKCE. See the [Auth.md documentation](./docs/Auth.md) for sequence diagrams.
 
 ## Error Handling
 
