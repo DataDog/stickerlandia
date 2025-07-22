@@ -39,4 +39,14 @@
     <Folder Include="wwwroot\js\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="Areas\Auth\Pages\Login.cshtml" />
+    <_ContentIncludedByDefault Remove="Areas\Auth\Pages\Logout.cshtml" />
+    <_ContentIncludedByDefault Remove="Areas\Auth\Pages\Register.cshtml" />
+    <_ContentIncludedByDefault Remove="Areas\Auth\Pages\_ViewImports.cshtml" />
+    <_ContentIncludedByDefault Remove="Areas\Auth\_ValidationScriptsPartial.cshtml" />
+    <_ContentIncludedByDefault Remove="Areas\Auth\_ViewImports.cshtml" />
+    <_ContentIncludedByDefault Remove="Areas\Auth\_ViewStart.cshtml" />
+  </ItemGroup>
+
 </Project>

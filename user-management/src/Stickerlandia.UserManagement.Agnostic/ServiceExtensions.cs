@@ -3,6 +3,7 @@
 // Copyright 2025 Datadog, Inc.
 
 using Confluent.Kafka;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -74,10 +75,7 @@ public static class ServiceExtensions
             .AddEntityFrameworkStores<UserManagementDbContext>()
             .AddDefaultTokenProviders();
 
-        if (enableDefaultUi)
-        {
-            identityOptions.AddDefaultUI();
-        }
+        if (enableDefaultUi) identityOptions.AddDefaultUI();
 
         var disableSsl = false;
 
@@ -86,6 +84,13 @@ public static class ServiceExtensions
         services.AddCoreAuthentication(options =>
             options.UseEntityFrameworkCore()
                 .UseDbContext<UserManagementDbContext>(), disableSsl);
+
+        services.ConfigureApplicationCookie(options =>
+        {
+            options.LoginPath = new PathString("/auth/login");
+            options.LogoutPath = new PathString("/auth/logout");
+            options.AccessDeniedPath = new PathString("/auth/denied");
+        });
 
         services.AddScoped<IAuthService, MicrosoftIdentityAuthService>();
 

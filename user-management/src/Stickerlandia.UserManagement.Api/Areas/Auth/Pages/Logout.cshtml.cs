@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Stickerlandia.UserManagement.Core;
 
-namespace Stickerlandia.UserManagement.Api.Areas.Identity.Pages.Account
+namespace Stickerlandia.UserManagement.Api.Areas.Auth.Pages
 {
     public class LogoutModel : PageModel
     {

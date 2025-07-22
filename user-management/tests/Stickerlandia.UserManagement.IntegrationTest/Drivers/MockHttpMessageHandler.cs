@@ -23,7 +23,7 @@ internal sealed class MockHttpMessageHandler : HttpMessageHandler
         var method = request.Method.Method;
         
         // Mock Identity UI registration page GET
-        if (method == "GET" && path.Contains("Identity/Account/Register", StringComparison.OrdinalIgnoreCase))
+        if (method == "GET" && path.Contains("auth/register", StringComparison.OrdinalIgnoreCase))
         {
             return new HttpResponseMessage(HttpStatusCode.OK)
             {
@@ -32,7 +32,7 @@ internal sealed class MockHttpMessageHandler : HttpMessageHandler
         }
         
         // Mock Identity UI registration POST
-        if (method == "POST" && path.Contains("Identity/Account/Register", StringComparison.OrdinalIgnoreCase))
+        if (method == "POST" && path.Contains("auth/register", StringComparison.OrdinalIgnoreCase))
         {
             var formData = await ParseFormDataAsync(request);
             var email = formData.GetValueOrDefault("Input.Email", "");

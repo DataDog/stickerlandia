@@ -74,7 +74,7 @@ internal sealed class AccountDriver : IDisposable
             _testOutputHelper.WriteLine("Attempting registration via Identity UI with proper form handling");
             
             // Step 1: Get the registration page to extract CSRF and form details
-            var getResponse = await _oauthClient.GetAsync("Identity/Account/Register");
+            var getResponse = await _oauthClient.GetAsync("auth/register");
             if (!getResponse.IsSuccessStatusCode)
             {
                 _testOutputHelper.WriteLine($"Could not get registration page: {getResponse.StatusCode}");
@@ -107,7 +107,7 @@ internal sealed class AccountDriver : IDisposable
             using var formContent = new FormUrlEncodedContent(formFields);
             
             // Use the same HttpClient that maintains cookies
-            var postResponse = await _oauthClient.PostAsync("Identity/Account/Register", formContent);
+            var postResponse = await _oauthClient.PostAsync("auth/register", formContent);
             
             _testOutputHelper.WriteLine($"Registration POST response: {postResponse.StatusCode}");
             
@@ -245,45 +245,8 @@ internal sealed class AccountDriver : IDisposable
     private async Task AuthenticateUserViaIdentityUI(string emailAddress, string password)
     {
         // Try different login endpoints to find the correct one
-        var possibleLoginPaths = new[]
-        {
-            "Identity/Account/Login",
-            "/Identity/Account/Login", 
-            "Account/Login",
-            "/Account/Login",
-            "Areas/Identity/Pages/Account/Login",
-            "/Areas/Identity/Pages/Account/Login"
-        };
-        
-        HttpResponseMessage? loginPageResponse = null;
-        string? workingLoginPath = null;
-        
-        foreach (var path in possibleLoginPaths)
-        {
-            _testOutputHelper.WriteLine($"Trying login path: {path}");
-            try
-            {
-                loginPageResponse = await _oauthClient.GetAsync(path);
-                if (loginPageResponse.IsSuccessStatusCode)
-                {
-                    workingLoginPath = path;
-                    _testOutputHelper.WriteLine($"Found working login path: {path}");
-                    break;
-                }
-                else
-                {
-                    _testOutputHelper.WriteLine($"Login path {path} returned: {loginPageResponse.StatusCode}");
-                }
-            }
-            catch (HttpRequestException ex)
-            {
-                _testOutputHelper.WriteLine($"HTTP request failed for login path {path}: {ex.Message}");
-            }
-            catch (TaskCanceledException ex)
-            {
-                _testOutputHelper.WriteLine($"Request timeout for login path {path}: {ex.Message}");
-            }
-        }
+        var loginPath = "auth/login";
+        var loginPageResponse = await _oauthClient.GetAsync(loginPath);
         
         if (loginPageResponse == null || !loginPageResponse.IsSuccessStatusCode)
         {
@@ -308,7 +271,7 @@ internal sealed class AccountDriver : IDisposable
         
         // Step 4: Submit login form to the same working path
         using var loginContent = new FormUrlEncodedContent(formFields);
-        var loginResponse = await _oauthClient.PostAsync(workingLoginPath, loginContent);
+        var loginResponse = await _oauthClient.PostAsync(loginPath, loginContent);
         
         var loginResponseContent = await loginResponse.Content.ReadAsStringAsync();
         

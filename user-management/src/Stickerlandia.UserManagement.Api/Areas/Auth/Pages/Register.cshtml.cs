@@ -14,7 +14,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.RegisterUser;
 
-namespace Stickerlandia.UserManagement.Api.Areas.Identity.Pages.Account;
+namespace Stickerlandia.UserManagement.Api.Areas.Auth.Pages;
 
 public class RegisterModel : PageModel
 {
