@@ -6,7 +6,7 @@ internal static class TestConstants
         Environment.GetEnvironmentVariable("API_ENDPOINT") ?? "https://localhost:51545";
 
     // OAuth2.0 Configuration
-    public static string OAuth2ClientId = "user-authentication";
+    public static string OAuth2ClientId = "web-ui";
     public static string OAuth2RedirectUri = "https://localhost:3000/callback";
     public static string[] OAuth2Scopes = ["offline_access"];
     

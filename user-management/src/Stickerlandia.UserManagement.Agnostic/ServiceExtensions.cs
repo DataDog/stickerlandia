@@ -88,9 +88,8 @@ public static class ServiceExtensions
                 .UseDbContext<UserManagementDbContext>(), disableSsl);
 
         services.AddScoped<IAuthService, MicrosoftIdentityAuthService>();
-
-        services.AddScoped<IUsers, PostgresUserRepository>();
-        services.AddScoped<IOutbox, PostgresUserRepository>();
+        
+        services.AddScoped<IOutbox, PostgresOutbox>();
 
         return services;
     }

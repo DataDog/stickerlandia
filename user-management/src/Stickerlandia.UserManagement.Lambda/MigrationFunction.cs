@@ -35,30 +35,38 @@ public class MigrationFunction(IServiceScopeFactory serviceScopeFactory)
         CancellationToken cancellationToken)
     {
         // Add seeding logic here if needed.
-        if (await manager.FindByClientIdAsync("user-authentication", cancellationToken) is null)
+        if (await manager.FindByClientIdAsync("web-ui", cancellationToken) is null)
             await manager.CreateAsync(new OpenIddictApplicationDescriptor
             {
-                ClientId = "user-authentication",
-                ClientSecret = "388D45FA-B36B-4988-BA59-B187D329C207",
+                ClientId = "web-ui",
+                ClientType = OpenIddictConstants.ClientTypes.Public,
+                PostLogoutRedirectUris =
+                {
+                    new Uri("https://localhost:3000")
+                },
+                RedirectUris =
+                {
+                    new Uri("https://localhost:3000/callback")
+                },
                 Permissions =
                 {
+                    OpenIddictConstants.Permissions.Endpoints.Authorization,
+                    OpenIddictConstants.Permissions.Endpoints.EndSession,
                     OpenIddictConstants.Permissions.Endpoints.Token,
-                    OpenIddictConstants.Permissions.GrantTypes.Password,
-                    OpenIddictConstants.Permissions.GrantTypes.RefreshToken
-                }
-            }, cancellationToken);
-
-        if (await manager.FindByClientIdAsync("internal-service", cancellationToken) is null)
-            await manager.CreateAsync(new OpenIddictApplicationDescriptor
-            {
-                ClientId = "internal-service",
-                ClientSecret = "8E1167EF-5C44-4209-A803-3A109155FDD3",
-                Permissions =
+                    OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode,
+                    OpenIddictConstants.Permissions.GrantTypes.RefreshToken,
+                    OpenIddictConstants.Permissions.ResponseTypes.Code,
+                    OpenIddictConstants.Permissions.Scopes.Email,
+                    OpenIddictConstants.Permissions.Scopes.Profile,
+                    OpenIddictConstants.Permissions.Scopes.Roles
+                },
+                Requirements =
                 {
-                    OpenIddictConstants.Permissions.Endpoints.Token,
-                    OpenIddictConstants.Permissions.GrantTypes.Password,
-                    OpenIddictConstants.Permissions.GrantTypes.ClientCredentials
+                    // This client requires the Proof Key for Code Exchange (PKCE).
+                    OpenIddictConstants.Requirements.Features.ProofKeyForCodeExchange
                 }
             }, cancellationToken);
+        
+        // As soon as Stickerlandia services need to call other services under their own identities, add them here
     }
 }

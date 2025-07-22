@@ -12,16 +12,13 @@ namespace Stickerlandia.UserManagement.Core.RegisterUser;
 public class RegisterCommandHandler
 {
     private readonly UserManager<PostgresUserAccount> _userManager;
-    private readonly IUserStore<PostgresUserAccount> _userStore;
     private readonly IOutbox _outbox;
 
     public RegisterCommandHandler(
         UserManager<PostgresUserAccount> userManager,
-        IUserStore<PostgresUserAccount> userStore,
         IOutbox outbox)
     {
         _userManager = userManager;
-        _userStore = userStore;
         _outbox = outbox;
     }
 
@@ -38,11 +35,12 @@ public class RegisterCommandHandler
                 throw new UserExistsException("A user with this email address already exists.");
             }
             
-            using var transactionScope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
+            //using var transactionScope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
 
-            var user = CreateUser();
-
-            await _userStore.SetUserNameAsync(user, command.EmailAddress, CancellationToken.None);
+            var user = new PostgresUserAccount();
+            user.UserName = command.EmailAddress;
+            user.Email = command.EmailAddress;
+            user.EmailConfirmed = true;
             user.FirstName = command.FirstName;
             user.LastName = command.LastName;
             user.DateCreated = DateTime.UtcNow;
@@ -67,6 +65,8 @@ public class RegisterCommandHandler
             var response = new RegisterResponse();
 
             foreach (var error in result.Errors) response.Errors.Add(error.Description);
+            
+            //transactionScope.Complete();
 
             return response;
         }
@@ -83,21 +83,6 @@ public class RegisterCommandHandler
             Activity.Current?.AddTag("error.message", ex.Message);
 
             throw;
-        }
-    }
-
-
-    private PostgresUserAccount CreateUser()
-    {
-        try
-        {
-            return Activator.CreateInstance<PostgresUserAccount>();
-        }
-        catch
-        {
-            throw new InvalidOperationException($"Can't create an instance of '{nameof(PostgresUserAccount)}'. " +
-                                                $"Ensure that '{nameof(PostgresUserAccount)}' is not an abstract class and has a parameterless constructor, or alternatively " +
-                                                $"override the register page in /Areas/Identity/Pages/Account/Register.cshtml");
         }
     }
 }

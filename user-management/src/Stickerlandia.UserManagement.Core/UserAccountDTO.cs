@@ -8,12 +8,12 @@ namespace Stickerlandia.UserManagement.Core;
 
 public record UserAccountDto
 {
-    public UserAccountDto(UserAccount userAccount)
+    public UserAccountDto(PostgresUserAccount userAccount)
     {
         ArgumentNullException.ThrowIfNull(userAccount);
         
-        AccountId = userAccount.Id?.Value ?? "";
-        EmailAddress = userAccount.EmailAddress;
+        AccountId = userAccount.Id ?? "";
+        EmailAddress = userAccount.Email!;
         FirstName = userAccount.FirstName;
         LastName = userAccount.LastName;
         ClaimedStickerCount = userAccount.ClaimedStickerCount;

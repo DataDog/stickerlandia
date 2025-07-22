@@ -68,10 +68,11 @@ public sealed class AccountTests(ITestOutputHelper testOutputHelper, TestSetupFi
 
             // Act
             var registerResult = await _driver.RegisterUser(emailAddress, password);
-            var loginResponse = await _driver.Login(emailAddress, password);
 
             // Assert
             registerResult.Should().NotBeNull();
+            
+            var loginResponse = await _driver.Login(emailAddress, password);
             loginResponse.Should().NotBeNull();
             loginResponse!.AuthToken.Should().NotBeEmpty();
         }

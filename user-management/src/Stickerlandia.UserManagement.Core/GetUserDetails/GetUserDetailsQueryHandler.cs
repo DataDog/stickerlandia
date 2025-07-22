@@ -3,10 +3,11 @@
 // Copyright 2025 Datadog, Inc.
 
 using System.Diagnostics;
+using Microsoft.AspNetCore.Identity;
 
 namespace Stickerlandia.UserManagement.Core.GetUserDetails;
 
-public class GetUserDetailsQueryHandler(IUsers users)
+public class GetUserDetailsQueryHandler(UserManager<PostgresUserAccount> userManager)
 {
     public async Task<UserAccountDto> Handle(GetUserDetailsQuery query)
     {
@@ -19,7 +20,7 @@ public class GetUserDetailsQueryHandler(IUsers users)
                 throw new ArgumentException("Invalid auth token");
             }
 
-            var account = await users.WithIdAsync(query.AccountId);
+            var account = await userManager.FindByIdAsync(query.AccountId.Value);
 
             if (account == null)
             {

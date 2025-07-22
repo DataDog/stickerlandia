@@ -19,6 +19,10 @@ using Stickerlandia.UserManagement.Core;
 
 namespace Stickerlandia.UserManagement.Api.Controllers;
 
+/// <summary>
+/// The implementation of the Authorization controller comes from samples provided by OpenIddict.
+/// https://github.com/openiddict/openiddict-samples/tree/dev/samples/Balosar/Balosar.Server
+/// </summary>
 public class AuthorizationController : Controller
 {
     private readonly IOpenIddictApplicationManager _applicationManager;
@@ -148,10 +152,7 @@ public class AuthorizationController : Controller
                     .SetClaim(OpenIddictConstants.Claims.Name, await _userManager.GetUserNameAsync(user))
                     .SetClaim(OpenIddictConstants.Claims.PreferredUsername, await _userManager.GetUserNameAsync(user))
                     .SetClaims(OpenIddictConstants.Claims.Role, [.. await _userManager.GetRolesAsync(user)]);
-
-                // Note: in this sample, the granted scopes match the requested scope
-                // but you may want to allow the user to uncheck specific scopes.
-                // For that, simply restrict the list of scopes before calling SetScopes.
+                
                 identity.SetScopes(request.GetScopes());
                 identity.SetResources(await _scopeManager.ListResourcesAsync(identity.GetScopes()).ToListAsync());
 
@@ -222,7 +223,11 @@ public class AuthorizationController : Controller
                 RedirectUri = "/"
             });
     }
-
+    
+    /// <summary>
+    /// This action is invoked when the 'submit.Accept' form value is present in the request.
+    /// It is called when a user denies the authorization request as part of the auth flow.
+    /// </summary>
     [Authorize]
     [FormValueRequired("submit.Accept")]
     [HttpPost("~/connect/authorize")]
@@ -275,10 +280,7 @@ public class AuthorizationController : Controller
             .SetClaim(OpenIddictConstants.Claims.Name, await _userManager.GetUserNameAsync(user))
             .SetClaim(OpenIddictConstants.Claims.PreferredUsername, await _userManager.GetUserNameAsync(user))
             .SetClaims(OpenIddictConstants.Claims.Role, [.. await _userManager.GetRolesAsync(user)]);
-
-        // Note: in this sample, the granted scopes match the requested scope
-        // but you may want to allow the user to uncheck specific scopes.
-        // For that, simply restrict the list of scopes before calling SetScopes.
+        
         identity.SetScopes(request.GetScopes());
         identity.SetResources(await _scopeManager.ListResourcesAsync(identity.GetScopes()).ToListAsync());
 
@@ -299,6 +301,10 @@ public class AuthorizationController : Controller
         return SignIn(new ClaimsPrincipal(identity), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
 
+    /// <summary>
+    /// This action is invoked when the 'submit.Deny' form value is present in the request.
+    /// It is called when a user denies the authorization request as part of the auth flow.
+    /// </summary>
     [Authorize]
     [FormValueRequired("submit.Deny")]
     [HttpPost("~/connect/authorize")]

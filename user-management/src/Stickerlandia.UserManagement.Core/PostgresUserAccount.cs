@@ -14,4 +14,26 @@ public class PostgresUserAccount : IdentityUser
     public DateTime DateCreated { get; set; }
     public AccountTier AccountTier { get; set; }
     public AccountType AccountType { get; set; }
+
+    internal bool Changed { get; private set; }
+
+    public void UpdateUserDetails(string newFirstName, string newLastName)
+    {
+        if (!string.IsNullOrEmpty(newFirstName) && newFirstName != FirstName)
+        {
+            FirstName = newFirstName;
+            Changed = true;
+        }
+
+        if (!string.IsNullOrEmpty(newLastName) && newLastName != LastName)
+        {
+            LastName = newLastName;
+            Changed = true;
+        }
+    }
+
+    public void StickerOrdered()
+    {
+        ClaimedStickerCount++;
+    }
 }

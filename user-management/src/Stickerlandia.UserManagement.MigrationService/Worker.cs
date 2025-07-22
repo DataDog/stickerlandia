@@ -57,12 +57,11 @@ internal sealed class Worker(
     private static async Task SeedDataAsync(UserManagementDbContext dbContext, IOpenIddictApplicationManager manager,
         CancellationToken cancellationToken)
     {
-        // Add seeding logic here if needed.
-        if (await manager.FindByClientIdAsync("user-authentication", cancellationToken) is null)
+        // The web-ui client is for the public web interface and uses the OAuth2.0 authorization code flow with PKCE.
+        if (await manager.FindByClientIdAsync("web-ui", cancellationToken) is null)
             await manager.CreateAsync(new OpenIddictApplicationDescriptor
             {
-                ClientId = "user-authentication",
-                ConsentType = OpenIddictConstants.ConsentTypes.Explicit,
+                ClientId = "web-ui",
                 ClientType = OpenIddictConstants.ClientTypes.Public,
                 PostLogoutRedirectUris =
                 {
@@ -89,19 +88,7 @@ internal sealed class Worker(
                     OpenIddictConstants.Requirements.Features.ProofKeyForCodeExchange
                 }
             }, cancellationToken);
-        //
-        // if (await manager.FindByClientIdAsync("internal-service", cancellationToken) is null)
-        //     await manager.CreateAsync(new OpenIddictApplicationDescriptor
-        //     {
-        //         ClientId = "internal-service",
-        //         ClientSecret = "8E1167EF-5C44-4209-A803-3A109155FDD3",
-        //         Permissions =
-        //         {
-        //             OpenIddictConstants.Permissions.Endpoints.Token,
-        //             OpenIddictConstants.Permissions.Endpoints.Authorization,
-        //             OpenIddictConstants.Permissions.GrantTypes.ClientCredentials
-        //         },
-        //         RedirectUris = { new Uri("http://localhost:3000") }
-        //     }, cancellationToken);
+        
+        // As soon as Stickerlandia services need to call other services under their own identities, add them here
     }
 }

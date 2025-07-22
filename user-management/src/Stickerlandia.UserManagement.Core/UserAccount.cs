@@ -112,59 +112,6 @@ public class UserAccount
 
     internal bool Changed { get; private set; }
 
-    public string AsAuthenticatedRole()
-    {
-        switch (AccountType)
-        {
-            case AccountType.Admin:
-                return "admin";
-            case AccountType.User:
-                break;
-        }
-
-        return "user";
-    }
-
-    // More performant password hashing using PBKDF2
-    public static string HashPassword(string password)
-    {
-        var salt = RandomNumberGenerator.GetBytes(16);
-        var hash = Rfc2898DeriveBytes.Pbkdf2(
-            Encoding.UTF8.GetBytes(password),
-            salt,
-            100000, // Iterations - adjust based on performance requirements
-            HashAlgorithmName.SHA256,
-            32);
-
-        var hashBytes = new byte[48];
-        Array.Copy(salt, 0, hashBytes, 0, 16);
-        Array.Copy(hash, 0, hashBytes, 16, 32);
-
-        return Convert.ToBase64String(hashBytes);
-    }
-
-    public void StickerOrdered()
-    {
-        ClaimedStickerCount++;
-    }
-
-    public void UpdateUserDetails(string newFirstName, string newLastName)
-    {
-        if (!string.IsNullOrEmpty(newFirstName) && newFirstName != FirstName)
-        {
-            FirstName = newFirstName;
-            Changed = true;
-        }
-
-        if (!string.IsNullOrEmpty(newLastName) && newLastName != LastName)
-        {
-            LastName = newLastName;
-            Changed = true;
-        }
-
-        if (Changed) _domainEvents.Add(new UserDetailsUpdatedEvent(this));
-    }
-
     internal static bool IsValidEmail(string email)
     {
         if (string.IsNullOrWhiteSpace(email))

@@ -3,10 +3,11 @@
 // Copyright 2025 Datadog, Inc.
 
 using System.Diagnostics;
+using Microsoft.AspNetCore.Identity;
 
 namespace Stickerlandia.UserManagement.Core.UpdateUserDetails;
 
-public class UpdateUserDetailsHandler(IUsers users)
+public class UpdateUserDetailsHandler(UserManager<PostgresUserAccount> userManager)
 {
     public async Task Handle(UpdateUserDetailsRequest command)
     {
@@ -20,7 +21,7 @@ public class UpdateUserDetailsHandler(IUsers users)
             }
             
             // Check if email exists before creating account
-            var exisingAccount = await users.WithIdAsync(command.AccountId!);
+            var exisingAccount = await userManager.FindByIdAsync(command.AccountId!.Value);
             
             if (exisingAccount == null)
             {
@@ -34,7 +35,7 @@ public class UpdateUserDetailsHandler(IUsers users)
                 return;
             }
             
-            await users.UpdateAccount(exisingAccount);
+            await userManager.UpdateAsync(exisingAccount);
         }
         catch (UserExistsException ex)
         {
