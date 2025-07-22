@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.OpenApi.Models;
+using OpenIddict.Validation.AspNetCore;
 using Saunter;
 using Serilog;
 using Serilog.Formatting.Json;
@@ -11,7 +11,6 @@ using Stickerlandia.UserManagement.Api;
 using Stickerlandia.UserManagement.Api.Configurations;
 using Stickerlandia.UserManagement.Api.Middlewares;
 using Stickerlandia.UserManagement.Core;
-using Stickerlandia.UserManagement.Core.RegisterUser;
 using Stickerlandia.UserManagement.ServiceDefaults;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -102,34 +101,27 @@ v1ApiEndpoints.MapHealthChecks("/health", new HealthCheckOptions
     ResponseWriter = WriteHealthCheckResponse
 });
 
-v1ApiEndpoints.MapGet("authorize", GetUserDetails.HandleAsync)
-    .RequireAuthorization()
-    .WithDescription("OAuth authorization endpoint");
-v1ApiEndpoints.MapPost("authorize", GetUserDetails.HandleAsync)
-    .RequireAuthorization()
-    .WithDescription("OAuth authorization endpoint");
-
 v1ApiEndpoints.MapGet("details", GetUserDetails.HandleAsync)
-    .RequireAuthorization()
+    .RequireAuthorization(policyBuilder =>
+    {
+        policyBuilder.AuthenticationSchemes = new List<string>(1)
+            { OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme };
+        policyBuilder.RequireAuthenticatedUser();
+    })
     .WithDescription("Get the current authenticated users details")
     .Produces<ApiResponse<UserAccountDto>>(200)
     .ProducesProblem(401);
 
 v1ApiEndpoints.MapPut("details", UpdateUserDetailsEndpoint.HandleAsync)
-    .RequireAuthorization()
+    .RequireAuthorization(policyBuilder =>
+    {
+        policyBuilder.AuthenticationSchemes = new List<string>(1)
+            { OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme };
+        policyBuilder.RequireAuthenticatedUser();
+    })
     .WithDescription("Update the user details")
     .Produces<ApiResponse<string>>(200)
     .ProducesProblem(401);
-
-v1ApiEndpoints.MapPost("login", LoginEndpoint.HandleAsync)
-    .AllowAnonymous()
-    .ExcludeFromDescription();
-
-v1ApiEndpoints.MapPost("register", RegisterUserEndpoint.HandleAsync)
-    .AllowAnonymous()
-    .WithDescription("RegisterUser as a new user")
-    .Produces<ApiResponse<RegisterResponse>>(200)
-    .ProducesProblem(400);
 
 try
 {

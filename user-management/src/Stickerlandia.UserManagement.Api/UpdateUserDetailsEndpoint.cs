@@ -1,6 +1,7 @@
 using System.Net;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
+using Stickerlandia.UserManagement.Api.Helpers;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.UpdateUserDetails;
 
@@ -15,12 +16,12 @@ internal static class UpdateUserDetailsEndpoint
         [FromServices] UpdateUserDetailsHandler updateHandler,
         [FromBody] UpdateUserDetailsRequest request)
     {
-        if (user?.Identity?.Name == null)
+        if (user?.GetUserId() == null)
         {
             return new ApiResponse<string>(false, "", "User not authenticated", HttpStatusCode.Unauthorized);
         }
 
-        request.AccountId = new AccountId(user.Identity.Name);
+        request.AccountId = new AccountId(user?.GetUserId()!);
         
         await updateHandler.Handle(request);
         

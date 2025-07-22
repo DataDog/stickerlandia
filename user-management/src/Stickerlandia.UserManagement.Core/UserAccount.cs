@@ -16,20 +16,9 @@ public record AccountId
 
     public AccountId(string value)
     {
-        // This allows the AccountId property to be used if an email is passed in, where it should be hashed
-        // for use as an identifier. Or if an already hashed Id is passed in, it will be used as is.
-        if (UserAccount.IsValidEmail(value))
-        {
-            var emailBytes = Encoding.UTF8.GetBytes(value.ToUpperInvariant());
-            var hashBytes = SHA256.HashData(emailBytes);
+        ArgumentException.ThrowIfNullOrEmpty(value, nameof(value));
 
-            // Convert to hex string
-            Value = Convert.ToHexString(hashBytes);
-        }
-        else
-        {
-            Value = value;
-        }
+        Value = value;
     }
 }
 
@@ -53,7 +42,7 @@ public class UserAccount
     {
         _domainEvents = new List<DomainEvent>();
     }
-    
+
     public static UserAccount Register(string emailAddress, string password, string firstName,
         string lastName, AccountType accountType)
     {
@@ -108,7 +97,7 @@ public class UserAccount
     public string FirstName { get; private set; } = string.Empty;
 
     public string LastName { get; private set; } = string.Empty;
-    
+
     public string Password { get; private set; } = string.Empty;
 
     public DateTime DateCreated { get; private set; }
@@ -167,7 +156,7 @@ public class UserAccount
             Changed = true;
         }
 
-        if (!string.IsNullOrEmpty(newLastName) &&newLastName != LastName)
+        if (!string.IsNullOrEmpty(newLastName) && newLastName != LastName)
         {
             LastName = newLastName;
             Changed = true;

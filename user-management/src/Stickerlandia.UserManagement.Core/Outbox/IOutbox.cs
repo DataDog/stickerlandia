@@ -6,6 +6,8 @@ namespace Stickerlandia.UserManagement.Core.Outbox;
 
 public interface IOutbox
 {
+    Task StoreEventFor(string accountId, DomainEvent domainEvent);
+    
     Task<List<OutboxItem>> GetUnprocessedItemsAsync(int maxCount = 100);
     
     Task UpdateOutboxItem(OutboxItem outboxItem);

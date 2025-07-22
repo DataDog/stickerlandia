@@ -1,0 +1,112 @@
+﻿@page
+@model RegisterModel
+@{
+    ViewData["Title"] = "Register";
+}
+
+<div class="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
+    <div class="sm:mx-auto sm:w-full sm:max-w-sm">
+        <img src="~/img/dd_logo_v_rgb.png" alt="Datadog Logo"
+             class="mx-auto h-10 w-auto"/>
+        <h2 class="mt-10 text-center text-2xl/9 font-bold tracking-tight text-gray-900">Create a new account</h2>
+    </div>
+
+    <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
+        <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post" class="space-y-6">
+            <div asp-validation-summary="ModelOnly" class="text-red-600 text-sm" role="alert"></div>
+            
+            <div>
+                <label asp-for="Input.FirstName" class="block text-sm/6 font-medium text-gray-900">First Name</label>
+                <div class="mt-2">
+                    <input asp-for="Input.FirstName"
+                           class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+                           aria-required="true" placeholder="First Name"/>
+                    <span asp-validation-for="Input.FirstName" class="text-red-600 text-sm"></span>
+                </div>
+            </div>
+
+            <div>
+                <label asp-for="Input.LastName" class="block text-sm/6 font-medium text-gray-900">Last Name</label>
+                <div class="mt-2">
+                    <input asp-for="Input.LastName"
+                           class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+                           aria-required="true" placeholder="Last Name"/>
+                    <span asp-validation-for="Input.LastName" class="text-red-600 text-sm"></span>
+                </div>
+            </div>
+
+            <div>
+                <label asp-for="Input.Email" class="block text-sm/6 font-medium text-gray-900">Email</label>
+                <div class="mt-2">
+                    <input asp-for="Input.Email"
+                           class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+                           autocomplete="username" aria-required="true" placeholder="name@example.com"/>
+                    <span asp-validation-for="Input.Email" class="text-red-600 text-sm"></span>
+                </div>
+            </div>
+
+            <div>
+                <label asp-for="Input.Password" class="block text-sm/6 font-medium text-gray-900">Password</label>
+                <div class="mt-2">
+                    <input asp-for="Input.Password"
+                           class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+                           autocomplete="new-password" aria-required="true" placeholder="Password"/>
+                    <span asp-validation-for="Input.Password" class="text-red-600 text-sm"></span>
+                </div>
+            </div>
+
+            <div>
+                <label asp-for="Input.ConfirmPassword" class="block text-sm/6 font-medium text-gray-900">Confirm Password</label>
+                <div class="mt-2">
+                    <input asp-for="Input.ConfirmPassword"
+                           class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+                           autocomplete="new-password" aria-required="true" placeholder="Confirm Password"/>
+                    <span asp-validation-for="Input.ConfirmPassword" class="text-red-600 text-sm"></span>
+                </div>
+            </div>
+
+            <div>
+                <button id="registerSubmit"
+                        type="submit"
+                        class="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                    Register
+                </button>
+            </div>
+        </form>
+
+        <p class="mt-10 text-center text-sm/6 text-gray-500">
+            Already have an account?
+            <a asp-page="./Login" class="font-semibold text-indigo-600 hover:text-indigo-500"
+               asp-route-returnUrl="@Model.ReturnUrl">Sign in</a>
+        </p>
+    </div>
+    
+    @{
+        if ((Model.ExternalLogins?.Count ?? 0) > 0)
+        {
+            <div class="mt-6 sm:mx-auto sm:w-full sm:max-w-sm">
+                <div class="relative">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm/6 font-medium">
+                        <span class="bg-white px-6 text-gray-900">Or register with</span>
+                    </div>
+                </div>
+
+                <form id="external-account" asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl"
+                      method="post" class="mt-6 space-y-4">
+                    @foreach (var provider in Model.ExternalLogins!)
+                    {
+                        <button type="submit" 
+                                class="flex w-full justify-center rounded-md bg-white px-3 py-1.5 text-sm/6 font-semibold text-gray-900 outline-1 -outline-offset-1 outline-gray-300 hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                                name="provider" value="@provider.Name"
+                                title="Register using your @provider.DisplayName account">
+                            @provider.DisplayName
+                        </button>
+                    }
+                </form>
+            </div>
+        }
+    }
+</div>

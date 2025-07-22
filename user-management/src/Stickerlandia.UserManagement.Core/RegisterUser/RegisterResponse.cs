@@ -8,6 +8,9 @@ namespace Stickerlandia.UserManagement.Core.RegisterUser;
 
 public class RegisterResponse
 {
-    [JsonPropertyName("accountId")]
-    public string? AccountId { get; set; } = string.Empty;
+    [JsonPropertyName("accountId")] public string? AccountId { get; set; } = string.Empty;
+
+    [JsonIgnore] public PostgresUserAccount? Account { get; set; }
+
+    [JsonIgnore] public ICollection<string> Errors { get; } = new List<string>();
 }

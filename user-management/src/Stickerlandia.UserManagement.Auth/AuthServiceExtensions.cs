@@ -32,6 +32,7 @@ public static class AuthServiceExtensions
                 // Note: the sample uses the code and refresh token flows but you can enable
                 // the other flows if you need to support implicit, password or client credentials.
                 options.AllowAuthorizationCodeFlow()
+                    .RequireProofKeyForCodeExchange()
                     .AllowRefreshTokenFlow();
 
                 // Register the signing and encryption credentials.

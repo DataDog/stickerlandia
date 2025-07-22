@@ -13,9 +13,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
-using Stickerlandia.UserManagement.Agnostic;
 using Stickerlandia.UserManagement.Api.Helpers;
 using Stickerlandia.UserManagement.Api.ViewModels;
+using Stickerlandia.UserManagement.Core;
 
 namespace Stickerlandia.UserManagement.Api.Controllers;
 

@@ -121,18 +121,7 @@ public class PostgresUserRepository(
                 // Create outbox items for domain events
                 foreach (var evt in userAccount.DomainEvents)
                 {
-                    var outboxItem = new PostgresOutboxItem
-                    {
-                        Id = Guid.NewGuid().ToString(),
-                        EventType = evt.EventName,
-                        EventData = evt.ToJsonString(),
-                        EmailAddress = userAccount.EmailAddress,
-                        EventTime = DateTime.UtcNow,
-                        Processed = false,
-                        Failed = false
-                    };
-
-                    await dbContext.OutboxItems.AddAsync(outboxItem);
+                    await this.StoreEventFor(userAccount.Id.Value, evt);
                 }
 
                 await dbContext.SaveChangesAsync();
@@ -221,6 +210,25 @@ public class PostgresUserRepository(
             Log.UnknownException(logger, ex);
             throw new DatabaseFailureException("Error retrieving user by ID", ex);
         }
+    }
+
+    public async Task StoreEventFor(string accountId, DomainEvent domainEvent)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(accountId, nameof(accountId));
+        ArgumentNullException.ThrowIfNull(domainEvent, nameof(domainEvent));
+        
+        var outboxItem = new PostgresOutboxItem
+        {
+            Id = Guid.NewGuid().ToString(),
+            EventType = domainEvent.EventName,
+            EventData = domainEvent.ToJsonString(),
+            EmailAddress = accountId,
+            EventTime = DateTime.UtcNow,
+            Processed = false,
+            Failed = false
+        };
+
+        await dbContext.OutboxItems.AddAsync(outboxItem);
     }
 
     public async Task<List<OutboxItem>> GetUnprocessedItemsAsync(int maxCount = 100)

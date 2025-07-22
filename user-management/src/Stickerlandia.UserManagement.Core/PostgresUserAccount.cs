@@ -3,9 +3,8 @@
 // Copyright 2025 Datadog, Inc.
 
 using Microsoft.AspNetCore.Identity;
-using Stickerlandia.UserManagement.Core;
 
-namespace Stickerlandia.UserManagement.Agnostic;
+namespace Stickerlandia.UserManagement.Core;
 
 public class PostgresUserAccount : IdentityUser
 {

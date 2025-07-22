@@ -47,8 +47,8 @@ internal static class DocumentationConfig
                 {
                     Password = new OpenApiOAuthFlow()
                     {
-                        AuthorizationUrl = new Uri($"http://localhost:5139/authorize"),
-                        TokenUrl = new Uri("http://localhost:5139/api/users/v1/login"),
+                        AuthorizationUrl = new Uri($"http://localhost:5139/connect/authorize"),
+                        TokenUrl = new Uri("http://localhost:5139/connect/token"),
                         Scopes = new Dictionary<string, string>
                         {
                             { "User", "Read" }
@@ -56,8 +56,8 @@ internal static class DocumentationConfig
                     },
                     AuthorizationCode = new OpenApiOAuthFlow
                     {
-                        AuthorizationUrl = new Uri($"/authorize"),
-                        TokenUrl = new Uri("/api/users/v1/login"),
+                        AuthorizationUrl = new Uri($"/connect/authorize"),
+                        TokenUrl = new Uri("/connect/token"),
                         Scopes = new Dictionary<string, string>
                         {
                             { "User", "Read" }

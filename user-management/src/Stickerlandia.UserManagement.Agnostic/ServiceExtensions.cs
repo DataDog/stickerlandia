@@ -67,7 +67,10 @@ public static class ServiceExtensions
             options.UseOpenIddict();
         });
 
-        var identityOptions = services.AddIdentity<PostgresUserAccount, IdentityRole>()
+        var identityOptions = services.AddIdentity<PostgresUserAccount, IdentityRole>(options =>
+            {
+                options.User.RequireUniqueEmail = true;
+            })
             .AddEntityFrameworkStores<UserManagementDbContext>()
             .AddDefaultTokenProviders();
 

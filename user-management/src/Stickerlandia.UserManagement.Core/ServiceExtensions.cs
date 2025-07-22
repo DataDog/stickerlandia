@@ -4,9 +4,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Stickerlandia.UserManagement.Core.GetUserDetails;
-using Stickerlandia.UserManagement.Core.Login;
 using Stickerlandia.UserManagement.Core.Outbox;
-using Stickerlandia.UserManagement.Core.RegisterUser;
 using Stickerlandia.UserManagement.Core.StickerClaimedEvent;
 using Stickerlandia.UserManagement.Core.UpdateUserDetails;
 
@@ -17,8 +15,6 @@ public static class ServiceExtensions
     public static IServiceCollection AddStickerlandiaUserManagement(this IServiceCollection services)
     {
         services.AddTransient<UpdateUserDetailsHandler>();
-        services.AddTransient<RegisterCommandHandler>();
-        services.AddTransient<LoginCommandHandler>();
         services.AddTransient<GetUserDetailsQueryHandler>();
         services.AddTransient<StickerClaimedHandler>();
         

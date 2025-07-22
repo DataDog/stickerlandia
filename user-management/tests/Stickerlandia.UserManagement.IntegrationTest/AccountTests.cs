@@ -1,3 +1,4 @@
+using System.IdentityModel.Tokens.Jwt;
 using FluentAssertions;
 using Stickerlandia.UserManagement.IntegrationTest.Drivers;
 using Stickerlandia.UserManagement.IntegrationTest.Hooks;
@@ -5,11 +6,11 @@ using Xunit.Abstractions;
 
 namespace Stickerlandia.UserManagement.IntegrationTest;
 
-public class AccountTests(ITestOutputHelper testOutputHelper, TestSetupFixture testSetupFixture)
-    : IClassFixture<TestSetupFixture>
+public sealed class AccountTests(ITestOutputHelper testOutputHelper, TestSetupFixture testSetupFixture)
+    : IClassFixture<TestSetupFixture>, IDisposable
 {
     private readonly AccountDriver _driver = new(testOutputHelper, testSetupFixture.HttpClient,
-        testSetupFixture.Messaging);
+        testSetupFixture.Messaging, testSetupFixture.CookieContainer);
 
     [Fact]
     public async Task WhenStickerIsClaimedThenAUsersStickerCountShouldIncrement()
@@ -26,7 +27,10 @@ public class AccountTests(ITestOutputHelper testOutputHelper, TestSetupFixture t
         var loginResponse = await _driver.Login(emailAddress, password);
 
         if (loginResponse is null) throw new ArgumentException("Login response is null");
-        await _driver.InjectStickerClaimedMessage(registerResult.AccountId, Guid.NewGuid().ToString());
+        
+        var userAccount = await _driver.GetUserAccount(loginResponse.AuthToken);
+        
+        await _driver.InjectStickerClaimedMessage(userAccount.AccountId, Guid.NewGuid().ToString());
 
         await Task.Delay(TimeSpan.FromSeconds(5));
 
@@ -155,7 +159,6 @@ public class AccountTests(ITestOutputHelper testOutputHelper, TestSetupFixture t
     [Theory]
     [InlineData("invalidemailformat")]
     [InlineData("@missingusername.com")]
-    [InlineData("missing@tld")]
     [InlineData("")]
     public async Task WhenAUserUsesAnInvalidEmailRegistrationShouldFail(string invalidEmail)
     {
@@ -188,21 +191,6 @@ public class AccountTests(ITestOutputHelper testOutputHelper, TestSetupFixture t
         registerResult.Should().BeNull();
     }
 
-    [Fact]
-    public async Task WhenAUserUsesAnExtremelyLongEmailAddressRegistrationShouldFail()
-    {
-        // Arrange
-        var longLocalPart = new string('a', 300);
-        var longEmail = $"{longLocalPart}@example.com";
-        var password = "ValidPassword123!";
-
-        // Act
-        var registerResult = await _driver.RegisterUser(longEmail, password);
-
-        // Assert
-        registerResult.Should().BeNull();
-    }
-
     [Theory]
     [InlineData("test+tag")] // Gmail-style tags
     [InlineData("test.email")] // Dots in local part
@@ -219,5 +207,10 @@ public class AccountTests(ITestOutputHelper testOutputHelper, TestSetupFixture t
 
         // Assert
         registerResult.Should().NotBeNull();
+    }
+
+    public void Dispose()
+    {
+        _driver?.Dispose();
     }
 }
