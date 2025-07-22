@@ -45,6 +45,12 @@ public class AuthorizationController : Controller
         _userManager = userManager;
     }
 
+    /// <summary>
+    /// This action is invoked when a GET/POST is sent to the authorization endpoint
+    /// (e.g when the user agent is redirected to the authorization endpoint by the client application
+    /// The IgnoreAntiforgeryToken attribute is used to disable the CSRF protection for this endpoint,
+    /// as the connect endpoints are going to be called by an external client, which won't be able to provide an anti-forgery token.
+    /// </summary>
     [HttpGet("~/connect/authorize")]
     [HttpPost("~/connect/authorize")]
     [IgnoreAntiforgeryToken]
@@ -53,16 +59,6 @@ public class AuthorizationController : Controller
         var request = HttpContext.GetOpenIddictServerRequest() ??
                       throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
 
-        // Try to retrieve the user principal stored in the authentication cookie and redirect
-        // the user agent to the login page (or to an external provider) in the following cases:
-        //
-        //  - If the user principal can't be extracted or the cookie is too old.
-        //  - If prompt=login was specified by the client application.
-        //  - If max_age=0 was specified by the client application (max_age=0 is equivalent to prompt=login).
-        //  - If a max_age parameter was provided and the authentication cookie is not considered "fresh" enough.
-        //
-        // For scenarios where the default authentication handler configured in the ASP.NET Core
-        // authentication options shouldn't be used, a specific scheme can be specified here.
         var result = await HttpContext.AuthenticateAsync();
         if (result is not { Succeeded: true } ||
             ((request.HasPromptValue(OpenIddictConstants.PromptValues.Login) || request.MaxAge is 0 ||
@@ -316,6 +312,12 @@ public class AuthorizationController : Controller
         return Forbid(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
 
+    /// <summary>
+    /// This action is invoked when a POST is sent to the token endpoint as part of the OAuth 2.0
+    /// authorization code or refresh token flows, to exchange an authorization code or a refresh token
+    /// The IgnoreAntiforgeryToken attribute is used to disable the CSRF protection for this endpoint,
+    /// as the endpoints is going to be called by an external client, which won't be able to provide an anti-forgery token.
+    /// </summary>
     [HttpPost("~/connect/token")]
     [IgnoreAntiforgeryToken]
     [Produces("application/json")]
