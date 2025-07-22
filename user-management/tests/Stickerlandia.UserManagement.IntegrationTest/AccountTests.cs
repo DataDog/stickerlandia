@@ -1,4 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
+using System.Net;
 using FluentAssertions;
 using Stickerlandia.UserManagement.IntegrationTest.Drivers;
 using Stickerlandia.UserManagement.IntegrationTest.Hooks;
@@ -6,11 +7,12 @@ using Xunit.Abstractions;
 
 namespace Stickerlandia.UserManagement.IntegrationTest;
 
+[Collection("Integration Tests")]
 public sealed class AccountTests(ITestOutputHelper testOutputHelper, TestSetupFixture testSetupFixture)
-    : IClassFixture<TestSetupFixture>, IDisposable
+    : IDisposable
 {
     private readonly AccountDriver _driver = new(testOutputHelper, testSetupFixture.HttpClient,
-        testSetupFixture.Messaging, testSetupFixture.CookieContainer);
+        testSetupFixture.Messaging, new CookieContainer());
 
     [Fact]
     public async Task WhenStickerIsClaimedThenAUsersStickerCountShouldIncrement()

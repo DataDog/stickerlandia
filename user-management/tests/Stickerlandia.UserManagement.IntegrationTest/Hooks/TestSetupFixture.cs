@@ -11,11 +11,15 @@ using Stickerlandia.UserManagement.IntegrationTest.Drivers;
 
 namespace Stickerlandia.UserManagement.IntegrationTest.Hooks;
 
+[CollectionDefinition("Integration Tests")]
+public class IntegrationTestCollectionFixture : ICollectionFixture<TestSetupFixture>
+{
+}
+
 public class TestSetupFixture : IDisposable
 {
     public IMessaging Messaging { get; init; }
     public HttpClient HttpClient { get; init; }
-    public CookieContainer CookieContainer { get; init; }
     public DistributedApplication? App { get; init; }
 
     private const string ApiApplicationName = "api";
@@ -27,9 +31,6 @@ public class TestSetupFixture : IDisposable
         var drivingAdapter = Environment.GetEnvironmentVariable("DRIVING") ?? "AGNOSTIC";
         // Force testing against real resources since Docker containers are not available
         var shouldTestAgainstRealResources = Environment.GetEnvironmentVariable("TEST_REAL_RESOURCES") == "true";
-
-        // Initialize cookie container for session management
-        CookieContainer = new CookieContainer();
 
         if (!shouldTestAgainstRealResources)
         {
@@ -66,7 +67,6 @@ public class TestSetupFixture : IDisposable
             
             var handler = new HttpClientHandler()
             {
-                CookieContainer = CookieContainer,
                 UseCookies = true,
                 CheckCertificateRevocationList = true
             };
@@ -106,7 +106,7 @@ public class TestSetupFixture : IDisposable
         }
     }
 
-    private HttpClient CreateHttpClientWithFallback()
+    private static HttpClient CreateHttpClientWithFallback()
     {
         try
         {
@@ -118,7 +118,6 @@ public class TestSetupFixture : IDisposable
             // If we get here, real API is available
             var handler = new HttpClientHandler()
             {
-                CookieContainer = CookieContainer,
                 UseCookies = true,
                 CheckCertificateRevocationList = true
             };

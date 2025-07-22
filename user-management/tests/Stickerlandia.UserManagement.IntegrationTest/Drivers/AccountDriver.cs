@@ -7,22 +7,20 @@ using Xunit.Abstractions;
 
 #pragma warning disable CA2234, CA2000, CA1031
 
+#pragma warning disable CA1812
+
 namespace Stickerlandia.UserManagement.IntegrationTest.Drivers;
 
 internal sealed class AccountDriver : IDisposable
 {
     private readonly ITestOutputHelper _testOutputHelper;
-    private readonly HttpClient _httpClient;
     private readonly IMessaging _messaging;
-    private readonly CookieContainer _cookieContainer;
     private readonly HttpClient _oauthClient;
     
     public AccountDriver(ITestOutputHelper testOutputHelper, HttpClient httpClient, IMessaging messaging, CookieContainer cookieContainer)
     {
         _testOutputHelper = testOutputHelper;
-        _httpClient = httpClient;
         _messaging = messaging;
-        _cookieContainer = cookieContainer;
         
         // Create a separate HttpClient for OAuth2.0 operations that doesn't auto-follow redirects
         var oauthHandler = new HttpClientHandler()
@@ -62,7 +60,7 @@ internal sealed class AccountDriver : IDisposable
             _testOutputHelper.WriteLine("Attempting registration via Identity UI with proper form handling");
             
             // Step 1: Get the registration page to extract CSRF and form details
-            var getResponse = await _httpClient.GetAsync("Identity/Account/Register");
+            var getResponse = await _oauthClient.GetAsync("Identity/Account/Register");
             if (!getResponse.IsSuccessStatusCode)
             {
                 _testOutputHelper.WriteLine($"Could not get registration page: {getResponse.StatusCode}");
@@ -95,7 +93,7 @@ internal sealed class AccountDriver : IDisposable
             using var formContent = new FormUrlEncodedContent(formFields);
             
             // Use the same HttpClient that maintains cookies
-            var postResponse = await _httpClient.PostAsync("Identity/Account/Register", formContent);
+            var postResponse = await _oauthClient.PostAsync("Identity/Account/Register", formContent);
             
             _testOutputHelper.WriteLine($"Registration POST response: {postResponse.StatusCode}");
             
@@ -144,7 +142,7 @@ internal sealed class AccountDriver : IDisposable
         request.Headers.Add("Authorization", $"Bearer {authToken}");
         request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
 
-        var response = await _httpClient.SendAsync(request);
+        var response = await _oauthClient.SendAsync(request);
         var responseBody = await response.Content.ReadAsStringAsync();
 
         return response.IsSuccessStatusCode
@@ -249,7 +247,7 @@ internal sealed class AccountDriver : IDisposable
             _testOutputHelper.WriteLine($"Trying login path: {path}");
             try
             {
-                loginPageResponse = await _httpClient.GetAsync(path);
+                loginPageResponse = await _oauthClient.GetAsync(path);
                 if (loginPageResponse.IsSuccessStatusCode)
                 {
                     workingLoginPath = path;
@@ -406,7 +404,7 @@ internal sealed class AccountDriver : IDisposable
         };
         
         using var requestContent = new FormUrlEncodedContent(tokenRequest);
-        var tokenResponse = await _httpClient.PostAsync(TestConstants.TokenEndpoint, requestContent);
+        var tokenResponse = await _oauthClient.PostAsync(TestConstants.TokenEndpoint, requestContent);
         
         _testOutputHelper.WriteLine($"Token exchange status: {tokenResponse.StatusCode}");
         
@@ -437,15 +435,43 @@ internal sealed class AccountDriver : IDisposable
     {
         _testOutputHelper.WriteLine("Getting user account");
         
-        using var request = new HttpRequestMessage(HttpMethod.Get, "api/users/v1/details");
-        request.Headers.Add("Authorization", $"Bearer {authToken}");
+        const int maxRetries = 3;
+        const int baseDelayMs = 1000;
+        
+        for (int attempt = 0; attempt < maxRetries; attempt++)
+        {
+            try
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Get, "api/users/v1/details");
+                request.Headers.Add("Authorization", $"Bearer {authToken}");
 
-        var response = await _httpClient.SendAsync(request);
-        var responseBody = await response.Content.ReadAsStringAsync();
+                var response = await _oauthClient.SendAsync(request);
+                var responseBody = await response.Content.ReadAsStringAsync();
 
-        return response.IsSuccessStatusCode
-            ? JsonSerializer.Deserialize<ApiResponse<UserAccountDTO>>(responseBody)?.Data
-            : null;
+                if (response.IsSuccessStatusCode)
+                {
+                    return JsonSerializer.Deserialize<ApiResponse<UserAccountDTO>>(responseBody)?.Data;
+                }
+                
+                if (response.StatusCode == HttpStatusCode.ServiceUnavailable && attempt < maxRetries - 1)
+                {
+                    var delay = baseDelayMs * (int)Math.Pow(2, attempt);
+                    _testOutputHelper.WriteLine($"Service unavailable, retrying in {delay}ms (attempt {attempt + 1}/{maxRetries})");
+                    await Task.Delay(delay);
+                    continue;
+                }
+                
+                return null;
+            }
+            catch (HttpRequestException ex) when (ex.Message.Contains("service unavailable", StringComparison.OrdinalIgnoreCase) && attempt < maxRetries - 1)
+            {
+                var delay = baseDelayMs * (int)Math.Pow(2, attempt);
+                _testOutputHelper.WriteLine($"HTTP request failed with service unavailable, retrying in {delay}ms (attempt {attempt + 1}/{maxRetries}): {ex.Message}");
+                await Task.Delay(delay);
+            }
+        }
+        
+        return null;
     }
 
     public async Task InjectStickerClaimedMessage(string userId, string stickerId)
