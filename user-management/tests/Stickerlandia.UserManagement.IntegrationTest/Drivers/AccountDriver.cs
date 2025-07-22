@@ -16,6 +16,7 @@ internal sealed class AccountDriver : IDisposable
     private readonly ITestOutputHelper _testOutputHelper;
     private readonly IMessaging _messaging;
     private readonly HttpClient _oauthClient;
+    private readonly HttpClient _httpClient;
     
     public AccountDriver(ITestOutputHelper testOutputHelper, HttpClient httpClient, IMessaging messaging, CookieContainer cookieContainer)
     {
@@ -31,7 +32,20 @@ internal sealed class AccountDriver : IDisposable
             AllowAutoRedirect = false
         };
         
+        // Create a separate HttpClient for OAuth2.0 operations that doesn't auto-follow redirects
+        var mainHttpHandler = new HttpClientHandler()
+        {
+            CookieContainer = cookieContainer,
+            UseCookies = true,
+            CheckCertificateRevocationList = true,
+            AllowAutoRedirect = true
+        };
+        
         _oauthClient = new HttpClient(oauthHandler, true)
+        {
+            BaseAddress = httpClient.BaseAddress
+        };
+        _httpClient = new HttpClient(mainHttpHandler, true)
         {
             BaseAddress = httpClient.BaseAddress
         };
@@ -71,8 +85,8 @@ internal sealed class AccountDriver : IDisposable
             _testOutputHelper.WriteLine($"Got registration page content, length: {pageContent.Length}");
             
             // Step 2: Extract all form fields, including hidden ones
-            var formFields = HtmlFormParser.ExtractFormFields(pageContent);
-            var antiForgeryToken = HtmlFormParser.ExtractAntiForgeryToken(pageContent);
+            var formFields = new Dictionary<string, string>();
+            var antiForgeryToken = FormDataExtractor.ExtractAntiForgeryToken(pageContent);
             
             _testOutputHelper.WriteLine($"Extracted {formFields.Count} form fields");
             
@@ -82,7 +96,7 @@ internal sealed class AccountDriver : IDisposable
                 _testOutputHelper.WriteLine("Added anti-forgery token");
             }
             
-            // Step 3: Set the user registration data  
+            // Step 3: Set the user registration data
             formFields["Input.Email"] = emailAddress;
             formFields["Input.Password"] = password;
             formFields["Input.ConfirmPassword"] = password;
@@ -187,7 +201,9 @@ internal sealed class AccountDriver : IDisposable
             // Step 4: Follow authorization flow using OAuth client (no auto-redirect)
             var authorizationResponse = await _oauthClient.GetAsync(authorizationUrl);
             
-            if (!authorizationResponse.IsSuccessStatusCode)
+            // The authorization response should return HttpStatusCode.Found (302) if successful, with the redirect location containing the authorization code.
+            // In the 'Location' header
+            if (authorizationResponse.StatusCode != HttpStatusCode.Found)
             {
                 _testOutputHelper.WriteLine($"Authorization request failed: {authorizationResponse.StatusCode}");
                 var errorContent = await authorizationResponse.Content.ReadAsStringAsync();
@@ -277,8 +293,8 @@ internal sealed class AccountDriver : IDisposable
         var loginPageContent = await loginPageResponse.Content.ReadAsStringAsync();
         
         // Step 2: Extract form fields and anti-forgery token
-        var formFields = HtmlFormParser.ExtractFormFields(loginPageContent);
-        var antiForgeryToken = HtmlFormParser.ExtractAntiForgeryToken(loginPageContent);
+        var formFields = new Dictionary<string, string>();
+        var antiForgeryToken = FormDataExtractor.ExtractAntiForgeryToken(loginPageContent);
         
         if (antiForgeryToken != null)
         {
@@ -340,12 +356,6 @@ internal sealed class AccountDriver : IDisposable
         
         // If no direct redirect, check if we need to handle a consent form
         var responseContent = await response.Content.ReadAsStringAsync();
-        
-        if (IsConsentForm(responseContent))
-        {
-            _testOutputHelper.WriteLine("Consent form detected, submitting consent");
-            return await HandleConsentForm(responseContent, state);
-        }
         
         _testOutputHelper.WriteLine("No authorization code or consent form found in response");
         _testOutputHelper.WriteLine($"Response status: {response.StatusCode}");
@@ -515,75 +525,10 @@ internal sealed class AccountDriver : IDisposable
         return false;
     }
     
-    private static bool IsConsentForm(string htmlContent)
-    {
-        // Check for consent form indicators
-        return htmlContent.Contains("Allow this application to access", StringComparison.OrdinalIgnoreCase) ||
-               htmlContent.Contains("consent", StringComparison.OrdinalIgnoreCase) ||
-               htmlContent.Contains("Grant access", StringComparison.OrdinalIgnoreCase) ||
-               htmlContent.Contains("Authorize", StringComparison.OrdinalIgnoreCase) ||
-               htmlContent.Contains("name=\"submit.Allow\"", StringComparison.OrdinalIgnoreCase);
-    }
-    
-    private async Task<string?> HandleConsentForm(string consentFormHtml, string state)
-    {
-        try
-        {
-            // Extract form fields from the consent form
-            var formFields = HtmlFormParser.ExtractFormFields(consentFormHtml);
-            var formAction = HtmlFormParser.ExtractFormAction(consentFormHtml);
-            var antiForgeryToken = HtmlFormParser.ExtractAntiForgeryToken(consentFormHtml);
-            
-            if (antiForgeryToken != null)
-            {
-                formFields["__RequestVerificationToken"] = antiForgeryToken;
-            }
-            
-            // Add consent approval
-            formFields["submit.Accept"] = "Accept";
-            formFields.Remove("submit.Deny"); // Remove deny if present
-            
-            // Determine the form action URL
-            var actionUrl = string.IsNullOrEmpty(formAction) ? TestConstants.AuthorizeEndpoint : formAction;
-            
-            _testOutputHelper.WriteLine($"Submitting consent form to: {actionUrl}");
-            
-            // Submit the consent form using OAuth client (no auto-redirect)
-            using var consentContent = new FormUrlEncodedContent(formFields);
-            var consentResponse = await _oauthClient.PostAsync(actionUrl, consentContent);
-            
-            if (consentResponse.StatusCode == HttpStatusCode.Redirect)
-            {
-                _testOutputHelper.WriteLine("Consent approved - got redirect response");
-                return await ExtractAuthorizationCode(consentResponse);
-            }
-            
-            var consentResponseContent = await consentResponse.Content.ReadAsStringAsync();
-            _testOutputHelper.WriteLine($"Unexpected consent response: {consentResponse.StatusCode}");
-            _testOutputHelper.WriteLine($"Content: {consentResponseContent}");
-            
-            return null;
-        }
-        catch (HttpRequestException ex)
-        {
-            _testOutputHelper.WriteLine($"HTTP error handling consent form: {ex.Message}");
-            return null;
-        }
-        catch (InvalidOperationException ex)
-        {
-            _testOutputHelper.WriteLine($"Invalid operation error handling consent form: {ex.Message}");
-            return null;
-        }
-        catch (JsonException ex)
-        {
-            _testOutputHelper.WriteLine($"JSON parsing error handling consent form: {ex.Message}");
-            return null;
-        }
-    }
-    
     public void Dispose()
     {
         _oauthClient?.Dispose();
+        _httpClient?.Dispose();
         GC.SuppressFinalize(this);
     }
 }

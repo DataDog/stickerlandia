@@ -18,7 +18,7 @@ namespace Stickerlandia.UserManagement.Api.Areas.Identity.Pages.Account;
 
 public class RegisterModel : PageModel
 {
-    private readonly RegisterCommandHandler registerCommandHandler;
+    private readonly RegisterCommandHandler _registerCommandHandler;
     private readonly SignInManager<PostgresUserAccount> _signInManager;
     private readonly UserManager<PostgresUserAccount> _userManager;
     private readonly IUserStore<PostgresUserAccount> _userStore;
@@ -39,7 +39,7 @@ public class RegisterModel : PageModel
         _signInManager = signInManager;
         _logger = logger;
         _emailSender = emailSender;
-        this.registerCommandHandler = registerCommandHandler;
+        this._registerCommandHandler = registerCommandHandler;
     }
 
     /// <summary>
@@ -126,7 +126,7 @@ public class RegisterModel : PageModel
         ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
         if (ModelState.IsValid)
         {
-            var registerResult = await registerCommandHandler.Handle(new RegisterUserCommand
+            var registerResult = await _registerCommandHandler.Handle(new RegisterUserCommand
             {
                 EmailAddress = Input.Email,
                 FirstName = Input.FirstName,

@@ -40,6 +40,8 @@ public class MigrationFunction(IServiceScopeFactory serviceScopeFactory)
             {
                 ClientId = "web-ui",
                 ClientType = OpenIddictConstants.ClientTypes.Public,
+                // An implicit consent type is used for the web UI, meaning users will NOT be prompted to consent to requested scoipes.
+                ConsentType = OpenIddictConstants.ConsentTypes.Implicit,
                 PostLogoutRedirectUris =
                 {
                     new Uri("https://localhost:3000")
