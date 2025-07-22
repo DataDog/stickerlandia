@@ -4,38 +4,34 @@
 
 using System.Diagnostics;
 using Microsoft.AspNetCore.Identity;
+using Stickerlandia.UserManagement.Core.Outbox;
 
 namespace Stickerlandia.UserManagement.Core.UpdateUserDetails;
 
-public class UpdateUserDetailsHandler(UserManager<PostgresUserAccount> userManager)
+public class UpdateUserDetailsHandler(UserManager<PostgresUserAccount> userManager, IOutbox outbox)
 {
     public async Task Handle(UpdateUserDetailsRequest command)
     {
         ArgumentNullException.ThrowIfNull(command);
-        
+
         try
         {
-            if (!command.IsValid())
-            {
-                throw new ArgumentException("Invalid UpdateUserDetailsRequest");
-            }
-            
+            if (!command.IsValid()) throw new ArgumentException("Invalid UpdateUserDetailsRequest");
+
             // Check if email exists before creating account
             var exisingAccount = await userManager.FindByIdAsync(command.AccountId!.Value);
-            
-            if (exisingAccount == null)
-            {
-                throw new InvalidUserException($"User with ID {command.AccountId} not found.");
-            }
-            
+
+            if (exisingAccount == null) throw new InvalidUserException($"User with ID {command.AccountId} not found.");
+
             exisingAccount.UpdateUserDetails(command.FirstName, command.LastName);
 
-            if (!exisingAccount.Changed)
-            {
-                return;
-            }
-            
+            if (!exisingAccount.Changed) return;
+
             await userManager.UpdateAsync(exisingAccount);
+            await outbox.StoreEventFor(exisingAccount.Id, new UserDetailsUpdatedEvent
+            {
+                AccountId = exisingAccount.Id
+            });
         }
         catch (UserExistsException ex)
         {
