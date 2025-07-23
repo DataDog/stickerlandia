@@ -29,6 +29,6 @@ internal static class GetUserDetails
         
         var result = await handler.Handle(new GetUserDetailsQuery(new AccountId(user.GetUserId()!)));
 
-        return Results.Ok(result);
+        return Results.Ok(new ApiResponse<UserAccountDto>(result));
     }
 }
