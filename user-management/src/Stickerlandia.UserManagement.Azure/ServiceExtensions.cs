@@ -12,11 +12,11 @@ namespace Stickerlandia.UserManagement.Azure;
 
 public static class ServiceExtensions
 {
-    public static IServiceCollection AddAzureAdapters(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddAzureAdapters(this IServiceCollection services, IConfiguration configuration, bool enableDefaultUi = true)
     {
         ArgumentNullException.ThrowIfNull(configuration, nameof(configuration));
         
-        services.AddPostgresAuthServices(configuration);
+        services.AddPostgresAuthServices(configuration, enableDefaultUi);
 
         services.AddSingleton<IMessagingWorker, ServiceBusStickerClaimedWorker>();
         

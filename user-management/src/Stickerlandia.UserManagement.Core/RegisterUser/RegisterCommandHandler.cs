@@ -3,31 +3,71 @@
 // Copyright 2025 Datadog, Inc.
 
 using System.Diagnostics;
+using Microsoft.AspNetCore.Identity;
+using Stickerlandia.UserManagement.Core.Outbox;
 
 namespace Stickerlandia.UserManagement.Core.RegisterUser;
 
-public class RegisterCommandHandler(IUsers users)
+public class RegisterCommandHandler
 {
+    private readonly UserManager<PostgresUserAccount> _userManager;
+    private readonly IOutbox _outbox;
+
+    public RegisterCommandHandler(
+        UserManager<PostgresUserAccount> userManager,
+        IOutbox outbox)
+    {
+        _userManager = userManager;
+        _outbox = outbox;
+    }
+
     public async Task<RegisterResponse> Handle(RegisterUserCommand command, AccountType accountType)
     {
+        ArgumentNullException.ThrowIfNull(command, nameof(RegisterUserCommand));
+
         try
         {
-            if (command == null || !command.IsValid()) throw new ArgumentException("Invalid LoginCommand");
+            var existingEmail = await _userManager.FindByEmailAsync(command.EmailAddress);
 
-            // Check if email exists before creating account
-            var emailExists = await users.DoesEmailExistAsync(command.EmailAddress);
-            if (emailExists) throw new UserExistsException();
-
-            // Use async version for better performance
-            var userAccount = UserAccount.Register(command.EmailAddress, command.Password, command.FirstName,
-                command.LastName, accountType);
-
-            await users.Add(userAccount);
-
-            return new RegisterResponse
+            if (existingEmail != null)
             {
-                AccountId = userAccount.Id?.Value
-            };
+                throw new UserExistsException("A user with this email address already exists.");
+            }
+            
+            //using var transactionScope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
+
+            var user = new PostgresUserAccount();
+            user.UserName = command.EmailAddress;
+            user.Email = command.EmailAddress;
+            user.EmailConfirmed = true;
+            user.FirstName = command.FirstName;
+            user.LastName = command.LastName;
+            user.DateCreated = DateTime.UtcNow;
+            var result = await _userManager.CreateAsync(user, command.Password);
+
+            if (result.Succeeded)
+            {
+                var userId = await _userManager.GetUserIdAsync(user);
+
+                await _outbox.StoreEventFor(userId, new UserRegisteredEvent
+                {
+                    AccountId = userId
+                });
+
+                return new RegisterResponse
+                {
+                    AccountId = userId,
+                    Account = user
+                };
+            }
+
+            var response = new RegisterResponse();
+
+            foreach (var error in result.Errors) response.Errors.Add(error.Description);
+            
+            //transactionScope.Complete();
+
+            return response;
         }
         catch (UserExistsException ex)
         {

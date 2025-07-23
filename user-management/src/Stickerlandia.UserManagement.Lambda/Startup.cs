@@ -1,10 +1,8 @@
 using Amazon.Lambda.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
-using Serilog.Extensions.Logging;
 using Serilog.Formatting.Json;
 using Stickerlandia.UserManagement.ServiceDefaults;
 
@@ -30,6 +28,6 @@ public class Startup
             .WriteTo.Console(new JsonFormatter())
             .CreateLogger();
 
-        services.ConfigureDefaultUserManagementServices(configuration);
+        services.ConfigureDefaultUserManagementServices(configuration, enableDefaultUi: false);
     }
 }

@@ -6,7 +6,6 @@ using System.Globalization;
 using Microsoft.Extensions.DependencyInjection;
 using OpenIddict.Abstractions;
 using OpenIddict.Server;
-using OpenIddict.Validation.AspNetCore;
 
 namespace Stickerlandia.UserManagement.Auth;
 
@@ -20,40 +19,40 @@ public static class AuthServiceExtensions
             .AddServer(options =>
             {
                 // Enable the token endpoint.
-                options.SetAuthorizationEndpointUris("/authorize")
-                    .SetTokenEndpointUris("/api/users/v1/login")
-                    .SetIntrospectionEndpointUris("/introspection")
-                    .SetUserInfoEndpointUris("/userinfo")
-                    .SetEndSessionEndpointUris("/logout");
+                // Enable the authorization, logout, token and userinfo endpoints.
+                options.SetAuthorizationEndpointUris("api/users/v1/connect/authorize")
+                    .SetEndSessionEndpointUris("api/users/v1/connect/logout")
+                    .SetTokenEndpointUris("api/users/v1/connect/token")
+                    .SetUserInfoEndpointUris("api/users/v1/connect/userinfo") ;
 
-                // Enable the client credentials flow.
-                options.AllowClientCredentialsFlow()
-                    .AllowAuthorizationCodeFlow()
-                    .AllowPasswordFlow()
-                    .AllowImplicitFlow()
-                    .AllowHybridFlow()
+                // Mark the "email", "profile" and "roles" scopes as supported scopes.
+                options.RegisterScopes(OpenIddictConstants.Permissions.Scopes.Email, OpenIddictConstants.Permissions.Scopes.Profile, OpenIddictConstants.Permissions.Scopes.Roles);
+
+                // Note: the sample uses the code and refresh token flows but you can enable
+                // the other flows if you need to support implicit, password or client credentials.
+                options.AllowAuthorizationCodeFlow()
+                    .RequireProofKeyForCodeExchange()
                     .AllowRefreshTokenFlow();
 
-                // Expose all the supported claims in the discovery document.
-                options.RegisterClaims("email", "issuer", "preferred_username", "profile", "updated_at");
-
-                // Expose all the supported scopes in the discovery document.
-                options.RegisterScopes("email", "profile");
-
                 // Register the signing and encryption credentials.
-                options.AddEphemeralEncryptionKey()
-                    .AddEphemeralSigningKey();
+                options.AddDevelopmentEncryptionCertificate()
+                    .AddDevelopmentSigningCertificate();
 
                 // Register the ASP.NET Core host and configure the ASP.NET Core options.
                 if (disableSsl)
                     options.UseAspNetCore()
                         .DisableTransportSecurityRequirement()
+                        .EnableAuthorizationEndpointPassthrough()
+                        .EnableEndSessionEndpointPassthrough()
+                        .EnableStatusCodePagesIntegration()
                         .EnableTokenEndpointPassthrough();
                 else
                     options.UseAspNetCore()
+                        .EnableAuthorizationEndpointPassthrough()
+                        .EnableEndSessionEndpointPassthrough()
+                        .EnableStatusCodePagesIntegration()
                         .EnableTokenEndpointPassthrough();
-
-
+                
                 options.AddEventHandler<OpenIddictServerEvents.HandleUserInfoRequestContext>(options =>
                     options.UseInlineHandler(context =>
                     {
@@ -83,17 +82,7 @@ public static class AuthServiceExtensions
 
                 // Register the ASP.NET Core host.
                 options.UseAspNetCore();
-
-                // Enable authorization entry validation, which is required to be able
-                // to reject access tokens retrieved from a revoked authorization code.
-                options.EnableAuthorizationEntryValidation();
             });
-
-        services.AddAuthentication(options =>
-        {
-            options.DefaultScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
-        });
-
         return services;
     }
 }

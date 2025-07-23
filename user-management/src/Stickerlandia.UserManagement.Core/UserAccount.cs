@@ -2,11 +2,8 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.RegularExpressions;
 using Stickerlandia.UserManagement.Core.RegisterUser;
-using Stickerlandia.UserManagement.Core.UpdateUserDetails;
 
 namespace Stickerlandia.UserManagement.Core;
 
@@ -16,20 +13,9 @@ public record AccountId
 
     public AccountId(string value)
     {
-        // This allows the AccountId property to be used if an email is passed in, where it should be hashed
-        // for use as an identifier. Or if an already hashed Id is passed in, it will be used as is.
-        if (UserAccount.IsValidEmail(value))
-        {
-            var emailBytes = Encoding.UTF8.GetBytes(value.ToUpperInvariant());
-            var hashBytes = SHA256.HashData(emailBytes);
+        ArgumentException.ThrowIfNullOrEmpty(value, nameof(value));
 
-            // Convert to hex string
-            Value = Convert.ToHexString(hashBytes);
-        }
-        else
-        {
-            Value = value;
-        }
+        Value = value;
     }
 }
 
@@ -53,7 +39,7 @@ public class UserAccount
     {
         _domainEvents = new List<DomainEvent>();
     }
-    
+
     public static UserAccount Register(string emailAddress, string password, string firstName,
         string lastName, AccountType accountType)
     {
@@ -108,7 +94,7 @@ public class UserAccount
     public string FirstName { get; private set; } = string.Empty;
 
     public string LastName { get; private set; } = string.Empty;
-    
+
     public string Password { get; private set; } = string.Empty;
 
     public DateTime DateCreated { get; private set; }
@@ -122,59 +108,6 @@ public class UserAccount
     public int ClaimedStickerCount { get; private set; }
 
     internal bool Changed { get; private set; }
-
-    public string AsAuthenticatedRole()
-    {
-        switch (AccountType)
-        {
-            case AccountType.Admin:
-                return "admin";
-            case AccountType.User:
-                break;
-        }
-
-        return "user";
-    }
-
-    // More performant password hashing using PBKDF2
-    public static string HashPassword(string password)
-    {
-        var salt = RandomNumberGenerator.GetBytes(16);
-        var hash = Rfc2898DeriveBytes.Pbkdf2(
-            Encoding.UTF8.GetBytes(password),
-            salt,
-            100000, // Iterations - adjust based on performance requirements
-            HashAlgorithmName.SHA256,
-            32);
-
-        var hashBytes = new byte[48];
-        Array.Copy(salt, 0, hashBytes, 0, 16);
-        Array.Copy(hash, 0, hashBytes, 16, 32);
-
-        return Convert.ToBase64String(hashBytes);
-    }
-
-    public void StickerOrdered()
-    {
-        ClaimedStickerCount++;
-    }
-
-    public void UpdateUserDetails(string newFirstName, string newLastName)
-    {
-        if (!string.IsNullOrEmpty(newFirstName) && newFirstName != FirstName)
-        {
-            FirstName = newFirstName;
-            Changed = true;
-        }
-
-        if (!string.IsNullOrEmpty(newLastName) &&newLastName != LastName)
-        {
-            LastName = newLastName;
-            Changed = true;
-        }
-
-        if (Changed) _domainEvents.Add(new UserDetailsUpdatedEvent(this));
-    }
 
     internal static bool IsValidEmail(string email)
     {

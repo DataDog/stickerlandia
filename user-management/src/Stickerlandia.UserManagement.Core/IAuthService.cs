@@ -9,8 +9,6 @@ namespace Stickerlandia.UserManagement.Core;
 
 public interface IAuthService
 {
-    Task<ClaimsIdentity?> VerifyClient(string clientId);
-    
     /// <summary>
     /// Verify a user's credentials and return a ClaimsIdentity if successful.
     /// </summary>

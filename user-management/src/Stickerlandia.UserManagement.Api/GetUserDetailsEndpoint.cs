@@ -1,6 +1,7 @@
 using System.Net;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
+using Stickerlandia.UserManagement.Api.Helpers;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.GetUserDetails;
 
@@ -14,12 +15,12 @@ internal static class GetUserDetails
         [FromServices] IAuthService authService,
         [FromServices] GetUserDetailsQueryHandler handler)
     {
-        if (user?.Identity?.Name == null)
+        if (user?.GetUserId() == null)
         {
             return new ApiResponse<UserAccountDto?>(false, null, "User not authenticated", HttpStatusCode.Unauthorized);
         }
         
-        var result = await handler.Handle(new GetUserDetailsQuery(new AccountId(user.Identity.Name)));
+        var result = await handler.Handle(new GetUserDetailsQuery(new AccountId(user.GetUserId()!)));
 
         return new ApiResponse<UserAccountDto?>(result);
     }

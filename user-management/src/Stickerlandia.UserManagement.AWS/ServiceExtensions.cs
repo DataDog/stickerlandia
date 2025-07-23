@@ -13,11 +13,11 @@ namespace Stickerlandia.UserManagement.AWS;
 
 public static class ServiceExtensions
 {
-    public static IServiceCollection AddAwsAdapters(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddAwsAdapters(this IServiceCollection services, IConfiguration configuration, bool enableDefaultUi = true)
     {
         ArgumentNullException.ThrowIfNull(configuration);
         
-        services.AddPostgresAuthServices(configuration);
+        services.AddPostgresAuthServices(configuration, enableDefaultUi: enableDefaultUi);
 
         services.Configure<AwsConfiguration>(
             configuration.GetSection("Aws"));

@@ -3,10 +3,11 @@
 // Copyright 2025 Datadog, Inc.
 
 using System.Diagnostics;
+using Microsoft.AspNetCore.Identity;
 
 namespace Stickerlandia.UserManagement.Core.StickerClaimedEvent;
 
-public class StickerClaimedHandler(IUsers users)
+public class StickerClaimedHandler(UserManager<PostgresUserAccount> users)
 {
     public async Task Handle(StickerClaimedEventV1 eventV1)
     {
@@ -17,7 +18,7 @@ public class StickerClaimedHandler(IUsers users)
                 throw new ArgumentException("Invalid StickerClaimedEventV1");
             }
 
-            var account = await users.WithIdAsync(new AccountId(eventV1.AccountId));
+            var account = await users.FindByIdAsync(eventV1.AccountId);
 
             if (account is null)
             {
@@ -26,7 +27,7 @@ public class StickerClaimedHandler(IUsers users)
             
             account.StickerOrdered();
 
-            await users.UpdateAccount(account);
+            await users.UpdateAsync(account);
         }
         catch (Exception ex)
         {

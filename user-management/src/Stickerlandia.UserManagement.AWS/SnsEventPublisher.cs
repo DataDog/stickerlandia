@@ -10,7 +10,6 @@ using Datadog.Trace;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Saunter.Attributes;
-using Stickerlandia.UserManagement.Agnostic.Observability;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.RegisterUser;
 using Log = Stickerlandia.UserManagement.Core.Observability.Log;

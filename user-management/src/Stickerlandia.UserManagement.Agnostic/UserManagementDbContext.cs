@@ -4,6 +4,7 @@
 
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Stickerlandia.UserManagement.Core;
 
 namespace Stickerlandia.UserManagement.Agnostic;
 

@@ -9,6 +9,12 @@
 
   <ItemGroup>
     <PackageReference Include="Asp.Versioning.Http" Version="8.1.0" />
+    
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.16">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.7" />
     <PackageReference Include="Saunter" Version="0.13.0" />
     <PackageReference Include="Serilog" Version="4.2.0" />
     <PackageReference Include="Serilog.Formatting.Compact" Version="3.0.0" />
@@ -27,6 +33,20 @@
     <ProjectReference Include="..\Stickerlandia.UserManagement.Azure\Stickerlandia.UserManagement.Azure.csproj" />
     <ProjectReference Include="..\Stickerlandia.UserManagement.Core\Stickerlandia.UserManagement.Core.csproj" />
     <ProjectReference Include="..\Stickerlandia.UserManagement.ServiceDefaults\Stickerlandia.UserManagement.ServiceDefaults.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\js\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="Areas\Auth\Pages\Login.cshtml" />
+    <_ContentIncludedByDefault Remove="Areas\Auth\Pages\Logout.cshtml" />
+    <_ContentIncludedByDefault Remove="Areas\Auth\Pages\Register.cshtml" />
+    <_ContentIncludedByDefault Remove="Areas\Auth\Pages\_ViewImports.cshtml" />
+    <_ContentIncludedByDefault Remove="Areas\Auth\_ValidationScriptsPartial.cshtml" />
+    <_ContentIncludedByDefault Remove="Areas\Auth\_ViewImports.cshtml" />
+    <_ContentIncludedByDefault Remove="Areas\Auth\_ViewStart.cshtml" />
   </ItemGroup>
 
 </Project>

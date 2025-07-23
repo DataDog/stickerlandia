@@ -45,19 +45,10 @@ internal static class DocumentationConfig
                 Type = SecuritySchemeType.OAuth2,
                 Flows = new OpenApiOAuthFlows
                 {
-                    Password = new OpenApiOAuthFlow()
-                    {
-                        AuthorizationUrl = new Uri($"http://localhost:5139/authorize"),
-                        TokenUrl = new Uri("http://localhost:5139/api/users/v1/login"),
-                        Scopes = new Dictionary<string, string>
-                        {
-                            { "User", "Read" }
-                        }
-                    },
                     AuthorizationCode = new OpenApiOAuthFlow
                     {
-                        AuthorizationUrl = new Uri($"/authorize"),
-                        TokenUrl = new Uri("/api/users/v1/login"),
+                        AuthorizationUrl = new Uri($"/api/users/v1/connect/authorize"),
+                        TokenUrl = new Uri("/api/users/v1/connect/token"),
                         Scopes = new Dictionary<string, string>
                         {
                             { "User", "Read" }

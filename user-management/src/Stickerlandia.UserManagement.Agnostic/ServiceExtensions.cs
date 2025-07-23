@@ -3,6 +3,7 @@
 // Copyright 2025 Datadog, Inc.
 
 using Confluent.Kafka;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -15,10 +16,11 @@ namespace Stickerlandia.UserManagement.Agnostic;
 
 public static class ServiceExtensions
 {
-    public static IServiceCollection AddAgnosticAdapters(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddAgnosticAdapters(this IServiceCollection services, IConfiguration configuration,
+        bool enableDefaultUi = true)
     {
         services.AddKafkaMessaging(configuration);
-        services.AddPostgresAuthServices(configuration);
+        services.AddPostgresAuthServices(configuration, enableDefaultUi);
 
         return services;
     }
@@ -56,7 +58,8 @@ public static class ServiceExtensions
     }
 
     public static IServiceCollection AddPostgresAuthServices(this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        bool enableDefaultUi = true)
     {
         services.AddDbContext<UserManagementDbContext>(options =>
         {
@@ -65,9 +68,14 @@ public static class ServiceExtensions
             options.UseOpenIddict();
         });
 
-        services.AddIdentityCore<PostgresUserAccount>()
+        var identityOptions = services.AddIdentity<PostgresUserAccount, IdentityRole>(options =>
+            {
+                options.User.RequireUniqueEmail = true;
+            })
             .AddEntityFrameworkStores<UserManagementDbContext>()
             .AddDefaultTokenProviders();
+
+        if (enableDefaultUi) identityOptions.AddDefaultUI();
 
         var disableSsl = false;
 
@@ -77,10 +85,16 @@ public static class ServiceExtensions
             options.UseEntityFrameworkCore()
                 .UseDbContext<UserManagementDbContext>(), disableSsl);
 
+        services.ConfigureApplicationCookie(options =>
+        {
+            options.LoginPath = new PathString("/auth/login");
+            options.LogoutPath = new PathString("/auth/logout");
+            options.AccessDeniedPath = new PathString("/auth/denied");
+        });
+
         services.AddScoped<IAuthService, MicrosoftIdentityAuthService>();
 
-        services.AddScoped<IUsers, PostgresUserRepository>();
-        services.AddScoped<IOutbox, PostgresUserRepository>();
+        services.AddScoped<IOutbox, PostgresOutbox>();
 
         return services;
     }

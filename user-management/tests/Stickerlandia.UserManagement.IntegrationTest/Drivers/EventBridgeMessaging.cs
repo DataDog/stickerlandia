@@ -5,7 +5,6 @@
 using System.Text.Json;
 using Amazon.EventBridge;
 using Amazon.EventBridge.Model;
-using Confluent.Kafka;
 
 namespace Stickerlandia.UserManagement.IntegrationTest.Drivers;
 
