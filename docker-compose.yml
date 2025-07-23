@@ -2,7 +2,7 @@ version: '3.8'
 
 # Stickerlandia Service Endpoints
 # -------------------------------
-# - Sticker Award API:      
+# - Sticker Catalogue API:      
 #   - User stickers:        http://localhost:8080/api/awardss/v1/assignments/user-001
 #   - Sticker catalog:      http://localhost:8080/api/stickers/v1
 #   - Sticker image:        http://localhost:8080/api/stickers/v1/sticker-001/image 
@@ -117,19 +117,19 @@ services:
       timeout: 5s
       retries: 5
 
-  sticker-award-db:
+  sticker-catalogue-db:
     image: postgres:16
-    container_name: sticker-award-db
+    container_name: sticker-catalogue-db
     environment:
-      POSTGRES_DB: sticker_award
+      POSTGRES_DB: sticker_catalogue
       POSTGRES_USER: sticker_user
       POSTGRES_PASSWORD: sticker_password
     ports:
       - "5432:5432"
     volumes:
-      - sticker-award-data:/var/lib/postgresql/data
+      - sticker-catalogue-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sticker_user -d sticker_award"]
+      test: ["CMD-SHELL", "pg_isready -U sticker_user -d sticker_catalogue"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -181,20 +181,20 @@ services:
        mc mb myminio/sticker-images --ignore-existing"
     restart: "no"
 
-  sticker-award:
+  sticker-catalogue:
     build:
-      context: ./sticker-award
+      context: ./sticker-catalogue
       dockerfile: src/main/docker/Dockerfile.jvmlocal
-    container_name: sticker-award
+    container_name: sticker-catalogue
     depends_on:
-      sticker-award-db:
+      sticker-catalogue-db:
         condition: service_healthy
       redpanda:
         condition: service_healthy
       minio:
         condition: service_healthy
     environment:
-      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://sticker-award-db:5432/sticker_award
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://sticker-catalogue-db:5432/sticker_catalogue
       QUARKUS_DATASOURCE_USERNAME: sticker_user
       QUARKUS_DATASOURCE_PASSWORD: sticker_password
       QUARKUS_DATASOURCE_DB_KIND: postgresql
@@ -216,9 +216,9 @@ services:
       retries: 5
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.sticker-award.rule=PathPrefix(`/api/awards`)"
-      - "traefik.http.routers.sticker-award-sticker.rule=PathPrefix(`/api/sticker`)"
-      - "traefik.http.services.sticker-award.loadbalancer.server.port=8080"
+      - "traefik.http.routers.sticker-catalogue.rule=PathPrefix(`/api/stickers`)"
+      - "traefik.http.routers.sticker-catalogue-awards.rule=PathPrefix(`/api/awards`)"
+      - "traefik.http.services.sticker-catalogue.loadbalancer.server.port=8080"
 
   user-management:
     build:
@@ -284,7 +284,7 @@ services:
       KAFKA__GROUPID: "stickerlandia-user-management"
 
 volumes:
-  sticker-award-data:
+  sticker-catalogue-data:
   user-management-data:
   redpanda-data:
   minio-data:
