@@ -11,9 +11,8 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME_USER_SERVICE: ${{ github.repository_owner }}/stickerlandia/user-management-service
-  REPOSITORY_URL: github.com/${{ github.repository }}
+  REGISTRY: 772954894450.dkr.ecr.eu-west-1.amazonaws.com
+  IMAGE_NAME_USER_SERVICE: stickerlandia-user-management
   ECR_REPOSITORY_URL: 772954894450.dkr.ecr.eu-west-1.amazonaws.com/stickerlandia-user-management
 
 jobs:
