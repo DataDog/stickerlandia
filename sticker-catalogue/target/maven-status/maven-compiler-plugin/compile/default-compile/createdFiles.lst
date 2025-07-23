@@ -1,0 +1,17 @@
+com/datadoghq/stickerlandia/stickercatalogue/dto/StickerImageUploadResponse.class
+com/datadoghq/stickerlandia/stickercatalogue/dto/StickerMetadata.class
+com/datadoghq/stickerlandia/stickercatalogue/dto/StickerDTO.class
+com/datadoghq/stickerlandia/stickercatalogue/entity/Sticker.class
+com/datadoghq/stickerlandia/common/dto/dto/PagedResponse.class
+com/datadoghq/stickerlandia/stickercatalogue/StickerRepository.class
+com/datadoghq/stickerlandia/stickercatalogue/dto/UpdateStickerRequest.class
+com/datadoghq/stickerlandia/stickercatalogue/StickerImageSeeder.class
+com/datadoghq/stickerlandia/common/dto/exception/ProblemDetailsExceptionMapper.class
+com/datadoghq/stickerlandia/stickercatalogue/dto/GetAllStickersResponse.class
+com/datadoghq/stickerlandia/common/health/HealthResource.class
+com/datadoghq/stickerlandia/common/dto/dto/ProblemDetails.class
+com/datadoghq/stickerlandia/common/dto/exception/ProblemDetailsResponseBuilder.class
+com/datadoghq/stickerlandia/stickercatalogue/StickerResource.class
+com/datadoghq/stickerlandia/stickercatalogue/dto/CreateStickerResponse.class
+com/datadoghq/stickerlandia/stickercatalogue/dto/CreateStickerRequest.class
+com/datadoghq/stickerlandia/stickercatalogue/StickerImageService.class
