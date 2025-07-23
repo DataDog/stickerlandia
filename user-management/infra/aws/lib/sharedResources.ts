@@ -95,28 +95,6 @@ export class SharedResources extends Construct {
   }
 
   createSharedResourcesForEnvironment(props: SharedResourcesProps) {
-    this.vpc = Vpc.fromLookup(this, "StickerlandiaVpc", {
-      vpcId: props.existingVpcId,
-    });
-    this.vpcLink = VpcLink.fromVpcLinkAttributes(this, "VpcLink", {
-      vpcLinkId: process.env.VPC_LINK_ID!,
-      vpc: this.vpc,
-    });
-    this.vpcLinkSecurityGroupId = process.env.VPC_LINK_SECURITY_GROUP_ID!;
-    this.httpApi = HttpApi.fromHttpApiAttributes(this, "HttpApi", {
-      httpApiId: process.env.HTTP_API_ID!,
-    });
-    this.serviceDiscoveryNamespace =
-      PrivateDnsNamespace.fromPrivateDnsNamespaceAttributes(
-        this,
-        "ServiceDiscoveryNamespace",
-        {
-          namespaceId: process.env.SERVICE_DISCOVERY_NAMESPACE_ID!,
-          namespaceName: process.env.SERVICE_DISCOVERY_NAMESPACE_NAME!,
-          namespaceArn: process.env.SERVICE_DISCOVERY_NAMESPACE_ARN!,
-        }
-      );
-
     this.vpc = new Vpc(this, "Vpc", {
       vpcName: props.networkName,
       maxAzs: 2,
