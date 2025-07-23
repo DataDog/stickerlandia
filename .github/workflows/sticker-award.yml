@@ -14,6 +14,7 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME_AWARD_SERVICE: ${{ github.repository_owner }}/stickerlandia/sticker-award-service
   REPOSITORY_URL: github.com/${{ github.repository }}
+  GO_VERSION: '1.21'
 
 jobs:
   build-and-test:
@@ -22,27 +23,40 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       
-      - name: Set up JDK 21
-        uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4.2.1
+      - name: Set up Go
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
-          java-version: '21'
-          distribution: 'temurin'
-          cache: maven
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: sticker-award/go.sum
       
-      - name: Build with Maven
+      - name: Download dependencies
         run: |
           cd sticker-award
-          ./mvnw clean package -DskipTests
+          go mod download
+      
+      - name: Build
+        run: |
+          cd sticker-award
+          go build -v ./...
       
       - name: Run Unit Tests
         run: |
           cd sticker-award
-          ./mvnw test
+          go test -v ./...
       
-      - name: Run Integration Tests
+      - name: Run Go Vet
         run: |
           cd sticker-award
-          ./mvnw verify -Dskip.unit.tests=true -DskipITs=false
+          go vet ./...
+      
+      - name: Run Go Fmt Check
+        run: |
+          cd sticker-award
+          if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+            echo "Code is not formatted properly:"
+            gofmt -s -l .
+            exit 1
+          fi
       
       - name: Install CodeQL CLI
         run: |
@@ -56,17 +70,7 @@ jobs:
       - name: Create CodeQL Database
         run: |
           cd sticker-award
-          codeql database create cql-db --language=java --source-root=.
-      
-      - name: Install CodeQL Packs
-        run: |
-          cd sticker-award
-          codeql pack install cql-queries/
-      
-      - name: Validate Architecture Rules
-        run: |
-          cd sticker-award
-          ./scripts/validate-architecture.sh
+          codeql database create cql-db --language=go --source-root=.
 
   push-image:
     runs-on: ubuntu-latest
@@ -80,12 +84,11 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       
-      - name: Set up JDK 21
-        uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4.2.1
+      - name: Set up Go
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
-          java-version: '21'
-          distribution: 'temurin'
-          cache: maven
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: sticker-award/go.sum
       
       - name: Get Commit Info
         id: get_sha
@@ -111,18 +114,12 @@ jobs:
             latest
             ${{ env.COMMIT_SHA }}
 
-      - name: Build java app
-        id: build_app
-        run: |
-          cd sticker-award
-          ./mvnw package -DskipTests
-      
       - name: Build and push Docker image
         id: push
         uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
         with:
           context: ./sticker-award
-          file: ./sticker-award/src/main/docker/Dockerfile.jvm
+          file: ./sticker-award/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}

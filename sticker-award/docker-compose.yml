@@ -1,0 +1,139 @@
+version: '3.8'
+
+services:
+  # PostgreSQL database
+  postgres:
+    image: postgres:16
+    container_name: sticker-award-db
+    environment:
+      POSTGRES_DB: sticker_awards
+      POSTGRES_USER: sticker_user
+      POSTGRES_PASSWORD: sticker_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sticker_user -d sticker_awards"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sticker-network
+
+  # Zookeeper for Kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: sticker-award-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - sticker-network
+
+  # Kafka broker
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: sticker-award-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sticker-network
+
+  # Kafka topic creation
+  kafka-topics:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: sticker-award-kafka-topics
+    depends_on:
+      kafka:
+        condition: service_healthy
+    command: >
+      bash -c "
+        echo 'Creating Kafka topics...'
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic stickers.stickerAssignedToUser.v1 --partitions 3 --replication-factor 1
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic stickers.stickerRemovedFromUser.v1 --partitions 3 --replication-factor 1
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic users.stickerClaimed.v1 --partitions 3 --replication-factor 1
+        echo 'Topics created successfully'
+      "
+    networks:
+      - sticker-network
+    restart: "no"
+
+  # Sticker Award Service
+  sticker-award:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sticker-award-service
+    environment:
+      # Server configuration
+      SERVER_PORT: 8080
+      
+      # Database configuration
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: sticker_user
+      DATABASE_PASSWORD: sticker_password
+      DATABASE_NAME: sticker_awards
+      DATABASE_SSL_MODE: disable
+      DATABASE_MAX_OPEN_CONNECTIONS: 25
+      DATABASE_MAX_IDLE_CONNECTIONS: 5
+      DATABASE_CONNECTION_MAX_LIFETIME: 300s
+      
+      # Logging configuration
+      LOG_LEVEL: debug
+      LOG_FORMAT: console
+      
+      # External service configuration
+      STICKER_CATALOGUE_BASE_URL: http://sticker-catalogue:8080
+      
+      # Kafka configuration
+      KAFKA_BROKERS: kafka:29092
+      KAFKA_PRODUCER_TIMEOUT: 5000
+      KAFKA_PRODUCER_RETRIES: 3
+      KAFKA_PRODUCER_BATCH_SIZE: 16384
+      KAFKA_REQUIRE_ACKS: 1
+      KAFKA_ENABLE_IDEMPOTENT: true
+    ports:
+      - "8080:8080"
+      - "2345:2345"  # Delve debugger port
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      kafka-topics:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - sticker-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  sticker-network:
+    driver: bridge

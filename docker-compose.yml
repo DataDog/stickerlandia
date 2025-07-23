@@ -2,10 +2,13 @@ version: '3.8'
 
 # Stickerlandia Service Endpoints
 # -------------------------------
-# - Sticker Award API:      
-#   - User stickers:        http://localhost:8080/api/awardss/v1/assignments/user-001
+# - Sticker Catalogue API:      
 #   - Sticker catalog:      http://localhost:8080/api/stickers/v1
 #   - Sticker image:        http://localhost:8080/api/stickers/v1/sticker-001/image 
+# 
+# - Sticker Award API:
+#   - User assignments:     http://localhost:8080/api/awards/v1/assignments/user-001
+#   - Award sticker:        http://localhost:8080/api/awards/v1/assignments
 # 
 # - User Management API:    http://localhost:8080/api/users
 #   - Registration:         http://localhost:8080/api/users/v1/register
@@ -32,6 +35,16 @@ version: '3.8'
 # curl -X POST http://localhost:8080/api/users/v1/login \
 #   -H "Content-Type:  application/x-www-form-urlencoded" \
 #   -d "grant_type=password&username=john.doe@example.com&password=ValidPass123!&client_id=user-authentication&client_secret=388D45FA-B36B-4988-BA59-B187D329C207"
+
+# 
+# Assigning a Sticker
+# -------------------
+# curl -X POST http://localhost:8080/api/awards/v1/assignments/user-123 \
+#   -H "Content-Type: application/json" \
+#   -d '{
+#     "stickerId": "sticker-001",
+#     "reason": "Excellent debugging work on the payment gateway issue"
+#   }'
 
 # 
 
@@ -97,7 +110,7 @@ services:
         condition: service_healthy
     entrypoint: ["/bin/sh", "-c"]
     command: >
-      "rpk topic create users.userRegistered.v1 users.stickerClaimed.v1 users.userDetailsUpdated.v1 --brokers redpanda:9092"
+      "rpk topic create users.userRegistered.v1 users.stickerClaimed.v1 users.userDetailsUpdated.v1 stickers.stickerAssignedToUser.v1 stickers.stickerRemovedFromUser.v1 --brokers redpanda:9092"
     restart: "no"
 
   redpanda-console:
@@ -117,22 +130,41 @@ services:
       timeout: 5s
       retries: 5
 
-  sticker-award-db:
+  sticker-catalogue-db:
     image: postgres:16
-    container_name: sticker-award-db
+    container_name: sticker-catalogue-db
     environment:
-      POSTGRES_DB: sticker_award
+      POSTGRES_DB: sticker_catalogue
       POSTGRES_USER: sticker_user
       POSTGRES_PASSWORD: sticker_password
     ports:
       - "5432:5432"
     volumes:
-      - sticker-award-data:/var/lib/postgresql/data
+      - sticker-catalogue-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sticker_user -d sticker_award"]
+      test: ["CMD-SHELL", "pg_isready -U sticker_user -d sticker_catalogue"]
       interval: 5s
       timeout: 5s
       retries: 5
+
+  sticker-award-db:
+    image: postgres:16
+    container_name: sticker-award-db
+    environment:
+      POSTGRES_DB: sticker_awards
+      POSTGRES_USER: sticker_user
+      POSTGRES_PASSWORD: sticker_password
+    ports:
+      - "5434:5432"
+    volumes:
+      - sticker-award-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sticker_user -d sticker_awards"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - default
 
   user-management-db:
     image: postgres:16
@@ -181,20 +213,20 @@ services:
        mc mb myminio/sticker-images --ignore-existing"
     restart: "no"
 
-  sticker-award:
+  sticker-catalogue:
     build:
-      context: ./sticker-award
+      context: ./sticker-catalogue
       dockerfile: src/main/docker/Dockerfile.jvmlocal
-    container_name: sticker-award
+    container_name: sticker-catalogue
     depends_on:
-      sticker-award-db:
+      sticker-catalogue-db:
         condition: service_healthy
       redpanda:
         condition: service_healthy
       minio:
         condition: service_healthy
     environment:
-      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://sticker-award-db:5432/sticker_award
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://sticker-catalogue-db:5432/sticker_catalogue
       QUARKUS_DATASOURCE_USERNAME: sticker_user
       QUARKUS_DATASOURCE_PASSWORD: sticker_password
       QUARKUS_DATASOURCE_DB_KIND: postgresql
@@ -216,9 +248,9 @@ services:
       retries: 5
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.sticker-award.rule=PathPrefix(`/api/awards`)"
-      - "traefik.http.routers.sticker-award-sticker.rule=PathPrefix(`/api/sticker`)"
-      - "traefik.http.services.sticker-award.loadbalancer.server.port=8080"
+      - "traefik.http.routers.sticker-catalogue.rule=PathPrefix(`/api/stickers`)"
+      - "traefik.http.routers.sticker-catalogue-awards.rule=PathPrefix(`/api/awards`)"
+      - "traefik.http.services.sticker-catalogue.loadbalancer.server.port=8080"
 
   user-management:
     build:
@@ -283,7 +315,56 @@ services:
       KAFKA__SCHEMAREGISTRY: "http://redpanda:8082"
       KAFKA__GROUPID: "stickerlandia-user-management"
 
+  sticker-award:
+    build:
+      context: ./sticker-award
+      dockerfile: Dockerfile
+    container_name: sticker-award
+    depends_on:
+      sticker-award-db:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+      redpanda-init:
+        condition: service_completed_successfully
+    environment:
+      # Server configuration
+      SERVER_PORT: 8080
+      
+      # Database configuration
+      DATABASE_HOST: sticker-award-db
+      DATABASE_PORT: 5432
+      DATABASE_USER: sticker_user
+      DATABASE_PASSWORD: sticker_password
+      DATABASE_NAME: sticker_awards
+      DATABASE_SSL_MODE: disable
+      
+      # Logging configuration
+      LOG_LEVEL: info
+      LOG_FORMAT: json
+      
+      # Kafka configuration
+      KAFKA_BROKERS: redpanda:9092
+      KAFKA_GROUP_ID: sticker-award-service
+      
+      # External service configuration
+      CATALOGUE_BASE_URL: http://sticker-catalogue:8080
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sticker-award.rule=PathPrefix(`/api/awards`)"
+      - "traefik.http.routers.sticker-award.priority=100"
+      - "traefik.http.services.sticker-award.loadbalancer.server.port=8080"
+
 volumes:
+  sticker-catalogue-data:
   sticker-award-data:
   user-management-data:
   redpanda-data:

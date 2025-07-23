@@ -1,35 +1,35 @@
 # Sticker Award Service
 
-The Sticker Award Service manages stickers and their assignment to users in the Stickerlandia platform. It provides two distinct API domains:
+The Sticker Award Service manages sticker assignments to users in the Stickerlandia platform. It provides:
 
-- **Assignment API** (`/api/awards/v1/assignments`) - Manages user sticker assignments
-- **Catalog API** (`/api/stickers/v1`) - Manages the sticker catalog (metadata, images, CRUD)
+- **Assignment API** (`/api/awards/v1/assignments`) - User sticker assignment management (CRUD operations)  
+- **Event Integration** - Publishes sticker assignment events to Kafka for downstream services
 
 ## Architecture
 
+### Technology Stack
+- **Language**: Go 1.23+
+- **HTTP Framework**: Gin (high performance REST API)
+- **Database**: PostgreSQL with GORM ORM
+- **Migrations**: golang-migrate with embedded SQL files
+- **Configuration**: Viper (environment-based)
+- **Logging**: Zap (structured JSON logging)
+- **Messaging**: Kafka via segmentio/kafka-go
+- **Validation**: go-playground/validator
+
 ### Domain Structure
-- **`award/`** - User sticker assignment domain (`/api/awards/v1`)
-  - `StickerAwardResource.java` - HTTP API for user assignments
-  - `StickerAwardRepository.java` - Data access and entity-DTO mapping
-  - `dto/` - Request/Response DTOs (AssignStickerRequest, UserAssignmentDTO, etc.)
-  - `entity/` - Database entities (StickerAssignment)
-  - `messaging/` - Event publishing
+- **`internal/api/`** - HTTP handlers, middleware, DTOs, and routing
+- **`internal/application/service/`** - Business logic and use cases
+- **`internal/domain/`** - Core entities, repository interfaces, business rules
+- **`internal/infrastructure/`** - Database access, external APIs, messaging
+- **`internal/config/`** - Configuration management
+- **`pkg/`** - Shared utilities (logger, errors, validator)
 
-- **`sticker/`** - Sticker catalog domain (`/api/stickers/v1`)
-  - `StickerResource.java` - HTTP API for sticker catalog
-  - `StickerRepository.java` - Data access and entity-DTO mapping
-  - `dto/` - Request/Response DTOs (CreateStickerRequest, StickerDTO, etc.)
-  - `entity/` - Database entities (Sticker)
-
-- **`common/`** - Shared utilities
-  - `dto/` - Common DTOs (PagedResponse)
-  - `events/` - Domain events
-
-### Separation of Concerns
-- **Resource** - HTTP layer, handles requests/responses, only works with DTOs
-- **Repository** - Data layer, maps between entities and DTOs, contains business logic
-- **Entity** - Database layer, JPA entities for persistence
-- **DTO** - API layer, request/response objects for HTTP APIs
+### Clean Architecture Layers
+- **API Layer** - HTTP handlers, middleware, request/response DTOs
+- **Application Layer** - Business workflows, external service coordination
+- **Domain Layer** - Core business entities, repository interfaces, validation rules
+- **Infrastructure Layer** - Database repositories, external clients, messaging
 
 ## API Endpoints
 
@@ -38,42 +38,8 @@ The Sticker Award Service manages stickers and their assignment to users in the 
 - `POST /api/awards/v1/assignments/{userId}` - Assign a sticker to a user
 - `DELETE /api/awards/v1/assignments/{userId}/{stickerId}` - Remove sticker assignment
 
-### Catalog API (`/api/stickers/v1`)
-- `GET /api/stickers/v1` - List all stickers (paginated)
-- `POST /api/stickers/v1` - Create new sticker
-- `GET /api/stickers/v1/{stickerId}` - Get sticker metadata
-- `PUT /api/stickers/v1/{stickerId}` - Update sticker metadata
-- `DELETE /api/stickers/v1/{stickerId}` - Delete sticker
-- `GET /api/stickers/v1/{stickerId}/image` - Get sticker image
-- `PUT /api/stickers/v1/{stickerId}/image` - Upload/update sticker image
-
-## Features
-
-- Sticker catalog management (CRUD operations)
-- User sticker assignment management
-- Sticker image storage and retrieval
-- JWT-based authentication and authorization
-- Event-driven integration with other services
-
-## Event Subscriptions
-
-The service listens to the following events:
-- `CertificationCompleted` - Assigns stickers automatically when users complete certifications
-
-## Events Published
-
-The service publishes the following events:
-- `StickerAssignedToUser` - When a sticker is assigned to a user
-- `StickerRemovedFromUser` - When a sticker is removed from a user
-
-## Authentication
-
-All API endpoints (except `/health`) require authentication via JWT token in the Authorization header. 
-Access controls ensure users can only operate on their own sticker assignments unless they have admin privileges.
-
-## Error Handling
-
-The API returns standard HTTP status codes and follows the RFC 7807 Problem Details specification for error responses.
+### System Endpoints
+- `GET /health` - Health check with database connectivity
 
 ## API Documentation
 
@@ -84,82 +50,121 @@ Full API documentation is available in OpenAPI format:
 ## Building and Running
 
 ### Prerequisites
-- Java 21+
-- Maven 3.8+
+- Go 1.23+
+- PostgreSQL 15+
+- Apache Kafka (for event publishing)
+- Docker & Docker Compose (for local development)
 
 ### Development
 
-Run in development mode:
+Run the full development stack:
 ```bash
-./mvnw compile quarkus:dev
+make dev-run
+# or
+docker-compose up --build
+```
+
+Run locally (requires separate PostgreSQL):
+```bash
+make run
+# or
+go run ./cmd/server
 ```
 
 ### Testing
 
-Run tests:
+Run all tests:
 ```bash
-./mvnw test
+make test
 ```
 
-Run integration tests:
+Run tests with coverage:
 ```bash
-./mvnw verify
+make test-coverage
+```
+
+### Building
+
+Build the application:
+```bash
+make build
+```
+
+Build Docker image:
+```bash
+make docker-build
 ```
 
 ## Code Quality
 
-This project enforces high code quality through multiple static analysis tools:
-
-### Error Prone
-
-This project uses Error Prone to catch common Java programming mistakes at compile time.
-
-**Error Prone Integration:**
-- Runs automatically during compilation (`./mvnw compile`)
-- Catches bugs like incorrect Date usage, unused variables, and charset issues
-- Configured in the Maven compiler plugin
-- Uses Error Prone version 2.38.0
-
-**Common Error Prone checks include:**
-- `JavaUtilDate` - Flags usage of legacy `java.util.Date` API
-- `UnusedVariable` - Detects unused fields and variables
-- `DefaultCharset` - Warns about implicit charset usage in string operations
-
-### Checkstyle
-
-This project uses Checkstyle to enforce coding standards based on the Google Java Style Guide.
-
-**Run Checkstyle validation:**
+### Formatting and Linting
 ```bash
-# Check code style (runs automatically during build)
-./mvnw validate
+# Format code
+make fmt
 
-# Run only Checkstyle check
-./mvnw checkstyle:check
-
-# Generate Checkstyle report (creates HTML report at target/reports/checkstyle.html)
-./mvnw checkstyle:checkstyle
+# Run linter
+make lint
 ```
 
-### Spotless (Code Formatting)
+### Database Migrations
 
-This project uses Spotless with Google Java Format to automatically fix code style issues. 
-
-**Format your code:**
+Migrations run automatically on service startup. For manual migration management:
 ```bash
-# Check if code formatting is correct
-./mvnw spotless:check
+# Start only database
+make db-up
 
-# Automatically fix code formatting issues
-./mvnw spotless:apply
-
-# Format and then validate with Checkstyle
-./mvnw spotless:apply validate
+# Reset database (WARNING: destroys data)
+make db-reset
 ```
 
-**Checkstyle Configuration:**
-- Configuration file: `checkstyle.xml`
-- Suppressions file: `checkstyle-suppressions.xml`
-- Based on Google Java Style Guide (modified for 4-space indentation)
-- Enforces 4-space indentation, 100-character line limit
-- Checks import ordering, Javadoc completeness, and naming conventions
+## Development Workflow
+
+### Setup Development Environment
+```bash
+make dev-setup
+```
+
+### Common Commands
+```bash
+# Start development stack
+make dev-run
+
+# View logs
+make dev-logs
+
+# Stop services
+make dev-stop
+
+# Clean up resources
+make docker-clean
+```
+
+## Configuration
+
+The service is configured via environment variables:
+
+### Server Configuration
+- `SERVER_PORT` - HTTP server port (default: 8080)
+
+### Database Configuration
+- `DATABASE_HOST` - Database host (default: localhost)
+- `DATABASE_PORT` - Database port (default: 5432)
+- `DATABASE_USER` - Database user (default: sticker_user)
+- `DATABASE_PASSWORD` - Database password
+- `DATABASE_NAME` - Database name (default: sticker_awards)
+- `DATABASE_SSL_MODE` - SSL mode (default: disable)
+
+### External Services
+- `STICKER_CATALOGUE_BASE_URL` - Catalogue service URL
+
+### Kafka Configuration
+- `KAFKA_BROKERS` - Kafka broker addresses (comma-separated)
+- `KAFKA_PRODUCER_TIMEOUT` - Producer timeout in milliseconds (default: 5000)
+- `KAFKA_PRODUCER_RETRIES` - Number of retry attempts (default: 3)
+- `KAFKA_PRODUCER_BATCH_SIZE` - Batch size in bytes (default: 16384)
+- `KAFKA_REQUIRE_ACKS` - Acknowledgment level (default: 1)
+- `KAFKA_ENABLE_IDEMPOTENT` - Enable idempotent producer (default: true)
+
+### Logging
+- `LOG_LEVEL` - Log level (debug, info, warn, error)
+- `LOG_FORMAT` - Log format (json, console)

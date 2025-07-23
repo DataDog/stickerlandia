@@ -1,0 +1,50 @@
+{
+  "asyncapi": "2.4.0",
+  "info": {
+    "title": "Sticker Catalogue Service",
+    "version": "1.0.0"
+  },
+  "defaultContentType": "application/json",
+  "channels": {
+    "users.stickerClaimed.v1": {
+      "publish": {
+        "operationId": "PublishStickerClaimedEventV1",
+        "summary": "Published when a user claims a sticker",
+        "message": {
+          "$ref": "#/components/messages/stickerClaimedEventV1"
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "domainEvent": {
+        "id": "domainEvent",
+        "type": "object",
+        "x-abstract": true,
+        "additionalProperties": false
+      },
+      "stickerClaimedEventV1": {
+        "id": "stickerClaimedEventV1",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "accountId": {
+            "type": "string"
+          },
+          "stickerId": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "messages": {
+      "stickerClaimedEventV1": {
+        "payload": {
+          "$ref": "#/components/schemas/stickerClaimedEventV1"
+        },
+        "name": "stickerClaimedEventV1"
+      }
+    }
+  }
+}
