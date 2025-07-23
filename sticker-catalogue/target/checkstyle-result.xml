@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<checkstyle version="10.18.2">
+<file name="/Users/scott.gerring/Documents/code/stickerlandia/sticker-catalogue/src/main/java/com/datadoghq/stickerlandia/stickercatalogue/dto/CreateStickerRequest.java">
+</file>
+<file name="/Users/scott.gerring/Documents/code/stickerlandia/sticker-catalogue/src/main/java/com/datadoghq/stickerlandia/stickercatalogue/dto/CreateStickerResponse.java">
+</file>
+<file name="/Users/scott.gerring/Documents/code/stickerlandia/sticker-catalogue/src/main/java/com/datadoghq/stickerlandia/stickercatalogue/dto/StickerMetadata.java">
+</file>
+<file name="/Users/scott.gerring/Documents/code/stickerlandia/sticker-catalogue/src/main/java/com/datadoghq/stickerlandia/stickercatalogue/dto/UpdateStickerRequest.java">
+</file>
+<file name="/Users/scott.gerring/Documents/code/stickerlandia/sticker-catalogue/src/main/java/com/datadoghq/stickerlandia/stickercatalogue/dto/StickerDTO.java">
+</file>
+<file name="/Users/scott.gerring/Documents/code/stickerlandia/sticker-catalogue/src/main/java/com/datadoghq/stickerlandia/stickercatalogue/dto/GetAllStickersResponse.java">
+</file>
+<file name="/Users/scott.gerring/Documents/code/stickerlandia/sticker-catalogue/src/main/java/com/datadoghq/stickerlandia/stickercatalogue/dto/StickerImageUploadResponse.java">
+</file>
+<file name="/Users/scott.gerring/Documents/code/stickerlandia/sticker-catalogue/src/main/java/com/datadoghq/stickerlandia/stickercatalogue/entity/Sticker.java">
+</file>
+<file name="/Users/scott.gerring/Documents/code/stickerlandia/sticker-catalogue/src/main/java/com/datadoghq/stickerlandia/stickercatalogue/StickerResource.java">
+</file>
+<file name="/Users/scott.gerring/Documents/code/stickerlandia/sticker-catalogue/src/main/java/com/datadoghq/stickerlandia/stickercatalogue/StickerImageService.java">
+</file>
+<file name="/Users/scott.gerring/Documents/code/stickerlandia/sticker-catalogue/src/main/java/com/datadoghq/stickerlandia/stickercatalogue/StickerImageSeeder.java">
+</file>
+<file name="/Users/scott.gerring/Documents/code/stickerlandia/sticker-catalogue/src/main/java/com/datadoghq/stickerlandia/stickercatalogue/StickerRepository.java">
+</file>
+<file name="/Users/scott.gerring/Documents/code/stickerlandia/sticker-catalogue/src/main/java/com/datadoghq/stickerlandia/common/dto/dto/ProblemDetails.java">
+</file>
+<file name="/Users/scott.gerring/Documents/code/stickerlandia/sticker-catalogue/src/main/java/com/datadoghq/stickerlandia/common/dto/dto/PagedResponse.java">
+</file>
+<file name="/Users/scott.gerring/Documents/code/stickerlandia/sticker-catalogue/src/main/java/com/datadoghq/stickerlandia/common/dto/exception/ProblemDetailsExceptionMapper.java">
+</file>
+<file name="/Users/scott.gerring/Documents/code/stickerlandia/sticker-catalogue/src/main/java/com/datadoghq/stickerlandia/common/dto/exception/ProblemDetailsResponseBuilder.java">
+</file>
+<file name="/Users/scott.gerring/Documents/code/stickerlandia/sticker-catalogue/src/main/java/com/datadoghq/stickerlandia/common/health/HealthResource.java">
+</file>
+<file name="/Users/scott.gerring/Documents/code/stickerlandia/sticker-catalogue/src/test/java/com/datadoghq/stickerlandia/stickercatalogue/KafkaTestResourceLifecycleManager.java">
+</file>
+<file name="/Users/scott.gerring/Documents/code/stickerlandia/sticker-catalogue/src/test/java/com/datadoghq/stickerlandia/stickercatalogue/StickerImageServiceTest.java">
+</file>
+<file name="/Users/scott.gerring/Documents/code/stickerlandia/sticker-catalogue/src/test/java/com/datadoghq/stickerlandia/stickercatalogue/ArchitectureTest.java">
+</file>
+<file name="/Users/scott.gerring/Documents/code/stickerlandia/sticker-catalogue/src/test/java/com/datadoghq/stickerlandia/stickercatalogue/common/exception/ProblemDetailsExceptionMapperTest.java">
+</file>
+<file name="/Users/scott.gerring/Documents/code/stickerlandia/sticker-catalogue/src/test/java/com/datadoghq/stickerlandia/stickercatalogue/StickerResourceTest.java">
+</file>
+<file name="/Users/scott.gerring/Documents/code/stickerlandia/sticker-catalogue/src/test/java/com/datadoghq/stickerlandia/stickercatalogue/HealthResourceIT.java">
+</file>
+<file name="/Users/scott.gerring/Documents/code/stickerlandia/sticker-catalogue/src/test/java/com/datadoghq/stickerlandia/stickercatalogue/KafkaTestProfile.java">
+</file>
+<file name="/Users/scott.gerring/Documents/code/stickerlandia/sticker-catalogue/src/test/java/com/datadoghq/stickerlandia/stickercatalogue/HealthResourceTest.java">
+</file>
+<file name="/Users/scott.gerring/Documents/code/stickerlandia/sticker-catalogue/src/main/resources/application.properties">
+</file>
+<file name="/Users/scott.gerring/Documents/code/stickerlandia/sticker-catalogue/src/test/resources/application.properties">
+</file>
+</checkstyle>
