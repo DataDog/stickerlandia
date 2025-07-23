@@ -56,6 +56,25 @@ services:
     networks:
       - sticker-network
 
+  # Kafka topic creation
+  kafka-topics:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: sticker-award-kafka-topics
+    depends_on:
+      kafka:
+        condition: service_healthy
+    command: >
+      bash -c "
+        echo 'Creating Kafka topics...'
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic stickers.stickerAssignedToUser.v1 --partitions 3 --replication-factor 1
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic stickers.stickerRemovedFromUser.v1 --partitions 3 --replication-factor 1
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic users.stickerClaimed.v1 --partitions 3 --replication-factor 1
+        echo 'Topics created successfully'
+      "
+    networks:
+      - sticker-network
+    restart: "no"
+
   # Sticker Award Service
   sticker-award:
     build:
@@ -99,6 +118,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      kafka-topics:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
       interval: 30s

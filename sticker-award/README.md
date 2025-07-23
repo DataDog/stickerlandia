@@ -3,18 +3,18 @@
 The Sticker Award Service manages sticker assignments to users in the Stickerlandia platform. It provides:
 
 - **Assignment API** (`/api/awards/v1/assignments`) - User sticker assignment management (CRUD operations)  
-- **Event Integration** - Listens for certification completions and publishes assignment events
+- **Event Integration** - Publishes sticker assignment events to Kafka for downstream services
 
 ## Architecture
 
 ### Technology Stack
-- **Language**: Go 1.21+
+- **Language**: Go 1.23+
 - **HTTP Framework**: Gin (high performance REST API)
 - **Database**: PostgreSQL with GORM ORM
 - **Migrations**: golang-migrate with embedded SQL files
 - **Configuration**: Viper (environment-based)
 - **Logging**: Zap (structured JSON logging)
-- **Messaging**: Kafka via IBM/sarama
+- **Messaging**: Kafka via segmentio/kafka-go
 - **Validation**: go-playground/validator
 
 ### Domain Structure
@@ -50,8 +50,9 @@ Full API documentation is available in OpenAPI format:
 ## Building and Running
 
 ### Prerequisites
-- Go 1.21+
+- Go 1.23+
 - PostgreSQL 15+
+- Apache Kafka (for event publishing)
 - Docker & Docker Compose (for local development)
 
 ### Development
@@ -155,7 +156,14 @@ The service is configured via environment variables:
 
 ### External Services
 - `STICKER_CATALOGUE_BASE_URL` - Catalogue service URL
-- `KAFKA_BROKERS` - Kafka broker addresses
+
+### Kafka Configuration
+- `KAFKA_BROKERS` - Kafka broker addresses (comma-separated)
+- `KAFKA_PRODUCER_TIMEOUT` - Producer timeout in milliseconds (default: 5000)
+- `KAFKA_PRODUCER_RETRIES` - Number of retry attempts (default: 3)
+- `KAFKA_PRODUCER_BATCH_SIZE` - Batch size in bytes (default: 16384)
+- `KAFKA_REQUIRE_ACKS` - Acknowledgment level (default: 1)
+- `KAFKA_ENABLE_IDEMPOTENT` - Enable idempotent producer (default: true)
 
 ### Logging
 - `LOG_LEVEL` - Log level (debug, info, warn, error)

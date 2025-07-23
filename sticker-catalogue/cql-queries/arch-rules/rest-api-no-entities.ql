@@ -16,8 +16,8 @@ from Class restClass, RefType entityType, Element reference
 where
   // Match REST API classes by fully qualified package name
   (
-    restClass.getQualifiedName() = "com.datadoghq.stickerlandia.stickeraward.sticker.StickerResource" or
-    restClass.getQualifiedName() = "com.datadoghq.stickerlandia.stickeraward.award.StickerAwardResource"
+    restClass.getQualifiedName() = "com.datadoghq.stickerlandia.stickercatalogue.StickerResource" or
+    restClass.getQualifiedName() = "com.datadoghq.stickerlandia.stickercatalogue.award.StickerAwardResource"
   ) and
   
   // Check if the class references entity types

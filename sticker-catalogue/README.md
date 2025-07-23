@@ -1,19 +1,13 @@
-# Sticker Award Service
+# Sticker Catalogue Service
 
-The Sticker Award Service manages stickers and their assignment to users in the Stickerlandia platform. It provides two distinct API domains:
+The Sticker Catalogue Service manages stickers in the Stickerlandia platform. It stores both relational data
+about the stickers, and the images of the stickers themselves.
 
-- **Assignment API** (`/api/awards/v1/assignments`) - Manages user sticker assignments
 - **Catalog API** (`/api/stickers/v1`) - Manages the sticker catalog (metadata, images, CRUD)
 
 ## Architecture
 
 ### Domain Structure
-- **`award/`** - User sticker assignment domain (`/api/awards/v1`)
-  - `StickerAwardResource.java` - HTTP API for user assignments
-  - `StickerAwardRepository.java` - Data access and entity-DTO mapping
-  - `dto/` - Request/Response DTOs (AssignStickerRequest, UserAssignmentDTO, etc.)
-  - `entity/` - Database entities (StickerAssignment)
-  - `messaging/` - Event publishing
 
 - **`sticker/`** - Sticker catalog domain (`/api/stickers/v1`)
   - `StickerResource.java` - HTTP API for sticker catalog
@@ -33,11 +27,6 @@ The Sticker Award Service manages stickers and their assignment to users in the 
 
 ## API Endpoints
 
-### Assignment API (`/api/awards/v1/assignments`)
-- `GET /api/awards/v1/assignments/{userId}` - Get user's sticker assignments
-- `POST /api/awards/v1/assignments/{userId}` - Assign a sticker to a user
-- `DELETE /api/awards/v1/assignments/{userId}/{stickerId}` - Remove sticker assignment
-
 ### Catalog API (`/api/stickers/v1`)
 - `GET /api/stickers/v1` - List all stickers (paginated)
 - `POST /api/stickers/v1` - Create new sticker
@@ -47,29 +36,9 @@ The Sticker Award Service manages stickers and their assignment to users in the 
 - `GET /api/stickers/v1/{stickerId}/image` - Get sticker image
 - `PUT /api/stickers/v1/{stickerId}/image` - Upload/update sticker image
 
-## Features
-
-- Sticker catalog management (CRUD operations)
-- User sticker assignment management
-- Sticker image storage and retrieval
-- JWT-based authentication and authorization
-- Event-driven integration with other services
-
-## Event Subscriptions
-
-The service listens to the following events:
-- `CertificationCompleted` - Assigns stickers automatically when users complete certifications
-
-## Events Published
-
-The service publishes the following events:
-- `StickerAssignedToUser` - When a sticker is assigned to a user
-- `StickerRemovedFromUser` - When a sticker is removed from a user
-
 ## Authentication
 
 All API endpoints (except `/health`) require authentication via JWT token in the Authorization header. 
-Access controls ensure users can only operate on their own sticker assignments unless they have admin privileges.
 
 ## Error Handling
 

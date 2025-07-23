@@ -4,6 +4,6 @@
        xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/beans_3_0.xsd"
        version="3.0" bean-discovery-mode="annotated">
     <alternatives>
-        <class>com.datadoghq.stickerlandia.stickeraward.messaging.MockStickerAwardEventPublisher</class>
+        <class>com.datadoghq.stickerlandia.stickercatalogue.messaging.MockStickerAwardEventPublisher</class>
     </alternatives>
 </beans> 

@@ -1,4 +1,4 @@
-name: Sticker Award Service
+name: Sticker Catalogue Service
 
 on:
   push:
@@ -6,13 +6,13 @@ on:
   pull_request:
     branches: ["main"]
     paths:
-      - "sticker-award/**"
+      - "sticker-catalogue/**"
       - ".github/**"
   workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME_AWARD_SERVICE: ${{ github.repository_owner }}/stickerlandia/sticker-award-service
+  IMAGE_NAME_CATALOGUE_SERVICE: ${{ github.repository_owner }}/stickerlandia/sticker-catalogue-service
   REPOSITORY_URL: github.com/${{ github.repository }}
 
 jobs:
@@ -31,17 +31,17 @@ jobs:
       
       - name: Build with Maven
         run: |
-          cd sticker-award
+          cd sticker-catalogue
           ./mvnw clean package -DskipTests
       
       - name: Run Unit Tests
         run: |
-          cd sticker-award
+          cd sticker-catalogue
           ./mvnw test
       
       - name: Run Integration Tests
         run: |
-          cd sticker-award
+          cd sticker-catalogue
           ./mvnw verify -Dskip.unit.tests=true -DskipITs=false
       
       - name: Install CodeQL CLI
@@ -55,17 +55,17 @@ jobs:
       
       - name: Create CodeQL Database
         run: |
-          cd sticker-award
+          cd sticker-catalogue
           codeql database create cql-db --language=java --source-root=.
       
       - name: Install CodeQL Packs
         run: |
-          cd sticker-award
+          cd sticker-catalogue
           codeql pack install cql-queries/
       
-      - name: Validate Architecture Rules
+      - name: Validate Architecture Rules  
         run: |
-          cd sticker-award
+          cd sticker-catalogue
           ./scripts/validate-architecture.sh
 
   push-image:
@@ -106,7 +106,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_AWARD_SERVICE }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_CATALOGUE_SERVICE }}
           tags: |
             latest
             ${{ env.COMMIT_SHA }}
@@ -114,15 +114,15 @@ jobs:
       - name: Build java app
         id: build_app
         run: |
-          cd sticker-award
+          cd sticker-catalogue
           ./mvnw package -DskipTests
       
       - name: Build and push Docker image
         id: push
         uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
         with:
-          context: ./sticker-award
-          file: ./sticker-award/src/main/docker/Dockerfile.jvm
+          context: ./sticker-catalogue
+          file: ./sticker-catalogue/src/main/docker/Dockerfile.jvm
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
