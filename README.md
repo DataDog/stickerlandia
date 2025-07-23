@@ -41,7 +41,8 @@ Each deployment model uses appropriate components optimized for the specific pla
 ## Technical Stack
 
 - **User Management**: .NET-based service for identity and authentication
-- **Sticker Award**: Java/Quarkus-based service for sticker management
+- **Sticker Award**: Go-based service for sticker assignment management
+- **Sticker Catalogue**: Java/Quarkus-based service for sticker catalog management
 - **Message Broker**: Kafka or Azure Service Bus for event distribution
 - **Databases**: PostgreSQL for structured data
 - **Authentication**: JWT-based authentication
@@ -50,8 +51,9 @@ Each deployment model uses appropriate components optimized for the specific pla
 
 | Service | Description | Documentation |
 |---------|-------------|---------------|
-| [User Management](./user-management/) | Manages user accounts, authentication, and profile information. Handles user registration, login, and JWT token issuance. | [API Docs](./user-management/docs/api.json) |
-| [Sticker Award](./sticker-award/) | Manages the assignment of stickers to users. Tracks which users have which stickers and handles assignment/removal based on criteria like certification completion. | [API Docs](./sticker-award/docs/api.json) |
+| [User Management](./user-management/) | Manages user accounts, authentication, and profile information. Handles user registration, login, and JWT token issuance. | [API Docs](./user-management/docs/api.yaml) |
+| [Sticker Award](./sticker-award/) | Manages the assignment of stickers to users. Tracks which users have which stickers and handles assignment/removal based on criteria like certification completion. | [API Docs](./sticker-award/docs/api.yaml) |
+| [Sticker Catalogue](./sticker-catalogue/) | Manages the master catalog of available stickers. Handles sticker metadata, images, and provides catalog browsing functionality. | [API Docs](./sticker-catalogue/docs/api.yaml) |
 
 ## Observability
 
