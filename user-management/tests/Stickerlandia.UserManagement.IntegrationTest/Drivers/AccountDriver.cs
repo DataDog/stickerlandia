@@ -51,6 +51,37 @@ internal sealed class AccountDriver : IDisposable
         };
     }
 
+    private static string ExtractUserIdFromJwt(string jwtToken)
+    {
+        try
+        {
+            var parts = jwtToken.Split('.');
+            if (parts.Length != 3) throw new ArgumentException("Invalid JWT format");
+
+            var payload = parts[1];
+            // Add padding if necessary
+            while (payload.Length % 4 != 0)
+            {
+                payload += "=";
+            }
+
+            var jsonBytes = Convert.FromBase64String(payload);
+            var json = Encoding.UTF8.GetString(jsonBytes);
+            using var doc = JsonDocument.Parse(json);
+            
+            if (doc.RootElement.TryGetProperty("sub", out var subElement))
+            {
+                return subElement.GetString() ?? throw new InvalidOperationException("'sub' claim is null");
+            }
+
+            throw new InvalidOperationException("'sub' claim not found in JWT token");
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Failed to extract userId from JWT: {ex.Message}", ex);
+        }
+    }
+
     public async Task<RegisterResponse?> RegisterUser(string emailAddress, string password)
     {
         _testOutputHelper.WriteLine($"Registering user: {emailAddress}");
@@ -146,13 +177,14 @@ internal sealed class AccountDriver : IDisposable
     public async Task<string?> UpdateUserDetails(string authToken, string firstName, string lastName)
     {
         _testOutputHelper.WriteLine("Updating user details");
+        var userId = ExtractUserIdFromJwt(authToken);
         var requestBody = JsonSerializer.Serialize(new
         {
             firstName,
             lastName,
         });
 
-        using var request = new HttpRequestMessage(HttpMethod.Put, "api/users/v1/details");
+        using var request = new HttpRequestMessage(HttpMethod.Put, $"api/users/v1/{userId}/details");
         request.Headers.Add("Authorization", $"Bearer {authToken}");
         request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
 
@@ -407,6 +439,7 @@ internal sealed class AccountDriver : IDisposable
     public async Task<UserAccountDTO?> GetUserAccount(string authToken)
     {
         _testOutputHelper.WriteLine("Getting user account");
+        var userId = ExtractUserIdFromJwt(authToken);
         
         const int maxRetries = 3;
         const int baseDelayMs = 1000;
@@ -415,7 +448,7 @@ internal sealed class AccountDriver : IDisposable
         {
             try
             {
-                using var request = new HttpRequestMessage(HttpMethod.Get, "api/users/v1/details");
+                using var request = new HttpRequestMessage(HttpMethod.Get, $"api/users/v1/{userId}/details");
                 request.Headers.Add("Authorization", $"Bearer {authToken}");
 
                 var response = await _oauthClient.SendAsync(request);
@@ -445,6 +478,27 @@ internal sealed class AccountDriver : IDisposable
         }
         
         return null;
+    }
+
+    public async Task<bool> TryAccessAnotherUsersData(string authToken, string differentUserId)
+    {
+        _testOutputHelper.WriteLine($"Attempting to access another user's data with userId: {differentUserId}");
+        
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"api/users/v1/{differentUserId}/details");
+            request.Headers.Add("Authorization", $"Bearer {authToken}");
+
+            var response = await _oauthClient.SendAsync(request);
+            
+            // Return true if we get 403 Forbidden (which is expected)
+            return response.StatusCode == HttpStatusCode.Forbidden;
+        }
+        catch (Exception ex)
+        {
+            _testOutputHelper.WriteLine($"Exception when trying to access another user's data: {ex.Message}");
+            return false;
+        }
     }
 
     public async Task InjectStickerClaimedMessage(string userId, string stickerId)

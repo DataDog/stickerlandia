@@ -10,6 +10,7 @@ namespace Stickerlandia.UserManagement.Api;
 internal static class UpdateUserDetailsEndpoint
 {
     public static async Task<ApiResponse<string>> HandleAsync(
+        string userId,
         HttpContext context,
         ClaimsPrincipal? user,
         [FromServices] IAuthService authService,
@@ -19,6 +20,12 @@ internal static class UpdateUserDetailsEndpoint
         if (user?.GetUserId() == null)
         {
             return new ApiResponse<string>(false, "", "User not authenticated", HttpStatusCode.Unauthorized);
+        }
+
+        var jwtUserId = user.GetUserId();
+        if (jwtUserId != userId)
+        {
+            return new ApiResponse<string>(false, "", "Access denied: userId parameter does not match authenticated user", HttpStatusCode.Forbidden);
         }
 
         request.AccountId = new AccountId(user?.GetUserId()!);

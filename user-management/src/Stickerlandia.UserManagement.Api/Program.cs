@@ -101,7 +101,7 @@ v1ApiEndpoints.MapHealthChecks("/health", new HealthCheckOptions
     ResponseWriter = WriteHealthCheckResponse
 });
 
-v1ApiEndpoints.MapGet("details", GetUserDetails.HandleAsync)
+v1ApiEndpoints.MapGet("{userId}/details", GetUserDetails.HandleAsync)
     .RequireAuthorization(policyBuilder =>
     {
         policyBuilder.AuthenticationSchemes = new List<string>(1)
@@ -110,9 +110,10 @@ v1ApiEndpoints.MapGet("details", GetUserDetails.HandleAsync)
     })
     .WithDescription("Get the current authenticated users details")
     .Produces<ApiResponse<UserAccountDto>>(200)
-    .ProducesProblem(401);
+    .ProducesProblem(401)
+    .ProducesProblem(403);
 
-v1ApiEndpoints.MapPut("details", UpdateUserDetailsEndpoint.HandleAsync)
+v1ApiEndpoints.MapPut("{userId}/details", UpdateUserDetailsEndpoint.HandleAsync)
     .RequireAuthorization(policyBuilder =>
     {
         policyBuilder.AuthenticationSchemes = new List<string>(1)
@@ -121,7 +122,8 @@ v1ApiEndpoints.MapPut("details", UpdateUserDetailsEndpoint.HandleAsync)
     })
     .WithDescription("Update the user details")
     .Produces<ApiResponse<string>>(200)
-    .ProducesProblem(401);
+    .ProducesProblem(401)
+    .ProducesProblem(403);
 
 try
 {

@@ -183,6 +183,27 @@ public sealed class AccountTests(ITestOutputHelper testOutputHelper, TestSetupFi
         registerResult.Should().NotBeNull();
     }
 
+    [Fact]
+    public async Task WhenAUserTriesToAccessAnotherUsersDataThenShouldReturn403()
+    {
+        // Arrange
+        var emailAddress = $"{Guid.NewGuid()}@test.com";
+        var password = $"{Guid.NewGuid()}!A23";
+        var differentUserId = Guid.NewGuid().ToString();
+
+        // Act
+        var registerResult = await _driver.RegisterUser(emailAddress, password);
+        registerResult.Should().NotBeNull();
+        
+        var loginResponse = await _driver.Login(emailAddress, password);
+        loginResponse.Should().NotBeNull();
+        
+        var result = await _driver.TryAccessAnotherUsersData(loginResponse!.AuthToken, differentUserId);
+
+        // Assert
+        result.Should().BeTrue("Expected 403 Forbidden when trying to access another user's data");
+    }
+
     public void Dispose()
     {
         _driver?.Dispose();
