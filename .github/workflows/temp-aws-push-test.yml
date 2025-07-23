@@ -64,4 +64,4 @@ jobs:
         run: |
           docker build "./user-management" -f "./user-management/src/Stickerlandia.UserManagement.Api/Dockerfile" -t stickerlandia-user-management
           docker tag stickerlandia-user-management:latest 772954894450.dkr.ecr.eu-west-1.amazonaws.com/stickerlandia-user-management:latest
-          docker push docker push 772954894450.dkr.ecr.eu-west-1.amazonaws.com/stickerlandia-user-management:latest
+          docker push 772954894450.dkr.ecr.eu-west-1.amazonaws.com/stickerlandia-user-management:latest
