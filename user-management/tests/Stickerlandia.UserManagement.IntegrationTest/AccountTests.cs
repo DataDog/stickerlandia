@@ -201,7 +201,7 @@ public sealed class AccountTests(ITestOutputHelper testOutputHelper, TestSetupFi
         var result = await _driver.TryAccessAnotherUsersData(loginResponse!.AuthToken, differentUserId);
 
         // Assert
-        result.Should().BeTrue("Expected 403 Forbidden when trying to access another user's data");
+        result.Should().Be(403);
     }
 
     public void Dispose()
