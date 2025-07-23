@@ -50,7 +50,7 @@ Events follow the CloudEvents specification and include:
 
 ## Architecture Overview
 
-Stickerlandia consists of two main services:
+Stickerlandia consists of three main services:
 
 1. **User Management Service** (.NET)
    - Handles user registration and authentication
@@ -58,11 +58,17 @@ Stickerlandia consists of two main services:
    - Issues and validates JWT tokens
    - Tracks user sticker statistics
 
-2. **Sticker Award Service** (Java/Quarkus)
-   - Manages the sticker catalog
+2. **Sticker Award Service** (Go)
    - Handles sticker assignments and removals
    - Processes certification completions
    - Tracks which users own which stickers
+   - Manages assignment-based business logic
+
+3. **Sticker Catalogue Service** (Java/Quarkus)
+   - Manages the master catalog of available stickers
+   - Handles sticker metadata and images
+   - Provides catalog browsing and search functionality
+   - Maintains sticker definitions and properties
 
 ## Deployment Options
 
@@ -70,7 +76,8 @@ Stickerlandia supports multiple deployment options:
 
 1. **Serverless Deployment**
    - User Management: Azure Functions / AWS Lambda
-   - Sticker Award: Quarkus with AWS Lambda or Azure Functions
+   - Sticker Award: Go with AWS Lambda or Azure Functions
+   - Sticker Catalogue: Quarkus with AWS Lambda or Azure Functions
    - Messaging: Azure Service Bus / AWS SQS+SNS
    - Database: Azure Cosmos DB / AWS DynamoDB
 
