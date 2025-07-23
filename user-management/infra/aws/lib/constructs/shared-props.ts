@@ -5,6 +5,7 @@
 // Copyright 2024 Datadog, Inc.
 //
 
+import { IStringParameter } from "aws-cdk-lib/aws-ssm";
 import { DatadogECSFargate, DatadogLambda } from "datadog-cdk-constructs-v2";
 
 export interface SharedProps {
@@ -18,6 +19,7 @@ export interface SharedProps {
     lambda: DatadogLambda;
     ecsFargate: DatadogECSFargate;
     apiKey: string;
+    apiKeyParameter: IStringParameter;
     site: string;
   };
 }
