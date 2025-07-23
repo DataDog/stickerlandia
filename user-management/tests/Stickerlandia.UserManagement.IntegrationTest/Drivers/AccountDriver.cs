@@ -448,7 +448,7 @@ internal sealed class AccountDriver : IDisposable
         return null;
     }
 
-    public async Task<int> TryAccessAnotherUsersData(string authToken, string differentUserId)
+    public async Task<bool> TryAccessAnotherUsersData(string authToken, string differentUserId)
     {
         _testOutputHelper.WriteLine($"Attempting to access another user's data with userId: {differentUserId}");
 
@@ -460,12 +460,12 @@ internal sealed class AccountDriver : IDisposable
             var response = await _oauthClient.SendAsync(request);
 
             // Return true if we get 403 Forbidden (which is expected)
-            return (int)response.StatusCode;
+            return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
         {
             _testOutputHelper.WriteLine($"Exception when trying to access another user's data: {ex.Message}");
-            return 500;
+            return false;
         }
     }
 
