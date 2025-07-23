@@ -14,6 +14,7 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME_USER_SERVICE: ${{ github.repository_owner }}/stickerlandia/user-management-service
   REPOSITORY_URL: github.com/${{ github.repository }}
+  ECR_REPOSITORY_URL: 772954894450.dkr.ecr.eu-west-1.amazonaws.com/stickerlandia-user-management
 
 jobs:
   unit-test:
@@ -139,6 +140,15 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@b47578312673ae6fa5b5096b330d9fbac3d116df
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: GitHub_to_AWS_via_FederatedOIDC
+          aws-region: "us-east-1"
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
@@ -149,7 +159,7 @@ jobs:
             latest
             ${{ env.COMMIT_SHA }}
 
-      - name: Build and push Docker image
+      - name: Build and push Docker image to Github Container Registry
         id: push
         uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
         with:
@@ -163,4 +173,20 @@ jobs:
             GIT_COMMIT_SHA=${{ env.COMMIT_SHA }}
             GIT_REPOSITORY_URL=${{ env.REPOSITORY_URL }}
             DD_GIT_REPOSITORY_URL=${{ env.REPOSITORY_URL }}
+            DD_GIT_COMMIT_SHA=${{ env.COMMIT_SHA }}
+
+      - name: Build and push Docker image to Amazon ECR
+        id: push-ecr
+        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
+        with:
+          context: ./user-management
+          file: ./user-management/src/Stickerlandia.UserManagement.Api/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            GIT_COMMIT_SHA=${{ env.COMMIT_SHA }}
+            GIT_REPOSITORY_URL=${{ env.ECR_REPOSITORY_URL }}
+            DD_GIT_REPOSITORY_URL=${{ env.ECR_REPOSITORY_URL }}
             DD_GIT_COMMIT_SHA=${{ env.COMMIT_SHA }}
