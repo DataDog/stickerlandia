@@ -42,6 +42,8 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
+        with:
+          registries: "772954894450"
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
@@ -52,18 +54,16 @@ jobs:
             latest
             ${{ env.COMMIT_SHA }}
 
-      - name: Build and push Docker image to Amazon ECR
-        id: push-ecr
-        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
-        with:
-          context: ./user-management
-          file: ./user-management/src/Stickerlandia.UserManagement.Api/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            GIT_COMMIT_SHA=${{ env.COMMIT_SHA }}
-            GIT_REPOSITORY_URL=${{ env.ECR_REPOSITORY_URL }}
-            DD_GIT_REPOSITORY_URL=${{ env.ECR_REPOSITORY_URL }}
-            DD_GIT_COMMIT_SHA=${{ env.COMMIT_SHA }}
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-publish
+        shell: bash
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ env.IMAGE_NAME_USER_SERVICE }}
+          IMAGE_TAG: "latest"
+        run: |
+          docker build "./user-management" -f "/user-management/src/Stickerlandia.UserManagement.Api/Dockerfile" -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          echo "IMAGE $IMAGE_TAG is pushed to $ECR_REGISTRY/$ECR_REPOSITORY"
+          echo "image_tag=$IMAGE_TAG" 
+          echo "full_image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
