@@ -7,14 +7,14 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/api/handlers"
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/api/middleware"
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/application/service"
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/config"
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/infrastructure/database/repository"
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/infrastructure/external/catalogue"
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/infrastructure/messaging"
-	"github.com/datadoghq/stickerlandia/sticker-award/pkg/validator"
+	"github.com/datadog/stickerlandia/sticker-award/internal/api/handlers"
+	"github.com/datadog/stickerlandia/sticker-award/internal/api/middleware"
+	"github.com/datadog/stickerlandia/sticker-award/internal/application/service"
+	"github.com/datadog/stickerlandia/sticker-award/internal/config"
+	"github.com/datadog/stickerlandia/sticker-award/internal/infrastructure/database/repository"
+	"github.com/datadog/stickerlandia/sticker-award/internal/infrastructure/external/catalogue"
+	"github.com/datadog/stickerlandia/sticker-award/internal/infrastructure/messaging"
+	"github.com/datadog/stickerlandia/sticker-award/pkg/validator"
 )
 
 // Setup configures and returns the Gin router with all routes and middleware

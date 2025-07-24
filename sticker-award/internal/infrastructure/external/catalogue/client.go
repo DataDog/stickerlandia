@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/datadoghq/stickerlandia/sticker-award/pkg/errors"
+	"github.com/datadog/stickerlandia/sticker-award/pkg/errors"
 )
 
 // ErrStickerNotFound is returned when a sticker is not found in the catalogue

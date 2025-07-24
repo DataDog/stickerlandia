@@ -8,7 +8,7 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/api/dto"
+	"github.com/datadog/stickerlandia/sticker-award/internal/api/dto"
 )
 
 // HealthHandler handles health check requests

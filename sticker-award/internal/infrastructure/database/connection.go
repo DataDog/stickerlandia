@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/config"
+	"github.com/datadog/stickerlandia/sticker-award/internal/config"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"

@@ -10,10 +10,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/api/router"
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/config"
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/infrastructure/database"
-	"github.com/datadoghq/stickerlandia/sticker-award/pkg/logger"
+	"github.com/datadog/stickerlandia/sticker-award/internal/api/router"
+	"github.com/datadog/stickerlandia/sticker-award/internal/config"
+	"github.com/datadog/stickerlandia/sticker-award/internal/infrastructure/database"
+	"github.com/datadog/stickerlandia/sticker-award/pkg/logger"
 )
 
 func main() {

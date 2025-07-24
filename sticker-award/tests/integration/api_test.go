@@ -24,10 +24,10 @@ import (
 	postgresDriver "gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/api/dto"
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/api/router"
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/config"
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/infrastructure/database"
+	"github.com/datadog/stickerlandia/sticker-award/internal/api/dto"
+	"github.com/datadog/stickerlandia/sticker-award/internal/api/router"
+	"github.com/datadog/stickerlandia/sticker-award/internal/config"
+	"github.com/datadog/stickerlandia/sticker-award/internal/infrastructure/database"
 )
 
 type TestEnvironment struct {

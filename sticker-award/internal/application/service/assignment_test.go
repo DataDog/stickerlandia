@@ -12,12 +12,12 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/api/dto"
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/domain/events"
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/domain/models"
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/domain/repository"
-	pkgErrors "github.com/datadoghq/stickerlandia/sticker-award/pkg/errors"
-	"github.com/datadoghq/stickerlandia/sticker-award/pkg/validator"
+	"github.com/datadog/stickerlandia/sticker-award/internal/api/dto"
+	"github.com/datadog/stickerlandia/sticker-award/internal/domain/events"
+	"github.com/datadog/stickerlandia/sticker-award/internal/domain/models"
+	"github.com/datadog/stickerlandia/sticker-award/internal/domain/repository"
+	pkgErrors "github.com/datadog/stickerlandia/sticker-award/pkg/errors"
+	"github.com/datadog/stickerlandia/sticker-award/pkg/validator"
 )
 
 // Interfaces for mocking

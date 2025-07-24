@@ -1,4 +1,4 @@
-module github.com/datadoghq/stickerlandia/sticker-award
+module github.com/datadog/stickerlandia/sticker-award
 
 go 1.23.0
 

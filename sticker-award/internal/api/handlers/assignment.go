@@ -7,9 +7,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/api/dto"
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/domain/service"
-	pkgErrors "github.com/datadoghq/stickerlandia/sticker-award/pkg/errors"
+	"github.com/datadog/stickerlandia/sticker-award/internal/api/dto"
+	"github.com/datadog/stickerlandia/sticker-award/internal/domain/service"
+	pkgErrors "github.com/datadog/stickerlandia/sticker-award/pkg/errors"
 )
 
 // AssignmentHandler handles sticker assignment requests
