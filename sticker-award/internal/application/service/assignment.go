@@ -92,7 +92,7 @@ func (s *assignmentService) AssignSticker(ctx context.Context, userID string, re
 	}
 
 	if !exists {
-		return nil, pkgErrors.NewNotFoundError("sticker not found", pkgErrors.ErrStickerNotFound)
+		return nil, pkgErrors.NewUnprocessableEntityError("sticker not found", pkgErrors.ErrStickerNotFound)
 	}
 
 	// Check for duplicate assignment

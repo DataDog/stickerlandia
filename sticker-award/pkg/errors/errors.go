@@ -59,3 +59,7 @@ func NewInternalServerError(message string, cause error) *ServiceError {
 func NewServiceUnavailableError(message string, cause error) *ServiceError {
 	return NewServiceError(http.StatusServiceUnavailable, message, cause)
 }
+
+func NewUnprocessableEntityError(message string, cause error) *ServiceError {
+	return NewServiceError(http.StatusUnprocessableEntity, message, cause)
+}
