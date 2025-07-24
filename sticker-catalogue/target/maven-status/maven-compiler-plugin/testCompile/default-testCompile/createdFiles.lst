@@ -1,8 +1,0 @@
-com/datadoghq/stickerlandia/stickercatalogue/HealthResourceTest.class
-com/datadoghq/stickerlandia/stickercatalogue/KafkaTestResourceLifecycleManager.class
-com/datadoghq/stickerlandia/stickercatalogue/KafkaTestProfile.class
-com/datadoghq/stickerlandia/stickercatalogue/StickerImageServiceTest.class
-com/datadoghq/stickerlandia/stickercatalogue/ArchitectureTest.class
-com/datadoghq/stickerlandia/stickercatalogue/HealthResourceIT.class
-com/datadoghq/stickerlandia/stickercatalogue/StickerResourceTest.class
-com/datadoghq/stickerlandia/stickercatalogue/common/exception/ProblemDetailsExceptionMapperTest.class
