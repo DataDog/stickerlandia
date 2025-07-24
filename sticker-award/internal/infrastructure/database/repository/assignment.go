@@ -6,8 +6,8 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/domain/models"
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/domain/repository"
+	"github.com/datadog/stickerlandia/sticker-award/internal/domain/models"
+	"github.com/datadog/stickerlandia/sticker-award/internal/domain/repository"
 )
 
 // assignmentRepository implements the AssignmentRepository interface using GORM

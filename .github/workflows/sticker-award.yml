@@ -42,8 +42,13 @@ jobs:
       - name: Run Unit Tests
         run: |
           cd sticker-award
-          go test -v ./...
-      
+          make test
+
+      - name: Run Integration Tests
+        run: |
+          cd sticker-award
+          make test-integration
+          
       - name: Run Go Vet
         run: |
           cd sticker-award

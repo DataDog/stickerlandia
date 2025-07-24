@@ -59,8 +59,6 @@ Full API documentation is available in OpenAPI format:
 
 Run the full development stack:
 ```bash
-make dev-run
-# or
 docker-compose up --build
 ```
 
@@ -73,9 +71,14 @@ go run ./cmd/server
 
 ### Testing
 
-Run all tests:
+Run all unit tests:
 ```bash
 make test
+```
+
+Run all tests, including integration tests:
+```bash
+make test-integration
 ```
 
 Run tests with coverage:
@@ -104,39 +107,6 @@ make fmt
 
 # Run linter
 make lint
-```
-
-### Database Migrations
-
-Migrations run automatically on service startup. For manual migration management:
-```bash
-# Start only database
-make db-up
-
-# Reset database (WARNING: destroys data)
-make db-reset
-```
-
-## Development Workflow
-
-### Setup Development Environment
-```bash
-make dev-setup
-```
-
-### Common Commands
-```bash
-# Start development stack
-make dev-run
-
-# View logs
-make dev-logs
-
-# Stop services
-make dev-stop
-
-# Clean up resources
-make docker-clean
 ```
 
 ## Configuration

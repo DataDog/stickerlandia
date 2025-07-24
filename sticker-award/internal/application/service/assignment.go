@@ -7,15 +7,15 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/api/dto"
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/domain/events"
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/domain/models"
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/domain/repository"
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/domain/service"
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/infrastructure/external/catalogue"
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/infrastructure/messaging"
-	pkgErrors "github.com/datadoghq/stickerlandia/sticker-award/pkg/errors"
-	"github.com/datadoghq/stickerlandia/sticker-award/pkg/validator"
+	"github.com/datadog/stickerlandia/sticker-award/internal/api/dto"
+	"github.com/datadog/stickerlandia/sticker-award/internal/domain/events"
+	"github.com/datadog/stickerlandia/sticker-award/internal/domain/models"
+	"github.com/datadog/stickerlandia/sticker-award/internal/domain/repository"
+	"github.com/datadog/stickerlandia/sticker-award/internal/domain/service"
+	"github.com/datadog/stickerlandia/sticker-award/internal/infrastructure/external/catalogue"
+	"github.com/datadog/stickerlandia/sticker-award/internal/infrastructure/messaging"
+	pkgErrors "github.com/datadog/stickerlandia/sticker-award/pkg/errors"
+	"github.com/datadog/stickerlandia/sticker-award/pkg/validator"
 )
 
 // assignmentService implements the AssignmentService interface
@@ -92,7 +92,7 @@ func (s *assignmentService) AssignSticker(ctx context.Context, userID string, re
 	}
 
 	if !exists {
-		return nil, pkgErrors.NewNotFoundError("sticker not found", pkgErrors.ErrStickerNotFound)
+		return nil, pkgErrors.NewUnprocessableEntityError("sticker not found", pkgErrors.ErrStickerNotFound)
 	}
 
 	// Check for duplicate assignment

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/config"
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/domain/events"
+	"github.com/datadog/stickerlandia/sticker-award/internal/config"
+	"github.com/datadog/stickerlandia/sticker-award/internal/domain/events"
 	"github.com/segmentio/kafka-go"
 	"go.uber.org/zap"
 )

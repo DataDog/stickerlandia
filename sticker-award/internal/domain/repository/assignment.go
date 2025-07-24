@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/domain/models"
+	"github.com/datadog/stickerlandia/sticker-award/internal/domain/models"
 )
 
 // AssignmentRepository defines the interface for assignment data operations

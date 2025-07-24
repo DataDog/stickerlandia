@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 
-	"github.com/datadoghq/stickerlandia/sticker-award/internal/api/dto"
+	"github.com/datadog/stickerlandia/sticker-award/internal/api/dto"
 )
 
 // AssignmentService defines the interface for assignment business logic
