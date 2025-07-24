@@ -1,10 +1,8 @@
-LICENSE-3rdparty.csv: sticker-catalogue/pom.xml user-management/Stickerlandia.UserManagement.sln
-	cd sticker-award && mvn license:aggregate-download-licenses
-	python3 tools/licenses/convert_licenses.py
-	cd user-management && dotnet restore
-	python3 tools/licenses/convert_dotnet_licenses.py
+.PHONY: LICENSE-3rdparty.csv
 
-all: LICENSE-3rdparty.csv
+LICENSE-3rdparty.csv:
+	dd-license-attribution https://github.com/DataDog/stickerlandia > LICENSE-3rdparty.csv
+
 
 clean: 
-	rm -f LICENSE-3rdparty.csv sticker-catalogue/target/generated-sources/license/THIRD-PARTY.txt sticker-catalogue/target/generated-sources/license/licenses.xml
+	rm -f LICENSE-3rdparty.csv
