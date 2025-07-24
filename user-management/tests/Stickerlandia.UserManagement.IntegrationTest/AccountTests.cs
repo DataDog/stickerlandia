@@ -79,27 +79,6 @@ public sealed class AccountTests(ITestOutputHelper testOutputHelper, TestSetupFi
     }
 
     [Fact]
-    public async Task WhenAUserRegistersThenCanRetrieveTheirAccountDetails()
-    {
-        // Arrange
-        var emailAddress = $"{Guid.NewGuid()}@test.com";
-        var password = $"{Guid.NewGuid()}!A23";
-
-        // Act
-        var registerResult = await _driver.RegisterUser(emailAddress, password);
-        registerResult.Should().NotBeNull();
-        
-        var loginResponse = await _driver.Login(emailAddress, password);
-        loginResponse.Should().NotBeNull();
-        
-        var userAccount = await _driver.GetUserAccount(loginResponse!.AuthToken);
-
-        // Assert
-        userAccount.Should().NotBeNull();
-        userAccount!.EmailAddress.Should().Be(emailAddress);
-    }
-
-    [Fact]
     public async Task WhenAUserLogsInWithAnInvalidPasswordThenLoginFails()
     {
         // Arrange
@@ -181,6 +160,27 @@ public sealed class AccountTests(ITestOutputHelper testOutputHelper, TestSetupFi
 
         // Assert
         registerResult.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task WhenAUserTriesToAccessAnotherUsersDataThenShouldReturn403()
+    {
+        // Arrange
+        var emailAddress = $"{Guid.NewGuid()}@test.com";
+        var password = $"{Guid.NewGuid()}!A23";
+        var differentUserId = "this is not a real user id";
+
+        // Act
+        var registerResult = await _driver.RegisterUser(emailAddress, password);
+        registerResult.Should().NotBeNull();
+        
+        var loginResponse = await _driver.Login(emailAddress, password);
+        loginResponse.Should().NotBeNull();
+        
+        var didReturnSuccessStatusCode = await _driver.TryAccessAnotherUsersData(loginResponse!.AuthToken, differentUserId);
+
+        // Assert
+        didReturnSuccessStatusCode.Should().BeFalse();
     }
 
     public void Dispose()

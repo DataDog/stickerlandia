@@ -9,7 +9,8 @@ namespace Stickerlandia.UserManagement.Api;
 
 internal static class GetUserDetails
 {
-    public static async Task<ApiResponse<UserAccountDto?>> HandleAsync(
+    public static async Task<IResult> HandleAsync(
+        string userId,
         HttpContext context,
         ClaimsPrincipal? user,
         [FromServices] IAuthService authService,
@@ -17,11 +18,17 @@ internal static class GetUserDetails
     {
         if (user?.GetUserId() == null)
         {
-            return new ApiResponse<UserAccountDto?>(false, null, "User not authenticated", HttpStatusCode.Unauthorized);
+            return Results.Forbid();
+        }
+
+        var jwtUserId = user.GetUserId();
+        if (jwtUserId != userId)
+        {
+            return Results.Forbid();
         }
         
         var result = await handler.Handle(new GetUserDetailsQuery(new AccountId(user.GetUserId()!)));
 
-        return new ApiResponse<UserAccountDto?>(result);
+        return Results.Ok(new ApiResponse<UserAccountDto>(result));
     }
 }
