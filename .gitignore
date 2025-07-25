@@ -2,3 +2,4 @@
 **/.cursor
 **/.claude/settings.local.json
 .cursor
+node_modules
