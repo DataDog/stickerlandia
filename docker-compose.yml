@@ -275,6 +275,8 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.user-management.rule=PathPrefix(`/api/users`)"
+      - "traefik.http.routers.auth.rule=PathPrefix(`/auth`)"
+      - "traefik.http.routers.auth.rule=PathPrefix(`/Auth`)"
       - "traefik.http.services.user-management.loadbalancer.server.port=8080"
 
   user-management-worker:

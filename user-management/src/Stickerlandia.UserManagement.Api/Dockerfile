@@ -49,5 +49,5 @@ LABEL com.datadoghq.tags.version=${DD_GIT_COMMIT_SHA}
 
 WORKDIR /App
 COPY --from=build /App/out .
-EXPOSE 80
+EXPOSE 8080
 ENTRYPOINT [ "dotnet", "Stickerlandia.UserManagement.Api.dll" ]
