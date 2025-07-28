@@ -1,0 +1,133 @@
+{
+  "name": "Stickerlandia Development Environment",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "devcontainer",
+  "overrideCommand": false,
+  "workspaceFolder": "/workspace",
+  "shutdownAction": "stopCompose",
+  
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "configureZshAsDefaultShell": true,
+      "installOhMyZsh": true,
+      "upgradePackages": true,
+      "username": "vscode",
+      "userUid": "1000",
+      "userGid": "1000"
+    },
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "moby": true,
+      "azureDnsAutoDetection": true,
+      "installDockerBuildx": true,
+      "version": "latest",
+      "dockerDashComposeVersion": "v2"
+    },
+    "ghcr.io/devcontainers/features/git:1": {
+      "ppa": true,
+      "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "nodeGypDependencies": true,
+      "version": "lts",
+      "nvmVersion": "latest"
+    },
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "17",
+      "installMaven": true,
+      "installGradle": false
+    },
+    "ghcr.io/devcontainers/features/go:1": {
+      "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/dotnet:2": {
+      "version": "8.0",
+      "installUsingApt": true,
+      "additionalVersions": "6.0"
+    }
+  },
+
+  "forwardPorts": [
+    8080,
+    8081,
+    8082,
+    5432,
+    5433,
+    5434,
+    9000,
+    9001,
+    9092,
+    9644
+  ],
+
+  "portsAttributes": {
+    "8080": {
+      "label": "Application (Traefik Ingress)",
+      "onAutoForward": "notify"
+    },
+    "8081": {
+      "label": "Traefik Dashboard",
+      "onAutoForward": "silent"
+    },
+    "8082": {
+      "label": "Redpanda Console", 
+      "onAutoForward": "silent"
+    },
+    "5432": {
+      "label": "Sticker Catalogue DB",
+      "onAutoForward": "silent"
+    },
+    "5433": {
+      "label": "User Management DB",
+      "onAutoForward": "silent"
+    },
+    "5434": {
+      "label": "Sticker Award DB",
+      "onAutoForward": "silent"
+    },
+    "9000": {
+      "label": "MinIO API",
+      "onAutoForward": "silent"
+    },
+    "9001": {
+      "label": "MinIO Console",
+      "onAutoForward": "silent"
+    },
+    "9092": {
+      "label": "Kafka/Redpanda",
+      "onAutoForward": "silent"
+    },
+    "9644": {
+      "label": "Redpanda Admin API",
+      "onAutoForward": "silent"
+    }
+  },
+
+  "postCreateCommand": "chmod +x .devcontainer/setup.sh && .devcontainer/setup.sh",
+  "postStartCommand": "docker-compose up -d",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.vscode-json",
+        "ms-vscode.PowerShell",
+        "ms-dotnettools.csharp",
+        "ms-dotnettools.csdevkit", 
+        "redhat.java",
+        "vscjava.vscode-java-pack",
+        "golang.go",
+        "ms-vscode.makefile-tools",
+        "ms-azuretools.vscode-docker",
+        "ms-kubernetes-tools.vscode-kubernetes-tools",
+        "hashicorp.terraform",
+        "bradlc.vscode-tailwindcss"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "zsh"
+      }
+    }
+  },
+
+  "remoteUser": "vscode",
+  "updateRemoteUserUID": true
+}

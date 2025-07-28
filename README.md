@@ -1,5 +1,7 @@
 # Stickerlandia
 
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/DataDog/stickerlandia)
+
 ![Stickerlandia Logo](https://img.shields.io/badge/Stickerlandia-Collect_and_Trade_Stickers-blue)
 [![Documentation](https://img.shields.io/badge/Documentation-Available-green)](./docs/README.md)
 

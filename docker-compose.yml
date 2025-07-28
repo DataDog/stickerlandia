@@ -110,7 +110,7 @@ services:
         condition: service_healthy
     entrypoint: ["/bin/sh", "-c"]
     command: >
-      "rpk topic create users.userRegistered.v1 users.stickerClaimed.v1 users.userDetailsUpdated.v1 stickers.stickerAssignedToUser.v1 stickers.stickerRemovedFromUser.v1 --brokers redpanda:9092"
+      "rpk topic create users.userRegistered.v1 users.stickerClaimed.v1 users.userDetailsUpdated.v1 stickers.stickerAssignedToUser.v1 stickers.stickerRemovedFromUser.v1 --brokers redpanda:9092 || true"
     restart: "no"
 
   redpanda-console:
@@ -363,6 +363,19 @@ services:
       - "traefik.http.routers.sticker-award.rule=PathPrefix(`/api/awards`)"
       - "traefik.http.routers.sticker-award.priority=100"
       - "traefik.http.services.sticker-award.loadbalancer.server.port=8080"
+
+  devcontainer:
+    image: mcr.microsoft.com/devcontainers/base:ubuntu
+    volumes:
+      - .:/workspace:cached
+    command: sleep infinity
+    depends_on:
+      - traefik
+      - redpanda
+      - sticker-catalogue-db
+      - sticker-award-db
+      - user-management-db
+      - minio
 
 volumes:
   sticker-catalogue-data:
