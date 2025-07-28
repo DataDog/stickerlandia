@@ -1,8 +1,5 @@
 # Docker Compose override for development mode
 # Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
-
-version: '3.8'
-
 services:
   sticker-catalogue:
     build:
@@ -64,7 +61,24 @@ services:
       - go-mod-cache:/go/pkg/mod     # Persist Go module cache
     command: ["air", "-c", ".air.toml"]
 
+  user-management:
+    build:
+      context: ./user-management
+      dockerfile: Dockerfile.dev
+    volumes:
+      # Mount source code for live reload
+      - ./user-management:/app:cached
+      # Mount NuGet cache to speed up builds
+      - nuget-cache:/root/.nuget/packages
+    environment:
+      # Configure driven adapters
+      - DRIVEN=AGNOSTIC
+      # Development environment
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+
 
 volumes:
   maven-cache:
   go-mod-cache:
+  nuget-cache:
