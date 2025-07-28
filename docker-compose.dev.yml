@@ -54,5 +54,17 @@ services:
       - "traefik.http.routers.sticker-catalogue.rule=PathPrefix(`/api/stickers`)"
       - "traefik.http.services.sticker-catalogue.loadbalancer.server.port=8080"
 
+  sticker-award:
+    # Development configuration: use hot-reload Dockerfile and bind-mount source
+    build:
+      context: ./sticker-award
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./sticker-award:/app:cached  # Live code reload
+      - go-mod-cache:/go/pkg/mod     # Persist Go module cache
+    command: ["air", "-c", ".air.toml"]
+
+
 volumes:
   maven-cache:
+  go-mod-cache:
