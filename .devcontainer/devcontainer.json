@@ -1,6 +1,6 @@
 {
   "name": "Stickerlandia Development Environment",
-  "dockerComposeFile": "../docker-compose.yml",
+  "dockerComposeFile": ["../docker-compose.yml", "../docker-compose.dev.yml"],
   "service": "devcontainer",
   "overrideCommand": false,
   "workspaceFolder": "/workspace",
@@ -57,7 +57,8 @@
     9000,
     9001,
     9092,
-    9644
+    9644,
+    5005
   ],
 
   "portsAttributes": {
@@ -100,11 +101,14 @@
     "9644": {
       "label": "Redpanda Admin API",
       "onAutoForward": "silent"
+    },
+    "5005": {
+      "label": "Java Debug Port",
+      "onAutoForward": "silent"
     }
   },
 
   "postCreateCommand": "chmod +x .devcontainer/setup.sh && .devcontainer/setup.sh",
-  "postStartCommand": "docker-compose up -d",
 
   "customizations": {
     "vscode": {

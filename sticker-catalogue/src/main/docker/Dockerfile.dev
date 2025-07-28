@@ -1,0 +1,40 @@
+####
+# Development Dockerfile for Quarkus live coding with hot reload
+# Based on the existing Dockerfile.jvmlocal but configured for development mode
+#
+# Build the image with:
+#
+# docker build -f Dockerfile.dev -t quarkus/sticker-catalogue-dev .
+#
+# Then run the container using docker-compose with volume mounts for live reload
+###
+
+FROM ubuntu:25.04
+
+ENV LANGUAGE='en_US:en'
+
+# Install all the things
+RUN apt-get update && apt-get install -y openjdk-24-jdk maven curl && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /work
+
+# Copy Maven wrapper and configuration files
+COPY mvnw mvnw.cmd ./
+COPY .mvn ./.mvn
+COPY pom.xml .
+COPY checkstyle.xml .
+
+# Make mvnw executable
+RUN chmod +x ./mvnw
+
+# Make sure the deps are there
+COPY pom.xml /src/pom.xml
+RUN cd /src && mvn dependency:resolve
+
+# Expose application and debug ports
+EXPOSE 8080 5005
+
+# Default command runs Quarkus dev mode with proper dev services disabled
+# This can be overridden in docker-compose
+CMD ["./mvnw", "quarkus:dev", "-Dquarkus.http.host=0.0.0.0", "-Dquarkus.devservices.enabled=false"]
