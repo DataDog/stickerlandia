@@ -14,10 +14,10 @@ clean:
 # Compose environments
 #
 compose-up:
-	docker-compose build && docker-compose up -d
-	
+	docker compose build && docker compose up -d
+
 compose-dev-up:
-	docker-compose build -f docker-compose.yml -f docker-compose.dev.yml && docker-compose up -f docker-compose.yml -f docker-compose.dev.yml -d
+	docker compose -f docker-compose.yml -f docker-compose.dev.yml build && docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 	
 compose-down:
 	docker-compose down -v
@@ -30,3 +30,9 @@ compose-time-dev-startup:
 
 compose-time-builds:
 	./scripts/time-docker-builds.sh
+
+wait-for-services:
+	./scripts/wait-for-services.sh
+
+wait-for-services-dev:
+	./scripts/wait-for-services.sh docker-compose.yml docker-compose.dev.yml

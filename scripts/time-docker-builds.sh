@@ -62,8 +62,8 @@ fi
 echo -e "${YELLOW}Step 2: Extracting services from $COMPOSE_FILE...${NC}"
 
 # Extract service names that have a 'build' section
-SERVICES=$(docker-compose -f "$COMPOSE_FILE" config --services | while read service; do
-    if docker-compose -f "$COMPOSE_FILE" config | grep -A 10 "^  $service:" | grep -q "build:"; then
+SERVICES=$(docker compose -f "$COMPOSE_FILE" config --services | while read service; do
+    if docker compose -f "$COMPOSE_FILE" config | grep -A 10 "^  $service:" | grep -q "build:"; then
         echo "$service"
     fi
 done)
@@ -95,7 +95,7 @@ for service in $SERVICES; do
     start_time=$(date +%s.%N)
     
     # Build the service and capture output
-    if docker-compose -f "$COMPOSE_FILE" build --no-cache "$service" > "$TEMP_LOG" 2>&1; then
+    if docker compose -f "$COMPOSE_FILE" build --no-cache "$service" > "$TEMP_LOG" 2>&1; then
         # Record end time
         end_time=$(date +%s.%N)
         

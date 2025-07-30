@@ -49,14 +49,14 @@ fi
 > "$TEMP_LOG"
 
 echo -e "${YELLOW}Step 1: Stopping existing containers...${NC}"
-docker-compose -f "$COMPOSE_FILE" down > /dev/null 2>&1 || true
+docker compose -f "$COMPOSE_FILE" down > /dev/null 2>&1 || true
 echo -e "${GREEN}✓ Containers stopped${NC}"
 echo ""
 
 echo -e "${YELLOW}Step 2: Extracting services with healthchecks...${NC}"
 
 # Extract services that have healthcheck configurations
-SERVICES=$(docker-compose -f "$COMPOSE_FILE" config | awk '
+SERVICES=$(docker compose -f "$COMPOSE_FILE" config | awk '
 /^  [a-zA-Z0-9_-]+:$/ { 
     service = substr($1, 1, length($1)-1)
 }
@@ -71,7 +71,7 @@ SERVICES=$(docker-compose -f "$COMPOSE_FILE" config | awk '
 if [ -z "$SERVICES" ]; then
     echo -e "${RED}Error: No services with healthcheck configuration found in $COMPOSE_FILE${NC}"
     echo "Debug: Let me show you what docker-compose config shows:"
-    docker-compose -f "$COMPOSE_FILE" config | grep -E "^  [a-zA-Z0-9_-]+:$|^    healthcheck:$" | head -20
+    docker compose -f "$COMPOSE_FILE" config | grep -E "^  [a-zA-Z0-9_-]+:$|^    healthcheck:$" | head -20
     exit 1
 fi
 
@@ -88,7 +88,7 @@ declare -A startup_status
 # Function to check if service is healthy
 check_service_health() {
     local service=$1
-    local container_name=$(docker-compose -f "$COMPOSE_FILE" ps -q "$service" 2>/dev/null)
+    local container_name=$(docker compose -f "$COMPOSE_FILE" ps -q "$service" 2>/dev/null)
     
     if [ -z "$container_name" ]; then
         return 1  # Container not found
@@ -115,7 +115,7 @@ check_service_health() {
 # Function to get dependency services
 get_dependencies() {
     local service=$1
-    docker-compose -f "$COMPOSE_FILE" config | awk -v svc="$service" '
+    docker compose -f "$COMPOSE_FILE" config | awk -v svc="$service" '
     /^  [a-zA-Z0-9_-]+:$/ { 
         current_service = substr($1, 1, length($1)-1)
     }
@@ -155,7 +155,7 @@ done
 
 if [ -n "$ALL_DEPS" ]; then
     echo "Dependencies to start: $ALL_DEPS"
-    docker-compose -f "$COMPOSE_FILE" up -d $ALL_DEPS > "$TEMP_LOG" 2>&1
+    docker compose -f "$COMPOSE_FILE" up -d $ALL_DEPS > "$TEMP_LOG" 2>&1
     
     # Wait for dependencies to be healthy
     echo "Waiting for dependencies to become healthy..."
@@ -175,15 +175,18 @@ for service in $SERVICES; do
     echo "----------------------------------------"
     
     # Stop the service if it's running
-    docker-compose -f "$COMPOSE_FILE" stop "$service" > /dev/null 2>&1 || true
-    docker-compose -f "$COMPOSE_FILE" rm -f "$service" > /dev/null 2>&1 || true
+    docker compose -f "$COMPOSE_FILE" stop "$service" > /dev/null 2>&1 || true
+    docker compose -f "$COMPOSE_FILE" rm -f "$service" > /dev/null 2>&1 || true
     
     # Record start time
     start_time=$(date +%s.%N)
     
     # Start the service
     echo "Starting $service..."
-    if docker-compose -f "$COMPOSE_FILE" up -d "$service" > "$TEMP_LOG" 2>&1; then
+    if docker compose -f "$COMPOSE_FILE" up -d "$service" > "$TEMP_LOG" 2>&1; then
+        
+        # Give container a moment to appear in ps output
+        sleep 2
         
         # Wait for service to become healthy
         echo "Waiting for $service to become healthy... "
@@ -191,7 +194,14 @@ for service in $SERVICES; do
         is_healthy=false
         
         while [ $wait_time -lt $MAX_WAIT_TIME ]; do
-            container_name=$(docker-compose -f "$COMPOSE_FILE" ps -q "$service" 2>/dev/null)
+            container_name=$(docker compose -f "$COMPOSE_FILE" ps -q "$service" 2>/dev/null)
+            
+            # If container_name is empty, try alternative approaches
+            if [ -z "$container_name" ]; then
+                # Try getting container by service name pattern
+                container_name=$(docker ps -q --filter "label=com.docker.compose.service=$service" 2>/dev/null | head -1)
+            fi
+            
             health_status=$(docker inspect --format='{{.State.Health.Status}}' "$container_name" 2>/dev/null || echo "none")
             
             echo "  [$wait_time s] Health status: $health_status (container: $container_name)"
@@ -225,6 +235,8 @@ for service in $SERVICES; do
                     startup_times["$service"]=$(printf "%.2f" $duration)
                     startup_status["$service"]="UNHEALTHY"
                     echo -e "${RED}✗ $service became unhealthy after ${startup_times[$service]}s${NC}"
+                    echo -e "${RED}Container logs:${NC}"
+                    docker logs "$container_name" --tail 50 2>&1 || echo "Failed to get logs"
                     break
                     ;;
                 *)  # Still starting
@@ -240,6 +252,10 @@ for service in $SERVICES; do
             startup_times["$service"]=$(printf "%.2f" $duration)
             startup_status["$service"]="TIMEOUT"
             echo -e "${RED}timeout after ${startup_times[$service]}s${NC}"
+            if [ -n "$container_name" ]; then
+                echo -e "${RED}Container logs:${NC}"
+                docker logs "$container_name" --tail 50 2>&1 || echo "Failed to get logs"
+            fi
         fi
         
     else
@@ -317,7 +333,7 @@ if [ "$NO_SHUTDOWN" = true ]; then
     echo -e "${YELLOW}Leaving containers running (--no-shutdown specified)${NC}"
 else
     echo -e "${YELLOW}Cleaning up...${NC}"
-    docker-compose -f "$COMPOSE_FILE" down > /dev/null 2>&1
+    docker compose -f "$COMPOSE_FILE" down > /dev/null 2>&1
 fi
 rm -f "$TEMP_LOG"
 

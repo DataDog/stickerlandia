@@ -9,10 +9,16 @@ COPY ./scripts ./scripts
 # Download the latest version of the tracer but don't install yet
 RUN . scripts/target.sh && curl -Lo /tmp/datadog-dotnet-apm.deb https://github.com/DataDog/dd-trace-dotnet/releases/download/v3.19.0/datadog-dotnet-apm_3.19.0_${TRACER_ARCHITECTURE}.deb
 
-# Copy all project files for restore
+# Copy all project files for restore (include all dependencies)
 COPY src/Stickerlandia.UserManagement.Api/Stickerlandia.UserManagement.Api.csproj src/Stickerlandia.UserManagement.Api/
 COPY src/Stickerlandia.UserManagement.Worker/Stickerlandia.UserManagement.Worker.csproj src/Stickerlandia.UserManagement.Worker/
 COPY src/Stickerlandia.UserManagement.MigrationService/Stickerlandia.UserManagement.MigrationService.csproj src/Stickerlandia.UserManagement.MigrationService/
+COPY src/Stickerlandia.UserManagement.Core/Stickerlandia.UserManagement.Core.csproj src/Stickerlandia.UserManagement.Core/
+COPY src/Stickerlandia.UserManagement.Agnostic/Stickerlandia.UserManagement.Agnostic.csproj src/Stickerlandia.UserManagement.Agnostic/
+COPY src/Stickerlandia.UserManagement.Auth/Stickerlandia.UserManagement.Auth.csproj src/Stickerlandia.UserManagement.Auth/
+COPY src/Stickerlandia.UserManagement.Azure/Stickerlandia.UserManagement.Azure.csproj src/Stickerlandia.UserManagement.Azure/
+COPY src/Stickerlandia.UserManagement.ServiceDefaults/Stickerlandia.UserManagement.ServiceDefaults.csproj src/Stickerlandia.UserManagement.ServiceDefaults/
+COPY src/Stickerlandia.UserManagement.AWS/Stickerlandia.UserManagement.AWS.csproj src/Stickerlandia.UserManagement.AWS/
 
 # Restore all projects
 RUN dotnet restore src/Stickerlandia.UserManagement.Api/Stickerlandia.UserManagement.Api.csproj
