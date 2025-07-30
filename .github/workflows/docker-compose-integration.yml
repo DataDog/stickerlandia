@@ -19,14 +19,8 @@ jobs:
       uses: docker/setup-buildx-action@v3
       
     - name: Start services
-      run: docker compose up -d
-      
-    - name: Wait for services to be healthy
-      run: |
-        echo Pausing for 60s to allow services to start
-        sleep 60
-        docker compose ps
-      
+      run: scripts/time-docker-startup.sh --no-shutdown
+    
     - name: Test dashboard endpoints
       run: |
         curl -f http://localhost:8081/dashboard/ || exit 1

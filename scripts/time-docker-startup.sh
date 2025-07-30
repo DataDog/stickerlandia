@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 
 # Docker Startup Timing Script
-# Usage: ./scripts/time-docker-startup.sh [docker-compose-file]
+# Usage: ./scripts/time-docker-startup.sh [--no-shutdown] [docker-compose-file]
 # Default: docker-compose.yml
+# Options:
+#   --no-shutdown    Leave containers running after timing test
 
 set -e
 
@@ -14,8 +16,22 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
-# Configuration
-COMPOSE_FILE=${1:-"docker-compose.yml"}
+# Parse arguments
+NO_SHUTDOWN=false
+COMPOSE_FILE="docker-compose.yml"
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --no-shutdown)
+            NO_SHUTDOWN=true
+            shift
+            ;;
+        *)
+            COMPOSE_FILE="$1"
+            shift
+            ;;
+    esac
+done
 TEMP_LOG="startup-temp.log"
 MAX_WAIT_TIME=300  # 5 minutes max wait per service
 
@@ -297,8 +313,12 @@ echo ""
 
 # Cleanup
 echo ""
-echo -e "${YELLOW}Cleaning up...${NC}"
-docker-compose -f "$COMPOSE_FILE" down > /dev/null 2>&1
+if [ "$NO_SHUTDOWN" = true ]; then
+    echo -e "${YELLOW}Leaving containers running (--no-shutdown specified)${NC}"
+else
+    echo -e "${YELLOW}Cleaning up...${NC}"
+    docker-compose -f "$COMPOSE_FILE" down > /dev/null 2>&1
+fi
 rm -f "$TEMP_LOG"
 
 # Exit with appropriate code
