@@ -370,19 +370,6 @@ services:
       - "traefik.http.routers.sticker-award.priority=100"
       - "traefik.http.services.sticker-award.loadbalancer.server.port=8080"
 
-  devcontainer:
-    image: mcr.microsoft.com/devcontainers/base:ubuntu
-    volumes:
-      - .:/workspace:cached
-    command: sleep infinity
-    depends_on:
-      - traefik
-      - redpanda
-      - sticker-catalogue-db
-      - sticker-award-db
-      - user-management-db
-      - minio
-
 volumes:
   sticker-catalogue-data:
   sticker-award-data:

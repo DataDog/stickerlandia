@@ -1,96 +1,25 @@
 {
-  "name": "Stickerlandia Development Environment",
-  "dockerComposeFile": ["../docker-compose.yml", "../docker-compose.dev.yml"],
-  "service": "devcontainer",
-  "overrideCommand": false,
-  "workspaceFolder": "/workspace",
-  "shutdownAction": "stopCompose",
-  
-  "features": {
-    "ghcr.io/devcontainers/features/common-utils:2": {
-      "installZsh": true,
-      "configureZshAsDefaultShell": true,
-      "installOhMyZsh": true,
-      "upgradePackages": true,
-      "username": "vscode",
-      "userUid": "1000",
-      "userGid": "1000"
-    },
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {
-      "moby": true,
-      "azureDnsAutoDetection": true,
-      "installDockerBuildx": true,
-      "version": "latest",
-      "dockerDashComposeVersion": "v2"
-    },
-    "ghcr.io/devcontainers/features/git:1": {
-      "ppa": true,
-      "version": "latest"
-    },
-    "ghcr.io/devcontainers/features/node:1": {
-      "nodeGypDependencies": true,
-      "version": "lts",
-      "nvmVersion": "latest"
-    },
-    "ghcr.io/devcontainers/features/java:1": {
-      "version": "21",
-      "installMaven": true,
-      "installGradle": false
-    },
-    "ghcr.io/devcontainers/features/go:1": {
-      "version": "latest"
-    },
-    "ghcr.io/devcontainers/features/dotnet:2": {
-      "version": "8.0",
-      "installUsingApt": true,
-      "additionalVersions": "6.0"
-    }
-  },
+	"name": "Hot-reloading dev env",
 
-  "forwardPorts": [
-    8080,
-    8081,
-    8082
-  ],
+	"dockerComposeFile": [
+		"docker-compose.yml"
+	],
 
-  "portsAttributes": {
-    "8080": {
-      "label": "Application (Traefik Ingress)",
-      "onAutoForward": "notify"
-    },
-    "8081": {
-      "label": "Traefik Dashboard",
-      "onAutoForward": "silent"
-    },
-    "8082": {
-      "label": "Redpanda Console", 
-      "onAutoForward": "silent"
-    }
-  },
+	"service": "devcontainer",
 
-  "postCreateCommand": "chmod +x .devcontainer/setup.sh && .devcontainer/setup.sh",
+	"workspaceFolder": "/workspace",
+	"features": {
+		"ghcr.io/devcontainers/features/docker-in-docker:2": {}
+	},
 
-  "customizations": {
-    "vscode": {
-      "extensions": [
-        "ms-vscode.vscode-json",
-        "ms-vscode.PowerShell",
-        "ms-dotnettools.csharp",
-        "ms-dotnettools.csdevkit", 
-        "redhat.java",
-        "vscjava.vscode-java-pack",
-        "golang.go",
-        "ms-vscode.makefile-tools",
-        "ms-azuretools.vscode-docker",
-        "ms-kubernetes-tools.vscode-kubernetes-tools",
-        "hashicorp.terraform",
-      ],
-      "settings": {
-        "terminal.integrated.defaultProfile.linux": "zsh"
-      }
-    }
-  },
+	"features": {},
 
-  "remoteUser": "vscode",
-  "updateRemoteUserUID": true
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	"forwardPorts": [
+		8080, // Application traffic (Traefik ingress)
+		8081, // Traefik Dashboard
+		8082  // Redpanda Console
+	],
+
+	"postCreateCommand": "chmod +x .devcontainer/setup.sh && .devcontainer/setup.sh",
 }
