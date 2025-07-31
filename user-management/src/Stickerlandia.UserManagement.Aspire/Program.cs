@@ -25,6 +25,9 @@ switch (DrivenAdapterSettings.DrivenAdapter)
     case DrivenAdapters.AWS:
         resources = builder.WithAgnosticServices();
         break;
+    case DrivenAdapters.GCP:
+        resources = builder.WithAgnosticServices();
+        break;
 }
 
 ArgumentNullException.ThrowIfNull(resources, nameof(resources));

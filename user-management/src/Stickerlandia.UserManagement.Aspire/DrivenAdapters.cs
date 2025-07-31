@@ -8,7 +8,8 @@ internal enum DrivenAdapters
 {
     AGNOSTIC,
     AWS,
-    AZURE
+    AZURE,
+    GCP
 }
 
 internal static class DrivenAdapterSettings
@@ -33,6 +34,9 @@ internal static class DrivenAdapterSettings
                     break;
                 case "AWS":
                     _drivenAdapter = Aspire.DrivenAdapters.AWS;
+                    break;
+                case "GCP":
+                    _drivenAdapter = Aspire.DrivenAdapters.GCP;
                     break;
                 case "AGNOSTIC":
                     _drivenAdapter = Aspire.DrivenAdapters.AGNOSTIC;

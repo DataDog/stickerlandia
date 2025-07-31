@@ -8,7 +8,8 @@ internal enum DrivingAdapter
 {
     AGNOSTIC,
     AZURE,
-    AWS
+    AWS,
+    GCP
 }
 
 internal static class DrivingAdapterSettings

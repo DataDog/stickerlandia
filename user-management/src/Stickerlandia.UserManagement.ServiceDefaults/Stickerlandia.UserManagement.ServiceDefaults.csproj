@@ -20,6 +20,7 @@
     <ItemGroup>
       <ProjectReference Include="..\Stickerlandia.UserManagement.Agnostic\Stickerlandia.UserManagement.Agnostic.csproj" />
       <ProjectReference Include="..\Stickerlandia.UserManagement.AWS\Stickerlandia.UserManagement.AWS.csproj" />
+        <ProjectReference Include="..\Stickerlandia.UserManagement.GCP\Stickerlandia.UserManagement.GCP.csproj" />
       <ProjectReference Include="..\Stickerlandia.UserManagement.Azure\Stickerlandia.UserManagement.Azure.csproj" />
     </ItemGroup>
 

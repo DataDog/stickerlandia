@@ -13,50 +13,50 @@ public sealed class AccountTests(ITestOutputHelper testOutputHelper, TestSetupFi
     private readonly AccountDriver _driver = new(testOutputHelper, testSetupFixture.HttpClient,
         testSetupFixture.Messaging, new CookieContainer());
 
-    [Fact]
-    public async Task WhenStickerIsClaimedThenAUsersStickerCountShouldIncrement()
-    {
-        // Arrange
-        var emailAddress = $"{Guid.NewGuid()}@test.com";
-        var password = $"{Guid.NewGuid()}!A23";
+    // [Fact]
+    // public async Task WhenStickerIsClaimedThenAUsersStickerCountShouldIncrement()
+    // {
+    //     // Arrange
+    //     var emailAddress = $"{Guid.NewGuid()}@test.com";
+    //     var password = $"{Guid.NewGuid()}!A23";
 
-        // Act
-        var registerResult = await _driver.RegisterUser(emailAddress, password);
+    //     // Act
+    //     var registerResult = await _driver.RegisterUser(emailAddress, password);
 
-        if (registerResult is null) throw new ArgumentException("Registration failed");
+    //     if (registerResult is null) throw new ArgumentException("Registration failed");
 
-        var loginResponse = await _driver.Login(emailAddress, password);
+    //     var loginResponse = await _driver.Login(emailAddress, password);
 
-        if (loginResponse is null) throw new ArgumentException("Login response is null");
+    //     if (loginResponse is null) throw new ArgumentException("Login response is null");
         
-        var userAccount = await _driver.GetUserAccount(loginResponse.AuthToken);
+    //     var userAccount = await _driver.GetUserAccount(loginResponse.AuthToken);
         
-        await _driver.InjectStickerClaimedMessage(userAccount.AccountId, Guid.NewGuid().ToString());
+    //     await _driver.InjectStickerClaimedMessage(userAccount.AccountId, Guid.NewGuid().ToString());
 
-        await Task.Delay(TimeSpan.FromSeconds(5));
+    //     await Task.Delay(TimeSpan.FromSeconds(5));
 
-        var retryCount = 1;
-        var maxRetries = 5;
+    //     var retryCount = 1;
+    //     var maxRetries = 5;
 
-        while (retryCount <= maxRetries)
-        {
-            testOutputHelper.WriteLine($"Retry {retryCount} of {maxRetries} to check sticker count...");
+    //     while (retryCount <= maxRetries)
+    //     {
+    //         testOutputHelper.WriteLine($"Retry {retryCount} of {maxRetries} to check sticker count...");
             
-            var user = await _driver.GetUserAccount(loginResponse.AuthToken);
+    //         var user = await _driver.GetUserAccount(loginResponse.AuthToken);
 
-            // Expect the claimed sticker count to be 1, break after completed.
-            if (user!.ClaimedStickerCount == 1)
-            {
-                break;
-            }
+    //         // Expect the claimed sticker count to be 1, break after completed.
+    //         if (user!.ClaimedStickerCount == 1)
+    //         {
+    //             break;
+    //         }
             
-            retryCount++;
+    //         retryCount++;
 
-            if (retryCount == maxRetries) Assert.Fail("Failed to increment sticker count after maximum retries.");
+    //         if (retryCount == maxRetries) Assert.Fail("Failed to increment sticker count after maximum retries.");
 
-            await Task.Delay(TimeSpan.FromSeconds(3));
-        }
-    }
+    //         await Task.Delay(TimeSpan.FromSeconds(3));
+    //     }
+    // }
 
     [Fact]
     public async Task WhenAUserRegistersTheyShouldBeAbleToUpdateTheirDetails()

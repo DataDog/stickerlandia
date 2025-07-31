@@ -45,6 +45,23 @@
         "DRIVING": "AGNOSTIC",
         "DRIVEN": "AWS"
       }
+    },
+    "gcp": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "applicationUrl": "http://localhost:15266",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DOTNET_ENVIRONMENT": "Development",
+        "DOTNET_DASHBOARD_OTLP_ENDPOINT_URL": "http://localhost:19159",
+        "DOTNET_RESOURCE_SERVICE_ENDPOINT_URL": "http://localhost:20231",
+        "ASPIRE_ALLOW_UNSECURED_TRANSPORT": "true",
+        "DRIVING": "AGNOSTIC",
+        "DRIVEN": "GCP",
+        "PUBSUB_EMULATOR_HOST": "[::1]:8085",
+        "PUBSUB_PROJECT_ID": "my-project-id"
+      }
     }
   }
 }

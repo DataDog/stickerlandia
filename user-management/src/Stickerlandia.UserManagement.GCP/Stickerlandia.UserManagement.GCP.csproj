@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="CloudNative.CloudEvents" Version="2.8.0" />
+      <PackageReference Include="CloudNative.CloudEvents.SystemTextJson" Version="2.8.0" />
+      <PackageReference Include="Google.Cloud.PubSub.V1" Version="3.27.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Stickerlandia.UserManagement.Agnostic\Stickerlandia.UserManagement.Agnostic.csproj" />
+        <ProjectReference Include="..\Stickerlandia.UserManagement.Auth\Stickerlandia.UserManagement.Auth.csproj" />
+      <ProjectReference Include="..\Stickerlandia.UserManagement.Core\Stickerlandia.UserManagement.Core.csproj" />
+    </ItemGroup>
+
+</Project>
