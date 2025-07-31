@@ -173,6 +173,65 @@ app.post('/api/app/auth/logout', (req, res) => {
   }
 })
 
+// Service mapping table based on docker-compose routes
+const SERVICE_MAPPING = {
+  '/api/users': 'http://user-management:8080',
+  '/api/awards': 'http://sticker-award:8080', 
+  '/api/stickers': 'http://sticker-catalogue:8080'
+}
+
+// Middleware to check authentication
+function requireAuth(req, res, next) {
+  if (!req.session.tokens || !req.session.tokens.access_token) {
+    return res.status(401).json({ error: 'Not authenticated' })
+  }
+  next()
+}
+
+// Proxy endpoint for authenticated API calls
+app.use('/api/app/proxy', requireAuth, async (req, res) => {
+  try {
+    const originalPath = req.originalUrl.replace('/api/app/proxy', '')
+    let targetService = null
+    
+    // Find matching service based on path prefix
+    for (const [prefix, service] of Object.entries(SERVICE_MAPPING)) {
+      if (originalPath.startsWith(prefix)) {
+        targetService = service
+        break
+      }
+    }
+    
+    if (!targetService) {
+      return res.status(404).json({ error: 'Service not found' })
+    }
+    
+    const targetUrl = `${targetService}${originalPath}`
+    
+    // Forward request with Bearer token
+    const response = await fetch(targetUrl, {
+      method: req.method,
+      headers: {
+        'Authorization': `Bearer ${req.session.tokens.access_token}`,
+        'Content-Type': req.headers['content-type'] || 'application/json',
+        'Accept': req.headers.accept || 'application/json'
+      },
+      body: req.method !== 'GET' && req.method !== 'HEAD' ? JSON.stringify(req.body) : undefined
+    })
+    
+    const data = await response.text()
+    
+    // Forward response
+    res.status(response.status)
+    res.set('Content-Type', response.headers.get('content-type'))
+    res.send(data)
+    
+  } catch (error) {
+    console.error('Proxy request failed:', error)
+    res.status(500).json({ error: 'Proxy request failed' })
+  }
+})
+
 app.get('/api/app', (req, res) => {
   res.send('Hello World!')
 })
