@@ -23,11 +23,15 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 
 # Copy the tracer from build target
 COPY --from=build /tmp/datadog-dotnet-apm.deb /tmp/datadog-dotnet-apm.deb
-# Install the tracer
-RUN mkdir -p /opt/datadog \
+# Install curl and the tracer
+RUN apt-get update \
+    && apt-get install -y curl \
+    && mkdir -p /opt/datadog \
     && mkdir -p /var/log/datadog \
     && dpkg -i /tmp/datadog-dotnet-apm.deb \
-    && rm /tmp/datadog-dotnet-apm.deb
+    && rm /tmp/datadog-dotnet-apm.deb \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 ARG DD_GIT_REPOSITORY_URL
 ARG DD_GIT_COMMIT_SHA

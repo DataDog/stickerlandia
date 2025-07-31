@@ -26,7 +26,7 @@ public static class AuthServiceExtensions
                     .SetUserInfoEndpointUris("api/users/v1/connect/userinfo") ;
 
                 // Mark the "email", "profile" and "roles" scopes as supported scopes.
-                options.RegisterScopes(OpenIddictConstants.Permissions.Scopes.Email, OpenIddictConstants.Permissions.Scopes.Profile, OpenIddictConstants.Permissions.Scopes.Roles);
+                options.RegisterScopes(OpenIddictConstants.Scopes.OpenId, OpenIddictConstants.Scopes.Email, OpenIddictConstants.Scopes.Profile, OpenIddictConstants.Scopes.Roles);
 
                 // Note: the sample uses the code and refresh token flows but you can enable
                 // the other flows if you need to support implicit, password or client credentials.

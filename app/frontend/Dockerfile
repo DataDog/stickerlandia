@@ -1,9 +1,25 @@
-FROM node:20
-WORKDIR /frontend
-COPY package.json .
-RUN npm install
-RUN npm i -g serve
+FROM node:20-alpine as build
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json yarn.lock ./
+
+# Install dependencies with yarn
+RUN yarn install --frozen-lockfile
+
+# Copy source code
 COPY . .
-RUN npm run build
-EXPOSE 3000
-CMD [ "serve", "-s", "dist" ]
+
+# Build the app
+RUN yarn build
+
+# Production stage
+FROM nginx:alpine
+
+# Copy built app to nginx
+COPY --from=build /app/dist /usr/share/nginx/html
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
