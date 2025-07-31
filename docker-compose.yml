@@ -324,11 +324,11 @@ services:
       KAFKA__SCHEMAREGISTRY: "http://redpanda:8082"
       KAFKA__GROUPID: "stickerlandia-user-management"
 
-  app-backend:
+  web-backend:
     build:
       context: ./app/backend
       dockerfile: Dockerfile
-    container_name: app-backend
+    container_name: web-backend
     depends_on:
       user-management:
         condition: service_healthy
@@ -340,9 +340,9 @@ services:
       OAUTH_REDIRECT_URI: http://localhost:8080/api/app/auth/callback
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.app-backend.rule=PathPrefix(`/api/app`)"
-      - "traefik.http.routers.app-backend.priority=100"
-      - "traefik.http.services.app-backend.loadbalancer.server.port=3000"
+      - "traefik.http.routers.web-backend.rule=PathPrefix(`/api/app`)"
+      - "traefik.http.routers.web-backend.priority=100"
+      - "traefik.http.services.web-backend.loadbalancer.server.port=3000"
 
   web-frontend:
     build:
