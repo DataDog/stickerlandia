@@ -37,16 +37,17 @@ public class MigrationFunction(IServiceScopeFactory serviceScopeFactory)
             await manager.CreateAsync(new OpenIddictApplicationDescriptor
             {
                 ClientId = "web-ui",
-                ClientType = OpenIddictConstants.ClientTypes.Public,
+                ClientSecret = "stickerlandia-web-ui-secret-2025",
+                ClientType = OpenIddictConstants.ClientTypes.Confidential,
                 // An implicit consent type is used for the web UI, meaning users will NOT be prompted to consent to requested scoipes.
                 ConsentType = OpenIddictConstants.ConsentTypes.Implicit,
                 PostLogoutRedirectUris =
                 {
-                    new Uri("https://localhost:3000")
+                    new Uri("http://localhost:3000")
                 },
                 RedirectUris =
                 {
-                    new Uri("https://localhost:3000/callback")
+                    new Uri("http://localhost:8080/api/app/auth/callback")
                 },
                 Permissions =
                 {

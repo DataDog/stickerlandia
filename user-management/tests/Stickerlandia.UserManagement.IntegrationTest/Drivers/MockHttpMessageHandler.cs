@@ -98,7 +98,7 @@ internal sealed class MockHttpMessageHandler : HttpMessageHandler
         {
             // Return redirect with auth code
             var response = new HttpResponseMessage(HttpStatusCode.Redirect);
-            response.Headers.Location = new Uri("https://localhost:3000/callback?code=mock_auth_code_123&state=" + ExtractStateFromQuery(path));
+            response.Headers.Location = new Uri("http://localhost:8080/api/app/auth/callback?code=mock_auth_code_123&state=" + ExtractStateFromQuery(path));
             return response;
         }
         
