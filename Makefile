@@ -34,5 +34,8 @@ compose-time-builds:
 wait-for-services:
 	./scripts/wait-for-services.sh
 
+test-services:
+	./scripts/test-services.sh --max-retries 5 --retry-delay 10
+
 wait-for-services-dev:
 	./scripts/wait-for-services.sh docker-compose.yml docker-compose.dev.yml
