@@ -185,7 +185,7 @@ resource "google_cloud_run_v2_service" "worker_service" {
       }
       env {
         name  = "ConnectionStrings__messaging"
-        value = ""
+        value = data.google_project.project.project_id
       }
       env {
         name  = "ConnectionStrings__database"
