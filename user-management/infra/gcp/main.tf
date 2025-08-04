@@ -262,7 +262,7 @@ resource "google_cloud_run_v2_service" "worker_service" {
   traffic {
     type     = "TRAFFIC_TARGET_ALLOCATION_TYPE_REVISION"
     percent  = 100
-    revision = "stickerlandia-user-management-${var.image_tag}"
+    revision = "stickerlandia-user-management-worker-${var.image_tag}"
     tag      = "live"
   }
 }
