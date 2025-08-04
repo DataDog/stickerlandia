@@ -2,7 +2,10 @@
   "dependencies": {
     "express": "^5.1.0",
     "openid-client": "^5.7.0",
-    "express-session": "^1.18.1"
+    "express-session": "^1.18.1",
+    "helmet": "^8.1.0",
+    "lusca": "^1.7.0",
+    "express-rate-limit": "^7.4.1"
   },
   "name": "backend",
   "version": "1.0.0",

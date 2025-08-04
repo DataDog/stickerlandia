@@ -39,7 +39,7 @@ export const AuthProvider = ({ children }) => {
         
         if (accessToken && expiresAt) {
           // Store the token and get user info
-          AuthService.storeToken(accessToken, parseInt(expiresAt))
+          AuthService.storeToken(accessToken, parseInt(expiresAt, 10))
           const result = await AuthService.getUserWithToken()
           if (result.authenticated) {
             setUser(result.user)

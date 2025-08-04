@@ -334,7 +334,7 @@ services:
       user-management:
         condition: service_healthy
     environment:
-      NODE_ENV: production
+      NODE_ENV: development
       OAUTH_ISSUER_INTERNAL: http://user-management:8080
       OAUTH_CLIENT_ID: web-ui
       OAUTH_CLIENT_SECRET: stickerlandia-web-ui-secret-2025

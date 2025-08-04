@@ -1,65 +1,28 @@
 const express = require('express')
 const session = require('express-session')
 const crypto = require('crypto')
-const helmet = require('helmet')
 const { Issuer, generators } = require('openid-client')
-const lusca = require('lusca')
-const rateLimit = require('express-rate-limit')
 const app = express()
 const port = 3000
 
-// Security headers with Helmet
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "http://localhost:*", "http://user-management:*"], // Allow OAuth endpoints
-      fontSrc: ["'self'"],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      frameSrc: ["'none'"],
-      formAction: ["'self'", "http://localhost:*", "http://user-management:*"], // Allow OAuth form submissions
-    },
-  },
-  crossOriginEmbedderPolicy: false // Allow iframe embedding if needed
-}))
-
 // Session configuration - HttpOnly, SameSite cookies
-const isProduction = process.env.NODE_ENV === 'production'
 app.use(session({
-  name: 'sessionId', // Custom session cookie name (avoids default 'connect.sid')
   secret: process.env.SESSION_SECRET || 'dev-session-secret-change-in-production',
   resave: false,
   saveUninitialized: false,
   cookie: { 
-    secure: isProduction, // Secure cookies in production (HTTPS required)
-    httpOnly: true, // Prevent XSS attacks by blocking client-side access
-    sameSite: 'lax', // CSRF protection while allowing some cross-site requests
+    secure: false, // Set to true in production with HTTPS
+    httpOnly: true,
+    sameSite: 'lax',
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }))
 
 app.use(express.json())
 
-// CSRF protection using Lusca
-app.use(lusca({
-  csrf: {
-    secret: process.env.CSRF_SECRET || 'dev-csrf-secret-change-in-production',
-    cookie: true, // Store CSRF token in cookie
-    header: 'x-csrf-token', // Accept token in header
-    whitelist: ['/api/app/auth/callback'] // Skip CSRF for OAuth callback
-  },
-  csp: false, // Disable Lusca's CSP (we use Helmet)
-  xframe: false, // Disable Lusca's X-Frame-Options (we use Helmet)
-  xssProtection: false, // Disable Lusca's XSS protection (we use Helmet)
-  nosniff: false, // Disable Lusca's nosniff (we use Helmet)
-  hsts: false // Disable Lusca's HSTS (we use Helmet)
-}))
-
 // OAuth configuration
+// When we're running in some environments (e.g., docker compose), we will have different externally
+// visible issuer info to what we see internally. This makes thing a bit messy ...
 const OAUTH_ISSUER_INTERNAL = process.env.OAUTH_ISSUER_INTERNAL || 'http://user-management:8080'
 const OAUTH_ISSUER_EXTERNAL = process.env.OAUTH_ISSUER_EXTERNAL || 'http://localhost:8080'
 const OAUTH_CLIENT_ID = process.env.OAUTH_CLIENT_ID || 'web-ui'
@@ -73,10 +36,10 @@ let issuerMetadata = null
 async function initializeOIDC() {
   try {
     // Discover from internal endpoint
-    console.info('Discovering OIDC metadata from:', OAUTH_ISSUER_INTERNAL)
+    console.log('Discovering OIDC metadata from:', OAUTH_ISSUER_INTERNAL)
     issuerMetadata = await Issuer.discover(OAUTH_ISSUER_INTERNAL)
-    console.info('Discovered issuer:', issuerMetadata.issuer)
-    console.info('Token endpoint:', issuerMetadata.token_endpoint)
+    console.log('Discovered issuer:', issuerMetadata.issuer)
+    console.log('Token endpoint:', issuerMetadata.token_endpoint)
     
     client = new issuerMetadata.Client({
       client_id: OAUTH_CLIENT_ID,
@@ -84,7 +47,7 @@ async function initializeOIDC() {
       redirect_uris: [OAUTH_REDIRECT_URI],
       response_types: ['code']
     })
-    console.info('OIDC client initialized')
+    console.log('OIDC client initialized')
   } catch (error) {
     console.error('Failed to initialize OIDC client:', error)
   }
@@ -93,44 +56,23 @@ async function initializeOIDC() {
 // Initialize OIDC on startup
 initializeOIDC()
 
-// CSRF token endpoint
-app.get('/api/app/csrf-token', (req, res) => {
-  res.json({ csrfToken: res.locals._csrf })
-})
-
-// Rate limiting for login attempts
-const loginRateLimit = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute window
-  max: 5, // Max 5 login attempts per IP per minute
-  message: {
-    error: 'Too many login attempts, please try again later',
-    retryAfter: '1 minute'
-  },
-  standardHeaders: true, // Include rate limit info in headers
-  legacyHeaders: false, // Disable legacy X-RateLimit-* headers
-  skip: (req) => {
-    // Skip rate limiting in development for easier testing
-    return process.env.NODE_ENV === 'development' && process.env.SKIP_RATE_LIMIT === 'true'
-  }
-})
-
 // BFF Auth Endpoints
 
 // Step 1: Frontend calls POST /login, BFF generates PKCE and redirects to IdP
-app.post('/api/app/auth/login', loginRateLimit, (req, res) => {
+app.post('/api/app/auth/login', (req, res) => {
   if (!client) {
     return res.status(500).json({ error: 'OIDC client not initialized' })
   }
 
   // Generate PKCE codes
-  const code_verifier = generators.codeVerifier()
-  const code_challenge = generators.codeChallenge(code_verifier)
+  const codeVerifier = generators.codeVerifier()
+  const codeChallenge = generators.codeChallenge(codeVerifier)
   const state = generators.state()
   const nonce = generators.nonce()
   
   // Store PKCE verifier and state in server session
   req.session.oauth = {
-    code_verifier,
+    code_verifier: codeVerifier,
     state,
     nonce
   }
@@ -138,7 +80,7 @@ app.post('/api/app/auth/login', loginRateLimit, (req, res) => {
   // Generate authorization URL and make it relative by dropping hostname
   const internalAuthUrl = client.authorizationUrl({
     scope: 'openid profile email roles',
-    code_challenge,
+    code_challenge: codeChallenge,
     code_challenge_method: 'S256',
     state,
     nonce
@@ -154,8 +96,8 @@ app.post('/api/app/auth/login', loginRateLimit, (req, res) => {
 // Step 3: IdP redirects back to BFF with authorization code
 app.get('/api/app/auth/callback', async (req, res) => {
   try {
-    console.debug('Callback URL:', req.url)
-    console.debug('Query params:', req.query)
+    console.log('Callback URL:', req.url)
+    console.log('Query params:', req.query)
     
     if (!client) {
       return res.status(500).send('OIDC client not initialized')
@@ -184,16 +126,16 @@ app.get('/api/app/auth/callback', async (req, res) => {
     }
 
     // Exchange authorization code for tokens
-    console.debug('Attempting token exchange with:', {
+    console.log('Attempting token exchange with:', {
       redirect_uri: OAUTH_REDIRECT_URI,
       code: code.substring(0, 10) + '...',
       state: state.substring(0, 10) + '...',
       issuer: client.issuer.issuer
     })
     
-    console.debug('Full callback parameters:', { code, state })
-    console.debug('Session OAuth data:', sessionOAuth)
-    console.debug('Client issuer metadata:', {
+    console.log('Full callback parameters:', { code, state })
+    console.log('Session OAuth data:', sessionOAuth)
+    console.log('Client issuer metadata:', {
       issuer: client.issuer.issuer,
       token_endpoint: client.issuer.token_endpoint
     })
@@ -204,12 +146,12 @@ app.get('/api/app/auth/callback', async (req, res) => {
       nonce: sessionOAuth.nonce,
       state: sessionOAuth.state
     }
-    console.debug('Callback params:', callbackParams)
-    console.debug('Callback checks:', checks)
+    console.log('Callback params:', callbackParams)
+    console.log('Callback checks:', checks)
     
     const tokenSet = await client.callback(OAUTH_REDIRECT_URI, callbackParams, checks)
     
-    console.info('Token exchange successful, received tokens')
+    console.log('Token exchange successful, received tokens')
 
     // Store tokens in server session 
     req.session.tokens = {
@@ -361,5 +303,5 @@ app.get('/api/app', (req, res) => {
 })
 
 app.listen(port, () => {
-  console.info(`BFF listening on port ${port}`)
+  console.log(`BFF listening on port ${port}`)
 })

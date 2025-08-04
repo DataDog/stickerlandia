@@ -7,7 +7,7 @@ const UserProfile = () => {
 
   const getSessionExpiry = () => {
     const tokenData = AuthService.getStoredToken()
-    if (tokenData && tokenData.expires_at) {
+    if (tokenData?.expires_at) {
       const expiryDate = new Date(tokenData.expires_at * 1000)
       return expiryDate.toLocaleString()
     }

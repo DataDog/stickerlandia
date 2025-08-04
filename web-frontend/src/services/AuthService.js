@@ -28,7 +28,7 @@ class AuthService {
 
   isTokenValid() {
     const tokenData = this.getStoredToken()
-    if (!tokenData || !tokenData.access_token || !tokenData.expires_at) {
+    if (!tokenData?.access_token || !tokenData.expires_at) {
       return false
     }
     
@@ -89,7 +89,7 @@ class AuthService {
 
   async getUserWithToken() {
     const tokenData = this.getStoredToken()
-    if (!tokenData || !tokenData.access_token) {
+    if (!tokenData?.access_token) {
       return { authenticated: false }
     }
 
