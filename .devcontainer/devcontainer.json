@@ -1,0 +1,25 @@
+{
+	"name": "Hot-reloading dev env",
+
+	"dockerComposeFile": [
+		"docker-compose.yml"
+	],
+
+	"service": "devcontainer",
+
+	"workspaceFolder": "/workspace",
+	"features": {
+		"ghcr.io/devcontainers/features/docker-in-docker:2": {}
+	},
+
+	"features": {},
+
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	"forwardPorts": [
+		8080, // Application traffic (Traefik ingress)
+		8081, // Traefik Dashboard
+		8082  // Redpanda Console
+	],
+
+	"postCreateCommand": "chmod +x .devcontainer/setup.sh && .devcontainer/setup.sh",
+}

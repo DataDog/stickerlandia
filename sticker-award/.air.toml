@@ -1,0 +1,11 @@
+# Air configuration for Sticker Award service
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  # Build command with disabled optimisations for easier debugging
+  cmd = "go build -gcflags=all=-N ./cmd/server"
+  bin = "server"
+  include_ext = ["go", "tpl", "tmpl", "html"]
+  exclude_dir = ["tmp", "vendor", ".git"]
+  delay = 200  # milliseconds between changes 

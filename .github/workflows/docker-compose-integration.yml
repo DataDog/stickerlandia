@@ -19,38 +19,13 @@ jobs:
       uses: docker/setup-buildx-action@v3
       
     - name: Start services
-      run: docker compose up -d
-      
-    - name: Wait for services to be healthy
-      run: |
-        echo Pausing for 60s to allow services to start
-        sleep 60
-        docker compose ps
-      
-    - name: Test dashboard endpoints
-      run: |
-        curl -f http://localhost:8081/dashboard/ || exit 1
-        curl -f http://localhost:8082 || exit 1
-      
-    - name: Test API endpoints
-      run: |
-        # Test sticker catalogue API
-        curl -f -X GET "http://localhost:8080/api/stickers/v1/sticker-001" || exit 1
-        # Test sticker award API with sample user data
-        curl -f -X GET "http://localhost:8080/api/awards/v1/assignments/user-001" || exit 1
-        curl -f -X GET "http://localhost:8080/api/users/v1/health" || exit 1
-      
-    - name: Show service logs on failure
-      if: failure()
-      run: |
-        echo "=== Docker Compose Services Status ==="
-        docker compose ps
-        echo "=== All Service Logs ==="
-        docker compose logs --tail=50
-        echo "=== Health Check Details ==="
-        docker compose ps --format "table {{.Name}}\t{{.Status}}\t{{.Health}}"
-        echo "=== Resource Usage ==="
-        docker stats --no-stream
+      run: make compose-up
+
+    - name: Wait for services to be ready
+      run: make wait-for-services
+
+    - name: Test all service endpoints
+      run: make test-services
       
     - name: Cleanup
       if: always()
