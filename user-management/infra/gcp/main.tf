@@ -50,7 +50,7 @@ resource "google_cloud_run_v2_service" "default" {
       }
       env {
         name  = "ConnectionStrings__messaging"
-        value = ""
+        value = data.google_project.project.project_id
       }
       env {
         name  = "ConnectionStrings__database"
