@@ -358,6 +358,7 @@ internal sealed class AccountDriver : IDisposable
         {
             new("grant_type", "authorization_code"),
             new("client_id", TestConstants.OAuth2ClientId),
+            new("client_secret", TestConstants.OAuth2ClientSecret),
             new("code", authCode),
             new("redirect_uri", TestConstants.OAuth2RedirectUri),
             new("code_verifier", codeVerifier)
