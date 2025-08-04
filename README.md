@@ -1,5 +1,7 @@
 # Stickerlandia
 
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/DataDog/stickerlandia)
+
 ![Stickerlandia Logo](https://img.shields.io/badge/Stickerlandia-Collect_and_Trade_Stickers-blue)
 [![Documentation](https://img.shields.io/badge/Documentation-Available-green)](./docs/README.md)
 
@@ -65,7 +67,9 @@ To run Stickerlandia locally, follow these steps:
 
 1. Clone this repository
 2. Set up dependencies (see service-specific READMEs)
-3. Start the services using Docker Compose or your preferred method
+3. Start the services using one of two Docker Compose configurations:
+   - **Production-like (static builds)**: `docker-compose up` - Uses pre-built images, faster startup
+   - **Development (hot reloading)**: `docker-compose -f docker-compose.yml -f docker-compose.dev.yml up` - Live code reloading for active development
 4. Access the application at `http://localhost:8080`
 
 For detailed setup instructions, see the [environment setup guide](./docs/README.md).

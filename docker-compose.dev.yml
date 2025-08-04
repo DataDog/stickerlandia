@@ -1,0 +1,84 @@
+# Docker Compose override for development mode
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+services:
+  sticker-catalogue:
+    build:
+      context: ./sticker-catalogue
+      dockerfile: src/main/docker/Dockerfile.dev
+    volumes:
+      # Mount source code for live reload
+      - ./sticker-catalogue:/work:cached
+      # Mount Maven cache to speed up builds
+      - maven-cache:/root/.m2
+    environment:
+      # Use development profile
+      - QUARKUS_PROFILE=dev
+      # Override any production settings
+      - QUARKUS_HTTP_HOST=0.0.0.0
+      # Disable all dev services - use external containers instead
+      - QUARKUS_DEVSERVICES_ENABLED=false
+      - QUARKUS_DATASOURCE_DEVSERVICES_ENABLED=false
+      - QUARKUS_KAFKA_DEVSERVICES_ENABLED=false
+      - QUARKUS_S3_DEVSERVICES_ENABLED=false
+      # Database configuration
+      - QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://sticker-catalogue-db:5432/sticker_catalogue
+      - QUARKUS_DATASOURCE_USERNAME=sticker_user
+      - QUARKUS_DATASOURCE_PASSWORD=sticker_password
+      - QUARKUS_DATASOURCE_DB_KIND=postgresql
+      # Kafka configuration
+      - KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
+      - MP_MESSAGING_CONNECTOR_SMALLRYE_KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
+      - QUARKUS_KAFKA_STREAMS_BOOTSTRAP_SERVERS=redpanda:9092
+      # S3/MinIO configuration
+      - QUARKUS_S3_ENDPOINT_OVERRIDE=http://minio:9000
+      - QUARKUS_S3_AWS_REGION=us-east-1
+      - QUARKUS_S3_AWS_CREDENTIALS_TYPE=static
+      - QUARKUS_S3_AWS_CREDENTIALS_STATIC_PROVIDER_ACCESS_KEY_ID=minioadmin
+      - QUARKUS_S3_AWS_CREDENTIALS_STATIC_PROVIDER_SECRET_ACCESS_KEY=minioadmin
+      - QUARKUS_S3_PATH_STYLE_ACCESS=true
+      - STICKER_IMAGES_BUCKET=sticker-images
+      # Enable live reload and debugging
+      - QUARKUS_LIVE_RELOAD_INSTRUMENTATION=true
+      - QUARKUS_DEBUG_ENABLED=true
+      - QUARKUS_DEBUG_HOST=0.0.0.0
+      - QUARKUS_DEBUG_PORT=5005
+    ports:
+      # Expose debug port for remote debugging
+      - "5005:5005"
+    command: ["./mvnw", "quarkus:dev", "-Dquarkus.http.host=0.0.0.0", "-Dquarkus.devservices.enabled=false"]
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sticker-catalogue.rule=PathPrefix(`/api/stickers`)"
+      - "traefik.http.services.sticker-catalogue.loadbalancer.server.port=8080"
+
+  sticker-award:
+    # Development configuration: use hot-reload Dockerfile and bind-mount source
+    build:
+      context: ./sticker-award
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./sticker-award:/app:cached  # Live code reload
+      - go-mod-cache:/go/pkg/mod     # Persist Go module cache
+    command: ["air", "-c", ".air.toml"]
+
+  user-management:
+    build:
+      context: ./user-management
+      dockerfile: Dockerfile.dev
+    volumes:
+      # Mount source code for live reload
+      - ./user-management:/app:cached
+      # Mount NuGet cache to speed up builds
+      - nuget-cache:/root/.nuget/packages
+    environment:
+      # Configure driven adapters
+      - DRIVEN=AGNOSTIC
+      # Development environment
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+
+
+volumes:
+  maven-cache:
+  go-mod-cache:
+  nuget-cache:

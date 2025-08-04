@@ -152,37 +152,39 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.11.0</version>
+                <version>${compiler-plugin.version}</version>
                 <configuration>
-                    <encoding>UTF-8</encoding>
-                    <fork>true</fork>
-                    <compilerArgs>
-                        <arg>-XDcompilePolicy=simple</arg>
-                        <arg>--should-stop=ifError=FLOW</arg>
-                        <arg>-Xplugin:ErrorProne</arg>
-                        <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</arg>
-                        <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED</arg>
-                        <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED</arg>
-                        <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED</arg>
-                        <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED</arg>
-                        <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED</arg>
-                        <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED</arg>
-                        <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED</arg>
-                        <arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED</arg>
-                        <arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED</arg>
-                    </compilerArgs>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>com.google.errorprone</groupId>
-                            <artifactId>error_prone_core</artifactId>
-                            <version>${error-prone.version}</version>
-                        </path>
-                        <!-- Other annotation processors go here.
+                    <parameters>true</parameters>
+                        <!-- TODO - ErrorProne options break hot reloading in `quarkus-dev!`. How to fix? -->
+<!--                    <encoding>UTF-8</encoding>-->
+<!--                    <fork>true</fork>-->
+<!--                    <compilerArgs>-->
+<!--                        <arg>-XDcompilePolicy=simple</arg>-->
+<!--                        <arg>should-stop=ifError=FLOW</arg>-->
+<!--                        <arg>-Xplugin:ErrorProne</arg>-->
+<!--                        <arg>-Jadd-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</arg>-->
+<!--                        <arg>-Jadd-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED</arg>-->
+<!--                        <arg>-Jadd-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED</arg>-->
+<!--                        <arg>-Jadd-exports=jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED</arg>-->
+<!--                        <arg>-Jadd-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED</arg>-->
+<!--                        <arg>-Jadd-exports=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED</arg>-->
+<!--                        <arg>-Jadd-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED</arg>-->
+<!--                        <arg>-Jadd-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED</arg>-->
+<!--                        <arg>-Jadd-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED</arg>-->
+<!--                        <arg>-Jadd-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED</arg>-->
+<!--                    </compilerArgs>-->
+<!--                    <annotationProcessorPaths>-->
+<!--                        <path>-->
+<!--                            <groupId>com.google.errorprone</groupId>-->
+<!--                            <artifactId>error_prone_core</artifactId>-->
+<!--                            <version>${error-prone.version}</version>-->
+<!--                        </path>-->
+<!--                        &lt;!&ndash; Other annotation processors go here.-->
 
-                        If 'annotationProcessorPaths' is set, processors will no longer be
-                        discovered on the regular -classpath; see also 'Using Error Prone
-                        together with other annotation processors' below. -->
-                    </annotationProcessorPaths>
+<!--                        If 'annotationProcessorPaths' is set, processors will no longer be-->
+<!--                        discovered on the regular -classpath; see also 'Using Error Prone-->
+<!--                        together with other annotation processors' below. &ndash;&gt;-->
+<!--                    </annotationProcessorPaths>-->
                 </configuration>
             </plugin>
             <plugin>

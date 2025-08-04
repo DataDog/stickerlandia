@@ -1,0 +1,24 @@
+# Development Dockerfile for Sticker Award service
+# Provides hot-reload via Air and debugging via Delve
+# Use docker-compose.dev.yml in the stickerlandia root to use this!
+
+FROM golang:1.24-alpine
+
+# Install OS dependencies and dev tools
+RUN apk add --no-cache git bash curl tzdata \
+    && go install github.com/air-verse/air@latest \
+    && go install github.com/go-delve/delve/cmd/dlv@latest
+
+# The working directory mirrors the bind-mount from the host
+WORKDIR /app
+
+# Leverage Docker layer caching by copying only go mod files first
+COPY go.mod go.sum ./
+RUN go mod download
+
+
+# Expose HTTP port and Delve debug port
+EXPOSE 8080 2345
+
+# Start Air, which watches for file changes, rebuilds, and restarts the binary
+CMD ["air", "-c", ".air.toml"] 
