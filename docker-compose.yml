@@ -327,7 +327,7 @@ services:
 
   web-backend:
     build:
-      context: ./app/backend
+      context: ./web-backend
       dockerfile: Dockerfile
     container_name: web-backend
     depends_on:
@@ -347,7 +347,7 @@ services:
 
   web-frontend:
     build:
-      context: ./app/frontend
+      context: ./web-frontend
       dockerfile: Dockerfile
     environment:
       NODE_ENV: production
