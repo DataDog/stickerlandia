@@ -35,6 +35,9 @@ RUN dotnet publish src/Stickerlandia.UserManagement.MigrationService/Stickerland
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 
+# Install curl
+RUN apt update && apt install -y curl && apt clean
+
 # Copy the tracer from build target
 COPY --from=build /tmp/datadog-dotnet-apm.deb /tmp/datadog-dotnet-apm.deb
 # Install the tracer
@@ -70,4 +73,5 @@ COPY --from=build /App/out/migrations ./migrations/
 EXPOSE 8080
 
 # Default entry point (can be overridden in docker-compose)
-ENTRYPOINT ["dotnet", "api/Stickerlandia.UserManagement.Api.dll"]
+ENTRYPOINT ["dotnet"]
+CMD ["api/Stickerlandia.UserManagement.Api.dll"]

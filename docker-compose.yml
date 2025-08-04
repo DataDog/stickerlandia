@@ -267,6 +267,8 @@ services:
         condition: service_healthy
       redpanda:
         condition: service_healthy
+      user-management-db-migrations:
+        condition: service_completed_successfully
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       DRIVING: AGNOSTIC
@@ -280,10 +282,9 @@ services:
       OPENIDDICT_ISSUER: "http://user-management:8080"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/api/users/v1/health"]
-      interval: 10s
-      timeout: 5s
+      interval: 1s
+      timeout: 15s
       retries: 5
-      start_period: 30s
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.user-management.rule=PathPrefix(`/api/users`)"
@@ -311,7 +312,7 @@ services:
       KAFKA__BOOTSTRAPSERVERS: "redpanda:9092"
       KAFKA__SCHEMAREGISTRY: "http://redpanda:8082"
       KAFKA__GROUPID: "stickerlandia-user-management"
-    command: ["dotnet", "worker/Stickerlandia.UserManagement.Worker.dll"]
+    command: ["worker/Stickerlandia.UserManagement.Worker.dll"]
 
   user-management-db-migrations:
     build:
@@ -330,7 +331,7 @@ services:
       KAFKA__BOOTSTRAPSERVERS: "redpanda:9092"
       KAFKA__SCHEMAREGISTRY: "http://redpanda:8082"
       KAFKA__GROUPID: "stickerlandia-user-management"
-    command: ["dotnet", "migrations/Stickerlandia.UserManagement.MigrationService.dll"]
+    command: ["migrations/Stickerlandia.UserManagement.MigrationService.dll"]
 
   web-backend:
     build:
