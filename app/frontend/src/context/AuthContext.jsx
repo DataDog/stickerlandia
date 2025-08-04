@@ -19,16 +19,43 @@ export const AuthProvider = ({ children }) => {
   const checkAuthStatus = async () => {
     setIsLoading(true)
     try {
-      const result = await AuthService.getUser()
-      if (result.authenticated) {
-        setUser(result.user)
-        setIsAuthenticated(true)
+      // First check if we have a valid token in sessionStorage
+      if (AuthService.isTokenValid()) {
+        const result = await AuthService.getUserWithToken()
+        if (result.authenticated) {
+          setUser(result.user)
+          setIsAuthenticated(true)
+        } else {
+          // Token is invalid, clear it
+          AuthService.clearStoredToken()
+          setUser(null)
+          setIsAuthenticated(false)
+        }
       } else {
-        setUser(null)
-        setIsAuthenticated(false)
+        // No valid token, check if we have one in the URL (from OAuth callback)
+        const urlParams = new URLSearchParams(window.location.search)
+        const accessToken = urlParams.get('access_token')
+        const expiresAt = urlParams.get('expires_at')
+        
+        if (accessToken && expiresAt) {
+          // Store the token and get user info
+          AuthService.storeToken(accessToken, parseInt(expiresAt))
+          const result = await AuthService.getUserWithToken()
+          if (result.authenticated) {
+            setUser(result.user)
+            setIsAuthenticated(true)
+          }
+          
+          // Clean up the URL
+          window.history.replaceState({}, document.title, window.location.pathname)
+        } else {
+          setUser(null)
+          setIsAuthenticated(false)
+        }
       }
     } catch (error) {
       console.error('Auth check failed:', error)
+      AuthService.clearStoredToken()
       setUser(null)
       setIsAuthenticated(false)
     } finally {

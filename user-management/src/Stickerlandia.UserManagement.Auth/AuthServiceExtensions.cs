@@ -18,6 +18,13 @@ public static class AuthServiceExtensions
             .AddCore(configuration)
             .AddServer(options =>
             {
+                // Read explicit issuer from environment variable
+                var explicitIssuer = Environment.GetEnvironmentVariable("OPENIDDICT_ISSUER");
+                if (!string.IsNullOrEmpty(explicitIssuer))
+                {
+                    options.SetIssuer(new Uri(explicitIssuer));
+                }
+                
                 // Enable the token endpoint.
                 // Enable the authorization, logout, token and userinfo endpoints.
                 options.SetAuthorizationEndpointUris("api/users/v1/connect/authorize")

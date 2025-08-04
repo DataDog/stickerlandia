@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import LoginButton from './components/LoginButton'
 import LogoutButton from './components/LogoutButton'
 import UserProfile from './components/UserProfile'
+import StickerList from './components/StickerList'
 import './App.css'
 
 function AppContent() {
@@ -36,8 +37,7 @@ function AppContent() {
       
       {isAuthenticated && (
         <div>
-          <h2>Welcome to Stickerlandia!</h2>
-          <p>You are now authenticated and can access the application.</p>
+          <StickerList />
         </div>
       )}
     </div>

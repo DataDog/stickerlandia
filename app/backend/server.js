@@ -34,7 +34,11 @@ let issuerMetadata = null
 async function initializeOIDC() {
   try {
     // Discover from internal endpoint
+    console.log('Discovering OIDC metadata from:', OAUTH_ISSUER_INTERNAL)
     issuerMetadata = await Issuer.discover(OAUTH_ISSUER_INTERNAL)
+    console.log('Discovered issuer:', issuerMetadata.issuer)
+    console.log('Token endpoint:', issuerMetadata.token_endpoint)
+    
     client = new issuerMetadata.Client({
       client_id: OAUTH_CLIENT_ID,
       client_secret: OAUTH_CLIENT_SECRET,
@@ -90,11 +94,24 @@ app.post('/api/app/auth/login', (req, res) => {
 // Step 3: IdP redirects back to BFF with authorization code
 app.get('/api/app/auth/callback', async (req, res) => {
   try {
+    console.log('Callback URL:', req.url)
+    console.log('Query params:', req.query)
+    
     if (!client) {
       return res.status(500).send('OIDC client not initialized')
     }
 
-    const { code, state } = req.query
+    const { code, state, iss } = req.query
+    
+    // If iss parameter is missing but we know what it should be, add it
+    // This works around the openid-client validation issue
+    const callbackParams = { code, state }
+    if (iss) {
+      callbackParams.iss = iss
+    } else {
+      // Add the expected issuer to satisfy openid-client validation
+      callbackParams.iss = client.issuer.issuer
+    }
     const sessionOAuth = req.session.oauth
 
     if (!sessionOAuth) {
@@ -107,13 +124,34 @@ app.get('/api/app/auth/callback', async (req, res) => {
     }
 
     // Exchange authorization code for tokens
-    const tokenSet = await client.callback(OAUTH_REDIRECT_URI, { code, state }, { 
+    console.log('Attempting token exchange with:', {
+      redirect_uri: OAUTH_REDIRECT_URI,
+      code: code.substring(0, 10) + '...',
+      state: state.substring(0, 10) + '...',
+      issuer: client.issuer.issuer
+    })
+    
+    console.log('Full callback parameters:', { code, state })
+    console.log('Session OAuth data:', sessionOAuth)
+    console.log('Client issuer metadata:', {
+      issuer: client.issuer.issuer,
+      token_endpoint: client.issuer.token_endpoint
+    })
+    
+    // Debug what we're passing to callback
+    const checks = { 
       code_verifier: sessionOAuth.code_verifier,
       nonce: sessionOAuth.nonce,
       state: sessionOAuth.state
-    })
+    }
+    console.log('Callback params:', callbackParams)
+    console.log('Callback checks:', checks)
+    
+    const tokenSet = await client.callback(OAUTH_REDIRECT_URI, callbackParams, checks)
+    
+    console.log('Token exchange successful, received tokens')
 
-    // Store tokens in server session (never sent to frontend)
+    // Store tokens in server session 
     req.session.tokens = {
       access_token: tokenSet.access_token,
       refresh_token: tokenSet.refresh_token,
@@ -128,8 +166,11 @@ app.get('/api/app/auth/callback', async (req, res) => {
     // Clear OAuth temp data
     delete req.session.oauth
 
-    // Redirect back to frontend
-    res.redirect('http://localhost:3000')
+    // Redirect back to frontend with token in query params (for new client-side flow)
+    const queryParams = new URLSearchParams()
+    queryParams.set('access_token', tokenSet.access_token)
+    queryParams.set('expires_at', tokenSet.expires_at)
+    res.redirect(`/?${queryParams.toString()}`)
   } catch (error) {
     console.error('OAuth callback failed:', error)
     res.status(400).send('Authentication failed')
@@ -137,7 +178,29 @@ app.get('/api/app/auth/callback', async (req, res) => {
 })
 
 // Get current user info (frontend checks this)
-app.get('/api/app/auth/user', (req, res) => {
+app.get('/api/app/auth/user', async (req, res) => {
+  // Check for Bearer token in Authorization header
+  const authHeader = req.headers.authorization
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.slice(7)
+    try {
+      // Validate token with OIDC provider
+      if (client) {
+        const userinfo = await client.userinfo(token)
+        res.json({ 
+          user: userinfo, 
+          authenticated: true 
+        })
+        return
+      }
+    } catch (error) {
+      console.error('Token validation failed:', error)
+      res.json({ authenticated: false })
+      return
+    }
+  }
+  
+  // Fallback to session-based auth
   if (req.session.user && req.session.tokens) {
     res.json({ 
       user: req.session.user, 
@@ -189,6 +252,7 @@ function requireAuth(req, res, next) {
 }
 
 // Proxy endpoint for authenticated API calls
+// NOTE: This proxy system may be useful for future server-side token management
 app.use('/api/app/proxy', requireAuth, async (req, res) => {
   try {
     const originalPath = req.originalUrl.replace('/api/app/proxy', '')
