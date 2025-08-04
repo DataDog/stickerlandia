@@ -23,20 +23,44 @@ internal static class AppBuilderExtensions
         this IDistributedApplicationBuilder builder,
         InfrastructureResources resources)
     {
-        ArgumentNullException.ThrowIfNull(resources.MessagingResource, nameof(resources.MessagingResource));
         ArgumentNullException.ThrowIfNull(resources.DatabaseResource, nameof(resources.DatabaseResource));
+        ArgumentNullException.ThrowIfNull(resources.MessagingResource, nameof(resources.MessagingResource));
         
         // Add the API project to the distributed application builder
         var application = builder.AddProject<Projects.Stickerlandia_UserManagement_Api>("api")
             .WithReference(resources.MessagingResource)
-            .WithEnvironment("ConnectionStrings__messaging", resources.MessagingResource)
             .WithEnvironment("ConnectionStrings__database", resources.DatabaseResource)
+            .WithEnvironment("ConnectionStrings__messaging", resources.MessagingResource)
             .WithEnvironment("DRIVING", builder.Configuration["DRIVING"])
             .WithEnvironment("DRIVEN", builder.Configuration["DRIVEN"])
             .WithEnvironment("DISABLE_SSL", "true")
+            .WithEnvironment("PUBSUB_PROJECT_ID", "my-project-id")
+            .WithEnvironment("PUBSUB_EMULATOR_HOST", "[::1]:8432")
             .WithHttpsEndpoint(51545)
             .WaitForCompletion(resources.MigrationServiceResource)
-            .WaitFor(resources.MessagingResource)
+            .WaitFor(resources.DatabaseResource)
+            .WaitFor(resources.MessagingResource);
+
+        return builder;
+    }
+
+    public static IDistributedApplicationBuilder WithGcpApi(
+        this IDistributedApplicationBuilder builder,
+        InfrastructureResources resources)
+    {
+        ArgumentNullException.ThrowIfNull(resources.DatabaseResource, nameof(resources.DatabaseResource));
+
+        // Add the API project to the distributed application builder
+        var application = builder.AddProject<Projects.Stickerlandia_UserManagement_Api>("api")
+            .WithEnvironment("ConnectionStrings__database", resources.DatabaseResource)
+            .WithEnvironment("ConnectionStrings__messaging", "my-project-id")
+            .WithEnvironment("DRIVING", builder.Configuration["DRIVING"])
+            .WithEnvironment("DRIVEN", builder.Configuration["DRIVEN"])
+            .WithEnvironment("DISABLE_SSL", "true")
+            .WithEnvironment("PUBSUB_PROJECT_ID", "my-project-id")
+            .WithEnvironment("PUBSUB_EMULATOR_HOST", "[::1]:8432")
+            .WithHttpsEndpoint(51545)
+            .WaitForCompletion(resources.MigrationServiceResource)
             .WaitFor(resources.DatabaseResource);
 
         return builder;
@@ -56,8 +80,9 @@ internal static class AppBuilderExtensions
             .AddPostgres("database")
             .WithLifetime(ContainerLifetime.Persistent)
             .AddDatabase("users");
-        
-        var migrationService = builder.AddProject<Projects.Stickerlandia_UserManagement_MigrationService>("migration-service")
+
+        var migrationService = builder
+            .AddProject<Projects.Stickerlandia_UserManagement_MigrationService>("migration-service")
             .WithEnvironment("ConnectionStrings__database", agnosticDb)
             .WithEnvironment("ConnectionStrings__messaging", kafka)
             .WithEnvironment("DRIVING", builder.Configuration["DRIVING"])
@@ -68,7 +93,29 @@ internal static class AppBuilderExtensions
 
         return new InfrastructureResources(agnosticDb, kafka, migrationService);
     }
-    
+
+    public static InfrastructureResources WithGcpServices(
+        this IDistributedApplicationBuilder builder)
+    {
+        var agnosticDb = builder
+            .AddPostgres("database")
+            .WithLifetime(ContainerLifetime.Persistent)
+            .AddDatabase("users");
+
+        var migrationService = builder
+            .AddProject<Projects.Stickerlandia_UserManagement_MigrationService>("migration-service")
+            .WithEnvironment("ConnectionStrings__database", agnosticDb)
+            .WithEnvironment("ConnectionStrings__messaging", "my-project-id")
+            .WithEnvironment("DRIVING", builder.Configuration["DRIVING"])
+            .WithEnvironment("DRIVEN", builder.Configuration["DRIVEN"])
+            .WithEnvironment("PUBSUB_PROJECT_ID", "my-project-id")
+            .WithEnvironment("PUBSUB_EMULATOR_HOST", "[::1]:8432")
+            .WithHttpsEndpoint(51545)
+            .WaitFor(agnosticDb);
+
+        return new InfrastructureResources(agnosticDb, null, migrationService);
+    }
+
     public static IDistributedApplicationBuilder CreateKafkaTopicsOnReady(
         this IDistributedApplicationBuilder builder,
         IResourceBuilder<KafkaServerResource> kafka)
@@ -125,13 +172,13 @@ internal static class AppBuilderExtensions
             using var producer = new ProducerBuilder<string, string>(config).Build();
 
             await producer.ProduceAsync("users.stickerClaimed.v1", new Message<string, string>
+            {
+                Key = "", Value = JsonSerializer.Serialize(new
                 {
-                    Key = "", Value = JsonSerializer.Serialize(new
-                    {
-                        accountId = TEST_COMMAND_ACCOUNT_ID,
-                        stickerId = TEST_COMMAND_STICKER_ID
-                    })
-                });
+                    accountId = TEST_COMMAND_ACCOUNT_ID,
+                    stickerId = TEST_COMMAND_STICKER_ID
+                })
+            });
 
             producer.Flush(TimeSpan.FromSeconds(10));
 
@@ -163,8 +210,9 @@ internal static class AppBuilderExtensions
             .AddPostgres("database")
             .WithLifetime(ContainerLifetime.Persistent)
             .AddDatabase("users");
-        
-        var migrationService = builder.AddProject<Projects.Stickerlandia_UserManagement_MigrationService>("migration-service")
+
+        var migrationService = builder
+            .AddProject<Projects.Stickerlandia_UserManagement_MigrationService>("migration-service")
             .WithEnvironment("ConnectionStrings__database", azurePostgresDb)
             .WithEnvironment("ConnectionStrings__messaging", serviceBus)
             .WithEnvironment("DRIVING", builder.Configuration["DRIVING"])
@@ -206,17 +254,36 @@ internal static class AppBuilderExtensions
         this IDistributedApplicationBuilder builder,
         InfrastructureResources resources)
     {
-        ArgumentNullException.ThrowIfNull(resources.MessagingResource, nameof(resources.MessagingResource));
         ArgumentNullException.ThrowIfNull(resources.DatabaseResource, nameof(resources.DatabaseResource));
+        ArgumentNullException.ThrowIfNull(resources.MessagingResource, nameof(resources.MessagingResource));
         
         var application = builder.AddProject<Projects.Stickerlandia_UserManagement_Worker>("worker")
             .WithReference(resources.MessagingResource)
-            .WithEnvironment("ConnectionStrings__messaging", resources.MessagingResource)
             .WithEnvironment("ConnectionStrings__database", resources.DatabaseResource)
+            .WithEnvironment("ConnectionStrings__messaging", resources.MessagingResource)
             .WithEnvironment("DRIVING", builder.Configuration["DRIVING"])
             .WithEnvironment("DRIVEN", builder.Configuration["DRIVEN"])
             .WaitForCompletion(resources.MigrationServiceResource)
-            .WaitFor(resources.MessagingResource)
+            .WaitFor(resources.DatabaseResource)
+            .WaitFor(resources.MessagingResource);
+
+        return builder;
+    }
+
+    public static IDistributedApplicationBuilder WithGcpWorker(
+        this IDistributedApplicationBuilder builder,
+        InfrastructureResources resources)
+    {
+        ArgumentNullException.ThrowIfNull(resources.DatabaseResource, nameof(resources.DatabaseResource));
+
+        var application = builder.AddProject<Projects.Stickerlandia_UserManagement_Worker>("worker")
+            .WithEnvironment("ConnectionStrings__database", resources.DatabaseResource)
+            .WithEnvironment("ConnectionStrings__messaging", "my-project-id")
+            .WithEnvironment("DRIVING", builder.Configuration["DRIVING"])
+            .WithEnvironment("DRIVEN", builder.Configuration["DRIVEN"])
+            .WithEnvironment("PUBSUB_PROJECT_ID", "my-project-id")
+            .WithEnvironment("PUBSUB_EMULATOR_HOST", "[::1]:8432")
+            .WaitForCompletion(resources.MigrationServiceResource)
             .WaitFor(resources.DatabaseResource);
 
         return builder;
@@ -228,10 +295,10 @@ internal static class AppBuilderExtensions
     {
         ArgumentNullException.ThrowIfNull(resources.MessagingResource, nameof(resources.MessagingResource));
         ArgumentNullException.ThrowIfNull(resources.DatabaseResource, nameof(resources.DatabaseResource));
-        
+
         var storage = builder.AddAzureStorage("storage")
             .RunAsEmulator();
-        
+
         var functions = builder.AddAzureFunctionsProject<Projects.Stickerlandia_UserManagement_FunctionApp>("worker")
             .WithHostStorage(storage)
             .WithEnvironment("ConnectionStrings__messaging", resources.MessagingResource)

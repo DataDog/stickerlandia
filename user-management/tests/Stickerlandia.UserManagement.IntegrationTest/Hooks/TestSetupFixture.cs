@@ -42,6 +42,13 @@ public class TestSetupFixture : IDisposable
             builder.Configuration["DRIVING"] = drivingAdapter;
             builder.Configuration["DRIVEN"] = drivenAdapter;
 
+            if (drivenAdapter == "GCP")
+            {
+                builder.Configuration["PUBSUB_PROJECT_ID"] = "my-project-id";
+                builder.Configuration["PUBSUB_EMULATOR_HOST"] = "[::1]:8432";
+                builder.Configuration["ConnectionStrings:messaging"] = "my-project-id";
+            }
+
             App = builder.BuildAsync().GetAwaiter().GetResult();
 
             App.StartAsync().GetAwaiter().GetResult();
@@ -55,21 +62,30 @@ public class TestSetupFixture : IDisposable
             // When Azure Functions is used, the API is not available immediately even when the container is healthy.
             Task.Delay(TimeSpan.FromSeconds(30)).GetAwaiter().GetResult();
 
-            var messagingConnectionString = App.GetConnectionStringAsync(MessagingResourceName).GetAwaiter().GetResult();
+            var messagingConnectionString = "";
+
+            if (drivenAdapter == "GCP")
+            {
+                messagingConnectionString = "my-project-id";
+            }
+            else
+                messagingConnectionString =
+                    App.GetConnectionStringAsync(MessagingResourceName).GetAwaiter().GetResult();
+
             Messaging = MessagingProviderFactory.From(drivenAdapter,
                 TestConstants.DefaultMessagingConnection(drivenAdapter, messagingConnectionString));
-            
+
             // Create HttpClient with cookie support for OAuth2.0 flows
             var tempHttpClient = App.CreateHttpClient(ApiApplicationName, "https");
             var baseAddress = tempHttpClient.BaseAddress;
             tempHttpClient.Dispose();
-            
-            var handler = new HttpClientHandler()
+
+            var handler = new HttpClientHandler
             {
                 UseCookies = true,
                 CheckCertificateRevocationList = true
             };
-            
+
             HttpClient = new HttpClient(handler, true)
             {
                 BaseAddress = baseAddress
@@ -79,7 +95,7 @@ public class TestSetupFixture : IDisposable
         {
             // Try to create real messaging connection, fallback to mock if not available
             Messaging = CreateMessagingWithFallback(drivenAdapter);
-            
+
             // Try to create HttpClient with real API, fallback to mock if not available
             HttpClient = CreateHttpClientWithFallback();
         }
@@ -113,14 +129,14 @@ public class TestSetupFixture : IDisposable
             using var testClient = new HttpClient();
             testClient.Timeout = TimeSpan.FromSeconds(5);
             var response = testClient.GetAsync(new Uri(TestConstants.DefaultTestUrl)).GetAwaiter().GetResult();
-            
+
             // If we get here, real API is available
-            var handler = new HttpClientHandler()
+            var handler = new HttpClientHandler
             {
                 UseCookies = true,
                 CheckCertificateRevocationList = true
             };
-            
+
             return new HttpClient(handler, true)
             {
                 BaseAddress = new Uri(TestConstants.DefaultTestUrl)

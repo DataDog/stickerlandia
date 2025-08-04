@@ -25,6 +25,9 @@ switch (DrivenAdapterSettings.DrivenAdapter)
     case DrivenAdapters.AWS:
         resources = builder.WithAgnosticServices();
         break;
+    case DrivenAdapters.GCP:
+        resources = builder.WithGcpServices();
+        break;
 }
 
 ArgumentNullException.ThrowIfNull(resources, nameof(resources));
@@ -38,6 +41,10 @@ switch (DrivingAdapterSettings.DrivingAdapter)
     case DrivingAdapter.AGNOSTIC:
         builder.WithContainerizedApi(resources)
             .WithBackgroundWorker(resources);
+        break;
+    case DrivingAdapter.GCP:
+        builder.WithGcpApi(resources)
+            .WithGcpWorker(resources);
         break;
     case DrivingAdapter.AWS:
         builder.WithAwsLambda(resources);

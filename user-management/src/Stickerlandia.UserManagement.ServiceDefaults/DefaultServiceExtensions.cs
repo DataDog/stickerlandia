@@ -9,6 +9,7 @@ using Stickerlandia.UserManagement.Agnostic;
 using Stickerlandia.UserManagement.AWS;
 using Stickerlandia.UserManagement.Azure;
 using Stickerlandia.UserManagement.Core;
+using Stickerlandia.UserManagement.GCP;
 
 namespace Stickerlandia.UserManagement.ServiceDefaults;
 
@@ -50,6 +51,9 @@ public static class DefaultServiceExtensions
                 break;
             case "AWS":
                 services.AddAwsAdapters(configuration, enableDefaultUi);
+                break;
+            case "GCP":
+                services.AddGcpAdapters(configuration, enableDefaultUi);
                 break;
             default:
                 throw new ArgumentException($"Unknown driven adapters {drivenAdapters}");

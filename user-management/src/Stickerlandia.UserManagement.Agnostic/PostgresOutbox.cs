@@ -28,6 +28,7 @@ public class PostgresOutbox(
         };
 
         await dbContext.OutboxItems.AddAsync(outboxItem);
+        await dbContext.SaveChangesAsync();
     }
 
     public async Task<List<OutboxItem>> GetUnprocessedItemsAsync(int maxCount = 100)
