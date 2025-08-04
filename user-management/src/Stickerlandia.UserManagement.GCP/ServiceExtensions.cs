@@ -4,6 +4,7 @@
 
 #pragma warning disable CA2000
 
+using Google.Api.Gax;
 using Google.Cloud.PubSub.V1;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,22 +15,30 @@ namespace Stickerlandia.UserManagement.GCP;
 
 public static class ServiceExtensions
 {
-    public static IServiceCollection AddGcpAdapters(this IServiceCollection services, IConfiguration configuration, bool enableDefaultUi = true)
+    public static IServiceCollection AddGcpAdapters(this IServiceCollection services, IConfiguration configuration,
+        bool enableDefaultUi = true)
     {
         ArgumentNullException.ThrowIfNull(configuration, nameof(configuration));
-        
+
         services.AddPostgresAuthServices(configuration, enableDefaultUi);
-        
+
         var projectId = configuration["ConnectionStrings:messaging"];
-        if (string.IsNullOrEmpty(projectId))
-        {
-            throw new InvalidOperationException("Google ProjectId is not configured.");
-        }
+        if (string.IsNullOrEmpty(projectId)) throw new InvalidOperationException("Google ProjectId is not configured.");
 
         services.AddSingleton<IMessagingWorker, GooglePubSubMessagingWorker>();
-        
-        services.AddKeyedSingleton<PublisherClient>("users.userRegistered.v1", 
-            PublisherClient.Create(new TopicName(projectId, "users.userRegistered.v1")));
+
+        services.AddKeyedSingleton<PublisherClient>("users.userRegistered.v1",
+            new PublisherClientBuilder()
+            {
+                TopicName = new TopicName(projectId, "users.userRegistered.v1"),
+                EmulatorDetection = EmulatorDetection.EmulatorOrProduction
+            }.Build());
+        services.AddKeyedSingleton<SubscriberClient>("users.stickerClaimed.v1",
+            new SubscriberClientBuilder
+            {
+                SubscriptionName = new SubscriptionName(projectId, "users.stickerClaimed.v1"),
+                EmulatorDetection = EmulatorDetection.EmulatorOrProduction
+            }.Build());
 
         services.AddSingleton<IUserEventPublisher, GooglePubSubEventPublisher>();
 

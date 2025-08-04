@@ -59,7 +59,7 @@
         "ASPIRE_ALLOW_UNSECURED_TRANSPORT": "true",
         "DRIVING": "AGNOSTIC",
         "DRIVEN": "GCP",
-        "PUBSUB_EMULATOR_HOST": "[::1]:8085",
+        "PUBSUB_EMULATOR_HOST": "[::1]:8432",
         "PUBSUB_PROJECT_ID": "my-project-id"
       }
     }

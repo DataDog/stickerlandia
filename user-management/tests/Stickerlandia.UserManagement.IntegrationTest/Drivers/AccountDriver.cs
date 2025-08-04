@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Web;
+using Stickerlandia.UserManagement.Core.StickerClaimedEvent;
 using Stickerlandia.UserManagement.IntegrationTest.ViewModels;
 using Xunit.Abstractions;
 
@@ -145,7 +146,7 @@ internal sealed class AccountDriver : IDisposable
     public async Task<string?> UpdateUserDetails(string authToken, string firstName, string lastName)
     {
         _testOutputHelper.WriteLine("Updating user details");
-        var userInfo = await this.GetUserInfo(authToken);
+        var userInfo = await GetUserInfo(authToken);
         var requestBody = JsonSerializer.Serialize(new
         {
             firstName,
@@ -471,10 +472,10 @@ internal sealed class AccountDriver : IDisposable
 
     public async Task InjectStickerClaimedMessage(string userId, string stickerId)
     {
-        await _messaging.SendMessageAsync("users.stickerClaimed.v1", new
+        await _messaging.SendMessageAsync("users.stickerClaimed.v1", new StickerClaimedEventV1
         {
-            accountId = userId,
-            stickerId = stickerId
+            AccountId = userId,
+            StickerId = stickerId
         });
     }
 
