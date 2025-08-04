@@ -35,7 +35,7 @@ public class GooglePubSubEventPublisher([FromKeyedServices("users.userRegistered
                 Parent = activeSpan.Context
             });
 
-            cloudEvent.SetAttributeFromString("traceparent", $"00-{activeSpan.TraceId}-{activeSpan.SpanId}[01");
+            cloudEvent.SetAttributeFromString("traceparent", $"00-{activeSpan.TraceId}-{activeSpan.SpanId}-01");
         }
         
         var formatter = new JsonEventFormatter<UserRegisteredEvent>();
