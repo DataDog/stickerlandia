@@ -3,9 +3,3 @@
 // Copyright 2025 Datadog, Inc.
 
 namespace Stickerlandia.UserManagement.GCP;
-
-public class EventHandlers
-{
-    
-    
-}
