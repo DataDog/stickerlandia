@@ -1,0 +1,7 @@
+rules:
+  - id: log-messages-in-main
+    message: "Logged: $A"
+    severity: WARNING
+    languages: [java]
+    pattern: log($A)
+    pattern-inside: 'void main(...) { ... }'

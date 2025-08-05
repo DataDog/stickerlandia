@@ -1,4 +1,6 @@
 rules:
+ 
+  # More useful - find imports that break encapsulation
   - id: rest-api-no-entity-imports
     message: |
       REST API file should not import entity type '$MODULE.entity.$TYPE'. Use DTOs instead.
@@ -6,5 +8,7 @@ rules:
     languages: [java]
     paths:
       include:
+        # Resources ...
         - "*Resource.java"
+    # Shouldn't import entities directly
     pattern: import com.datadoghq.stickerlandia.stickeraward.$MODULE.entity.$TYPE;

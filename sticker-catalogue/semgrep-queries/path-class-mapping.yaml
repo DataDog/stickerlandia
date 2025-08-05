@@ -1,0 +1,8 @@
+rules:
+  - id: path-class-mapping
+    languages: [java]
+    severity: INFO
+    message: "Class $C is mapped to path $A"
+    pattern: |
+      @Path($A)
+      public class $C { ... }

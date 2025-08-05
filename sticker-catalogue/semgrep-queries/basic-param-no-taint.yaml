@@ -1,0 +1,13 @@
+rules:
+  - id: param-used-in-repo-call-no-taint
+    message: "Method parameter $PARAM flows into $REPO.$METHOD"
+    severity: WARNING
+    languages: [java]
+    patterns:
+      - pattern-inside: |
+          public $RET $FUNC(..., $TYPE $PARAM, ...) { ... }
+      - pattern: |
+          $REPO.$METHOD(..., $PARAM, ...)
+      - metavariable-regex:
+          metavariable: $REPO
+          regex: '^[a-zA-Z_][a-zA-Z0-9_]*Repository$'
