@@ -40,4 +40,4 @@ LABEL com.datadoghq.tags.version=${DD_GIT_COMMIT_SHA}
 EXPOSE 8080
 
 # Default entry point for hot reload development
-ENTRYPOINT ["dotnet", "watch", "run", "--project", "src/Stickerlandia.UserManagement.Api", "--urls", "http://0.0.0.0:8080"]
+ENTRYPOINT ["dotnet", "watch", "--project", "src/Stickerlandia.UserManagement.Api", "--urls", "http://0.0.0.0:8080"]

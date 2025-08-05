@@ -7,7 +7,8 @@ internal static class TestConstants
 
     // OAuth2.0 Configuration
     public static string OAuth2ClientId = "web-ui";
-    public static string OAuth2RedirectUri = "https://localhost:3000/callback";
+    public static string OAuth2ClientSecret = "stickerlandia-web-ui-secret-2025";
+    public static string OAuth2RedirectUri = "http://localhost:8080/api/app/auth/callback";
     public static string[] OAuth2Scopes = ["offline_access"];
     
     // OAuth2.0 Endpoints
