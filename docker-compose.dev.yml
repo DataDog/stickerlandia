@@ -61,24 +61,53 @@ services:
       - go-mod-cache:/go/pkg/mod     # Persist Go module cache
     command: ["air", "-c", ".air.toml"]
 
-  user-management:
-    build:
-      context: ./user-management
-      dockerfile: Dockerfile.dev
-    volumes:
-      # Mount source code for live reload
-      - ./user-management:/app:cached
-      # Mount NuGet cache to speed up builds
-      - nuget-cache:/root/.nuget/packages
-    environment:
-      # Configure driven adapters
-      - DRIVEN=AGNOSTIC
-      # Development environment
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:8080
+  #
+  # Hot reload for user-management doesn't work yet, so let's
+  # comment this out so the user-management without reloading
+  # from the main compose file gets used.
+  # 
+  # user-management:
+  #   build:
+  #     context: ./user-management
+  #     dockerfile: Dockerfile.dev
+  #   volumes:
+  #     # Mount source code for live reload
+  #     - ./user-management:/app:cached
+  #     # Mount NuGet cache to speed up builds
+  #     - nuget-cache:/root/.nuget/packages
+  #   environment:
+  #     # Configure driven adapters
+  #     - DRIVEN=AGNOSTIC
+  #     # Development environment
+  #     - ASPNETCORE_ENVIRONMENT=Development
+  #     - ASPNETCORE_URLS=http://+:8080
 
+  # web-frontend:
+  #   # platform: linux/amd64  # Force x86-64 to avoid ARM64 rollup issues
+  #   build:
+  #     context: ./web-frontend
+  #     dockerfile: Dockerfile.dev
+  #   volumes:
+  #     # Mount source code for live reload
+  #     - ./web-frontend:/app:cached
+  #     # Mount node modules over the top, so that modules from the host don't get used
+  #     # this is necessary for platform-specific modules.
+  #     - web-frontend-node-modules-cache:/app/node_modules:cached
+  #     # Mount npm cache to speed up builds
+  #     - npm-cache:/root/.npm
+  #   environment:
+  #     # Vite configuration for development
+  #     - VITE_API_BASE_URL=http://localhost:8080
+  #     - NODE_ENV=
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.web-frontend.rule=PathPrefix(`/`)"
+  #     - "traefik.http.routers.web-frontend.priority=1"
+  #     - "traefik.http.services.web-frontend.loadbalancer.server.port=8080"
 
 volumes:
   maven-cache:
   go-mod-cache:
   nuget-cache:
+  npm-cache:
+  web-frontend-node-modules-cache:
