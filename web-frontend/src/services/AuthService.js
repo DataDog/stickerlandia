@@ -1,6 +1,8 @@
+import apiConfig from '../config/apiConfig.js'
+
 class AuthService {
   constructor() {
-    this.baseUrl = '/api/app/auth'
+    this.baseUrl = apiConfig.bffBaseUrl
   }
 
   storeToken(accessToken, expiresAt) {
@@ -46,8 +48,27 @@ class AuthService {
       })
       
       if (response.redirected) {
-        // BFF is redirecting to IdP
-        window.location.href = response.url
+        // Check if this is our success endpoint
+        if (response.url.includes('/api/app/auth/success')) {
+          // Get the JSON response and handle client-side redirect
+          const successResponse = await fetch(response.url, {
+            credentials: 'include'
+          })
+          if (successResponse.ok) {
+            const data = await successResponse.json()
+            if (data.success && data.redirectUrl) {
+              // Store tokens and navigate
+              if (data.access_token && data.expires_at) {
+                this.storeToken(data.access_token, data.expires_at)
+              }
+              window.location.href = data.redirectUrl
+              return
+            }
+          }
+        } else {
+          // BFF is redirecting to IdP
+          window.location.href = response.url
+        }
       } else if (response.ok) {
         // If no redirect, manually redirect to the auth URL
         const data = await response.json()

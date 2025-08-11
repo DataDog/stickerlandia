@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:hotcontainer": "VITE_MODE=hotcontainer vite",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"

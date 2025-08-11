@@ -291,6 +291,8 @@ services:
       - "traefik.http.routers.user-management.priority=100"
       - "traefik.http.routers.auth.rule=PathRegexp(`(?i)^/auth`)"
       - "traefik.http.routers.auth.priority=100"
+      - "traefik.http.routers.wellknown.rule=PathPrefix(`/.well-known`)"
+      - "traefik.http.routers.wellknown.priority=100"
       - "traefik.http.services.user-management.loadbalancer.server.port=8080"
 
   user-management-worker:

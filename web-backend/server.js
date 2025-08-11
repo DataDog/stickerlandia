@@ -6,7 +6,7 @@ const { Issuer, generators } = require('openid-client')
 const lusca = require('lusca')
 const rateLimit = require('express-rate-limit')
 const app = express()
-const port = 3000
+const port = process.env.PORT || 3000
 
 // Security headers with Helmet
 app.use(helmet({
@@ -43,6 +43,23 @@ app.use(session({
 }))
 
 app.use(express.json())
+
+// CORS for standalone frontend development
+app.use((req, res, next) => {
+  const origin = req.headers.origin
+  if (origin === 'http://localhost:8090') {
+    res.header('Access-Control-Allow-Origin', origin)
+    res.header('Access-Control-Allow-Credentials', 'true')
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-CSRF-Token')
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+    
+    if (req.method === 'OPTIONS') {
+      res.status(200).end()
+      return
+    }
+  }
+  next()
+})
 
 // CSRF protection using Lusca
 app.use(lusca({
@@ -132,7 +149,9 @@ app.post('/api/app/auth/login', loginRateLimit, (req, res) => {
   req.session.oauth = {
     code_verifier,
     state,
-    nonce
+    nonce,
+    // Remember if this request came from standalone frontend
+    isStandaloneFrontend: req.headers.origin === 'http://localhost:8090'
   }
   
   // Generate authorization URL and make it relative by dropping hostname
@@ -226,15 +245,40 @@ app.get('/api/app/auth/callback', async (req, res) => {
     // Clear OAuth temp data
     delete req.session.oauth
 
-    // Redirect back to frontend with token in query params (for new client-side flow)
+    // For standalone frontend, redirect to a special endpoint that returns JSON
+    // For container frontend, use normal redirect
     const queryParams = new URLSearchParams()
     queryParams.set('access_token', tokenSet.access_token)
     queryParams.set('expires_at', tokenSet.expires_at)
-    res.redirect(`/?${queryParams.toString()}`)
+    
+    if (sessionOAuth.isStandaloneFrontend) {
+      // Redirect to our own success endpoint with the tokens
+      res.redirect(`/api/app/auth/success?${queryParams.toString()}`)
+    } else {
+      // Normal redirect for container frontend
+      res.redirect(`/?${queryParams.toString()}`)
+    }
   } catch (error) {
     console.error('OAuth callback failed:', error)
     res.status(400).send('Authentication failed')
   }
+})
+
+// Success endpoint for standalone frontend OAuth completion
+app.get('/api/app/auth/success', (req, res) => {
+  const { access_token, expires_at } = req.query
+  
+  if (!access_token) {
+    return res.status(400).json({ error: 'Missing access token' })
+  }
+  
+  // Return JSON response telling frontend where to navigate
+  res.json({
+    success: true,
+    redirectUrl: `http://localhost:8090/?access_token=${access_token}&expires_at=${expires_at}`,
+    access_token: access_token,
+    expires_at: expires_at
+  })
 })
 
 // Get current user info (frontend checks this)
@@ -277,7 +321,7 @@ app.post('/api/app/auth/logout', (req, res) => {
     // Generate IdP logout URL
     const logoutUrl = client.endSessionUrl({
       id_token_hint: req.session.tokens.id_token,
-      post_logout_redirect_uri: 'http://localhost:3000'
+      post_logout_redirect_uri: 'http://localhost:8091'
     })
     
     // Clear session

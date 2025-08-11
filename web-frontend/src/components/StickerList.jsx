@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import apiConfig from '../config/apiConfig.js'
 
 const StickerList = () => {
   const [stickers, setStickers] = useState([])
@@ -9,7 +10,7 @@ const StickerList = () => {
     const fetchStickers = async () => {
       try {
         setLoading(true)
-        const response = await fetch('http://localhost:8080/api/stickers/v1')
+        const response = await fetch(`${apiConfig.apiBaseUrl}/api/stickers/v1`)
         
         if (!response.ok) {
           throw new Error(`Failed to fetch stickers: ${response.status}`)
@@ -75,7 +76,7 @@ const StickerList = () => {
             <tr key={sticker.stickerId} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
               <td style={{ padding: '12px' }}>
                 <img 
-                  src={`http://localhost:8080/api/stickers/v1/${sticker.stickerId}/image`}
+                  src={`${apiConfig.apiBaseUrl}/api/stickers/v1/${sticker.stickerId}/image`}
                   alt={sticker.stickerName}
                   style={{
                     width: '50px',

@@ -68,7 +68,7 @@ internal sealed class Worker(
                 ConsentType = OpenIddictConstants.ConsentTypes.Implicit,
                 PostLogoutRedirectUris =
                 {
-                    new Uri("http://localhost:3000")
+                    new Uri("http://localhost:8091")
                 },
                 RedirectUris =
                 {
