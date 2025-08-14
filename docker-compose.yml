@@ -278,6 +278,12 @@ services:
       user-management-db-migrations:
         condition: service_completed_successfully
     environment:
+      # DataDog APM configuration
+      DD_SERVICE: user-management
+      DD_ENV: production
+      DD_VERSION: ${COMMIT_SHA:-latest}
+      DD_AGENT_HOST: host.docker.internal
+      # Application configuration
       ASPNETCORE_ENVIRONMENT: Development
       DRIVING: AGNOSTIC
       DRIVEN: AGNOSTIC
@@ -293,6 +299,8 @@ services:
       interval: 1s
       timeout: 15s
       retries: 5
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.user-management.rule=PathPrefix(`/api/users`)"
@@ -350,11 +358,19 @@ services:
       user-management:
         condition: service_healthy
     environment:
+      # DataDog APM configuration
+      DD_SERVICE: web-backend
+      DD_ENV: production
+      DD_VERSION: ${COMMIT_SHA:-latest}
+      DD_AGENT_HOST: host.docker.internal
+      # Application configuration
       NODE_ENV: development
       OAUTH_ISSUER_INTERNAL: http://user-management:8080
       OAUTH_CLIENT_ID: web-ui
       OAUTH_CLIENT_SECRET: stickerlandia-web-ui-secret-2025
       OAUTH_REDIRECT_URI: http://localhost:8080/api/app/auth/callback
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.web-backend.rule=PathPrefix(`/api/app`)"

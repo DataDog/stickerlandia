@@ -86,12 +86,28 @@ services:
       # Mount NuGet cache to speed up builds
       - nuget-cache:/root/.nuget/packages
     environment:
+      # DataDog APM configuration
+      - DD_SERVICE=user-management
+      - DD_ENV=development
+      - DD_VERSION=${COMMIT_SHA:-dev}
+      - DD_AGENT_HOST=host.docker.internal
       # Configure driven adapters
       - DRIVEN=AGNOSTIC
       # Development environment
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
+  web-backend:
+    environment:
+      # DataDog APM configuration
+      - DD_SERVICE=web-backend
+      - DD_ENV=development
+      - DD_VERSION=${COMMIT_SHA:-dev}
+      - DD_AGENT_HOST=host.docker.internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 volumes:
   maven-cache:
