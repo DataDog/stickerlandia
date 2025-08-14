@@ -1,3 +1,10 @@
+// Datadog APM initialisation (must be required before other imports)
+require('dd-trace').init({
+  service: 'web-backend',
+  env: process.env.DD_ENV || 'local',
+  runtimeMetrics: true,
+  analytics: true
+});
 const express = require('express')
 const session = require('express-session')
 const crypto = require('crypto')
