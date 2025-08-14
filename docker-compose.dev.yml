@@ -63,6 +63,14 @@ services:
     build:
       context: ./sticker-award
       dockerfile: Dockerfile.dev
+    environment:
+      # DataDog APM configuration
+      - DD_SERVICE=sticker-award
+      - DD_ENV=development
+      - DD_VERSION=${COMMIT_SHA:-dev}
+      - DD_AGENT_HOST=host.docker.internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./sticker-award:/app:cached  # Live code reload
       - go-mod-cache:/go/pkg/mod     # Persist Go module cache

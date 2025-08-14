@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+	gintrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/gin-gonic/gin"
 
 	"github.com/datadog/stickerlandia/sticker-award/internal/api/handlers"
 	"github.com/datadog/stickerlandia/sticker-award/internal/api/middleware"
@@ -29,6 +30,7 @@ func Setup(db *gorm.DB, logger *zap.SugaredLogger, cfg *config.Config) *gin.Engi
 	r := gin.New()
 
 	// Global middleware
+	r.Use(gintrace.Middleware("sticker-award"))
 	r.Use(middleware.Logger(logger))
 	r.Use(middleware.Recovery(logger))
 	r.Use(middleware.CORS())

@@ -386,6 +386,11 @@ services:
       redpanda-init:
         condition: service_completed_successfully
     environment:
+      # DataDog APM configuration
+      DD_SERVICE: sticker-award
+      DD_ENV: production
+      DD_VERSION: ${COMMIT_SHA:-latest}
+      DD_AGENT_HOST: host.docker.internal
       # Server configuration
       SERVER_PORT: 8080
       
@@ -413,6 +418,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - default
     labels:

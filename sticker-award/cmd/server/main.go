@@ -14,6 +14,10 @@ import (
 	"github.com/datadog/stickerlandia/sticker-award/internal/config"
 	"github.com/datadog/stickerlandia/sticker-award/internal/infrastructure/database"
 	"github.com/datadog/stickerlandia/sticker-award/pkg/logger"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
+	"gopkg.in/DataDog/dd-trace-go.v1/profiler"
+	sqltrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/database/sql"
+	"github.com/lib/pq"
 )
 
 func main() {
@@ -21,6 +25,26 @@ func main() {
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
+	}
+
+	// Register SQL driver with DataDog tracing BEFORE starting tracer
+	sqltrace.Register("postgres", &pq.Driver{}, sqltrace.WithServiceName("sticker-award"))
+
+	// Start the DataDog tracer
+	tracer.Start()
+	defer tracer.Stop()
+
+	// Setup the DataDog profiler
+	err = profiler.Start(
+		profiler.WithProfileTypes(
+			profiler.CPUProfile,
+			profiler.HeapProfile,
+		),
+	)
+	if err != nil {
+		log.Printf("Warning: Failed to start DataDog profiler: %v", err)
+	} else {
+		defer profiler.Stop()
 	}
 
 	// Initialize logger

@@ -1,6 +1,11 @@
 # Build stage
 FROM golang:1.23-alpine AS builder
 
+ARG GIT_COMMIT_SHA
+ARG GIT_REPOSITORY_URL
+ENV DD_GIT_REPOSITORY_URL=${GIT_REPOSITORY_URL} 
+ENV DD_GIT_COMMIT_SHA=${GIT_COMMIT_SHA}
+
 # Install build dependencies
 RUN apk add --no-cache git ca-certificates tzdata
 
