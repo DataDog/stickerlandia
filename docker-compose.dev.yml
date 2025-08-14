@@ -11,6 +11,11 @@ services:
       # Mount Maven cache to speed up builds
       - maven-cache:/root/.m2
     environment:
+      # DataDog APM configuration
+      - DD_SERVICE=sticker-catalogue
+      - DD_ENV=development
+      - DD_VERSION=${COMMIT_SHA:-dev}
+      - DD_AGENT_HOST=host.docker.internal
       # Use development profile
       - QUARKUS_PROFILE=dev
       # Override any production settings
@@ -46,6 +51,8 @@ services:
       # Expose debug port for remote debugging
       - "5005:5005"
     command: ["./mvnw", "quarkus:dev", "-Dquarkus.http.host=0.0.0.0", "-Dquarkus.devservices.enabled=false"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.sticker-catalogue.rule=PathPrefix(`/api/stickers`)"

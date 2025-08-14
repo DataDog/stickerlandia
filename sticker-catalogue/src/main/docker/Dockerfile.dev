@@ -14,7 +14,15 @@ FROM ubuntu:25.04
 ENV LANGUAGE='en_US:en'
 
 # Install all the things
-RUN apt-get update && apt-get install -y openjdk-24-jdk maven curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y openjdk-24-jdk maven curl wget && rm -rf /var/lib/apt/lists/*
+
+ARG GIT_COMMIT_SHA
+ARG GIT_REPOSITORY_URL
+ENV DD_GIT_REPOSITORY_URL=${GIT_REPOSITORY_URL} 
+ENV DD_GIT_COMMIT_SHA=${GIT_COMMIT_SHA}
+
+# Download Datadog Java APM agent with fixed version
+RUN wget -O /opt/dd-java-agent.jar 'https://repo1.maven.org/maven2/com/datadoghq/dd-java-agent/1.38.1/dd-java-agent-1.38.1.jar'
 
 # Set working directory
 WORKDIR /work
@@ -35,6 +43,9 @@ RUN cd /src && mvn dependency:resolve
 # Expose application and debug ports
 EXPOSE 8080 5005
 
+# Set environment variable to include Java agent with Quarkus-specific tuning
+ENV JAVA_OPTS="-javaagent:/opt/dd-java-agent.jar -Ddd.trace.integration.vertx.enabled=false -Ddd.trace.executors=org.jboss.threads.EnhancedQueueExecutor"
+
 # Default command runs Quarkus dev mode with proper dev services disabled
 # This can be overridden in docker-compose
-CMD ["./mvnw", "quarkus:dev", "-Dquarkus.http.host=0.0.0.0", "-Dquarkus.devservices.enabled=false"]
+CMD ["./mvnw", "quarkus:dev", "-Dquarkus.http.host=0.0.0.0", "-Dquarkus.devservices.enabled=false", "-Dquarkus.jvm.args=-javaagent:/opt/dd-java-agent.jar"]
