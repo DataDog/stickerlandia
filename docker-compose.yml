@@ -382,7 +382,15 @@ services:
       context: ./web-frontend
       dockerfile: Dockerfile
     environment:
+      # Application configuration
       NODE_ENV: production
+      # Datadog RUM configuration (runtime injection via vite-envs)
+      DD_RUM_APPLICATION_ID: ${DD_RUM_APPLICATION_ID}
+      DD_RUM_CLIENT_TOKEN: ${DD_RUM_CLIENT_TOKEN}
+      DD_SITE: ${DD_SITE:-datadoghq.eu}
+      DD_ENV: production
+      DD_VERSION: ${COMMIT_SHA:-latest}
+      DD_SERVICE: web-frontend
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.web-frontend.rule=PathPrefix(`/`)"

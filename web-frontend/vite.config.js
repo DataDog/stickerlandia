@@ -2,10 +2,11 @@
 
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { viteEnvs } from "vite-envs";
 
 export default defineConfig({
  base: "/",
- plugins: [react()],
+ plugins: [react(), viteEnvs()],
  preview: {
   port: 5173,
   strictPort: true,

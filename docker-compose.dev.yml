@@ -134,6 +134,16 @@ services:
        - "traefik.http.routers.web-frontend.priority=1"
        - "traefik.http.services.web-frontend.loadbalancer.server.port=8080"
 
+  web-frontend:
+    environment:
+      # Datadog RUM configuration (runtime injection via vite-envs)
+      - DD_RUM_APPLICATION_ID=${DD_RUM_APPLICATION_ID}
+      - DD_RUM_CLIENT_TOKEN=${DD_RUM_CLIENT_TOKEN}
+      - DD_SITE=${DD_SITE:-datadoghq.eu}
+      - DD_ENV=development
+      - DD_VERSION=${COMMIT_SHA:-dev}
+      - DD_SERVICE=web-frontend
+
 volumes:
   maven-cache:
   go-mod-cache:
