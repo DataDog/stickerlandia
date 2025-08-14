@@ -233,7 +233,7 @@ services:
     environment:
       # DataDog APM configuration
       DD_SERVICE: sticker-catalogue
-      DD_ENV: production
+      DD_ENV: development
       DD_VERSION: ${COMMIT_SHA:-latest}
       DD_AGENT_HOST: host.docker.internal
       # Application configuration
@@ -280,7 +280,7 @@ services:
     environment:
       # DataDog APM configuration
       DD_SERVICE: user-management
-      DD_ENV: production
+      DD_ENV: development
       DD_VERSION: ${COMMIT_SHA:-latest}
       DD_AGENT_HOST: host.docker.internal
       # Application configuration
@@ -360,7 +360,7 @@ services:
     environment:
       # DataDog APM configuration
       DD_SERVICE: web-backend
-      DD_ENV: production
+      DD_ENV: development
       DD_VERSION: ${COMMIT_SHA:-latest}
       DD_AGENT_HOST: host.docker.internal
       # Application configuration
@@ -404,7 +404,7 @@ services:
     environment:
       # DataDog APM configuration
       DD_SERVICE: sticker-award
-      DD_ENV: production
+      DD_ENV: development
       DD_VERSION: ${COMMIT_SHA:-latest}
       DD_AGENT_HOST: host.docker.internal
       # Server configuration
