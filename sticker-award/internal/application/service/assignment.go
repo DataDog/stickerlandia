@@ -15,6 +15,7 @@ import (
 	"github.com/datadog/stickerlandia/sticker-award/internal/infrastructure/external/catalogue"
 	"github.com/datadog/stickerlandia/sticker-award/internal/infrastructure/messaging"
 	pkgErrors "github.com/datadog/stickerlandia/sticker-award/pkg/errors"
+	logctx "github.com/datadog/stickerlandia/sticker-award/pkg/logger"
 	"github.com/datadog/stickerlandia/sticker-award/pkg/validator"
 )
 
@@ -51,6 +52,8 @@ func (s *assignmentService) GetUserStickers(ctx context.Context, userID string) 
 	}
 
 	assignments, err := s.assignmentRepo.GetUserAssignments(ctx, userID)
+	// Emit a single Datadog-correlated log entry for the fetch operation
+	logctx.WithTrace(ctx, s.logger).Infow("Fetched user assignments", "userId", userID, "count", len(assignments))
 	if err != nil {
 		s.logger.Errorw("Failed to get user assignments", "userId", userID, "error", err)
 		return nil, pkgErrors.NewInternalServerError("failed to retrieve user assignments", err)

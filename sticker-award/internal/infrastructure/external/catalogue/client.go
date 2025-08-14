@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/datadog/stickerlandia/sticker-award/pkg/errors"
+	httptrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/net/http"
 )
 
 // ErrStickerNotFound is returned when a sticker is not found in the catalogue
@@ -32,11 +33,10 @@ type StickerMetadata struct {
 
 // NewClient creates a new catalogue service client
 func NewClient(baseURL string, timeout time.Duration) *Client {
+	traced := httptrace.WrapClient(&http.Client{Timeout: timeout})
 	return &Client{
-		baseURL: baseURL,
-		httpClient: &http.Client{
-			Timeout: timeout,
-		},
+		baseURL:    baseURL,
+		httpClient: traced,
 	}
 }
 

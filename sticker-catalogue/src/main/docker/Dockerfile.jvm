@@ -82,6 +82,14 @@ FROM registry.access.redhat.com/ubi9/openjdk-21:1.21
 
 ENV LANGUAGE='en_US:en'
 
+ARG GIT_COMMIT_SHA
+ARG GIT_REPOSITORY_URL
+ENV DD_GIT_REPOSITORY_URL=${GIT_REPOSITORY_URL} 
+ENV DD_GIT_COMMIT_SHA=${GIT_COMMIT_SHA}
+
+# Add DD agent with fixed version for build reproducibility
+ADD --chown=185 'https://repo1.maven.org/maven2/com/datadoghq/dd-java-agent/1.38.1/dd-java-agent-1.38.1.jar' /opt/dd-java-agent.jar
+
 
 # We make four distinct layers so if there are application changes the library layers can be re-used
 COPY --chown=185 target/quarkus-app/lib/ /deployments/lib/
@@ -91,7 +99,7 @@ COPY --chown=185 target/quarkus-app/quarkus/ /deployments/quarkus/
 
 EXPOSE 8080
 USER 185
-ENV JAVA_OPTS_APPEND="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
+ENV JAVA_OPTS_APPEND="-javaagent:/opt/dd-java-agent.jar -Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager -Ddd.trace.integration.vertx.enabled=false -Ddd.trace.executors=org.jboss.threads.EnhancedQueueExecutor"
 ENV JAVA_APP_JAR="/deployments/quarkus-run.jar"
 
 ENTRYPOINT [ "/opt/jboss/container/java/run/run-java.sh" ]

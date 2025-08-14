@@ -4,6 +4,11 @@
 
 FROM golang:1.24-alpine
 
+ARG GIT_COMMIT_SHA
+ARG GIT_REPOSITORY_URL
+ENV DD_GIT_REPOSITORY_URL=${GIT_REPOSITORY_URL} 
+ENV DD_GIT_COMMIT_SHA=${GIT_COMMIT_SHA}
+
 # Install OS dependencies and dev tools
 RUN apk add --no-cache git bash curl tzdata \
     && go install github.com/air-verse/air@latest \
