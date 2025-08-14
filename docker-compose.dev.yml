@@ -76,28 +76,30 @@ services:
       - go-mod-cache:/go/pkg/mod     # Persist Go module cache
     command: ["air", "-c", ".air.toml"]
 
-  user-management:
-    build:
-      context: ./user-management
-      dockerfile: Dockerfile.dev
-    volumes:
-      # Mount source code for live reload
-      - ./user-management:/app:cached
-      # Mount NuGet cache to speed up builds
-      - nuget-cache:/root/.nuget/packages
-    environment:
-      # DataDog APM configuration
-      - DD_SERVICE=user-management
-      - DD_ENV=development
-      - DD_VERSION=${COMMIT_SHA:-dev}
-      - DD_AGENT_HOST=host.docker.internal
-      # Configure driven adapters
-      - DRIVEN=AGNOSTIC
-      # Development environment
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:8080
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+  # user-management doesn't run in hot reload mode yet! 
+  # commented out so we fall back to the non-reloading service in docker-compose.yml
+  # user-management:
+  #   build:
+  #     context: ./user-management
+  #     dockerfile: Dockerfile.dev
+  #   volumes:
+  #     # Mount source code for live reload
+  #     - ./user-management:/app:cached
+  #     # Mount NuGet cache to speed up builds
+  #     - nuget-cache:/root/.nuget/packages
+  #   environment:
+  #     # DataDog APM configuration
+  #     - DD_SERVICE=user-management
+  #     - DD_ENV=development
+  #     - DD_VERSION=${COMMIT_SHA:-dev}
+  #     - DD_AGENT_HOST=host.docker.internal
+  #     # Configure driven adapters
+  #     - DRIVEN=AGNOSTIC
+  #     # Development environment
+  #     - ASPNETCORE_ENVIRONMENT=Development
+  #     - ASPNETCORE_URLS=http://+:8080
+  #   extra_hosts:
+  #     - "host.docker.internal:host-gateway"
 
   web-backend:
     environment:
