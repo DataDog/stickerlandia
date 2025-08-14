@@ -14,10 +14,10 @@ import (
 	"github.com/datadog/stickerlandia/sticker-award/internal/config"
 	"github.com/datadog/stickerlandia/sticker-award/internal/infrastructure/database"
 	"github.com/datadog/stickerlandia/sticker-award/pkg/logger"
+	"github.com/lib/pq"
+	sqltrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/database/sql"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 	"gopkg.in/DataDog/dd-trace-go.v1/profiler"
-	sqltrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/database/sql"
-	"github.com/lib/pq"
 )
 
 func main() {

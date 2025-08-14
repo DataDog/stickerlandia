@@ -5,8 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
-	"gorm.io/gorm"
 	gintrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/gin-gonic/gin"
+	"gorm.io/gorm"
 
 	"github.com/datadog/stickerlandia/sticker-award/internal/api/handlers"
 	"github.com/datadog/stickerlandia/sticker-award/internal/api/middleware"

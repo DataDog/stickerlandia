@@ -14,10 +14,8 @@ import (
 
 // Connect establishes a connection to the PostgreSQL database
 func Connect(cfg *config.DatabaseConfig) (*gorm.DB, error) {
-	dsn := cfg.ConnectionString()
-
 	// Open traced SQL connection using the registered driver (like sdlc sample)
-	sqlDB, err := sqltrace.Open("postgres", dsn)
+	sqlDB, err := sqltrace.Open("postgres", cfg.ConnectionString())
 	if err != nil {
 		return nil, fmt.Errorf("failed to open traced database connection: %w", err)
 	}

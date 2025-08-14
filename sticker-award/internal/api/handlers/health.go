@@ -27,30 +27,7 @@ func NewHealthHandler(db *gorm.DB, logger *zap.SugaredLogger) *HealthHandler {
 
 // Handle handles the health check endpoint
 func (h *HealthHandler) Handle(c *gin.Context) {
-	// Check database connection
-	sqlDB, err := h.db.DB()
-	if err != nil {
-		h.logger.Errorw("Failed to get database connection", "error", err)
-		c.JSON(http.StatusServiceUnavailable, dto.ProblemDetails{
-			Type:   stringPtr("about:blank"),
-			Title:  stringPtr("Service Unavailable"),
-			Status: intPtr(http.StatusServiceUnavailable),
-			Detail: stringPtr("Database connection check failed"),
-		})
-		return
-	}
-
-	if err := sqlDB.Ping(); err != nil {
-		h.logger.Errorw("Database ping failed", "error", err)
-		c.JSON(http.StatusServiceUnavailable, dto.ProblemDetails{
-			Type:   stringPtr("about:blank"),
-			Title:  stringPtr("Service Unavailable"),
-			Status: intPtr(http.StatusServiceUnavailable),
-			Detail: stringPtr("Database is not accessible"),
-		})
-		return
-	}
-
+	// Simple liveness response – no DB checks to avoid extra spans
 	c.JSON(http.StatusOK, dto.HealthResponse{
 		Status: "healthy",
 		Time:   time.Now().UTC().Format(time.RFC3339),
