@@ -14,7 +14,7 @@ import java
 
 from Class restClass, RefType entityType, Element reference
 where
-  // Match REST API classes by fully qualified package name
+  // Match REST API classes by fully qualified class name
   (
     restClass.getQualifiedName() = "com.datadoghq.stickerlandia.stickercatalogue.StickerResource" or
     restClass.getQualifiedName() = "com.datadoghq.stickerlandia.stickercatalogue.award.StickerAwardResource"
@@ -24,6 +24,7 @@ where
   entityType.getQualifiedName().matches("%.entity.%") and
   
   // Find references to entity types in fields, methods, or parameters
+  // This isn't just matching on imports, it's finding concrete usages!
   (
     exists(Field f | f.getDeclaringType() = restClass and f.getType() = entityType and reference = f) or
     exists(Method m | m.getDeclaringType() = restClass and m.getReturnType() = entityType and reference = m) or

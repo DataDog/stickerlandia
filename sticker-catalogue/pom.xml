@@ -228,8 +228,9 @@
                 <artifactId>spotless-maven-plugin</artifactId>
                 <version>${spotless-plugin.version}</version>
                 <configuration>
+                    <!-- These are transformation steps applied to your codebase -->
                     <java>
-                        <!-- Apply Google Java Format with 4-space indentation -->
+                        <!-- 1. Apply Google Java Format with 4-space indentation -->
                         <googleJavaFormat>
                             <version>1.19.2</version>
                             <style>AOSP</style> <!-- AOSP style uses 4-space indentation -->
@@ -237,6 +238,7 @@
 
                         <!-- Remove unused imports -->
                         <removeUnusedImports/>
+
                         <!-- Format files -->
                         <includes>
                             <include>src/main/java/**/*.java</include>
@@ -267,6 +269,45 @@
                 <skipITs>false</skipITs>
                 <quarkus.native.enabled>true</quarkus.native.enabled>
             </properties>
+        </profile>
+        <!-- Turn off spotless, checkstyle, and errorprone -->
+        <profile>
+            <id>no-static-analysis</id>
+            <properties>
+                <!-- Skip Checkstyle when this profile is active -->
+                <checkstyle.skip>true</checkstyle.skip>
+                <spotless.skip>true</spotless.skip>
+                <skipTests>true</skipTests>
+            </properties>
+
+            <build>
+                <plugins>
+                    <!-- Replace the compiler config so Error Prone isn't wired in -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <version>${compiler-plugin.version}</version>
+                        <!-- Override the whole config to drop -Xplugin:ErrorProne, add-exports, etc. -->
+                        <configuration combine.self="override">
+                            <encoding>UTF-8</encoding>
+                            <fork>true</fork>
+                            <release>${maven.compiler.release}</release>
+                            <!-- no compilerArgs, no annotationProcessorPaths: EP is off -->
+                        </configuration>
+                    </plugin>
+                    <!-- (Optional) If you prefer an explicit override instead of the property above,
+                         uncomment this block to force-skip Checkstyle via configuration.
+                    <plugin>
+                      <groupId>org.apache.maven.plugins</groupId>
+                      <artifactId>maven-checkstyle-plugin</artifactId>
+                      <version>${checkstyle-plugin.version}</version>
+                      <configuration>
+                        <skip>true</skip>
+                      </configuration>
+                    </plugin>
+                    -->
+                </plugins>
+            </build>
         </profile>
     </profiles>
 </project>

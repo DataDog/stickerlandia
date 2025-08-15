@@ -2,6 +2,8 @@ rules:
   - id: path-class-mapping
     languages: [java]
     severity: INFO
+    # You can't do 'message' variable expansion with the
+    # inline CLI syntax, so we need the YAML!
     message: "Class $C is mapped to path $A"
     pattern: |
       @Path($A)

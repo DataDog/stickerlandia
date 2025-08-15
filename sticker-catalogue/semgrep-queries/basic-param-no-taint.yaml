@@ -1,13 +1,16 @@
 rules:
   - id: param-used-in-repo-call-no-taint
-    message: "Method parameter $PARAM flows into $REPO.$METHOD"
+    message: "Method parameter $PARAM flows into $REPO.$METHOD in function $FUNC"
     severity: WARNING
     languages: [java]
     patterns:
+      # We want to find things inside of functions that take PARAMs
       - pattern-inside: |
           public $RET $FUNC(..., $TYPE $PARAM, ...) { ... }
+      # ... where those PARAMs are called into things that look like repositories
       - pattern: |
           $REPO.$METHOD(..., $PARAM, ...)
       - metavariable-regex:
+          # ... and this is what we think a repository looks like
           metavariable: $REPO
           regex: '^[a-zA-Z_][a-zA-Z0-9_]*Repository$'

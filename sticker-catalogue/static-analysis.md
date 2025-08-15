@@ -1,6 +1,7 @@
 # Checkstyle
 
 Formatting lints, using the Google style guide checkstyle template:
+[checkstyle.xml](checkstyle.xml)
 ```bash
 mvn checkstyle:check
 ``` 
@@ -8,12 +9,15 @@ mvn checkstyle:check
 And we can fix _some of that_, if we want, with spotless:
 
 ```bash
+mvn spotless:check
+```
+
+```bash
 mvn spotless:apply
 ```
 
 We can also go checkout [checkstyle.xml](checkstyle.xml) and customize the things that irk us.
 ... ish. It can't write javadoc for us!
-
 
 # Error Prone
 
