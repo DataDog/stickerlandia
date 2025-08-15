@@ -235,7 +235,7 @@ services:
       DD_SERVICE: sticker-catalogue
       DD_ENV: development
       DD_VERSION: ${COMMIT_SHA:-latest}
-      DD_AGENT_HOST: host.docker.internal
+      DD_AGENT_HOST: datadog-agent
       # Application configuration
       QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://sticker-catalogue-db:5432/sticker_catalogue
       QUARKUS_DATASOURCE_USERNAME: sticker_user
@@ -257,8 +257,6 @@ services:
       interval: 1s
       timeout: 10s
       retries: 5
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.sticker-catalogue.rule=PathPrefix(`/api/stickers`)"
@@ -282,7 +280,7 @@ services:
       DD_SERVICE: user-management
       DD_ENV: development
       DD_VERSION: ${COMMIT_SHA:-latest}
-      DD_AGENT_HOST: host.docker.internal
+      DD_AGENT_HOST: datadog-agent
       # Application configuration
       ASPNETCORE_ENVIRONMENT: Development
       DRIVING: AGNOSTIC
@@ -299,8 +297,6 @@ services:
       interval: 1s
       timeout: 15s
       retries: 5
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.user-management.rule=PathPrefix(`/api/users`)"
@@ -362,15 +358,13 @@ services:
       DD_SERVICE: web-backend
       DD_ENV: development
       DD_VERSION: ${COMMIT_SHA:-latest}
-      DD_AGENT_HOST: host.docker.internal
+      DD_AGENT_HOST: datadog-agent
       # Application configuration
       NODE_ENV: development
       OAUTH_ISSUER_INTERNAL: http://user-management:8080
       OAUTH_CLIENT_ID: web-ui
       OAUTH_CLIENT_SECRET: stickerlandia-web-ui-secret-2025
       OAUTH_REDIRECT_URI: http://localhost:8080/api/app/auth/callback
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.web-backend.rule=PathPrefix(`/api/app`)"
@@ -382,7 +376,15 @@ services:
       context: ./web-frontend
       dockerfile: Dockerfile
     environment:
+      # Application configuration
       NODE_ENV: production
+      # Datadog RUM configuration (runtime injection via vite-envs)
+      DD_RUM_APPLICATION_ID: ${DD_RUM_APPLICATION_ID}
+      DD_RUM_CLIENT_TOKEN: ${DD_RUM_CLIENT_TOKEN}
+      DD_SITE: ${DD_SITE:-datadoghq.eu}
+      DD_ENV: production
+      DD_VERSION: ${COMMIT_SHA:-latest}
+      DD_SERVICE: web-frontend
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.web-frontend.rule=PathPrefix(`/`)"
@@ -406,7 +408,7 @@ services:
       DD_SERVICE: sticker-award
       DD_ENV: development
       DD_VERSION: ${COMMIT_SHA:-latest}
-      DD_AGENT_HOST: host.docker.internal
+      DD_AGENT_HOST: datadog-agent
       # Server configuration
       SERVER_PORT: 8080
       
@@ -434,8 +436,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     networks:
       - default
     labels:
@@ -443,6 +443,53 @@ services:
       - "traefik.http.routers.sticker-award.rule=PathPrefix(`/api/awards`)"
       - "traefik.http.routers.sticker-award.priority=100"
       - "traefik.http.services.sticker-award.loadbalancer.server.port=8080"
+
+  datadog-agent:
+    image: datadog/agent:7
+    container_name: datadog-agent
+    profiles:
+      - monitoring
+    environment:
+      # Core Datadog configuration
+      - DD_API_KEY=${DD_API_KEY}
+      - DD_SITE=${DD_SITE:-datadoghq.eu}
+      - DD_HOSTNAME=stickerlandia-dev
+      - DD_TAGS=env:development,project:stickerlandia
+      
+      # APM (Application Performance Monitoring) configuration
+      - DD_APM_ENABLED=true
+      - DD_APM_NON_LOCAL_TRAFFIC=true
+      - DD_APM_RECEIVER_PORT=8126
+      
+      # Log collection configuration
+      - DD_LOGS_ENABLED=true
+      - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
+      - DD_LOGS_CONFIG_AUTO_MULTI_LINE_DETECTION=true
+      
+      # Container monitoring
+      - DD_CONTAINER_EXCLUDE_LOGS=name:datadog-agent
+      - DD_CONTAINER_EXCLUDE_METRICS=name:datadog-agent
+      
+      # OTLP configuration for OpenTelemetry
+      - DD_OTLP_CONFIG_RECEIVER_PROTOCOLS_GRPC_ENDPOINT=0.0.0.0:4317
+      - DD_OTLP_CONFIG_RECEIVER_PROTOCOLS_HTTP_ENDPOINT=0.0.0.0:4318
+      
+      # Docker integration
+      - DD_DOCKER_LABELS_AS_TAGS=true
+      - DD_DOCKER_ENV_AS_TAGS=true
+    volumes:
+      # Docker socket for container monitoring
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # System directories for host metrics
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "agent", "health"]
+      interval: 2s
+      timeout: 30s
+      retries: 20
+      start_period: 40s
 
 volumes:
   sticker-catalogue-data:

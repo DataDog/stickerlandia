@@ -2,3 +2,8 @@
 **/.cursor
 **/.claude/settings.local.json
 .cursor
+
+# Ignore .env, except in web-frontend, where an
+# empty copy is needed for vite-envs to work.
+.env
+!web-frontend/.env

@@ -18,11 +18,8 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
-    - name: Build services
-      run: docker compose build
-    
-    - name: Start services
-      run: make compose-up
+    - name: Start services (CI mode - no monitoring)
+      run: make compose-up-ci
 
     - name: Wait for services to be ready
       run: make wait-for-services
