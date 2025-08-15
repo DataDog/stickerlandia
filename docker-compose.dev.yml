@@ -15,7 +15,7 @@ services:
       - DD_SERVICE=sticker-catalogue
       - DD_ENV=development
       - DD_VERSION=${COMMIT_SHA:-dev}
-      - DD_AGENT_HOST=host.docker.internal
+      - DD_AGENT_HOST=datadog-agent
       # Use development profile
       - QUARKUS_PROFILE=dev
       # Override any production settings
@@ -51,8 +51,6 @@ services:
       # Expose debug port for remote debugging
       - "5005:5005"
     command: ["./mvnw", "quarkus:dev", "-Dquarkus.http.host=0.0.0.0", "-Dquarkus.devservices.enabled=false"]
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.sticker-catalogue.rule=PathPrefix(`/api/stickers`)"
@@ -68,9 +66,7 @@ services:
       - DD_SERVICE=sticker-award
       - DD_ENV=development
       - DD_VERSION=${COMMIT_SHA:-dev}
-      - DD_AGENT_HOST=host.docker.internal
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - DD_AGENT_HOST=datadog-agent
     volumes:
       - ./sticker-award:/app:cached  # Live code reload
       - go-mod-cache:/go/pkg/mod     # Persist Go module cache
@@ -107,35 +103,25 @@ services:
       - DD_SERVICE=web-backend
       - DD_ENV=development
       - DD_VERSION=${COMMIT_SHA:-dev}
-      - DD_AGENT_HOST=host.docker.internal
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-      
-   web-frontend:
-     # platform: linux/amd64  # Force x86-64 to avoid ARM64 rollup issues
-     build:
-       context: ./web-frontend
-       dockerfile: Dockerfile.dev
-     volumes:
-       # Mount source code for live reload
-       - ./web-frontend:/app:cached
-       # Mount node modules over the top, so that modules from the host don't get used
-       # this is necessary for platform-specific modules.
-       - web-frontend-node-modules-cache:/app/node_modules:cached
-       # Mount npm cache to speed up builds
-       - npm-cache:/root/.npm
-     environment:
-       # Vite configuration for development
-       - VITE_API_BASE_URL=http://localhost:8080
-       - NODE_ENV=
-     labels:
-       - "traefik.enable=true"
-       - "traefik.http.routers.web-frontend.rule=PathPrefix(`/`)"
-       - "traefik.http.routers.web-frontend.priority=1"
-       - "traefik.http.services.web-frontend.loadbalancer.server.port=8080"
+      - DD_AGENT_HOST=datadog-agent
 
   web-frontend:
+    # platform: linux/amd64  # Force x86-64 to avoid ARM64 rollup issues
+    build:
+      context: ./web-frontend
+      dockerfile: Dockerfile.dev
+    volumes:
+      # Mount source code for live reload
+      - ./web-frontend:/app:cached
+      # Mount node modules over the top, so that modules from the host don't get used
+      # this is necessary for platform-specific modules.
+      - web-frontend-node-modules-cache:/app/node_modules:cached
+      # Mount npm cache to speed up builds
+      - npm-cache:/root/.npm
     environment:
+      # Vite configuration for development
+      - VITE_API_BASE_URL=http://localhost:8080
+      - NODE_ENV=
       # Datadog RUM configuration (runtime injection via vite-envs)
       - DD_RUM_APPLICATION_ID=${DD_RUM_APPLICATION_ID}
       - DD_RUM_CLIENT_TOKEN=${DD_RUM_CLIENT_TOKEN}
@@ -143,6 +129,11 @@ services:
       - DD_ENV=development
       - DD_VERSION=${COMMIT_SHA:-dev}
       - DD_SERVICE=web-frontend
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.web-frontend.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.web-frontend.priority=1"
+      - "traefik.http.services.web-frontend.loadbalancer.server.port=8080"
 
 volumes:
   maven-cache:
