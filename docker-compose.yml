@@ -447,6 +447,8 @@ services:
   datadog-agent:
     image: datadog/agent:7
     container_name: datadog-agent
+    profiles:
+      - monitoring
     environment:
       # Core Datadog configuration
       - DD_API_KEY=${DD_API_KEY}
@@ -484,9 +486,9 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "agent", "health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      interval: 2s
+      timeout: 30s
+      retries: 20
       start_period: 40s
 
 volumes:
