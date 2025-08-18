@@ -72,6 +72,17 @@ To run Stickerlandia locally, follow these steps:
    - **Development (hot reloading)**: `docker-compose -f docker-compose.yml -f docker-compose.dev.yml up` - Live code reloading for active development
 4. Access the application at `http://localhost:8080`
 
+### Default User
+
+If you startup the entire application locally, database migrations are applied to the user service and two default users are created:
+
+- User
+    - Email address: user@stickerlandia.com
+    - Password: Stickerlandia2025!
+- Admin User
+    - Email address: admin@stickerlandia.com
+    - Password: Admin2025!
+
 For detailed setup instructions, see the [environment setup guide](./docs/README.md).
 
 > [!NOTE]
