@@ -281,6 +281,9 @@ services:
       DD_ENV: development
       DD_VERSION: ${COMMIT_SHA:-latest}
       DD_AGENT_HOST: datadog-agent
+      DD_TRACE_OTEL_ENABLED: "true"
+      DD_LOGS_INJECTION: "true"
+      DD_RUNTIME_METRICS_ENABLED: "true"
       # Application configuration
       ASPNETCORE_ENVIRONMENT: Development
       DRIVING: AGNOSTIC
@@ -316,6 +319,14 @@ services:
       redpanda:
         condition: service_healthy
     environment:
+      # DataDog APM configuration
+      DD_SERVICE: user-management-worker
+      DD_ENV: development
+      DD_VERSION: ${COMMIT_SHA:-latest}
+      DD_AGENT_HOST: datadog-agent
+      DD_TRACE_OTEL_ENABLED: "true"
+      DD_LOGS_INJECTION: "true"
+      DD_RUNTIME_METRICS_ENABLED: "true"
       ASPNETCORE_ENVIRONMENT: Development
       DRIVING: AGNOSTIC
       DRIVEN: AGNOSTIC
@@ -335,6 +346,14 @@ services:
       user-management-db:
         condition: service_healthy
     environment:
+      # DataDog APM configuration
+      DD_SERVICE: user-management-migration-service
+      DD_ENV: development
+      DD_VERSION: ${COMMIT_SHA:-latest}
+      DD_AGENT_HOST: datadog-agent
+      DD_TRACE_OTEL_ENABLED: "true"
+      DD_LOGS_INJECTION: "true"
+      DD_RUNTIME_METRICS_ENABLED: "true"
       ASPNETCORE_ENVIRONMENT: Development
       DRIVING: AGNOSTIC
       DRIVEN: AGNOSTIC
