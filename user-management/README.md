@@ -54,6 +54,7 @@ The project follows a ports and adapters architecture style, split down into `Dr
 
 - **Stickerlandia.UserManagement.Api** - Driving adapters for a containerized ASP.NET minimal API
 - **Stickerlandia.UserManagement.Worker** - A seperate background worker service for agnostic background workers
+- **Stickerlandia.UserManagement.Migration Service** - An independent background worker for running database migrations and seeding initial user data
 - **Stickerlandia.UserManagement.FunctionApp** - Driving adapters for a Azure function app background workers
 - **Stickerlandia.UserManagement.Lambda** - Driving adapters for AWS Lambda background workers
 
@@ -126,6 +127,17 @@ The service implements a complete OAuth 2.0 authorization server using [OpenIddi
 - **Scopes**: `email`, `profile`, `roles`
 - **API Authentication**: JWT Bearer tokens required for all endpoints except `/health` and `/register`
 - **Access Control**: Users can only operate on their own accounts unless they have admin privileges
+
+### Default User
+
+If you run the **Stickerlandia.UserManagement.Migration Service** the database migrations are applied and two default users are created:
+
+- User
+    - Email address: user@stickerlandia.com
+    - Password: Stickerlandia2025!
+- Admin User
+    - Email address: admin@stickerlandia.com
+    - Password: Admin2025!
 
 ### For Client Applications
 To integrate with this OAuth 2.0 server, client applications should implement the Authorization Code Flow with PKCE. See the [Auth.md documentation](./docs/Auth.md) for sequence diagrams.

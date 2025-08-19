@@ -43,6 +43,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagemen
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.UserManagement.GCP", "src\Stickerlandia.UserManagement.GCP\Stickerlandia.UserManagement.GCP.csproj", "{2A2527C0-B5DA-449F-8509-753CC114997E}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docker", "docker", "{26C19EDB-572E-4FDD-98C7-D1A5FCF92DA7}"
+	ProjectSection(SolutionItems) = preProject
+		..\docker-compose.yml = ..\docker-compose.yml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

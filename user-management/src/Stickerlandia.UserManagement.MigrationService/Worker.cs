@@ -2,6 +2,8 @@ using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
 using Stickerlandia.UserManagement.Agnostic;
+using Stickerlandia.UserManagement.Core;
+using Stickerlandia.UserManagement.Core.RegisterUser;
 
 // Allow catch of a generic exception in the worker to ensure the worker failing doesn't crash the entire application.
 #pragma warning disable CA1031
@@ -19,16 +21,17 @@ internal sealed class Worker(
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        using var activity = s_activitySource.StartActivity("Migrating database", ActivityKind.Client);
+        using var activity = s_activitySource.StartActivity("run.migrationWorker", ActivityKind.Client);
 
         try
         {
             using var scope = serviceProvider.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<UserManagementDbContext>();
             var manager = scope.ServiceProvider.GetRequiredService<IOpenIddictApplicationManager>();
+            var registerUserCommandHandler = scope.ServiceProvider.GetRequiredService<RegisterCommandHandler>();
 
             await RunMigrationAsync(dbContext, cancellationToken);
-            await SeedDataAsync(dbContext, manager, cancellationToken);
+            await SeedDataAsync(dbContext, registerUserCommandHandler, manager, cancellationToken);
         }
         catch (Exception)
         {
@@ -46,6 +49,8 @@ internal sealed class Worker(
 
     private static async Task RunMigrationAsync(UserManagementDbContext dbContext, CancellationToken cancellationToken)
     {
+        using var runMigrationActivity = s_activitySource.StartActivity("run.migration", ActivityKind.Client);
+        
         var strategy = dbContext.Database.CreateExecutionStrategy();
         await strategy.ExecuteAsync(async () =>
         {
@@ -54,9 +59,12 @@ internal sealed class Worker(
         });
     }
 
-    private static async Task SeedDataAsync(UserManagementDbContext dbContext, IOpenIddictApplicationManager manager,
+    private static async Task SeedDataAsync(UserManagementDbContext dbContext, RegisterCommandHandler registerHandler,
+        IOpenIddictApplicationManager manager,
         CancellationToken cancellationToken)
     {
+        using var seedData = s_activitySource.StartActivity("run.seedData", ActivityKind.Client);
+        
         // The web-ui client is for the public web interface and uses the OAuth2.0 authorization code flow with PKCE.
         if (await manager.FindByClientIdAsync("web-ui", cancellationToken) is null)
             await manager.CreateAsync(new OpenIddictApplicationDescriptor
@@ -91,7 +99,43 @@ internal sealed class Worker(
                     OpenIddictConstants.Requirements.Features.ProofKeyForCodeExchange
                 }
             }, cancellationToken);
-        
+
         // As soon as Stickerlandia services need to call other services under their own identities, add them here
+
+        // Seed default user
+        try
+        {
+            var user = await registerHandler.Handle(new RegisterUserCommand
+            {
+                EmailAddress = "user@stickerlandia.com",
+                FirstName = "Default",
+                LastName = "User",
+                Password = "Stickerlandia2025!"
+            }, AccountType.User);
+            
+            seedData?.SetTag("user.default.id", user.AccountId);
+        }
+        catch (UserExistsException)
+        {
+            seedData?.SetTag("user.default.exists", true);
+        }
+
+        try
+        {
+            // Seed default admin
+            var adminUser = await registerHandler.Handle(new RegisterUserCommand
+            {
+                EmailAddress = "admin@stickerlandia.com",
+                FirstName = "Default",
+                LastName = "User",
+                Password = "Admin2025!"
+            }, AccountType.Admin);
+            
+            seedData?.SetTag("admin.default.id", adminUser.AccountId);
+        }
+        catch (UserExistsException)
+        {
+            seedData?.SetTag("admin.default.exists", true);
+        }
     }
 }
