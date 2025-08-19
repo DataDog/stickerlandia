@@ -4,7 +4,7 @@ import AuthService from '../services/AuthService'
 
 const UserProfile = () => {
   const { user, isAuthenticated } = useAuth()
-
+  
   const getSessionExpiry = () => {
     const tokenData = AuthService.getStoredToken()
     if (tokenData?.expires_at) {
@@ -28,6 +28,8 @@ const UserProfile = () => {
       color: 'inherit'
     }}>
       <h3 style={{ color: 'inherit', marginTop: '0' }}>Welcome!</h3>
+
+      <p style={{ color: 'inherit' }}><strong>User ID:</strong> {user.sub || 'N/A'}</p>
       <p style={{ color: 'inherit' }}><strong>Name:</strong> {user.name || user.given_name || 'N/A'}</p>
       <p style={{ color: 'inherit' }}><strong>Email:</strong> {user.email || 'N/A'}</p>
       {user.roles && (
