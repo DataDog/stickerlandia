@@ -1,6 +1,5 @@
 import { StrictMode } from 'react'
-import { ReactDOM } from 'react-dom/client'
-import { BrowserRouter } from "react-router";
+import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 import { initializeDatadogRum } from './services/DatadogRum.js'
@@ -8,9 +7,8 @@ import { initializeDatadogRum } from './services/DatadogRum.js'
 // Initialize Datadog RUM
 initializeDatadogRum();
 
-const root = document.getElementById("root");
-ReactDOM.createRoot(root).render(
-  <BrowserRouter>
-    <App />
-  </BrowserRouter>,
-);
+createRoot(document.getElementById('main')).render(
+  <StrictMode>
+      <App />
+  </StrictMode>,
+)
