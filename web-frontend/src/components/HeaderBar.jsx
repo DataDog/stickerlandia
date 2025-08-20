@@ -15,7 +15,7 @@ if (isLoading) {
   }
 
   return (
-    <div className="page-header">
+    <div className="page-header max-w-8/10 mx-auto">
       <div className="logo">Stickerlandia</div>
       <div className="login-auth">
         {!isAuthenticated ? (

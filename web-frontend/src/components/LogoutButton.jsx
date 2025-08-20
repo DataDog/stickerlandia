@@ -6,17 +6,7 @@ const LogoutButton = () => {
 
   return (
     <button 
-      onClick={logout}
-      style={{
-        padding: '10px 20px',
-        fontSize: '16px',
-        backgroundColor: '#dc3545',
-        color: 'white',
-        border: 'none',
-        borderRadius: '4px',
-        cursor: 'pointer'
-      }}
-    >
+      onClick={logout} >
       Sign Out
     </button>
   )

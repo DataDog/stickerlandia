@@ -21,7 +21,7 @@ function AppContent() {
   }
 
   return (
-    <div>
+    <div className="items-center">
         <HeaderBar />
         
         <div style={{ marginBottom: '20px' }}>
