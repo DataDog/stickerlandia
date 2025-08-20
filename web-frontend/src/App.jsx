@@ -19,7 +19,7 @@ function AppContent() {
 
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
-      <h1>Stickerlandia</h1>
+      <h1>Stickerlandiaaaaaaa</h1>
       
       <div style={{ marginBottom: '20px' }}>
         {!isAuthenticated ? (
@@ -34,12 +34,6 @@ function AppContent() {
           </div>
         )}
       </div>
-      
-      {isAuthenticated && (
-        <div>
-          <StickerList />
-        </div>
-      )}
     </div>
   )
 }
