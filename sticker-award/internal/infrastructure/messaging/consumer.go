@@ -2,10 +2,13 @@ package messaging
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 
@@ -16,6 +19,11 @@ import (
 	"github.com/IBM/sarama"
 	"go.uber.org/zap"
 )
+
+// Context key for span links
+type contextKey string
+
+const SpanLinksContextKey contextKey = "span_links"
 
 // Consumer represents a Kafka consumer with Datadog DSM integration
 type Consumer struct {
@@ -185,6 +193,12 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 			// Extract Datadog DSM context from message headers
 			ctx := c.extractDatadogContext(session.Context(), message)
 
+			// Extract span links from CloudEvent message
+			spanLinks := c.extractSpanLinksFromMessage(message)
+
+			// Add span links to context so handlers can access them
+			ctx = context.WithValue(ctx, SpanLinksContextKey, spanLinks)
+
 			// Get the span from context to finish it after processing
 			span, _ := tracer.SpanFromContext(ctx)
 
@@ -261,6 +275,75 @@ func (c *Consumer) extractDatadogContext(ctx context.Context, message *sarama.Co
 	ctx = tracer.ContextWithSpan(spanCtx, span)
 
 	return ctx
+}
+
+// extractSpanLinksFromMessage attempts to extract span links from CloudEvent messages
+// Returns span links that can be used when creating processing spans
+func (c *Consumer) extractSpanLinksFromMessage(message *sarama.ConsumerMessage) []tracer.SpanLink {
+	var spanLinks []tracer.SpanLink
+
+	// Try to parse the message as a CloudEvent to extract traceparent
+	var cloudEvent struct {
+		TraceParent string `json:"traceparent"`
+	}
+
+	if err := json.Unmarshal(message.Value, &cloudEvent); err != nil {
+		c.logger.Debugw("Could not parse message as CloudEvent, skipping span link extraction", "error", err)
+		return spanLinks
+	}
+
+	if cloudEvent.TraceParent == "" {
+		c.logger.Debugw("No traceparent found in CloudEvent, no span links to create")
+		return spanLinks
+	}
+
+	// Parse W3C traceparent format: "version-traceId-spanId-flags"
+	parts := strings.Split(cloudEvent.TraceParent, "-")
+	if len(parts) != 4 {
+		c.logger.Debugw("Invalid traceparent format", "traceparent", cloudEvent.TraceParent)
+		return spanLinks
+	}
+
+	// Convert hex trace ID and span ID to uint64
+	// For DD trace go, we need the full 128-bit trace ID but represented as uint64
+	// We can take the lower 64 bits of the 128-bit W3C trace ID
+	traceIDHex := parts[1]
+	if len(traceIDHex) == 32 {
+		// Take the lower 64 bits (last 16 hex characters)
+		traceIDHex = traceIDHex[16:]
+	}
+	traceID, err := strconv.ParseUint(traceIDHex, 16, 64)
+	if err != nil {
+		c.logger.Debugw("Failed to parse trace ID from traceparent", "traceId", parts[1], "error", err)
+		return spanLinks
+	}
+
+	spanID, err := strconv.ParseUint(parts[2], 16, 64)
+	if err != nil {
+		c.logger.Debugw("Failed to parse span ID from traceparent", "spanId", parts[2], "error", err)
+		return spanLinks
+	}
+
+	// Create span link
+	spanLinks = append(spanLinks, tracer.SpanLink{
+		TraceID: traceID,
+		SpanID:  spanID,
+	})
+
+	c.logger.Debugw("Created span link from traceparent",
+		"traceId", traceID,
+		"spanId", spanID,
+		"traceparent", cloudEvent.TraceParent)
+
+	return spanLinks
+}
+
+// GetSpanLinksFromContext extracts span links from the context
+func GetSpanLinksFromContext(ctx context.Context) []tracer.SpanLink {
+	if spanLinks, ok := ctx.Value(SpanLinksContextKey).([]tracer.SpanLink); ok {
+		return spanLinks
+	}
+	return nil
 }
 
 // DatadogInterceptor implements Datadog DSM for Kafka consumers

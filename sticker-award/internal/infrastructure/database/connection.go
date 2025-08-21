@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/datadog/stickerlandia/sticker-award/internal/config"
 	gormtrace "github.com/DataDog/dd-trace-go/contrib/gorm.io/gorm.v1/v2"
+	"github.com/datadog/stickerlandia/sticker-award/internal/config"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -25,7 +25,7 @@ func Connect(cfg *config.DatabaseConfig) (*gorm.DB, error) {
 	}
 
 	// Register Datadog tracing plugin so that GORM queries emit database spans
-	if err := db.Use(gormtrace.NewTracePlugin(gormtrace.WithService("sticker-award"))); err != nil {
+	if err := db.Use(gormtrace.NewTracePlugin(gormtrace.WithService("sticker-award-db"))); err != nil {
 		return nil, fmt.Errorf("failed to register gorm tracing plugin: %w", err)
 	}
 

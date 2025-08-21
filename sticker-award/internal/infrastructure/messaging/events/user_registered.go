@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/IBM/sarama"
-	"go.uber.org/zap"
 	"github.com/DataDog/dd-trace-go/v2/ddtrace/ext"
 	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
+	"github.com/IBM/sarama"
+	"go.uber.org/zap"
+
+	"github.com/datadog/stickerlandia/sticker-award/internal/infrastructure/messaging"
 )
 
 const TopicUserRegistered = "users.userRegistered.v1"
@@ -52,9 +54,11 @@ func (h *UserRegisteredHandler) Handle(ctx context.Context, message *sarama.Cons
 		"offset", message.Offset,
 	)
 
-	// Context with DSM already extracted in consumer - don't extract again
-	// Start a span for message processing
-	span, ctx := tracer.StartSpanFromContext(ctx, "process users.userRegistered.v1",
+	// Extract span links from context
+	spanLinks := messaging.GetSpanLinksFromContext(ctx)
+
+	// Create span options including span links
+	spanOpts := []tracer.StartSpanOption{
 		tracer.SpanType(ext.SpanTypeMessageConsumer),
 		tracer.ServiceName("sticker-award"),
 		tracer.ResourceName(message.Topic),
@@ -62,13 +66,52 @@ func (h *UserRegisteredHandler) Handle(ctx context.Context, message *sarama.Cons
 		tracer.Tag("messaging.operation.type", "process"),
 		tracer.Tag("messaging.system", "kafka"),
 		tracer.Tag("messaging.message.envelope.size", len(message.Value)),
-	)
+	}
+
+	// Add span links if available - this must be done when creating the span
+	if len(spanLinks) > 0 {
+		spanOpts = append(spanOpts, tracer.WithSpanLinks(spanLinks))
+		h.logger.Infow("Creating processing span with span links",
+			"span_links_count", len(spanLinks),
+			"topic", message.Topic)
+	}
+
+	// Start a new trace for message processing with span links
+	// Use a new root span to separate from the consumer span
+	span, ctx := tracer.StartSpanFromContext(context.Background(), "process users.userRegistered.v1", spanOpts...)
 	defer span.Finish()
 
-	// Parse the event
+	// Debug: log the raw message content
+	h.logger.Infow("Raw message received", "value", string(message.Value))
+
+	// First try parsing as direct event (current format from user-management)
 	var event UserRegisteredEvent
 	if err := json.Unmarshal(message.Value, &event); err != nil {
-		return fmt.Errorf("failed to unmarshal user registered event: %w", err)
+		h.logger.Infow("Direct event parsing failed, trying CloudEvent format", "error", err.Error())
+
+		// Fallback: try parsing as CloudEvent wrapper
+		var cloudEvent messaging.CloudEvent[UserRegisteredEvent]
+		if fallbackErr := json.Unmarshal(message.Value, &cloudEvent); fallbackErr != nil {
+			span.SetTag("error", true)
+			span.SetTag("error.msg", err.Error())
+			h.logger.Errorw("Failed to parse user registered event as direct event or CloudEvent",
+				"directEventError", err, "cloudEventError", fallbackErr, "rawMessage", string(message.Value))
+			return fmt.Errorf("failed to parse user registered event: %w", err)
+		}
+
+		// Validate CloudEvent has data
+		if cloudEvent.Data.AccountID == "" {
+			span.SetTag("error", true)
+			span.SetTag("error.msg", "CloudEvent has empty data")
+			h.logger.Errorw("CloudEvent parsed successfully but contains empty data",
+				"cloudEvent", cloudEvent, "rawMessage", string(message.Value))
+			return fmt.Errorf("CloudEvent contains no valid user registration data")
+		}
+
+		event = cloudEvent.Data
+		h.logger.Infow("Successfully parsed as CloudEvent", "accountId", event.AccountID, "eventData", event)
+	} else {
+		h.logger.Infow("Successfully parsed as direct event", "accountId", event.AccountID)
 	}
 
 	// Validate event

@@ -6,7 +6,6 @@ toolchain go1.24.5
 
 require (
 	github.com/DataDog/dd-trace-go/contrib/IBM/sarama/v2 v2.2.2
-	github.com/DataDog/dd-trace-go/contrib/database/sql/v2 v2.2.2
 	github.com/DataDog/dd-trace-go/contrib/gin-gonic/gin/v2 v2.2.2
 	github.com/DataDog/dd-trace-go/contrib/gorm.io/gorm.v1/v2 v2.2.2
 	github.com/DataDog/dd-trace-go/contrib/net/http/v2 v2.2.2
@@ -15,7 +14,7 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-playground/validator/v10 v10.15.5
 	github.com/golang-migrate/migrate/v4 v4.16.2
-	github.com/lib/pq v1.10.9
+	github.com/google/uuid v1.6.0
 	github.com/spf13/viper v1.17.0
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.38.0
@@ -86,7 +85,6 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/pprof v0.0.0-20241029153458-d1b30febd7db // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
@@ -108,6 +106,7 @@ require (
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
+	github.com/lib/pq v1.10.9 // indirect
 	github.com/lufia/plan9stats v0.0.0-20240909124753-873cd0166683 // indirect
 	github.com/magiconair/properties v1.8.10 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect

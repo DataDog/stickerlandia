@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/datadog/stickerlandia/sticker-award/pkg/errors"
 	httptrace "github.com/DataDog/dd-trace-go/contrib/net/http/v2"
+	"github.com/datadog/stickerlandia/sticker-award/pkg/errors"
 )
 
 // ErrStickerNotFound is returned when a sticker is not found in the catalogue

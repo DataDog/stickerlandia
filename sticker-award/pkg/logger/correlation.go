@@ -3,8 +3,8 @@ package logger
 import (
 	"context"
 
-	"go.uber.org/zap"
 	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
+	"go.uber.org/zap"
 )
 
 // WithTrace returns a *zap.SugaredLogger augmented with Datadog correlation
@@ -23,7 +23,7 @@ func WithTrace(ctx context.Context, l *zap.SugaredLogger) *zap.SugaredLogger {
 	}
 
 	sc := span.Context()
-	
+
 	return l.With(
 		"dd.trace_id", sc.TraceID(),
 		"dd.span_id", sc.SpanID(),

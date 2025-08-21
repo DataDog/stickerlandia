@@ -130,14 +130,16 @@ func (s *assignmentService) AssignSticker(ctx context.Context, userID string, re
 	s.logger.Infow("Sticker assigned successfully", "userId", userID, "stickerId", req.StickerID, "assignmentId", assignment.ID)
 
 	// Publish assignment event
-	event := events.NewStickerAssignedToUserEvent(userID, req.StickerID, assignment.AssignedAt, req.Reason)
-	if err := s.producer.PublishStickerAssignedEvent(ctx, event); err != nil {
-		// Log the error but don't fail the request - the assignment was successful
-		s.logger.Errorw("Failed to publish sticker assigned event",
-			"userId", userID,
-			"stickerId", req.StickerID,
-			"assignmentId", assignment.ID,
-			"error", err)
+	if s.producer != nil {
+		event := events.NewStickerAssignedToUserEvent(userID, req.StickerID, assignment.AssignedAt, req.Reason)
+		if err := s.producer.PublishStickerAssignedEvent(ctx, event); err != nil {
+			// Log the error but don't fail the request - the assignment was successful
+			s.logger.Errorw("Failed to publish sticker assigned event",
+				"userId", userID,
+				"stickerId", req.StickerID,
+				"assignmentId", assignment.ID,
+				"error", err)
+		}
 	}
 
 	return &dto.StickerAssignmentResponse{
@@ -171,14 +173,16 @@ func (s *assignmentService) RemoveSticker(ctx context.Context, userID, stickerID
 	s.logger.Infow("Sticker assignment removed successfully", "userId", userID, "stickerId", stickerID, "assignmentId", assignment.ID)
 
 	// Publish removal event
-	event := events.NewStickerRemovedFromUserEvent(userID, stickerID, *assignment.RemovedAt)
-	if err := s.producer.PublishStickerRemovedEvent(ctx, event); err != nil {
-		// Log the error but don't fail the request - the removal was successful
-		s.logger.Errorw("Failed to publish sticker removed event",
-			"userId", userID,
-			"stickerId", stickerID,
-			"assignmentId", assignment.ID,
-			"error", err)
+	if s.producer != nil {
+		event := events.NewStickerRemovedFromUserEvent(userID, stickerID, *assignment.RemovedAt)
+		if err := s.producer.PublishStickerRemovedEvent(ctx, event); err != nil {
+			// Log the error but don't fail the request - the removal was successful
+			s.logger.Errorw("Failed to publish sticker removed event",
+				"userId", userID,
+				"stickerId", stickerID,
+				"assignmentId", assignment.ID,
+				"error", err)
+		}
 	}
 
 	return &dto.StickerRemovalResponse{
@@ -238,14 +242,16 @@ func (s *assignmentService) AssignWelcomeSticker(ctx context.Context, accountID 
 		"accountId", accountID, "stickerId", WelcomeStickerID, "assignmentId", assignment.ID)
 
 	// Publish assignment event
-	event := events.NewStickerAssignedToUserEvent(accountID, WelcomeStickerID, assignment.AssignedAt, assignment.Reason)
-	if err := s.producer.PublishStickerAssignedEvent(ctx, event); err != nil {
-		// Log the error but don't fail the request - the assignment was successful
-		s.logger.Errorw("Failed to publish welcome sticker assigned event",
-			"accountId", accountID,
-			"stickerId", WelcomeStickerID,
-			"assignmentId", assignment.ID,
-			"error", err)
+	if s.producer != nil {
+		event := events.NewStickerAssignedToUserEvent(accountID, WelcomeStickerID, assignment.AssignedAt, assignment.Reason)
+		if err := s.producer.PublishStickerAssignedEvent(ctx, event); err != nil {
+			// Log the error but don't fail the request - the assignment was successful
+			s.logger.Errorw("Failed to publish welcome sticker assigned event",
+				"accountId", accountID,
+				"stickerId", WelcomeStickerID,
+				"assignmentId", assignment.ID,
+				"error", err)
+		}
 	}
 
 	return nil

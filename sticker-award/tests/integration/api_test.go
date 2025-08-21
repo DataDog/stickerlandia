@@ -26,8 +26,12 @@ import (
 
 	"github.com/datadog/stickerlandia/sticker-award/internal/api/dto"
 	"github.com/datadog/stickerlandia/sticker-award/internal/api/router"
+	"github.com/datadog/stickerlandia/sticker-award/internal/application/service"
 	"github.com/datadog/stickerlandia/sticker-award/internal/config"
 	"github.com/datadog/stickerlandia/sticker-award/internal/infrastructure/database"
+	"github.com/datadog/stickerlandia/sticker-award/internal/infrastructure/database/repository"
+	"github.com/datadog/stickerlandia/sticker-award/internal/infrastructure/external/catalogue"
+	"github.com/datadog/stickerlandia/sticker-award/pkg/validator"
 )
 
 type TestEnvironment struct {
@@ -107,9 +111,16 @@ func setupTestEnvironment(t *testing.T) *TestEnvironment {
 	// Set up logger
 	logger := zap.NewNop().Sugar()
 
+	// Set up real dependencies
+	assignmentRepo := repository.NewAssignmentRepository(db)
+	catalogueClient := catalogue.NewClient(wireMockURL, 5*time.Second)
+	validatorInstance := validator.New()
+	// Use nil producer for tests to avoid Kafka dependencies
+	assignmentService := service.NewAssignmentService(assignmentRepo, catalogueClient, validatorInstance, nil, logger)
+
 	// Set up router
 	gin.SetMode(gin.TestMode)
-	router := router.Setup(db, logger, cfg)
+	router := router.Setup(db, logger, cfg, assignmentService)
 
 	// Clean up function
 	t.Cleanup(func() {

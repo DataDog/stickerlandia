@@ -71,11 +71,14 @@ func (p *Producer) PublishStickerClaimedEvent(ctx context.Context, event *events
 
 // publishEvent publishes an event to the specified topic using Sarama
 func (p *Producer) publishEvent(ctx context.Context, topic, key string, event interface{}) error {
-	// Serialize event to JSON
-	eventBytes, err := json.Marshal(event)
+	// Wrap event in CloudEvent format with W3C trace context for span links
+	cloudEvent := NewCloudEvent(ctx, topic, "sticker-award", event)
+
+	// Serialize CloudEvent to JSON
+	eventBytes, err := json.Marshal(cloudEvent)
 	if err != nil {
-		p.logger.Errorw("Failed to serialize event", "error", err, "topic", topic)
-		return fmt.Errorf("failed to serialize event: %w", err)
+		p.logger.Errorw("Failed to serialize cloud event", "error", err, "topic", topic)
+		return fmt.Errorf("failed to serialize cloud event: %w", err)
 	}
 
 	// Create Sarama producer message
