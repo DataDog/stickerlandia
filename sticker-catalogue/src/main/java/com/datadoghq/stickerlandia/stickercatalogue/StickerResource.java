@@ -39,6 +39,7 @@ public class StickerResource {
     /**
      * Gets all stickers with pagination.
      *
+     * @param page the page number (0-based)
      * @param size the page size
      * @return response containing paginated stickers
      */

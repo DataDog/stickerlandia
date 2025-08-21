@@ -1,5 +1,6 @@
 package com.datadoghq.stickerlandia.stickercatalogue;
 
+import com.datadoghq.stickerlandia.common.architecture.StickerlandiaDatabaseRepository;
 import com.datadoghq.stickerlandia.stickercatalogue.dto.CreateStickerRequest;
 import com.datadoghq.stickerlandia.stickercatalogue.dto.CreateStickerResponse;
 import com.datadoghq.stickerlandia.stickercatalogue.dto.GetAllStickersResponse;
@@ -22,6 +23,7 @@ import org.hibernate.exception.ConstraintViolationException;
 
 /** Repository class for managing sticker operations. */
 @ApplicationScoped
+@StickerlandiaDatabaseRepository
 public class StickerRepository {
 
     @Inject StickerEventPublisher eventPublisher;
