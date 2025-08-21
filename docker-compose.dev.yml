@@ -16,6 +16,7 @@ services:
       - DD_ENV=development
       - DD_VERSION=${COMMIT_SHA:-dev}
       - DD_AGENT_HOST=datadog-agent
+      - DD_DATA_STREAMS_ENABLED=true
       # Use development profile
       - QUARKUS_PROFILE=dev
       # Override any production settings
@@ -67,6 +68,7 @@ services:
       - DD_ENV=development
       - DD_VERSION=${COMMIT_SHA:-dev}
       - DD_AGENT_HOST=datadog-agent
+      - DD_DATA_STREAMS_ENABLED=true
     volumes:
       - ./sticker-award:/app:cached  # Live code reload
       - go-mod-cache:/go/pkg/mod     # Persist Go module cache

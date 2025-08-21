@@ -234,6 +234,7 @@ services:
       DD_ENV: development
       DD_VERSION: ${COMMIT_SHA:-latest}
       DD_AGENT_HOST: datadog-agent
+      DD_DATA_STREAMS_ENABLED: true
       # Application configuration
       QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://sticker-catalogue-db:5432/sticker_catalogue
       QUARKUS_DATASOURCE_USERNAME: sticker_user
@@ -279,6 +280,7 @@ services:
       DD_ENV: development
       DD_VERSION: ${COMMIT_SHA:-latest}
       DD_AGENT_HOST: datadog-agent
+      DD_DATA_STREAMS_ENABLED: true
       DD_TRACE_OTEL_ENABLED: "true"
       DD_LOGS_INJECTION: "true"
       DD_RUNTIME_METRICS_ENABLED: "true"
@@ -322,6 +324,7 @@ services:
       DD_ENV: development
       DD_VERSION: ${COMMIT_SHA:-latest}
       DD_AGENT_HOST: datadog-agent
+      DD_DATA_STREAMS_ENABLED: true
       DD_TRACE_OTEL_ENABLED: "true"
       DD_LOGS_INJECTION: "true"
       DD_RUNTIME_METRICS_ENABLED: "true"
@@ -426,6 +429,7 @@ services:
       DD_ENV: development
       DD_VERSION: ${COMMIT_SHA:-latest}
       DD_AGENT_HOST: datadog-agent
+      DD_DATA_STREAMS_ENABLED: true
       # Server configuration
       SERVER_PORT: 8080
       
