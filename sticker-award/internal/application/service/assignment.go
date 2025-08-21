@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -17,6 +18,11 @@ import (
 	pkgErrors "github.com/datadog/stickerlandia/sticker-award/pkg/errors"
 	logctx "github.com/datadog/stickerlandia/sticker-award/pkg/logger"
 	"github.com/datadog/stickerlandia/sticker-award/pkg/validator"
+)
+
+// Constants for special stickers
+const (
+	WelcomeStickerID = "sticker-001" // TODO: This should be configurable or looked up from catalogue
 )
 
 // assignmentService implements the AssignmentService interface
@@ -180,4 +186,67 @@ func (s *assignmentService) RemoveSticker(ctx context.Context, userID, stickerID
 		StickerID: stickerID,
 		RemovedAt: *assignment.RemovedAt,
 	}, nil
+}
+
+// AssignWelcomeSticker assigns a welcome sticker to a newly registered user
+func (s *assignmentService) AssignWelcomeSticker(ctx context.Context, accountID string) error {
+	if accountID == "" {
+		return pkgErrors.NewBadRequestError("account ID is required", pkgErrors.ErrInvalidUserID)
+	}
+
+	s.logger.Infow("Assigning welcome sticker to new user", "accountId", accountID, "stickerId", WelcomeStickerID)
+
+	// Check if sticker exists in catalogue (optional - we could skip this for welcome sticker)
+	exists, err := s.catalogueClient.StickerExists(ctx, WelcomeStickerID)
+	if err != nil {
+		s.logger.Warnw("Failed to check welcome sticker existence, proceeding anyway",
+			"stickerId", WelcomeStickerID, "error", err)
+	} else if !exists {
+		s.logger.Warnw("Welcome sticker not found in catalogue, proceeding anyway",
+			"stickerId", WelcomeStickerID)
+	}
+
+	// Check for duplicate assignment (user might already have welcome sticker)
+	hasAssignment, err := s.assignmentRepo.HasActiveAssignment(ctx, accountID, WelcomeStickerID)
+	if err != nil {
+		s.logger.Errorw("Failed to check existing welcome sticker assignment",
+			"accountId", accountID, "stickerId", WelcomeStickerID, "error", err)
+		return fmt.Errorf("failed to check existing assignment: %w", err)
+	}
+
+	if hasAssignment {
+		s.logger.Infow("User already has welcome sticker, skipping assignment",
+			"accountId", accountID, "stickerId", WelcomeStickerID)
+		return nil // Not an error - user already has the welcome sticker
+	}
+
+	// Create assignment
+	welcomeReason := "Welcome to Stickerlandia!"
+	assignment := &models.Assignment{
+		UserID:    accountID,
+		StickerID: WelcomeStickerID,
+		Reason:    &welcomeReason,
+	}
+
+	if err := s.assignmentRepo.AssignSticker(ctx, assignment); err != nil {
+		s.logger.Errorw("Failed to create welcome sticker assignment",
+			"accountId", accountID, "stickerId", WelcomeStickerID, "error", err)
+		return fmt.Errorf("failed to create welcome assignment: %w", err)
+	}
+
+	s.logger.Infow("Welcome sticker assigned successfully",
+		"accountId", accountID, "stickerId", WelcomeStickerID, "assignmentId", assignment.ID)
+
+	// Publish assignment event
+	event := events.NewStickerAssignedToUserEvent(accountID, WelcomeStickerID, assignment.AssignedAt, assignment.Reason)
+	if err := s.producer.PublishStickerAssignedEvent(event); err != nil {
+		// Log the error but don't fail the request - the assignment was successful
+		s.logger.Errorw("Failed to publish welcome sticker assigned event",
+			"accountId", accountID,
+			"stickerId", WelcomeStickerID,
+			"assignmentId", assignment.ID,
+			"error", err)
+	}
+
+	return nil
 }

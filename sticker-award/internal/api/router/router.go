@@ -1,8 +1,6 @@
 package router
 
 import (
-	"time"
-
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	gintrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/gin-gonic/gin"
@@ -10,16 +8,12 @@ import (
 
 	"github.com/datadog/stickerlandia/sticker-award/internal/api/handlers"
 	"github.com/datadog/stickerlandia/sticker-award/internal/api/middleware"
-	"github.com/datadog/stickerlandia/sticker-award/internal/application/service"
 	"github.com/datadog/stickerlandia/sticker-award/internal/config"
-	"github.com/datadog/stickerlandia/sticker-award/internal/infrastructure/database/repository"
-	"github.com/datadog/stickerlandia/sticker-award/internal/infrastructure/external/catalogue"
-	"github.com/datadog/stickerlandia/sticker-award/internal/infrastructure/messaging"
-	"github.com/datadog/stickerlandia/sticker-award/pkg/validator"
+	domainservice "github.com/datadog/stickerlandia/sticker-award/internal/domain/service"
 )
 
 // Setup configures and returns the Gin router with all routes and middleware
-func Setup(db *gorm.DB, logger *zap.SugaredLogger, cfg *config.Config) *gin.Engine {
+func Setup(db *gorm.DB, logger *zap.SugaredLogger, cfg *config.Config, assignmentService domainservice.AssignmentService) *gin.Engine {
 	// Set Gin mode based on environment
 	if cfg.Logging.Level == "debug" {
 		gin.SetMode(gin.DebugMode)
@@ -34,19 +28,6 @@ func Setup(db *gorm.DB, logger *zap.SugaredLogger, cfg *config.Config) *gin.Engi
 	r.Use(middleware.Logger(logger))
 	r.Use(middleware.Recovery(logger))
 	r.Use(middleware.CORS())
-
-	// Initialize dependencies
-	assignmentRepo := repository.NewAssignmentRepository(db)
-	catalogueClient := catalogue.NewClient(cfg.Catalogue.BaseURL, time.Duration(cfg.Catalogue.Timeout)*time.Second)
-	validator := validator.New()
-
-	// Initialize Kafka producer
-	producer, err := messaging.NewProducer(&cfg.Kafka, logger)
-	if err != nil {
-		logger.Fatalw("Failed to create Kafka producer", "error", err)
-	}
-
-	assignmentService := service.NewAssignmentService(assignmentRepo, catalogueClient, validator, producer, logger)
 
 	// Health check endpoint
 	r.GET("/health", handlers.NewHealthHandler(db, logger).Handle)

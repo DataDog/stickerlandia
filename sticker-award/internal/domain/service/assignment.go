@@ -16,4 +16,7 @@ type AssignmentService interface {
 
 	// RemoveSticker removes a sticker assignment from a user
 	RemoveSticker(ctx context.Context, userID, stickerID string) (*dto.StickerRemovalResponse, error)
+
+	// AssignWelcomeSticker assigns a welcome sticker to a newly registered user
+	AssignWelcomeSticker(ctx context.Context, accountID string) error
 }

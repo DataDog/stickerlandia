@@ -166,8 +166,6 @@ services:
       interval: 1s
       timeout: 10s
       retries: 5
-    networks:
-      - default
 
   user-management-db:
     image: postgres:16
@@ -455,8 +453,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    networks:
-      - default
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.sticker-award.rule=PathPrefix(`/api/awards`)"
