@@ -22,9 +22,9 @@ import (
 	"github.com/datadog/stickerlandia/sticker-award/pkg/logger"
 	"github.com/datadog/stickerlandia/sticker-award/pkg/validator"
 	"github.com/lib/pq"
-	sqltrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/database/sql"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
-	"gopkg.in/DataDog/dd-trace-go.v1/profiler"
+	sqltrace "github.com/DataDog/dd-trace-go/contrib/database/sql/v2"
+	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
+	"github.com/DataDog/dd-trace-go/v2/profiler"
 )
 
 func main() {
@@ -35,7 +35,7 @@ func main() {
 	}
 
 	// Register SQL driver with DataDog tracing BEFORE starting tracer
-	sqltrace.Register("postgres", &pq.Driver{}, sqltrace.WithServiceName("sticker-award"))
+	sqltrace.Register("postgres", &pq.Driver{}, sqltrace.WithService("sticker-award"))
 
 	// Start the DataDog tracer
 	tracer.Start()

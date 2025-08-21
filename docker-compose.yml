@@ -417,6 +417,8 @@ services:
       dockerfile: Dockerfile
     container_name: sticker-award
     depends_on:
+      sticker-catalogue:
+        condition: service_healthy
       sticker-award-db:
         condition: service_healthy
       redpanda:

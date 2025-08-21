@@ -3,7 +3,7 @@ package router
 import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
-	gintrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/gin-gonic/gin"
+	gintrace "github.com/DataDog/dd-trace-go/contrib/gin-gonic/gin/v2"
 	"gorm.io/gorm"
 
 	"github.com/datadog/stickerlandia/sticker-award/internal/api/handlers"

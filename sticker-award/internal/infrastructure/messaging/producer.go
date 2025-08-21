@@ -1,10 +1,15 @@
 package messaging
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
 
+	ddsamarama "github.com/DataDog/dd-trace-go/contrib/IBM/sarama/v2"
+	"github.com/DataDog/dd-trace-go/v2/datastreams"
+	"github.com/DataDog/dd-trace-go/v2/datastreams/options"
+	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
 	"github.com/IBM/sarama"
 	"github.com/datadog/stickerlandia/sticker-award/internal/config"
 	"github.com/datadog/stickerlandia/sticker-award/internal/domain/events"
@@ -24,31 +29,24 @@ const (
 	TopicStickerClaimed         = "users.stickerClaimed.v1"
 )
 
-// NewProducer creates a new Kafka producer using Sarama
+// NewProducer creates a new Kafka producer using Sarama with Datadog instrumentation
 func NewProducer(cfg *config.KafkaConfig, logger *zap.SugaredLogger) (*Producer, error) {
-	config := sarama.NewConfig()
+	// Create shared Sarama configuration
+	config := NewSaramaConfig("sticker-award-producer")
+	ConfigureProducer(config, cfg)
 
-	// Producer configuration matching the original kafka-go settings
-	config.Producer.Return.Successes = true
-	config.Producer.Return.Errors = true
-	config.Producer.RequiredAcks = sarama.RequiredAcks(cfg.RequireAcks)
-	config.Producer.Retry.Max = cfg.ProducerRetries
-	config.Producer.Timeout = time.Duration(cfg.ProducerTimeout) * time.Millisecond
-	config.Producer.Compression = sarama.CompressionSnappy
-	config.Producer.Flush.Bytes = cfg.ProducerBatchSize
-	config.Producer.Flush.Frequency = 100 * time.Millisecond
-	config.Version = sarama.V2_1_0_0
-	config.ClientID = "sticker-award-producer"
-
-	// Network timeouts
-	config.Net.DialTimeout = 10 * time.Second
-	config.Net.ReadTimeout = 10 * time.Second
-	config.Net.WriteTimeout = 10 * time.Second
-
-	producer, err := sarama.NewSyncProducer(cfg.Brokers, config)
+	// Create base Sarama producer first
+	baseProducer, err := sarama.NewSyncProducer(cfg.Brokers, config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Sarama producer: %w", err)
+		return nil, fmt.Errorf("failed to create base Sarama producer: %w", err)
 	}
+
+	// Wrap with Datadog instrumentation
+	producer := ddsamarama.WrapSyncProducer(config, baseProducer,
+		ddsamarama.WithService("sticker-award"),
+		ddsamarama.WithAnalytics(true),
+		ddsamarama.WithDataStreams(),
+	)
 
 	return &Producer{
 		producer: producer,
@@ -57,22 +55,22 @@ func NewProducer(cfg *config.KafkaConfig, logger *zap.SugaredLogger) (*Producer,
 }
 
 // PublishStickerAssignedEvent publishes a sticker assigned event
-func (p *Producer) PublishStickerAssignedEvent(event *events.StickerAssignedToUserEvent) error {
-	return p.publishEvent(TopicStickerAssignedToUser, event.AccountID, event)
+func (p *Producer) PublishStickerAssignedEvent(ctx context.Context, event *events.StickerAssignedToUserEvent) error {
+	return p.publishEvent(ctx, TopicStickerAssignedToUser, event.AccountID, event)
 }
 
 // PublishStickerRemovedEvent publishes a sticker removed event
-func (p *Producer) PublishStickerRemovedEvent(event *events.StickerRemovedFromUserEvent) error {
-	return p.publishEvent(TopicStickerRemovedFromUser, event.AccountID, event)
+func (p *Producer) PublishStickerRemovedEvent(ctx context.Context, event *events.StickerRemovedFromUserEvent) error {
+	return p.publishEvent(ctx, TopicStickerRemovedFromUser, event.AccountID, event)
 }
 
 // PublishStickerClaimedEvent publishes a sticker claimed event
-func (p *Producer) PublishStickerClaimedEvent(event *events.StickerClaimedEvent) error {
-	return p.publishEvent(TopicStickerClaimed, event.AccountID, event)
+func (p *Producer) PublishStickerClaimedEvent(ctx context.Context, event *events.StickerClaimedEvent) error {
+	return p.publishEvent(ctx, TopicStickerClaimed, event.AccountID, event)
 }
 
 // publishEvent publishes an event to the specified topic using Sarama
-func (p *Producer) publishEvent(topic, key string, event interface{}) error {
+func (p *Producer) publishEvent(ctx context.Context, topic, key string, event interface{}) error {
 	// Serialize event to JSON
 	eventBytes, err := json.Marshal(event)
 	if err != nil {
@@ -94,7 +92,22 @@ func (p *Producer) publishEvent(topic, key string, event interface{}) error {
 		Timestamp: time.Now(),
 	}
 
-	// Send message synchronously
+	// Set manual DSM checkpoint for outbound message with service override
+	ctx, ok := tracer.SetDataStreamsCheckpointWithParams(ctx, options.CheckpointParams{
+		ServiceOverride: "sticker-award",
+	}, "direction:out", "type:kafka", "topic:"+topic, "manual_checkpoint:true")
+
+	// Inject DSM context into message headers if checkpoint was successful
+	if ok {
+		datastreams.InjectToBase64Carrier(ctx, ddsamarama.NewProducerMessageCarrier(msg))
+	}
+
+	// Inject APM trace context into message headers from current context
+	if span, ok := tracer.SpanFromContext(ctx); ok {
+		_ = tracer.Inject(span.Context(), ddsamarama.NewProducerMessageCarrier(msg))
+	}
+
+	// Send message synchronously - the Datadog wrapper will create the APM span automatically
 	partition, offset, err := p.producer.SendMessage(msg)
 	if err != nil {
 		p.logger.Errorw("Failed to publish event",

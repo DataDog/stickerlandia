@@ -8,11 +8,13 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
-	"time"
 
+	ddsarama "github.com/DataDog/dd-trace-go/contrib/IBM/sarama/v2"
+	"github.com/DataDog/dd-trace-go/v2/datastreams"
+	"github.com/DataDog/dd-trace-go/v2/datastreams/options"
+	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
 	"github.com/IBM/sarama"
 	"go.uber.org/zap"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 // Consumer represents a Kafka consumer with Datadog DSM integration
@@ -43,22 +45,11 @@ func NewConsumer(brokers []string, groupID string, logger *zap.SugaredLogger) (*
 	logger.Infow("Creating Kafka consumer",
 		"brokers", brokers,
 		"groupID", groupID,
-		"protocol_version", "3.0.0.0")
+		"protocol_version", "2.1.0.0")
 
-	config := sarama.NewConfig()
-	config.Consumer.Group.Rebalance.Strategy = sarama.NewBalanceStrategyRoundRobin()
-	config.Consumer.Offsets.Initial = sarama.OffsetOldest
-	config.Consumer.Return.Errors = true
-	config.Version = sarama.V2_1_0_0
-	config.ClientID = "sticker-award"
-
-	// Add connection timeouts based on GitHub issues
-	config.Net.DialTimeout = 10 * time.Second
-	config.Net.ReadTimeout = 10 * time.Second
-	config.Net.WriteTimeout = 10 * time.Second
-
-	// Temporarily remove Datadog tracing for Kafka
-	config.Consumer.Interceptors = []sarama.ConsumerInterceptor{}
+	// Create shared Sarama configuration
+	config := NewSaramaConfig("sticker-award-consumer")
+	ConfigureConsumer(config)
 
 	logger.Infow("Attempting to create Sarama consumer group",
 		"brokers", brokers,
@@ -75,7 +66,7 @@ func NewConsumer(brokers []string, groupID string, logger *zap.SugaredLogger) (*
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	return &Consumer{
+	consumer := Consumer{
 		client:   client,
 		handlers: make(map[string]MessageHandler),
 		logger:   logger,
@@ -84,7 +75,9 @@ func NewConsumer(brokers []string, groupID string, logger *zap.SugaredLogger) (*
 		ready:    make(chan bool),
 		ctx:      ctx,
 		cancel:   cancel,
-	}, nil
+	}
+
+	return &consumer, nil
 }
 
 // RegisterHandler registers a message handler for a specific topic
@@ -113,7 +106,7 @@ func (c *Consumer) Start() error {
 				c.logger.Info("Kafka consumer context cancelled")
 				return
 			default:
-				if err := c.client.Consume(c.ctx, c.topics, c); err != nil {
+				if err := c.client.Consume(c.ctx, c.topics, ddsarama.WrapConsumerGroupHandler(c)); err != nil {
 					c.logger.Errorw("Error from consumer", "error", err)
 					return
 				}
@@ -192,32 +185,34 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 			// Extract Datadog DSM context from message headers
 			ctx := c.extractDatadogContext(session.Context(), message)
 
+			// Get the span from context to finish it after processing
+			span, _ := tracer.SpanFromContext(ctx)
+
 			// Get handler for this topic
 			handler, exists := c.handlers[message.Topic]
 			if !exists {
 				c.logger.Warnw("No handler registered for topic", "topic", message.Topic)
+				if span != nil {
+					span.SetTag("error", true)
+					span.SetTag("error.msg", "no handler registered")
+					span.Finish()
+				}
 				session.MarkMessage(message, "")
 				continue
 			}
 
-			// Process message with Datadog tracing
-			span, spanCtx := tracer.StartSpanFromContext(ctx, "kafka.consume",
-				tracer.ServiceName("sticker-award-consumer"),
-				tracer.ResourceName(fmt.Sprintf("consume %s", message.Topic)),
-				tracer.Tag("kafka.topic", message.Topic),
-				tracer.Tag("kafka.partition", message.Partition),
-				tracer.Tag("kafka.offset", message.Offset),
-			)
-
-			err := handler.Handle(spanCtx, message)
+			// Process message
+			err := handler.Handle(ctx, message)
 			if err != nil {
 				c.logger.Errorw("Error handling message",
 					"topic", message.Topic,
 					"partition", message.Partition,
 					"offset", message.Offset,
 					"error", err)
-				span.SetTag("error", true)
-				span.SetTag("error.msg", err.Error())
+				if span != nil {
+					span.SetTag("error", true)
+					span.SetTag("error.msg", err.Error())
+				}
 			} else {
 				c.logger.Debugw("Message processed successfully",
 					"topic", message.Topic,
@@ -225,7 +220,11 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 					"offset", message.Offset)
 			}
 
-			span.Finish()
+			// Finish the consumer span
+			if span != nil {
+				span.Finish()
+			}
+
 			session.MarkMessage(message, "")
 
 		case <-session.Context().Done():
@@ -236,8 +235,31 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 
 // extractDatadogContext extracts Datadog tracing context from Kafka message headers
 func (c *Consumer) extractDatadogContext(ctx context.Context, message *sarama.ConsumerMessage) context.Context {
-	// For now, just return the original context
-	// TODO: Add proper Datadog DSM integration when available for Sarama
+	// Extract DSM context from message headers first
+	ctx = datastreams.ExtractFromBase64Carrier(ctx, ddsarama.NewConsumerMessageCarrier(message))
+
+	// Set manual DSM checkpoint for inbound message with service override
+	ctx, _ = tracer.SetDataStreamsCheckpointWithParams(ctx, options.CheckpointParams{
+		ServiceOverride: "sticker-award",
+	}, "direction:in", "type:kafka", "topic:"+message.Topic, "manual_checkpoint:true")
+
+	// Create span for consumer operation with proper messaging tags
+	span, spanCtx := tracer.StartSpanFromContext(ctx, "kafka.consume",
+		tracer.ServiceName("sticker-award"),
+		tracer.ResourceName("consume "+message.Topic),
+		tracer.Tag("kafka.topic", message.Topic),
+		tracer.Tag("kafka.partition", message.Partition),
+		tracer.Tag("kafka.offset", message.Offset),
+		tracer.Tag("messaging.operation.name", "consume"),
+		tracer.Tag("messaging.operation.type", "receive"),
+		tracer.Tag("messaging.system", "kafka"),
+		tracer.Tag("messaging.message.envelope.size", len(message.Value)),
+		tracer.SpanType("queue"),
+	)
+
+	// Store span to finish later in the message processing
+	ctx = tracer.ContextWithSpan(spanCtx, span)
+
 	return ctx
 }
 

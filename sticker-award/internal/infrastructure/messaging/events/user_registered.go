@@ -5,12 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	ddsarama "github.com/DataDog/dd-trace-go/contrib/IBM/sarama/v2"
-	"github.com/DataDog/dd-trace-go/v2/datastreams"
 	"github.com/IBM/sarama"
 	"go.uber.org/zap"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
+	"github.com/DataDog/dd-trace-go/v2/ddtrace/ext"
+	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
 )
 
 const TopicUserRegistered = "users.userRegistered.v1"
@@ -54,13 +52,16 @@ func (h *UserRegisteredHandler) Handle(ctx context.Context, message *sarama.Cons
 		"offset", message.Offset,
 	)
 
-	ctx = datastreams.ExtractFromBase64Carrier(ctx, ddsarama.NewConsumerMessageCarrier(message))
-
-	// Start a span for tracing
-	span, ctx := tracer.StartSpanFromContext(ctx, "kafka.consume",
+	// Context with DSM already extracted in consumer - don't extract again
+	// Start a span for message processing
+	span, ctx := tracer.StartSpanFromContext(ctx, "process users.userRegistered.v1",
 		tracer.SpanType(ext.SpanTypeMessageConsumer),
 		tracer.ServiceName("sticker-award"),
 		tracer.ResourceName(message.Topic),
+		tracer.Tag("messaging.operation.name", "process"),
+		tracer.Tag("messaging.operation.type", "process"),
+		tracer.Tag("messaging.system", "kafka"),
+		tracer.Tag("messaging.message.envelope.size", len(message.Value)),
 	)
 	defer span.Finish()
 

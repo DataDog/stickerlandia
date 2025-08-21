@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/datadog/stickerlandia/sticker-award/pkg/errors"
-	httptrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/net/http"
+	httptrace "github.com/DataDog/dd-trace-go/contrib/net/http/v2"
 )
 
 // ErrStickerNotFound is returned when a sticker is not found in the catalogue

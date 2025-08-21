@@ -42,6 +42,15 @@
           "$ref": "#/components/messages/certificationCompletedEventV1"
         }
       }
+    },
+    "users.userRegistered.v1": {
+      "subscribe": {
+        "operationId": "ProcessUserRegisteredEventAsync",
+        "summary": "Subscribed to assign welcome stickers to newly registered users",
+        "message": {
+          "$ref": "#/components/messages/userRegisteredEventV1"
+        }
+      }
     }
   },
   "components": {
