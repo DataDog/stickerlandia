@@ -12,7 +12,6 @@ require (
 	github.com/go-playground/validator/v10 v10.15.5
 	github.com/golang-migrate/migrate/v4 v4.16.2
 	github.com/lib/pq v1.10.9
-	github.com/segmentio/kafka-go v0.4.48
 	github.com/spf13/viper v1.17.0
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.38.0

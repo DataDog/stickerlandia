@@ -1,21 +1,20 @@
 package messaging
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"time"
 
+	"github.com/IBM/sarama"
 	"github.com/datadog/stickerlandia/sticker-award/internal/config"
 	"github.com/datadog/stickerlandia/sticker-award/internal/domain/events"
-	"github.com/segmentio/kafka-go"
 	"go.uber.org/zap"
 )
 
-// Producer handles publishing events to Kafka
+// Producer handles publishing events to Kafka using Sarama
 type Producer struct {
-	writer *kafka.Writer
-	logger *zap.SugaredLogger
+	producer sarama.SyncProducer
+	logger   *zap.SugaredLogger
 }
 
 // Topics for different event types
@@ -25,24 +24,35 @@ const (
 	TopicStickerClaimed         = "users.stickerClaimed.v1"
 )
 
-// NewProducer creates a new Kafka producer
+// NewProducer creates a new Kafka producer using Sarama
 func NewProducer(cfg *config.KafkaConfig, logger *zap.SugaredLogger) (*Producer, error) {
-	writer := &kafka.Writer{
-		Addr:         kafka.TCP(cfg.Brokers...),
-		Balancer:     &kafka.LeastBytes{},
-		WriteTimeout: time.Duration(cfg.ProducerTimeout) * time.Millisecond,
-		ReadTimeout:  time.Duration(cfg.ProducerTimeout) * time.Millisecond,
-		RequiredAcks: kafka.RequiredAcks(cfg.RequireAcks),
-		Async:        false, // Synchronous writes
-		Compression:  kafka.Snappy,
-		BatchSize:    cfg.ProducerBatchSize,
-		BatchTimeout: 100 * time.Millisecond,
-		MaxAttempts:  cfg.ProducerRetries,
+	config := sarama.NewConfig()
+
+	// Producer configuration matching the original kafka-go settings
+	config.Producer.Return.Successes = true
+	config.Producer.Return.Errors = true
+	config.Producer.RequiredAcks = sarama.RequiredAcks(cfg.RequireAcks)
+	config.Producer.Retry.Max = cfg.ProducerRetries
+	config.Producer.Timeout = time.Duration(cfg.ProducerTimeout) * time.Millisecond
+	config.Producer.Compression = sarama.CompressionSnappy
+	config.Producer.Flush.Bytes = cfg.ProducerBatchSize
+	config.Producer.Flush.Frequency = 100 * time.Millisecond
+	config.Version = sarama.V2_1_0_0
+	config.ClientID = "sticker-award-producer"
+
+	// Network timeouts
+	config.Net.DialTimeout = 10 * time.Second
+	config.Net.ReadTimeout = 10 * time.Second
+	config.Net.WriteTimeout = 10 * time.Second
+
+	producer, err := sarama.NewSyncProducer(cfg.Brokers, config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Sarama producer: %w", err)
 	}
 
 	return &Producer{
-		writer: writer,
-		logger: logger,
+		producer: producer,
+		logger:   logger,
 	}, nil
 }
 
@@ -61,7 +71,7 @@ func (p *Producer) PublishStickerClaimedEvent(event *events.StickerClaimedEvent)
 	return p.publishEvent(TopicStickerClaimed, event.AccountID, event)
 }
 
-// publishEvent publishes an event to the specified topic
+// publishEvent publishes an event to the specified topic using Sarama
 func (p *Producer) publishEvent(topic, key string, event interface{}) error {
 	// Serialize event to JSON
 	eventBytes, err := json.Marshal(event)
@@ -70,25 +80,22 @@ func (p *Producer) publishEvent(topic, key string, event interface{}) error {
 		return fmt.Errorf("failed to serialize event: %w", err)
 	}
 
-	// Create Kafka message
-	msg := kafka.Message{
+	// Create Sarama producer message
+	msg := &sarama.ProducerMessage{
 		Topic: topic,
-		Key:   []byte(key),
-		Value: eventBytes,
-		Headers: []kafka.Header{
+		Key:   sarama.StringEncoder(key),
+		Value: sarama.ByteEncoder(eventBytes),
+		Headers: []sarama.RecordHeader{
 			{
-				Key:   "content-type",
+				Key:   []byte("content-type"),
 				Value: []byte("application/json"),
 			},
 		},
-		Time: time.Now(),
+		Timestamp: time.Now(),
 	}
 
-	// Send message
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	err = p.writer.WriteMessages(ctx, msg)
+	// Send message synchronously
+	partition, offset, err := p.producer.SendMessage(msg)
 	if err != nil {
 		p.logger.Errorw("Failed to publish event",
 			"error", err,
@@ -99,15 +106,17 @@ func (p *Producer) publishEvent(topic, key string, event interface{}) error {
 
 	p.logger.Infow("Successfully published event",
 		"topic", topic,
-		"key", key)
+		"key", key,
+		"partition", partition,
+		"offset", offset)
 
 	return nil
 }
 
 // Close closes the producer
 func (p *Producer) Close() error {
-	if p.writer != nil {
-		return p.writer.Close()
+	if p.producer != nil {
+		return p.producer.Close()
 	}
 	return nil
 }
