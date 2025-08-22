@@ -1,8 +1,6 @@
-package events
+package consumed
 
-import (
-	"time"
-)
+import "time"
 
 // CertificationCompletedEvent represents the event consumed when a certification is completed
 type CertificationCompletedEvent struct {

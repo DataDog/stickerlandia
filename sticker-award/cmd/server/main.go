@@ -14,13 +14,13 @@ import (
 	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
 	"github.com/DataDog/dd-trace-go/v2/profiler"
 	"github.com/datadog/stickerlandia/sticker-award/internal/api/router"
-	"github.com/datadog/stickerlandia/sticker-award/internal/application/service"
+	"github.com/datadog/stickerlandia/sticker-award/internal/clients/catalogue"
 	"github.com/datadog/stickerlandia/sticker-award/internal/config"
-	"github.com/datadog/stickerlandia/sticker-award/internal/infrastructure/database"
-	"github.com/datadog/stickerlandia/sticker-award/internal/infrastructure/database/repository"
-	"github.com/datadog/stickerlandia/sticker-award/internal/infrastructure/external/catalogue"
-	"github.com/datadog/stickerlandia/sticker-award/internal/infrastructure/messaging"
-	"github.com/datadog/stickerlandia/sticker-award/internal/infrastructure/messaging/events"
+	"github.com/datadog/stickerlandia/sticker-award/internal/database"
+	"github.com/datadog/stickerlandia/sticker-award/internal/database/repository"
+	"github.com/datadog/stickerlandia/sticker-award/internal/domain/service"
+	"github.com/datadog/stickerlandia/sticker-award/internal/messaging"
+	"github.com/datadog/stickerlandia/sticker-award/internal/messaging/handlers"
 	"github.com/datadog/stickerlandia/sticker-award/pkg/logger"
 	"github.com/datadog/stickerlandia/sticker-award/pkg/validator"
 )
@@ -85,7 +85,7 @@ func main() {
 		logger.Fatalw("Failed to create Kafka producer", "error", err)
 	}
 
-	assignmentService := service.NewAssignmentService(assignmentRepo, catalogueClient, validator, producer, logger)
+	assignmentService := service.NewAssigner(assignmentRepo, catalogueClient, validator, producer, logger)
 
 	// Initialize HTTP router
 	r := router.Setup(db, logger, cfg, assignmentService)
@@ -103,7 +103,7 @@ func main() {
 	}
 
 	// Register user registered event handler
-	userRegisteredHandler := events.NewUserRegisteredHandler(assignmentService, logger)
+	userRegisteredHandler := handlers.NewUserRegisteredHandler(assignmentService, logger)
 	consumer.RegisterHandler(userRegisteredHandler)
 
 	// Create HTTP server

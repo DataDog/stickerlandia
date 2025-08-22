@@ -1,4 +1,4 @@
-package events
+package handlers
 
 import (
 	"context"
@@ -10,17 +10,12 @@ import (
 	"github.com/IBM/sarama"
 	"go.uber.org/zap"
 
-	"github.com/datadog/stickerlandia/sticker-award/internal/infrastructure/messaging"
+	"github.com/datadog/stickerlandia/sticker-award/internal/messaging"
+	"github.com/datadog/stickerlandia/sticker-award/internal/messaging/events"
+	"github.com/datadog/stickerlandia/sticker-award/internal/messaging/events/consumed"
 )
 
 const TopicUserRegistered = "users.userRegistered.v1"
-
-// UserRegisteredEvent represents the user registered event from user-management service
-type UserRegisteredEvent struct {
-	EventName    string `json:"eventName"`
-	EventVersion string `json:"eventVersion"`
-	AccountID    string `json:"accountId"`
-}
 
 // WelcomeStickerAssigner defines the interface for assigning welcome stickers
 type WelcomeStickerAssigner interface {
@@ -85,12 +80,12 @@ func (h *UserRegisteredHandler) Handle(ctx context.Context, message *sarama.Cons
 	h.logger.Infow("Raw message received", "value", string(message.Value))
 
 	// First try parsing as direct event (current format from user-management)
-	var event UserRegisteredEvent
+	var event consumed.UserRegisteredEvent
 	if err := json.Unmarshal(message.Value, &event); err != nil {
 		h.logger.Infow("Direct event parsing failed, trying CloudEvent format", "error", err.Error())
 
 		// Fallback: try parsing as CloudEvent wrapper
-		var cloudEvent messaging.CloudEvent[UserRegisteredEvent]
+		var cloudEvent events.CloudEvent[consumed.UserRegisteredEvent]
 		if fallbackErr := json.Unmarshal(message.Value, &cloudEvent); fallbackErr != nil {
 			span.SetTag("error", true)
 			span.SetTag("error.msg", err.Error())

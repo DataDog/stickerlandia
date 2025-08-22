@@ -14,12 +14,12 @@ import (
 
 // AssignmentHandler handles sticker assignment requests
 type AssignmentHandler struct {
-	assignmentService service.AssignmentService
+	assignmentService service.Assigner
 	logger            *zap.SugaredLogger
 }
 
 // NewAssignmentHandler creates a new assignment handler
-func NewAssignmentHandler(assignmentService service.AssignmentService, logger *zap.SugaredLogger) *AssignmentHandler {
+func NewAssignmentHandler(assignmentService service.Assigner, logger *zap.SugaredLogger) *AssignmentHandler {
 	return &AssignmentHandler{
 		assignmentService: assignmentService,
 		logger:            logger,

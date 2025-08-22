@@ -12,7 +12,8 @@ import (
 	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
 	"github.com/IBM/sarama"
 	"github.com/datadog/stickerlandia/sticker-award/internal/config"
-	"github.com/datadog/stickerlandia/sticker-award/internal/domain/events"
+	"github.com/datadog/stickerlandia/sticker-award/internal/messaging/events"
+	"github.com/datadog/stickerlandia/sticker-award/internal/messaging/events/published"
 	"go.uber.org/zap"
 )
 
@@ -55,24 +56,24 @@ func NewProducer(cfg *config.KafkaConfig, logger *zap.SugaredLogger) (*Producer,
 }
 
 // PublishStickerAssignedEvent publishes a sticker assigned event
-func (p *Producer) PublishStickerAssignedEvent(ctx context.Context, event *events.StickerAssignedToUserEvent) error {
+func (p *Producer) PublishStickerAssignedEvent(ctx context.Context, event *published.StickerAssignedToUserEvent) error {
 	return p.publishEvent(ctx, TopicStickerAssignedToUser, event.AccountID, event)
 }
 
 // PublishStickerRemovedEvent publishes a sticker removed event
-func (p *Producer) PublishStickerRemovedEvent(ctx context.Context, event *events.StickerRemovedFromUserEvent) error {
+func (p *Producer) PublishStickerRemovedEvent(ctx context.Context, event *published.StickerRemovedFromUserEvent) error {
 	return p.publishEvent(ctx, TopicStickerRemovedFromUser, event.AccountID, event)
 }
 
 // PublishStickerClaimedEvent publishes a sticker claimed event
-func (p *Producer) PublishStickerClaimedEvent(ctx context.Context, event *events.StickerClaimedEvent) error {
+func (p *Producer) PublishStickerClaimedEvent(ctx context.Context, event *published.StickerClaimedEvent) error {
 	return p.publishEvent(ctx, TopicStickerClaimed, event.AccountID, event)
 }
 
 // publishEvent publishes an event to the specified topic using Sarama
 func (p *Producer) publishEvent(ctx context.Context, topic, key string, event interface{}) error {
 	// Wrap event in CloudEvent format with W3C trace context for span links
-	cloudEvent := NewCloudEvent(ctx, topic, "sticker-award", event)
+	cloudEvent := events.NewCloudEvent(ctx, topic, "sticker-award", event)
 
 	// Serialize CloudEvent to JSON
 	eventBytes, err := json.Marshal(cloudEvent)

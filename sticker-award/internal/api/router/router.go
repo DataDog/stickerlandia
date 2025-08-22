@@ -13,7 +13,7 @@ import (
 )
 
 // Setup configures and returns the Gin router with all routes and middleware
-func Setup(db *gorm.DB, logger *zap.SugaredLogger, cfg *config.Config, assignmentService domainservice.AssignmentService) *gin.Engine {
+func Setup(db *gorm.DB, logger *zap.SugaredLogger, cfg *config.Config, assignmentService domainservice.Assigner) *gin.Engine {
 	// Set Gin mode based on environment
 	if cfg.Logging.Level == "debug" {
 		gin.SetMode(gin.DebugMode)

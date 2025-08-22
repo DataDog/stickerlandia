@@ -26,11 +26,11 @@ import (
 
 	"github.com/datadog/stickerlandia/sticker-award/internal/api/dto"
 	"github.com/datadog/stickerlandia/sticker-award/internal/api/router"
-	"github.com/datadog/stickerlandia/sticker-award/internal/application/service"
+	"github.com/datadog/stickerlandia/sticker-award/internal/services"
 	"github.com/datadog/stickerlandia/sticker-award/internal/config"
-	"github.com/datadog/stickerlandia/sticker-award/internal/infrastructure/database"
-	"github.com/datadog/stickerlandia/sticker-award/internal/infrastructure/database/repository"
-	"github.com/datadog/stickerlandia/sticker-award/internal/infrastructure/external/catalogue"
+	"github.com/datadog/stickerlandia/sticker-award/internal/database"
+	"github.com/datadog/stickerlandia/sticker-award/internal/database/repository"
+	"github.com/datadog/stickerlandia/sticker-award/internal/clients/catalogue"
 	"github.com/datadog/stickerlandia/sticker-award/pkg/validator"
 )
 
@@ -116,7 +116,7 @@ func setupTestEnvironment(t *testing.T) *TestEnvironment {
 	catalogueClient := catalogue.NewClient(wireMockURL, 5*time.Second)
 	validatorInstance := validator.New()
 	// Use nil producer for tests to avoid Kafka dependencies
-	assignmentService := service.NewAssignmentService(assignmentRepo, catalogueClient, validatorInstance, nil, logger)
+	assignmentService := service.NewAssigner(assignmentRepo, catalogueClient, validatorInstance, nil, logger)
 
 	// Set up router
 	gin.SetMode(gin.TestMode)
