@@ -13,7 +13,3 @@ body {
   margin: 0 auto;
 }
 
-.page-header {
-  display: flex;
-  justify-content: space-between;
-}

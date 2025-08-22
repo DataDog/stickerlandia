@@ -7,7 +7,7 @@ import { initializeDatadogRum } from './services/DatadogRum.js'
 // Initialize Datadog RUM
 initializeDatadogRum();
 
-createRoot(document.getElementById('main')).render(
+createRoot(document.getElementById('root')).render(
   <StrictMode>
       <App />
   </StrictMode>,
