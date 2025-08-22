@@ -15,7 +15,7 @@ import (
 func Connect(cfg *config.DatabaseConfig) (*gorm.DB, error) {
 	// Open GORM connection directly with connection string
 	db, err := gorm.Open(postgres.Open(cfg.ConnectionString()), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: logger.Default.LogMode(logger.Silent),
 		NowFunc: func() time.Time {
 			return time.Now().UTC()
 		},

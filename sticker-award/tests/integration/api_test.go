@@ -14,23 +14,23 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/kafka"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"go.uber.org/zap"
 	postgresDriver "gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
 	"github.com/datadog/stickerlandia/sticker-award/internal/api/dto"
 	"github.com/datadog/stickerlandia/sticker-award/internal/api/router"
-	"github.com/datadog/stickerlandia/sticker-award/internal/services"
+	"github.com/datadog/stickerlandia/sticker-award/internal/clients/catalogue"
 	"github.com/datadog/stickerlandia/sticker-award/internal/config"
 	"github.com/datadog/stickerlandia/sticker-award/internal/database"
 	"github.com/datadog/stickerlandia/sticker-award/internal/database/repository"
-	"github.com/datadog/stickerlandia/sticker-award/internal/clients/catalogue"
+	"github.com/datadog/stickerlandia/sticker-award/internal/domain/service"
 	"github.com/datadog/stickerlandia/sticker-award/pkg/validator"
 )
 
@@ -109,18 +109,19 @@ func setupTestEnvironment(t *testing.T) *TestEnvironment {
 	}
 
 	// Set up logger
-	logger := zap.NewNop().Sugar()
+	logger := logrus.New()
+	logger.SetLevel(logrus.ErrorLevel) // Reduce noise in tests
 
 	// Set up real dependencies
 	assignmentRepo := repository.NewAssignmentRepository(db)
 	catalogueClient := catalogue.NewClient(wireMockURL, 5*time.Second)
 	validatorInstance := validator.New()
 	// Use nil producer for tests to avoid Kafka dependencies
-	assignmentService := service.NewAssigner(assignmentRepo, catalogueClient, validatorInstance, nil, logger)
+	assignmentService := service.NewAssigner(assignmentRepo, catalogueClient, validatorInstance, nil)
 
 	// Set up router
 	gin.SetMode(gin.TestMode)
-	router := router.Setup(db, logger, cfg, assignmentService)
+	router := router.Setup(db, cfg, assignmentService)
 
 	// Clean up function
 	t.Cleanup(func() {

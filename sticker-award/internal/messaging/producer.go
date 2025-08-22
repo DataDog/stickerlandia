@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"time"
 
 	ddsamarama "github.com/DataDog/dd-trace-go/contrib/IBM/sarama/v2"
@@ -14,13 +15,11 @@ import (
 	"github.com/datadog/stickerlandia/sticker-award/internal/config"
 	"github.com/datadog/stickerlandia/sticker-award/internal/messaging/events"
 	"github.com/datadog/stickerlandia/sticker-award/internal/messaging/events/published"
-	"go.uber.org/zap"
 )
 
 // Producer handles publishing events to Kafka using Sarama
 type Producer struct {
 	producer sarama.SyncProducer
-	logger   *zap.SugaredLogger
 }
 
 // Topics for different event types
@@ -31,7 +30,7 @@ const (
 )
 
 // NewProducer creates a new Kafka producer using Sarama with Datadog instrumentation
-func NewProducer(cfg *config.KafkaConfig, logger *zap.SugaredLogger) (*Producer, error) {
+func NewProducer(cfg *config.KafkaConfig) (*Producer, error) {
 	// Create shared Sarama configuration
 	config := NewSaramaConfig("sticker-award-producer")
 	ConfigureProducer(config, cfg)
@@ -51,7 +50,6 @@ func NewProducer(cfg *config.KafkaConfig, logger *zap.SugaredLogger) (*Producer,
 
 	return &Producer{
 		producer: producer,
-		logger:   logger,
 	}, nil
 }
 
@@ -78,7 +76,10 @@ func (p *Producer) publishEvent(ctx context.Context, topic, key string, event in
 	// Serialize CloudEvent to JSON
 	eventBytes, err := json.Marshal(cloudEvent)
 	if err != nil {
-		p.logger.Errorw("Failed to serialize cloud event", "error", err, "topic", topic)
+		log.WithContext(ctx).WithFields(log.Fields{
+			"topic": topic,
+			"error": err,
+		}).Error("Failed to serialize cloud event")
 		return fmt.Errorf("failed to serialize cloud event: %w", err)
 	}
 
@@ -114,18 +115,19 @@ func (p *Producer) publishEvent(ctx context.Context, topic, key string, event in
 	// Send message synchronously - the Datadog wrapper will create the APM span automatically
 	partition, offset, err := p.producer.SendMessage(msg)
 	if err != nil {
-		p.logger.Errorw("Failed to publish event",
-			"error", err,
-			"topic", topic,
-			"key", key)
+		log.WithContext(ctx).WithFields(log.Fields{
+			"topic": topic,
+			"key":   key,
+			"error": err,
+		}).Error("Failed to publish event")
 		return fmt.Errorf("failed to publish event to topic %s: %w", topic, err)
 	}
 
-	p.logger.Infow("Successfully published event",
-		"topic", topic,
-		"key", key,
-		"partition", partition,
-		"offset", offset)
+	log.WithContext(ctx).WithFields(log.Fields{
+		"topic":     topic,
+		"partition": partition,
+		"offset":    offset,
+	}).Info("Successfully published event")
 
 	return nil
 }

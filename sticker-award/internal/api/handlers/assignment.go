@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/datadog/stickerlandia/sticker-award/internal/api/dto"
 	"github.com/datadog/stickerlandia/sticker-award/internal/domain/service"
@@ -15,22 +15,24 @@ import (
 // AssignmentHandler handles sticker assignment requests
 type AssignmentHandler struct {
 	assignmentService service.Assigner
-	logger            *zap.SugaredLogger
 }
 
 // NewAssignmentHandler creates a new assignment handler
-func NewAssignmentHandler(assignmentService service.Assigner, logger *zap.SugaredLogger) *AssignmentHandler {
+func NewAssignmentHandler(assignmentService service.Assigner) *AssignmentHandler {
 	return &AssignmentHandler{
 		assignmentService: assignmentService,
-		logger:            logger,
 	}
 }
 
 // GetUserStickers handles GET /api/awards/v1/assignments/{userId}
 func (h *AssignmentHandler) GetUserStickers(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	log.WithContext(ctx).Info("AssignmentHandler.GetUserStickers")
+
 	userID := c.Param("userId")
 
-	response, err := h.assignmentService.GetUserStickers(c.Request.Context(), userID)
+	response, err := h.assignmentService.GetUserStickers(ctx, userID)
 	if err != nil {
 		h.handleServiceError(c, err)
 		return
@@ -41,11 +43,17 @@ func (h *AssignmentHandler) GetUserStickers(c *gin.Context) {
 
 // AssignSticker handles POST /api/awards/v1/assignments/{userId}
 func (h *AssignmentHandler) AssignSticker(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	log.WithContext(ctx).Info("AssignmentHandler.AssignSticker")
+
 	userID := c.Param("userId")
 
 	var req dto.AssignStickerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		h.logger.Warnw("Invalid request body", "error", err)
+		log.WithContext(ctx).WithFields(log.Fields{
+			"error": err,
+		}).Warn("Invalid request body")
 		c.JSON(http.StatusBadRequest, dto.ProblemDetails{
 			Type:   stringPtr("about:blank"),
 			Title:  stringPtr("Bad Request"),
@@ -66,10 +74,14 @@ func (h *AssignmentHandler) AssignSticker(c *gin.Context) {
 
 // RemoveSticker handles DELETE /api/awards/v1/assignments/{userId}/{stickerId}
 func (h *AssignmentHandler) RemoveSticker(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	log.WithContext(ctx).Info("AssignmentHandler.RemoveSticker")
+
 	userID := c.Param("userId")
 	stickerID := c.Param("stickerId")
 
-	response, err := h.assignmentService.RemoveSticker(c.Request.Context(), userID, stickerID)
+	response, err := h.assignmentService.RemoveSticker(ctx, userID, stickerID)
 	if err != nil {
 		h.handleServiceError(c, err)
 		return
@@ -88,12 +100,12 @@ func (h *AssignmentHandler) handleServiceError(c *gin.Context, err error) {
 		serviceErr = pkgErrors.NewInternalServerError("An unexpected error occurred", err)
 	}
 
-	h.logger.Errorw("Service error",
-		"error", err,
-		"statusCode", serviceErr.Code,
-		"path", c.Request.URL.Path,
-		"method", c.Request.Method,
-	)
+	log.WithContext(c.Request.Context()).WithFields(log.Fields{
+		"error":      err,
+		"statusCode": serviceErr.Code,
+		"path":       c.Request.URL.Path,
+		"method":     c.Request.Method,
+	}).Error("Service error")
 
 	c.JSON(serviceErr.Code, dto.ProblemDetails{
 		Type:   stringPtr("about:blank"),

@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
 	"strconv"
@@ -17,7 +17,6 @@ import (
 	"github.com/DataDog/dd-trace-go/v2/datastreams/options"
 	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
 	"github.com/IBM/sarama"
-	"go.uber.org/zap"
 )
 
 // Context key for span links
@@ -29,7 +28,6 @@ const SpanLinksContextKey contextKey = "span_links"
 type Consumer struct {
 	client   sarama.ConsumerGroup
 	handlers map[string]MessageHandler
-	logger   *zap.SugaredLogger
 	groupID  string
 	brokers  []string
 	topics   []string
@@ -46,29 +44,32 @@ type MessageHandler interface {
 }
 
 // NewConsumer creates a new Kafka consumer with Datadog DSM integration
-func NewConsumer(brokers []string, groupID string, logger *zap.SugaredLogger) (*Consumer, error) {
-	// Enable Sarama debug logging
-	sarama.Logger = log.New(os.Stdout, "[sarama] ", log.LstdFlags)
+func NewConsumer(brokers []string, groupID string) (*Consumer, error) {
+	// Configure Sarama to use logrus for consistent JSON logging
+	sarama.Logger = log.StandardLogger()
 
-	logger.Infow("Creating Kafka consumer",
-		"brokers", brokers,
-		"groupID", groupID,
-		"protocol_version", "2.1.0.0")
+	log.WithFields(log.Fields{
+		"brokers":          brokers,
+		"groupID":          groupID,
+		"protocol_version": "2.1.0.0",
+	}).Info("Creating Kafka consumer")
 
 	// Create shared Sarama configuration
 	config := NewSaramaConfig("sticker-award-consumer")
 	ConfigureConsumer(config)
 
-	logger.Infow("Attempting to create Sarama consumer group",
-		"brokers", brokers,
-		"groupID", groupID)
+	log.WithFields(log.Fields{
+		"brokers": brokers,
+		"groupID": groupID,
+	}).Info("Attempting to create Sarama consumer group")
 
 	client, err := sarama.NewConsumerGroup(brokers, groupID, config)
 	if err != nil {
-		logger.Errorw("Failed to create Sarama consumer group",
-			"brokers", brokers,
-			"groupID", groupID,
-			"error", err)
+		log.WithFields(log.Fields{
+			"brokers": brokers,
+			"groupID": groupID,
+			"error":   err,
+		}).Error("Failed to create Sarama consumer group")
 		return nil, fmt.Errorf("failed to create consumer group: %w", err)
 	}
 
@@ -77,7 +78,6 @@ func NewConsumer(brokers []string, groupID string, logger *zap.SugaredLogger) (*
 	consumer := Consumer{
 		client:   client,
 		handlers: make(map[string]MessageHandler),
-		logger:   logger,
 		groupID:  groupID,
 		brokers:  brokers,
 		ready:    make(chan bool),
@@ -100,10 +100,11 @@ func (c *Consumer) Start() error {
 		return fmt.Errorf("no topics registered")
 	}
 
-	c.logger.Infow("Starting Kafka consumer",
-		"group_id", c.groupID,
-		"topics", c.topics,
-		"brokers", c.brokers)
+	log.WithFields(log.Fields{
+		"group_id": c.groupID,
+		"topics":   c.topics,
+		"brokers":  c.brokers,
+	}).Info("Starting Kafka consumer")
 
 	c.wg.Add(1)
 	go func() {
@@ -111,11 +112,11 @@ func (c *Consumer) Start() error {
 		for {
 			select {
 			case <-c.ctx.Done():
-				c.logger.Info("Kafka consumer context cancelled")
+				log.WithContext(c.ctx).Info("Kafka consumer context cancelled")
 				return
 			default:
 				if err := c.client.Consume(c.ctx, c.topics, ddsarama.WrapConsumerGroupHandler(c)); err != nil {
-					c.logger.Errorw("Error from consumer", "error", err)
+					log.WithFields(log.Fields{"error": err}).Error("Error from consumer")
 					return
 				}
 			}
@@ -130,7 +131,7 @@ func (c *Consumer) Start() error {
 			select {
 			case err := <-c.client.Errors():
 				if err != nil {
-					c.logger.Errorw("Consumer error", "error", err)
+					log.WithContext(c.ctx).WithFields(log.Fields{"error": err}).Error("Consumer error")
 				}
 			case <-c.ctx.Done():
 				return
@@ -139,7 +140,7 @@ func (c *Consumer) Start() error {
 	}()
 
 	<-c.ready
-	c.logger.Info("Kafka consumer ready")
+	log.WithContext(c.ctx).Info("Kafka consumer ready")
 
 	// Handle shutdown signals
 	sigterm := make(chan os.Signal, 1)
@@ -147,9 +148,9 @@ func (c *Consumer) Start() error {
 
 	select {
 	case <-c.ctx.Done():
-		c.logger.Info("Context cancelled")
+		log.WithContext(c.ctx).Info("Context cancelled")
 	case <-sigterm:
-		c.logger.Info("Shutdown signal received")
+		log.WithContext(c.ctx).Info("Shutdown signal received")
 	}
 
 	return nil
@@ -157,16 +158,16 @@ func (c *Consumer) Start() error {
 
 // Stop stops the consumer
 func (c *Consumer) Stop() error {
-	c.logger.Info("Stopping Kafka consumer...")
+	log.WithContext(c.ctx).Info("Stopping Kafka consumer...")
 	c.cancel()
 
 	if err := c.client.Close(); err != nil {
-		c.logger.Errorw("Error closing consumer client", "error", err)
+		log.WithFields(log.Fields{"error": err}).Error("Error closing consumer client")
 		return err
 	}
 
 	c.wg.Wait()
-	c.logger.Info("Kafka consumer stopped")
+	log.WithContext(c.ctx).Info("Kafka consumer stopped")
 	return nil
 }
 
@@ -194,7 +195,7 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 			ctx := c.extractDatadogContext(session.Context(), message)
 
 			// Extract span links from CloudEvent message
-			spanLinks := c.extractSpanLinksFromMessage(message)
+			spanLinks := c.extractSpanLinksFromMessage(ctx, message)
 
 			// Add span links to context so handlers can access them
 			ctx = context.WithValue(ctx, SpanLinksContextKey, spanLinks)
@@ -205,7 +206,7 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 			// Get handler for this topic
 			handler, exists := c.handlers[message.Topic]
 			if !exists {
-				c.logger.Warnw("No handler registered for topic", "topic", message.Topic)
+				log.WithContext(ctx).WithFields(log.Fields{"topic": message.Topic}).Warn("No handler registered for topic")
 				if span != nil {
 					span.SetTag("error", true)
 					span.SetTag("error.msg", "no handler registered")
@@ -218,20 +219,22 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 			// Process message
 			err := handler.Handle(ctx, message)
 			if err != nil {
-				c.logger.Errorw("Error handling message",
-					"topic", message.Topic,
-					"partition", message.Partition,
-					"offset", message.Offset,
-					"error", err)
+				log.WithContext(ctx).WithFields(log.Fields{
+					"topic":     message.Topic,
+					"partition": message.Partition,
+					"offset":    message.Offset,
+					"error":     err,
+				}).Error("Error handling message")
 				if span != nil {
 					span.SetTag("error", true)
 					span.SetTag("error.msg", err.Error())
 				}
 			} else {
-				c.logger.Debugw("Message processed successfully",
-					"topic", message.Topic,
-					"partition", message.Partition,
-					"offset", message.Offset)
+				log.WithContext(ctx).WithFields(log.Fields{
+					"topic":     message.Topic,
+					"partition": message.Partition,
+					"offset":    message.Offset,
+				}).Debug("Message processed successfully")
 			}
 
 			// Finish the consumer span
@@ -279,7 +282,7 @@ func (c *Consumer) extractDatadogContext(ctx context.Context, message *sarama.Co
 
 // extractSpanLinksFromMessage attempts to extract span links from CloudEvent messages
 // Returns span links that can be used when creating processing spans
-func (c *Consumer) extractSpanLinksFromMessage(message *sarama.ConsumerMessage) []tracer.SpanLink {
+func (c *Consumer) extractSpanLinksFromMessage(ctx context.Context, message *sarama.ConsumerMessage) []tracer.SpanLink {
 	var spanLinks []tracer.SpanLink
 
 	// Try to parse the message as a CloudEvent to extract traceparent
@@ -288,19 +291,19 @@ func (c *Consumer) extractSpanLinksFromMessage(message *sarama.ConsumerMessage) 
 	}
 
 	if err := json.Unmarshal(message.Value, &cloudEvent); err != nil {
-		c.logger.Debugw("Could not parse message as CloudEvent, skipping span link extraction", "error", err)
+		log.WithContext(ctx).Debug("Could not parse message as CloudEvent, skipping span link extraction")
 		return spanLinks
 	}
 
 	if cloudEvent.TraceParent == "" {
-		c.logger.Debugw("No traceparent found in CloudEvent, no span links to create")
+		log.WithContext(ctx).Debug("No traceparent found in CloudEvent, no span links to create")
 		return spanLinks
 	}
 
 	// Parse W3C traceparent format: "version-traceId-spanId-flags"
 	parts := strings.Split(cloudEvent.TraceParent, "-")
 	if len(parts) != 4 {
-		c.logger.Debugw("Invalid traceparent format", "traceparent", cloudEvent.TraceParent)
+		log.WithContext(ctx).WithFields(log.Fields{"traceparent": cloudEvent.TraceParent}).Debug("Invalid traceparent format")
 		return spanLinks
 	}
 
@@ -314,13 +317,13 @@ func (c *Consumer) extractSpanLinksFromMessage(message *sarama.ConsumerMessage) 
 	}
 	traceID, err := strconv.ParseUint(traceIDHex, 16, 64)
 	if err != nil {
-		c.logger.Debugw("Failed to parse trace ID from traceparent", "traceId", parts[1], "error", err)
+		log.WithContext(ctx).WithFields(log.Fields{"traceId": parts[1], "error": err}).Debug("Failed to parse trace ID from traceparent")
 		return spanLinks
 	}
 
 	spanID, err := strconv.ParseUint(parts[2], 16, 64)
 	if err != nil {
-		c.logger.Debugw("Failed to parse span ID from traceparent", "spanId", parts[2], "error", err)
+		log.WithContext(ctx).WithFields(log.Fields{"spanId": parts[2], "error": err}).Debug("Failed to parse span ID from traceparent")
 		return spanLinks
 	}
 
@@ -330,10 +333,11 @@ func (c *Consumer) extractSpanLinksFromMessage(message *sarama.ConsumerMessage) 
 		SpanID:  spanID,
 	})
 
-	c.logger.Debugw("Created span link from traceparent",
-		"traceId", traceID,
-		"spanId", spanID,
-		"traceparent", cloudEvent.TraceParent)
+	log.WithContext(ctx).WithFields(log.Fields{
+		"traceId":     traceID,
+		"spanId":      spanID,
+		"traceparent": cloudEvent.TraceParent,
+	}).Debug("Created span link from traceparent")
 
 	return spanLinks
 }

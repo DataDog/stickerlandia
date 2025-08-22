@@ -74,6 +74,8 @@ github.com/DataDog/dd-trace-go/contrib/gorm.io/gorm.v1/v2 v2.2.2 h1:2sbw6QWyDFR7
 github.com/DataDog/dd-trace-go/contrib/gorm.io/gorm.v1/v2 v2.2.2/go.mod h1:7ERr7zOOGyYvr4/L/I7AHoUWT0R7+FB4dHnZF3yU/Lo=
 github.com/DataDog/dd-trace-go/contrib/net/http/v2 v2.2.2 h1:DERYTirEH7Ll2EKzXfhZPC0YLH/JUhjUeCdqh4vLDEk=
 github.com/DataDog/dd-trace-go/contrib/net/http/v2 v2.2.2/go.mod h1:IJ2YceAGGIIS3PQ3cVNP4xm8RHQok5jXnnVCW0T3yI0=
+github.com/DataDog/dd-trace-go/contrib/sirupsen/logrus/v2 v2.2.2 h1:geHB33lwFHO54ikUm/9j/d3O1NcwHyAqqLltEKiF4EU=
+github.com/DataDog/dd-trace-go/contrib/sirupsen/logrus/v2 v2.2.2/go.mod h1:WhzEWPT733mj3wixd17GCCQ8MkzxfjqODq6XKOv2Nqc=
 github.com/DataDog/dd-trace-go/v2 v2.2.2 h1:t7RCS6et5z+xrvM9dqUPtCGoNOWTj0pcApzbktMZi2k=
 github.com/DataDog/dd-trace-go/v2 v2.2.2/go.mod h1:xvdSukALA8/NnVfTAnxqkZfLLO/6Vi4y5ooxfVy6dfk=
 github.com/DataDog/go-libddwaf/v4 v4.3.2 h1:YGvW2Of1C4e1yU+p7iibmhN2zEOgi9XEchbhQjBxb/A=
