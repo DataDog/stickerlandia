@@ -75,8 +75,16 @@ span.sparkle-logo > svg {
 
 .profile-wrapper {
     display: grid;
-grid-template-columns: repeat(5, 1fr);
-grid-template-rows: repeat(5, 1fr);
-grid-column-gap: 0px;
-grid-row-gap: 0px;
+    grid-template-columns: 1fr 3fr;
+  gap: 20px;
+  grid-template-areas:
+    "sidebar content"
+} 
+
+.profile-nav {
+  grid-area: sidebar;
+}
+
+.user-profile-wrapper {
+  grid-area: content;
 }

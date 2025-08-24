@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import AuthService from "../services/AuthService";
+import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
+import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
+import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
+import LocalPrintshopOutlinedIcon from '@mui/icons-material/LocalPrintshopOutlined';
+import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
+import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
 
 const UserProfile = () => {
   const { user, isAuthenticated } = useAuth();
@@ -51,33 +58,33 @@ const UserProfile = () => {
 
   return (
     <div className="profile-wrapper">
-      <div className="profile-menu">
+      <div className="profile-menu bg-white h-screen">
         <nav className="profile-nav">
           <ul>
-            <li>
-              <a href="">User Dashboard</a>
+            <li className="flex">
+              <a className="flex-1" href=""><HomeOutlinedIcon/>User Dashboard</a>
             </li>
-            <li>
-              <a href="">My Collection</a>
+            <li className="flex">
+              <a className="flex-1" href=""><MenuBookOutlinedIcon/>My Collection</a>
             </li>
-            <li>
-              <a href="">Public Dashboard</a>
+            <li className="flex">
+              <a className="flex-1" href=""><AssessmentOutlinedIcon/>Public Dashboard</a>
             </li>
-            <li>
-              <a href="">Print Station</a>
+            <li className="flex">
+              <a className="flex-1" href=""><LocalPrintshopOutlinedIcon/>Print Station</a>
             </li>
           </ul>
         </nav>
-        <nav class="user-nav">
+        <nav className="user-nav">
           <ul>
-            <li>
-              <a href="">Profile</a>
+            <li className="flex">
+              <a className="flex-1" href=""><PersonOutlineOutlinedIcon/>Profile</a>
             </li>
-            <li>
-              <a href="">Settings</a>
+            <li className="flex">
+              <a className="flex-1" href=""><SettingsOutlinedIcon/>Settings</a>
             </li>
-            <li>
-              <a href="">Sign Out</a>
+            <li className="flex">
+              <a className="flex-1" href=""><LogoutOutlinedIcon/>Sign Out</a>
             </li>
           </ul>
         </nav>
