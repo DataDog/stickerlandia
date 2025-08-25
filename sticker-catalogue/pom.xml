@@ -95,8 +95,15 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-opentelemetry</artifactId>
         </dependency>
-        
-        <!-- Kafka Testing Dependencies -->
+
+        <!-- loggingjson from _quarkiverse_ lets us turn on MDC flattening
+              which we need for log correlation, as we are not using the OTel SDK. -->
+        <dependency>
+            <groupId>io.quarkiverse.loggingjson</groupId>
+            <artifactId>quarkus-logging-json</artifactId>
+            <version>3.2.0</version>
+        </dependency>
+
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
@@ -108,24 +115,24 @@
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
         </dependency>
-        
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-mockito</artifactId>
             <scope>test</scope>
         </dependency>
+        
         <dependency>
             <groupId>org.awaitility</groupId>
             <artifactId>awaitility</artifactId>
             <scope>test</scope>
         </dependency>
-        
-        <!-- ArchUnit for architecture testing -->
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- ArchUnit for architecture testing -->
         <dependency>
             <groupId>com.tngtech.archunit</groupId>
             <artifactId>archunit-junit5</artifactId>
@@ -231,10 +238,7 @@
                             <version>1.19.2</version>
                             <style>AOSP</style> <!-- AOSP style uses 4-space indentation -->
                         </googleJavaFormat>
-                        <!-- Import ordering to match Checkstyle CustomImportOrder -->
-                        <!--<importOrder>
-                            <order>java,javax,jakarta,org,com</order>
-                        </importOrder>-->
+
                         <!-- Remove unused imports -->
                         <removeUnusedImports/>
                         <!-- Format files -->

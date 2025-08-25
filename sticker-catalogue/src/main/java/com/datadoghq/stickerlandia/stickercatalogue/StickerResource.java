@@ -7,6 +7,7 @@ import com.datadoghq.stickerlandia.stickercatalogue.dto.GetAllStickersResponse;
 import com.datadoghq.stickerlandia.stickercatalogue.dto.StickerDTO;
 import com.datadoghq.stickerlandia.stickercatalogue.dto.StickerImageUploadResponse;
 import com.datadoghq.stickerlandia.stickercatalogue.dto.UpdateStickerRequest;
+import io.opentelemetry.api.trace.Span;
 import io.smallrye.common.constraint.NotNull;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -23,6 +24,7 @@ import jakarta.ws.rs.core.Response;
 import java.io.InputStream;
 import java.time.Instant;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.jboss.logging.Logger;
 
 /** REST resource for managing stickers. */
 @Path("/api/stickers/v1")
@@ -32,10 +34,11 @@ public class StickerResource {
 
     @Inject StickerImageService stickerImageService;
 
+    private static final Logger LOG = Logger.getLogger(StickerResource.class);
+
     /**
      * Gets all stickers with pagination.
      *
-     * @param page the page number (0-based)
      * @param size the page size
      * @return response containing paginated stickers
      */
@@ -45,6 +48,9 @@ public class StickerResource {
     public GetAllStickersResponse getAllStickers(
             @QueryParam("page") @DefaultValue("0") int page,
             @QueryParam("size") @DefaultValue("20") int size) {
+
+        LOG.info("GetAllStickers");
+
         return stickerRepository.getAllStickers(page, size);
     }
 
@@ -59,6 +65,10 @@ public class StickerResource {
     @Consumes("application/json")
     @Operation(summary = "Create a new sticker")
     public Response createSticker(@NotNull CreateStickerRequest data) {
+        LOG.info("Create sticker");
+        Span span = Span.current();
+        span.setAttribute("sticker.name", data.getStickerName());
+
         CreateStickerResponse createdSticker = stickerRepository.createSticker(data);
         return Response.status(Response.Status.CREATED).entity(createdSticker).build();
     }
@@ -74,6 +84,10 @@ public class StickerResource {
     @Produces("application/json")
     @Operation(summary = "Get a sticker by ID")
     public Response getStickerMetadata(@PathParam("stickerId") String stickerId) {
+        LOG.info("GetSticker");
+        Span span = Span.current();
+        span.setAttribute("sticker.id", stickerId);
+
         StickerDTO metadata = stickerRepository.getStickerMetadata(stickerId);
         if (metadata == null) {
             return ProblemDetailsResponseBuilder.notFound(
@@ -96,6 +110,11 @@ public class StickerResource {
     @Operation(summary = "Update a sticker")
     public Response updateStickerMetadata(
             @PathParam("stickerId") String stickerId, @NotNull UpdateStickerRequest data) {
+
+        LOG.info("Update sticker with: " + data.toString());
+        Span span = Span.current();
+        span.setAttribute("sticker.id", stickerId);
+
         StickerDTO updated = stickerRepository.updateStickerMetadata(stickerId, data);
         if (updated == null) {
             return ProblemDetailsResponseBuilder.notFound(
@@ -114,6 +133,10 @@ public class StickerResource {
     @Path("/{stickerId}")
     @Operation(summary = "Delete a sticker from the catalog")
     public Response deleteSticker(@PathParam("stickerId") String stickerId) {
+        LOG.info("Delete sticker");
+        Span span = Span.current();
+        span.setAttribute("sticker.id", stickerId);
+
         try {
             boolean deleted = stickerRepository.deleteSticker(stickerId);
             if (!deleted) {
@@ -138,6 +161,11 @@ public class StickerResource {
     @Produces("image/png")
     @Operation(summary = "Get the sticker image")
     public Response getStickerImage(@PathParam("stickerId") String stickerId) {
+
+        LOG.info("Get Sticker Image");
+        Span span = Span.current();
+        span.setAttribute("sticker.id", stickerId);
+
         StickerDTO metadata = stickerRepository.getStickerMetadata(stickerId);
         if (metadata == null) {
             return ProblemDetailsResponseBuilder.notFound(
@@ -172,6 +200,11 @@ public class StickerResource {
     @Operation(summary = "Upload an image for a sticker")
     public Response uploadStickerImage(
             @PathParam("stickerId") String stickerId, @NotNull InputStream data) {
+
+        LOG.info("Upload image for sticker");
+        Span span = Span.current();
+        span.setAttribute("sticker.id", stickerId);
+
         StickerDTO metadata = stickerRepository.getStickerMetadata(stickerId);
         if (metadata == null) {
             return ProblemDetailsResponseBuilder.notFound(

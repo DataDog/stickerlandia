@@ -1,7 +1,6 @@
 package com.datadoghq.stickerlandia.stickercatalogue;
 
 import com.datadoghq.stickerlandia.stickercatalogue.entity.Sticker;
-import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
@@ -26,13 +25,12 @@ public class StickerSeeder {
 
     @Inject StickerRepository stickerRepository;
 
-    @Inject
-    Tracer tracer;
+    @Inject Tracer tracer;
 
     @Transactional
     public void onStartup(@Observes StartupEvent ev) {
 
-        //Tracer tracer = GlobalOpenTelemetry.getTracer("startup");
+        // Tracer tracer = GlobalOpenTelemetry.getTracer("startup");
 
         Span rootSpan = tracer.spanBuilder("SeedStickers").setNoParent().startSpan();
 
@@ -59,13 +57,14 @@ public class StickerSeeder {
         int skipped = 0;
 
         for (SampleSticker sample : sampleStickers) {
-            Span childSpan = tracer.spanBuilder("SeedSticker")
-                    .setParent(Context.current())
-                    .setAttribute("sticker.id", sample.id)
-                    .setAttribute("sticker.name", sample.name)
-                    .setAttribute("sticker.image_path", sample.imagePath)
-                    .startSpan();
-            
+            Span childSpan =
+                    tracer.spanBuilder("SeedSticker")
+                            .setParent(Context.current())
+                            .setAttribute("sticker.id", sample.id)
+                            .setAttribute("sticker.name", sample.name)
+                            .setAttribute("sticker.image_path", sample.imagePath)
+                            .startSpan();
+
             try (Scope childScope = childSpan.makeCurrent()) {
                 if (seedSticker(tracer, sample)) {
                     created++;
@@ -112,13 +111,15 @@ public class StickerSeeder {
         return true;
     }
 
-    private void seedStickerImage(Tracer tracer, String stickerId, String resourcePath, String description) {
-        Span imageSpan = tracer.spanBuilder("SeedStickerImage")
-                .setParent(Context.current())
-                .setAttribute("sticker.id", stickerId)
-                .setAttribute("resource.path", resourcePath)
-                .startSpan();
-        
+    private void seedStickerImage(
+            Tracer tracer, String stickerId, String resourcePath, String description) {
+        Span imageSpan =
+                tracer.spanBuilder("SeedStickerImage")
+                        .setParent(Context.current())
+                        .setAttribute("sticker.id", stickerId)
+                        .setAttribute("resource.path", resourcePath)
+                        .startSpan();
+
         try (Scope scope = imageSpan.makeCurrent()) {
             // Check if sticker exists and doesn't already have an image
             Sticker sticker = stickerRepository.findById(stickerId);
@@ -160,7 +161,8 @@ public class StickerSeeder {
 
         } catch (Exception e) {
             imageSpan.recordException(e);
-            imageSpan.setStatus(io.opentelemetry.api.trace.StatusCode.ERROR, "Failed seeding sticker image");
+            imageSpan.setStatus(
+                    io.opentelemetry.api.trace.StatusCode.ERROR, "Failed seeding sticker image");
             LOG.errorf(e, "Failed to seed image for sticker %s from %s", stickerId, resourcePath);
         } finally {
             imageSpan.end();
@@ -177,9 +179,9 @@ public class StickerSeeder {
                         "/stickers/dd_icon_rgb.png",
                         "Datadog Purple Logo"),
                 new SampleSticker(
-                        "sticker-002", 
-                        "DASH 2025 Attendee", 
-                        "Thanks for attending DASH!", 
+                        "sticker-002",
+                        "DASH 2025 Attendee",
+                        "Thanks for attending DASH!",
                         2000,
                         "/stickers/dd_icon_white.png",
                         "Datadog White Logo"),
@@ -193,5 +195,10 @@ public class StickerSeeder {
     }
 
     private record SampleSticker(
-            String id, String name, String description, Integer quantityRemaining, String imagePath, String imageDescription) {}
+            String id,
+            String name,
+            String description,
+            Integer quantityRemaining,
+            String imagePath,
+            String imageDescription) {}
 }

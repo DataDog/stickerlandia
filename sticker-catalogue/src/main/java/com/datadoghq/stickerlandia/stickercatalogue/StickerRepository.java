@@ -86,7 +86,6 @@ public class StickerRepository {
         return Sticker.findById(stickerId);
     }
 
-
     /**
      * Gets a sticker by its ID.
      *

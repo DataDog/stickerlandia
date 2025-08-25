@@ -2,8 +2,6 @@ package com.datadoghq.stickerlandia.stickercatalogue;
 
 import static io.restassured.RestAssured.given;
 import static org.awaitility.Awaitility.await;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -24,8 +22,6 @@ import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import java.time.Duration;
 import java.util.concurrent.CopyOnWriteArrayList;
-import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,15 +31,18 @@ import org.junit.jupiter.api.Test;
 class StickerMessagingIntegrationTest {
 
     private static final String TEST_STICKER_ID = "test-messaging-sticker-001";
-    
+
     @Inject EntityManager em;
-    
+
     @Inject ObjectMapper objectMapper;
 
     // Test message collectors
-    private static final CopyOnWriteArrayList<CloudEvent<StickerAddedEvent>> addedEvents = new CopyOnWriteArrayList<>();
-    private static final CopyOnWriteArrayList<CloudEvent<StickerUpdatedEvent>> updatedEvents = new CopyOnWriteArrayList<>();
-    private static final CopyOnWriteArrayList<CloudEvent<StickerDeletedEvent>> deletedEvents = new CopyOnWriteArrayList<>();
+    private static final CopyOnWriteArrayList<CloudEvent<StickerAddedEvent>> addedEvents =
+            new CopyOnWriteArrayList<>();
+    private static final CopyOnWriteArrayList<CloudEvent<StickerUpdatedEvent>> updatedEvents =
+            new CopyOnWriteArrayList<>();
+    private static final CopyOnWriteArrayList<CloudEvent<StickerDeletedEvent>> deletedEvents =
+            new CopyOnWriteArrayList<>();
 
     @BeforeEach
     @Transactional
@@ -53,7 +52,7 @@ class StickerMessagingIntegrationTest {
         if (existing != null) {
             existing.delete();
         }
-        
+
         // Clear message collectors
         addedEvents.clear();
         updatedEvents.clear();
@@ -64,21 +63,21 @@ class StickerMessagingIntegrationTest {
     @Incoming("stickers_added_test")
     void consumeStickerAddedEvent(String message) {
         try {
-            CloudEvent<StickerAddedEvent> event = objectMapper.readValue(
-                message, new TypeReference<CloudEvent<StickerAddedEvent>>() {}
-            );
+            CloudEvent<StickerAddedEvent> event =
+                    objectMapper.readValue(
+                            message, new TypeReference<CloudEvent<StickerAddedEvent>>() {});
             addedEvents.add(event);
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse StickerAddedEvent", e);
         }
     }
 
-    @Incoming("stickers_updated_test")  
+    @Incoming("stickers_updated_test")
     void consumeStickerUpdatedEvent(String message) {
         try {
-            CloudEvent<StickerUpdatedEvent> event = objectMapper.readValue(
-                message, new TypeReference<CloudEvent<StickerUpdatedEvent>>() {}
-            );
+            CloudEvent<StickerUpdatedEvent> event =
+                    objectMapper.readValue(
+                            message, new TypeReference<CloudEvent<StickerUpdatedEvent>>() {});
             updatedEvents.add(event);
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse StickerUpdatedEvent", e);
@@ -88,9 +87,9 @@ class StickerMessagingIntegrationTest {
     @Incoming("stickers_deleted_test")
     void consumeStickerDeletedEvent(String message) {
         try {
-            CloudEvent<StickerDeletedEvent> event = objectMapper.readValue(
-                message, new TypeReference<CloudEvent<StickerDeletedEvent>>() {}
-            );
+            CloudEvent<StickerDeletedEvent> event =
+                    objectMapper.readValue(
+                            message, new TypeReference<CloudEvent<StickerDeletedEvent>>() {});
             deletedEvents.add(event);
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse StickerDeletedEvent", e);
@@ -104,28 +103,31 @@ class StickerMessagingIntegrationTest {
         request.setStickerDescription("A sticker for testing Kafka messaging");
         request.setStickerQuantityRemaining(100);
 
-        Response response = given()
-                .contentType(ContentType.JSON)
-                .body(request)
-                .when()
-                .post("/api/stickers/v1")
-                .then()
-                .statusCode(201)
-                .extract()
-                .response();
+        Response response =
+                given().contentType(ContentType.JSON)
+                        .body(request)
+                        .when()
+                        .post("/api/stickers/v1")
+                        .then()
+                        .statusCode(201)
+                        .extract()
+                        .response();
 
         String stickerId = response.jsonPath().getString("stickerId");
         assertNotNull(stickerId);
 
         // Wait for Kafka message
-        await()
-                .atMost(Duration.ofSeconds(10))
-                .untilAsserted(() -> {
-                    assertEquals(1, addedEvents.size(), "Should receive exactly one StickerAddedEvent");
-                });
+        await().atMost(Duration.ofSeconds(10))
+                .untilAsserted(
+                        () -> {
+                            assertEquals(
+                                    1,
+                                    addedEvents.size(),
+                                    "Should receive exactly one StickerAddedEvent");
+                        });
 
         CloudEvent<StickerAddedEvent> cloudEvent = addedEvents.get(0);
-        
+
         // Verify CloudEvent wrapper
         assertEquals("1.0", cloudEvent.getSpecVersion());
         assertEquals("stickers.stickerAdded.v1", cloudEvent.getType());
@@ -151,8 +153,7 @@ class StickerMessagingIntegrationTest {
         updateRequest.setStickerDescription("Updated description");
         updateRequest.setStickerQuantityRemaining(150);
 
-        given()
-                .contentType(ContentType.JSON)
+        given().contentType(ContentType.JSON)
                 .body(updateRequest)
                 .when()
                 .put("/api/stickers/v1/{stickerId}", TEST_STICKER_ID)
@@ -160,14 +161,17 @@ class StickerMessagingIntegrationTest {
                 .statusCode(200);
 
         // Wait for Kafka message
-        await()
-                .atMost(Duration.ofSeconds(10))
-                .untilAsserted(() -> {
-                    assertEquals(1, updatedEvents.size(), "Should receive exactly one StickerUpdatedEvent");
-                });
+        await().atMost(Duration.ofSeconds(10))
+                .untilAsserted(
+                        () -> {
+                            assertEquals(
+                                    1,
+                                    updatedEvents.size(),
+                                    "Should receive exactly one StickerUpdatedEvent");
+                        });
 
         CloudEvent<StickerUpdatedEvent> cloudEvent = updatedEvents.get(0);
-        
+
         // Verify CloudEvent wrapper
         assertEquals("1.0", cloudEvent.getSpecVersion());
         assertEquals("stickers.stickerUpdated.v1", cloudEvent.getType());
@@ -187,21 +191,23 @@ class StickerMessagingIntegrationTest {
         // First create a sticker
         createTestSticker();
 
-        given()
-                .when()
+        given().when()
                 .delete("/api/stickers/v1/{stickerId}", TEST_STICKER_ID)
                 .then()
                 .statusCode(204);
 
         // Wait for Kafka message
-        await()
-                .atMost(Duration.ofSeconds(10))
-                .untilAsserted(() -> {
-                    assertEquals(1, deletedEvents.size(), "Should receive exactly one StickerDeletedEvent");
-                });
+        await().atMost(Duration.ofSeconds(10))
+                .untilAsserted(
+                        () -> {
+                            assertEquals(
+                                    1,
+                                    deletedEvents.size(),
+                                    "Should receive exactly one StickerDeletedEvent");
+                        });
 
         CloudEvent<StickerDeletedEvent> cloudEvent = deletedEvents.get(0);
-        
+
         // Verify CloudEvent wrapper
         assertEquals("1.0", cloudEvent.getSpecVersion());
         assertEquals("stickers.stickerDeleted.v1", cloudEvent.getType());
@@ -217,14 +223,14 @@ class StickerMessagingIntegrationTest {
 
     @Transactional
     void createTestSticker() {
-        Sticker sticker = new Sticker(
-            TEST_STICKER_ID, 
-            "Test Messaging Sticker", 
-            "A sticker for testing messaging", 
-            100
-        );
+        Sticker sticker =
+                new Sticker(
+                        TEST_STICKER_ID,
+                        "Test Messaging Sticker",
+                        "A sticker for testing messaging",
+                        100);
         sticker.persist();
-        
+
         // Clear any events from creation to focus on the update/delete tests
         addedEvents.clear();
         updatedEvents.clear();
