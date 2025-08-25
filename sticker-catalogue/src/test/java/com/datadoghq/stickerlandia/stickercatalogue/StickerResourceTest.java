@@ -28,13 +28,7 @@ class StickerResourceTest {
         // Create a test sticker
         Sticker sticker = Sticker.findById(EXISTING_STICKER_ID);
         if (sticker == null) {
-            sticker =
-                    new Sticker(
-                            EXISTING_STICKER_ID,
-                            "Test Sticker",
-                            "For testing purposes",
-                            "http://example.com/test.png",
-                            100);
+            sticker = new Sticker(EXISTING_STICKER_ID, "Test Sticker", "For testing purposes", 100);
             sticker.persist();
         }
     }

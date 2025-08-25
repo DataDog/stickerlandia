@@ -125,10 +125,3 @@ This project uses Spotless with Google Java Format to automatically fix code sty
 # Format and then validate with Checkstyle
 ./mvnw spotless:apply validate
 ```
-
-**Checkstyle Configuration:**
-- Configuration file: `checkstyle.xml`
-- Suppressions file: `checkstyle-suppressions.xml`
-- Based on Google Java Style Guide (modified for 4-space indentation)
-- Enforces 4-space indentation, 100-character line limit
-- Checks import ordering, Javadoc completeness, and naming conventions

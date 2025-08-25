@@ -113,7 +113,7 @@ services:
         condition: service_healthy
     entrypoint: ["/bin/sh", "-c"]
     command: >
-      "rpk topic create users.userRegistered.v1 users.stickerClaimed.v1 users.userDetailsUpdated.v1 stickers.stickerAssignedToUser.v1 stickers.stickerRemovedFromUser.v1 --brokers redpanda:9092 || true"
+      "rpk topic create users.userRegistered.v1 users.stickerClaimed.v1 users.userDetailsUpdated.v1 stickers.stickerAssignedToUser.v1 stickers.stickerRemovedFromUser.v1 stickers.stickerAdded.v1 stickers.stickerUpdated.v1 stickers.stickerDeleted.v1 --brokers redpanda:9092 || true"
     restart: "no"
 
   redpanda-console:
@@ -234,7 +234,8 @@ services:
       DD_ENV: development
       DD_VERSION: ${COMMIT_SHA:-latest}
       DD_AGENT_HOST: datadog-agent
-      # DD_DATA_STREAMS_ENABLED: true
+      DD_DATA_STREAMS_ENABLED: "true"
+      DD_TRACE_REMOVE_INTEGRATION_SERVICE_NAMES_ENABLED: "true"
       # Application configuration
       QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://sticker-catalogue-db:5432/sticker_catalogue
       QUARKUS_DATASOURCE_USERNAME: sticker_user

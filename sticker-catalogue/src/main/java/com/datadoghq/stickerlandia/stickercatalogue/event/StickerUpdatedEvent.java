@@ -1,0 +1,80 @@
+package com.datadoghq.stickerlandia.stickercatalogue.event;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import java.time.Instant;
+
+/** Event published when a sticker in the catalogue is updated */
+public class StickerUpdatedEvent extends DomainEvent {
+
+    public static final String EVENT_NAME = "StickerUpdated";
+    public static final String EVENT_VERSION = "v1";
+    public static final String EVENT_TYPE = "stickers.stickerUpdated.v1";
+
+    @JsonProperty("stickerId")
+    private String stickerId;
+
+    @JsonProperty("name")
+    private String name;
+
+    @JsonProperty("description")
+    private String description;
+
+    @JsonProperty("category")
+    private String category;
+
+    @JsonProperty("updatedAt")
+    private String updatedAt;
+
+    public StickerUpdatedEvent() {
+        super(EVENT_NAME, EVENT_VERSION);
+        this.updatedAt = Instant.now().toString();
+    }
+
+    public StickerUpdatedEvent(String stickerId, String name, String description, String category) {
+        this();
+        this.stickerId = stickerId;
+        this.name = name;
+        this.description = description;
+        this.category = category;
+    }
+
+    public String getStickerId() {
+        return stickerId;
+    }
+
+    public void setStickerId(String stickerId) {
+        this.stickerId = stickerId;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public String getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt.toString();
+    }
+}

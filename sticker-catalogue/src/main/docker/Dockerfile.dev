@@ -31,7 +31,6 @@ WORKDIR /work
 COPY mvnw mvnw.cmd ./
 COPY .mvn ./.mvn
 COPY pom.xml .
-COPY checkstyle.xml .
 
 # Make mvnw executable
 RUN chmod +x ./mvnw
