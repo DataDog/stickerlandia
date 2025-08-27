@@ -13,39 +13,9 @@ using Stickerlandia.UserManagement.Core;
 namespace Stickerlandia.UserManagement.Agnostic;
 
 public class MicrosoftIdentityAuthService(
-    IOpenIddictApplicationManager applicationManager,
     IOpenIddictScopeManager scopeManager,
     UserManager<PostgresUserAccount> userManager) : IAuthService
 {
-    public async Task<ClaimsIdentity?> VerifyClient(string clientId)
-    {
-        var identity = new ClaimsIdentity(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
-            OpenIddictConstants.Claims.Name, OpenIddictConstants.Claims.Role);
-
-        var application = await applicationManager.FindByClientIdAsync(clientId) ??
-                          throw new InvalidOperationException("The application cannot be found.");
-
-        // Use the client_id as the subject identifier.
-        identity.SetClaim(OpenIddictConstants.Claims.Subject,
-            await applicationManager.GetClientIdAsync(application));
-        identity.SetClaim(OpenIddictConstants.Claims.Name,
-            await applicationManager.GetDisplayNameAsync(application));
-
-        identity.SetDestinations(static claim => claim.Type switch
-        {
-            // Allow the "name" claim to be stored in both the access and identity tokens
-            // when the "profile" scope was granted (by calling principal.SetScopes(...)).
-            OpenIddictConstants.Claims.Name when claim.Subject!.HasScope(OpenIddictConstants.Permissions.Scopes
-                    .Profile)
-                => [OpenIddictConstants.Destinations.AccessToken, OpenIddictConstants.Destinations.IdentityToken],
-
-            // Otherwise, only store the claim in the access tokens.
-            _ => [OpenIddictConstants.Destinations.AccessToken]
-        });
-
-        return identity;
-    }
-
     public async Task<ClaimsIdentity?> VerifyPassword(string username, string password, ImmutableArray<string> scopes)
     {
         var identity = new ClaimsIdentity(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,

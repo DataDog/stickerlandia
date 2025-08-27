@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
 using Stickerlandia.UserManagement.Agnostic;
@@ -27,11 +28,12 @@ internal sealed class Worker(
         {
             using var scope = serviceProvider.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<UserManagementDbContext>();
-            var manager = scope.ServiceProvider.GetRequiredService<IOpenIddictApplicationManager>();
+            var oAuthApplicationManager = scope.ServiceProvider.GetRequiredService<IOpenIddictApplicationManager>();
+            var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
             var registerUserCommandHandler = scope.ServiceProvider.GetRequiredService<RegisterCommandHandler>();
 
             await RunMigrationAsync(dbContext, cancellationToken);
-            await SeedDataAsync(dbContext, registerUserCommandHandler, manager, cancellationToken);
+            await SeedDataAsync(dbContext, registerUserCommandHandler, oAuthApplicationManager, roleManager, cancellationToken);
         }
         catch (Exception)
         {
@@ -61,6 +63,7 @@ internal sealed class Worker(
 
     private static async Task SeedDataAsync(UserManagementDbContext dbContext, RegisterCommandHandler registerHandler,
         IOpenIddictApplicationManager manager,
+        RoleManager<IdentityRole> roleManager,
         CancellationToken cancellationToken)
     {
         using var seedData = s_activitySource.StartActivity("run.seedData", ActivityKind.Client);
@@ -105,6 +108,15 @@ internal sealed class Worker(
         // Seed default user
         try
         {
+            if (!await roleManager.RoleExistsAsync(UserTypes.Admin))
+            {
+                await roleManager.CreateAsync(new IdentityRole(UserTypes.Admin));   
+            }
+            if (!await roleManager.RoleExistsAsync(UserTypes.User))
+            {
+                await roleManager.CreateAsync(new IdentityRole(UserTypes.User));   
+            }
+            
             var user = await registerHandler.Handle(new RegisterUserCommand
             {
                 EmailAddress = "user@stickerlandia.com",

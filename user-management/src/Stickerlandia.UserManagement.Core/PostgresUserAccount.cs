@@ -17,6 +17,19 @@ public class PostgresUserAccount : IdentityUser
 
     internal bool Changed { get; private set; }
 
+    public static PostgresUserAccount New(string emailAddress, string firstName, string lastName)
+    {
+        var userAccount = new PostgresUserAccount();
+        userAccount.UserName = emailAddress;
+        userAccount.Email = emailAddress;
+        userAccount.EmailConfirmed = true;
+        userAccount.FirstName = firstName;
+        userAccount.LastName = lastName;
+        userAccount.DateCreated = DateTime.UtcNow;
+
+        return userAccount;
+    }
+
     public void UpdateUserDetails(string newFirstName, string newLastName)
     {
         if (!string.IsNullOrEmpty(newFirstName) && newFirstName != FirstName)
