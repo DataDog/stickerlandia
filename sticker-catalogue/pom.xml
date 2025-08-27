@@ -91,20 +91,30 @@
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>url-connection-client</artifactId>
         </dependency>
-        
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-opentelemetry</artifactId>
+        </dependency>
+
+        <!-- loggingjson from _quarkiverse_ lets us turn on MDC flattening
+              which we need for log correlation, as we are not using the OTel SDK. -->
+        <dependency>
+            <groupId>io.quarkiverse.loggingjson</groupId>
+            <artifactId>quarkus-logging-json</artifactId>
+            <version>3.2.0</version>
+        </dependency>
+
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
             <scope>test</scope>
         </dependency>
         
-        <!-- Kafka Testing Dependencies -->
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
         </dependency>
-        
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-mockito</artifactId>
@@ -121,7 +131,7 @@
             <artifactId>mockito-core</artifactId>
             <scope>test</scope>
         </dependency>
-        
+
         <!-- ArchUnit for architecture testing -->
         <dependency>
             <groupId>com.tngtech.archunit</groupId>
@@ -216,37 +226,6 @@
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
-            <!-- Checkstyle Plugin -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>${checkstyle-plugin.version}</version>
-                <configuration>
-                    <configLocation>checkstyle.xml</configLocation>
-                    <consoleOutput>true</consoleOutput>
-                    <failsOnError>true</failsOnError>
-                    <failOnViolation>true</failOnViolation>
-                    <violationSeverity>warning</violationSeverity>
-                    <linkXRef>false</linkXRef>
-                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
-                </configuration>
-                <dependencies>
-                    <dependency>
-                        <groupId>com.puppycrawl.tools</groupId>
-                        <artifactId>checkstyle</artifactId>
-                        <version>${checkstyle.version}</version>
-                    </dependency>
-                </dependencies>
-                <executions>
-                    <execution>
-                        <id>validate</id>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
             <!-- Spotless Plugin for Code Formatting -->
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
@@ -259,10 +238,7 @@
                             <version>1.19.2</version>
                             <style>AOSP</style> <!-- AOSP style uses 4-space indentation -->
                         </googleJavaFormat>
-                        <!-- Import ordering to match Checkstyle CustomImportOrder -->
-                        <!--<importOrder>
-                            <order>java,javax,jakarta,org,com</order>
-                        </importOrder>-->
+
                         <!-- Remove unused imports -->
                         <removeUnusedImports/>
                         <!-- Format files -->

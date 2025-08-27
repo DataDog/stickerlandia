@@ -2,48 +2,312 @@
   "asyncapi": "2.4.0",
   "info": {
     "title": "Sticker Catalogue Service",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "description": "Async API for sticker catalogue management events using CloudEvents specification"
   },
   "defaultContentType": "application/json",
   "channels": {
-    "users.stickerClaimed.v1": {
+    "stickers.stickerAdded.v1": {
       "publish": {
-        "operationId": "PublishStickerClaimedEventV1",
-        "summary": "Published when a user claims a sticker",
+        "operationId": "PublishStickerAddedEventV1",
+        "summary": "Published when a new sticker is added to the catalogue",
         "message": {
-          "$ref": "#/components/messages/stickerClaimedEventV1"
+          "$ref": "#/components/messages/stickerAddedEvent"
+        }
+      }
+    },
+    "stickers.stickerUpdated.v1": {
+      "publish": {
+        "operationId": "PublishStickerUpdatedEventV1",
+        "summary": "Published when a sticker in the catalogue is updated",
+        "message": {
+          "$ref": "#/components/messages/stickerUpdatedEvent"
+        }
+      }
+    },
+    "stickers.stickerDeleted.v1": {
+      "publish": {
+        "operationId": "PublishStickerDeletedEventV1",
+        "summary": "Published when a sticker is removed from the catalogue",
+        "message": {
+          "$ref": "#/components/messages/stickerDeletedEvent"
         }
       }
     }
   },
   "components": {
     "schemas": {
+      "cloudEvent": {
+        "id": "cloudEvent",
+        "type": "object",
+        "description": "CloudEvents v1.0 specification compliant wrapper",
+        "additionalProperties": false,
+        "properties": {
+          "specversion": {
+            "type": "string",
+            "const": "1.0",
+            "description": "CloudEvents specification version"
+          },
+          "type": {
+            "type": "string",
+            "description": "Event type identifier (typically the topic name)"
+          },
+          "source": {
+            "type": "string",
+            "description": "Source service that produced the event"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for this event instance"
+          },
+          "time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "RFC3339 timestamp when the event was created"
+          },
+          "traceparent": {
+            "type": "string",
+            "pattern": "^00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$",
+            "description": "W3C trace context for distributed tracing"
+          }
+        },
+        "required": ["specversion", "type", "source", "id", "time"]
+      },
       "domainEvent": {
         "id": "domainEvent",
         "type": "object",
         "x-abstract": true,
-        "additionalProperties": false
-      },
-      "stickerClaimedEventV1": {
-        "id": "stickerClaimedEventV1",
-        "type": "object",
         "additionalProperties": false,
         "properties": {
-          "accountId": {
+          "eventName": {
             "type": "string"
           },
-          "stickerId": {
+          "eventVersion": {
             "type": "string"
           }
         }
+      },
+      "stickerAddedEventData": {
+        "id": "stickerAddedEventData",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/domainEvent"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "eventName": {
+                "type": "string",
+                "const": "StickerAdded"
+              },
+              "eventVersion": {
+                "type": "string",
+                "const": "v1"
+              },
+              "stickerId": {
+                "type": "string",
+                "description": "The unique identifier of the added sticker"
+              },
+              "name": {
+                "type": "string",
+                "description": "The name of the sticker"
+              },
+              "description": {
+                "type": "string",
+                "description": "The description of the sticker"
+              },
+              "category": {
+                "type": "string",
+                "description": "The category this sticker belongs to"
+              },
+              "imageUrl": {
+                "type": "string",
+                "description": "URL to the sticker image"
+              },
+              "addedAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "RFC3339 timestamp when the sticker was added"
+              }
+            },
+            "required": ["eventName", "eventVersion", "stickerId", "name", "addedAt"]
+          }
+        ]
+      },
+      "stickerAddedEvent": {
+        "id": "stickerAddedEvent",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/cloudEvent"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "stickers.stickerAdded.v1"
+              },
+              "data": {
+                "$ref": "#/components/schemas/stickerAddedEventData"
+              }
+            },
+            "required": ["data"]
+          }
+        ]
+      },
+      "stickerUpdatedEventData": {
+        "id": "stickerUpdatedEventData",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/domainEvent"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "eventName": {
+                "type": "string",
+                "const": "StickerUpdated"
+              },
+              "eventVersion": {
+                "type": "string",
+                "const": "v1"
+              },
+              "stickerId": {
+                "type": "string",
+                "description": "The unique identifier of the updated sticker"
+              },
+              "name": {
+                "type": "string",
+                "description": "The updated name of the sticker"
+              },
+              "description": {
+                "type": "string",
+                "description": "The updated description of the sticker"
+              },
+              "category": {
+                "type": "string",
+                "description": "The updated category this sticker belongs to"
+              },
+              "imageUrl": {
+                "type": "string",
+                "description": "Updated URL to the sticker image"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "RFC3339 timestamp when the sticker was updated"
+              }
+            },
+            "required": ["eventName", "eventVersion", "stickerId", "updatedAt"]
+          }
+        ]
+      },
+      "stickerUpdatedEvent": {
+        "id": "stickerUpdatedEvent",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/cloudEvent"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "stickers.stickerUpdated.v1"
+              },
+              "data": {
+                "$ref": "#/components/schemas/stickerUpdatedEventData"
+              }
+            },
+            "required": ["data"]
+          }
+        ]
+      },
+      "stickerDeletedEventData": {
+        "id": "stickerDeletedEventData",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/domainEvent"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "eventName": {
+                "type": "string",
+                "const": "StickerDeleted"
+              },
+              "eventVersion": {
+                "type": "string",
+                "const": "v1"
+              },
+              "stickerId": {
+                "type": "string",
+                "description": "The unique identifier of the deleted sticker"
+              },
+              "name": {
+                "type": "string",
+                "description": "The name of the deleted sticker"
+              },
+              "deletedAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "RFC3339 timestamp when the sticker was deleted"
+              }
+            },
+            "required": ["eventName", "eventVersion", "stickerId", "name", "deletedAt"]
+          }
+        ]
+      },
+      "stickerDeletedEvent": {
+        "id": "stickerDeletedEvent",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/cloudEvent"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "stickers.stickerDeleted.v1"
+              },
+              "data": {
+                "$ref": "#/components/schemas/stickerDeletedEventData"
+              }
+            },
+            "required": ["data"]
+          }
+        ]
       }
     },
     "messages": {
-      "stickerClaimedEventV1": {
+      "stickerAddedEvent": {
         "payload": {
-          "$ref": "#/components/schemas/stickerClaimedEventV1"
+          "$ref": "#/components/schemas/stickerAddedEvent"
         },
-        "name": "stickerClaimedEventV1"
+        "name": "stickerAddedEvent",
+        "title": "Sticker Added (CloudEvent)",
+        "summary": "CloudEvent wrapper containing sticker added event data",
+        "contentType": "application/json"
+      },
+      "stickerUpdatedEvent": {
+        "payload": {
+          "$ref": "#/components/schemas/stickerUpdatedEvent"
+        },
+        "name": "stickerUpdatedEvent",
+        "title": "Sticker Updated (CloudEvent)",
+        "summary": "CloudEvent wrapper containing sticker updated event data",
+        "contentType": "application/json"
+      },
+      "stickerDeletedEvent": {
+        "payload": {
+          "$ref": "#/components/schemas/stickerDeletedEvent"
+        },
+        "name": "stickerDeletedEvent",
+        "title": "Sticker Deleted (CloudEvent)",
+        "summary": "CloudEvent wrapper containing sticker deleted event data",
+        "contentType": "application/json"
       }
     }
   }

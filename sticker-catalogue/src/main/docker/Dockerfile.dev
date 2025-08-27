@@ -31,7 +31,6 @@ WORKDIR /work
 COPY mvnw mvnw.cmd ./
 COPY .mvn ./.mvn
 COPY pom.xml .
-COPY checkstyle.xml .
 
 # Make mvnw executable
 RUN chmod +x ./mvnw
@@ -44,7 +43,7 @@ RUN cd /src && mvn dependency:resolve
 EXPOSE 8080 5005
 
 # Set environment variable to include Java agent with Quarkus-specific tuning
-ENV JAVA_OPTS="-javaagent:/opt/dd-java-agent.jar -Ddd.trace.integration.vertx.enabled=false -Ddd.trace.executors=org.jboss.threads.EnhancedQueueExecutor"
+ENV JAVA_OPTS="-javaagent:/opt/dd-java-agent.jar -Ddd.trace.otel.enabled=true -Ddd.trace.integration.vertx.enabled=false -Ddd.trace.executors=org.jboss.threads.EnhancedQueueExecutor"
 
 # Default command runs Quarkus dev mode with proper dev services disabled
 # This can be overridden in docker-compose

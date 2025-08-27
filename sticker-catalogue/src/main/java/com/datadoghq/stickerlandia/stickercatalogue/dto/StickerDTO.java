@@ -15,7 +15,7 @@ import java.util.Date;
     "stickerName",
     "stickerDescription",
     "stickerQuantityRemaining",
-    "imageUrl",
+    "imagePath",
     "createdAt",
     "updatedAt"
 })
@@ -35,10 +35,10 @@ public class StickerDTO {
     @JsonPropertyDescription("Quantity remaining (-1 for infinite)")
     private Integer stickerQuantityRemaining;
 
-    /** URL to the sticker image resource. */
-    @JsonProperty("imageUrl")
-    @JsonPropertyDescription("URL to the sticker image resource")
-    private String imageUrl;
+    /** Path to the sticker image resource. */
+    @JsonProperty("imagePath")
+    @JsonPropertyDescription("Path to the sticker image resource")
+    private String imagePath;
 
     @JsonFormat(
             shape = JsonFormat.Shape.STRING,
@@ -104,16 +104,16 @@ public class StickerDTO {
         this.stickerQuantityRemaining = stickerQuantityRemaining;
     }
 
-    /** URL to the sticker image resource. */
-    @JsonProperty("imageUrl")
-    public String getImageUrl() {
-        return imageUrl;
+    /** Path to the sticker image resource. */
+    @JsonProperty("imagePath")
+    public String getImagePath() {
+        return imagePath;
     }
 
-    /** URL to the sticker image resource. */
-    @JsonProperty("imageUrl")
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
+    /** Path to the sticker image resource. */
+    @JsonProperty("imagePath")
+    public void setImagePath(String imagePath) {
+        this.imagePath = imagePath;
     }
 
     @JsonProperty("createdAt")

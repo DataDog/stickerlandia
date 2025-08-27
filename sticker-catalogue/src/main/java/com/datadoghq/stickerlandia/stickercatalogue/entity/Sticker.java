@@ -22,9 +22,6 @@ public class Sticker extends PanacheEntityBase {
     @Column(name = "description", length = 500)
     private String description;
 
-    @Column(name = "image_url")
-    private String imageUrl;
-
     @Column(name = "image_key")
     private String imageKey;
 
@@ -46,19 +43,13 @@ public class Sticker extends PanacheEntityBase {
      * @param stickerId the unique identifier for the sticker
      * @param name the name of the sticker
      * @param description the description of the sticker
-     * @param imageUrl the URL of the sticker image
      * @param stickerQuantityRemaining the quantity remaining for the sticker
      */
     public Sticker(
-            String stickerId,
-            String name,
-            String description,
-            String imageUrl,
-            Integer stickerQuantityRemaining) {
+            String stickerId, String name, String description, Integer stickerQuantityRemaining) {
         this.stickerId = stickerId;
         this.name = name;
         this.description = description;
-        this.imageUrl = imageUrl;
         this.stickerQuantityRemaining = stickerQuantityRemaining;
         this.createdAt = Instant.now();
     }
@@ -86,14 +77,6 @@ public class Sticker extends PanacheEntityBase {
 
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    public String getImageUrl() {
-        return imageUrl;
-    }
-
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
     }
 
     public String getImageKey() {

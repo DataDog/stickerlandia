@@ -9,6 +9,7 @@ import com.datadoghq.stickerlandia.stickercatalogue.dto.UpdateStickerRequest;
 import com.datadoghq.stickerlandia.stickercatalogue.entity.Sticker;
 import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.persistence.PersistenceException;
 import jakarta.transaction.Transactional;
 import java.io.InputStream;
@@ -22,6 +23,8 @@ import org.hibernate.exception.ConstraintViolationException;
 /** Repository class for managing sticker operations. */
 @ApplicationScoped
 public class StickerRepository {
+
+    @Inject StickerEventPublisher eventPublisher;
 
     /**
      * Creates a new sticker.
@@ -38,15 +41,18 @@ public class StickerRepository {
                         stickerId,
                         request.getStickerName(),
                         request.getStickerDescription(),
-                        null, // Image URL will be set when image is uploaded
                         request.getStickerQuantityRemaining());
 
         sticker.persist();
 
+        // Publish sticker added event
+        eventPublisher.publishStickerAdded(
+                sticker.getStickerId(), sticker.getName(), sticker.getDescription());
+
         CreateStickerResponse response = new CreateStickerResponse();
         response.setStickerId(sticker.getStickerId());
         response.setStickerName(sticker.getName());
-        response.setImageUrl(buildImageUrl(sticker.getStickerId()));
+        response.setImagePath(buildImagePath(sticker.getStickerId()));
         return response;
     }
 
@@ -71,13 +77,23 @@ public class StickerRepository {
     }
 
     /**
+     * Gets a sticker entity by its ID.
+     *
+     * @param stickerId the ID of the sticker
+     * @return the sticker entity, or null if not found
+     */
+    public Sticker findById(String stickerId) {
+        return Sticker.findById(stickerId);
+    }
+
+    /**
      * Gets a sticker by its ID.
      *
      * @param stickerId the ID of the sticker
      * @return the sticker DTO, or null if not found
      */
     public StickerDTO getStickerById(String stickerId) {
-        Sticker sticker = Sticker.findById(stickerId);
+        Sticker sticker = findById(stickerId);
         if (sticker == null) {
             return null;
         }
@@ -91,7 +107,7 @@ public class StickerRepository {
      * @return the sticker metadata DTO, or null if not found
      */
     public StickerDTO getStickerMetadata(String stickerId) {
-        Sticker sticker = Sticker.findById(stickerId);
+        Sticker sticker = findById(stickerId);
         if (sticker == null) {
             return null;
         }
@@ -107,7 +123,7 @@ public class StickerRepository {
      */
     @Transactional
     public StickerDTO updateSticker(String stickerId, UpdateStickerRequest request) {
-        Sticker sticker = Sticker.findById(stickerId);
+        Sticker sticker = findById(stickerId);
         if (sticker == null) {
             return null;
         }
@@ -125,6 +141,10 @@ public class StickerRepository {
         sticker.setUpdatedAt(Instant.now());
         sticker.persist();
 
+        // Publish sticker updated event
+        eventPublisher.publishStickerUpdated(
+                sticker.getStickerId(), sticker.getName(), sticker.getDescription());
+
         return toStickerMetadata(sticker);
     }
 
@@ -140,7 +160,7 @@ public class StickerRepository {
     @Transactional
     public StickerImageUploadResponse uploadStickerImage(
             String stickerId, InputStream imageStream, String contentType, long contentLength) {
-        Sticker sticker = Sticker.findById(stickerId);
+        Sticker sticker = findById(stickerId);
         if (sticker == null) {
             return null;
         }
@@ -160,7 +180,7 @@ public class StickerRepository {
      */
     @Transactional
     public void updateStickerImageKey(String stickerId, String imageKey) {
-        Sticker sticker = Sticker.findById(stickerId);
+        Sticker sticker = findById(stickerId);
         if (sticker != null) {
             sticker.setImageKey(imageKey);
             sticker.setUpdatedAt(Instant.now());
@@ -174,7 +194,7 @@ public class StickerRepository {
         metadata.setStickerName(sticker.getName());
         metadata.setStickerDescription(sticker.getDescription());
         metadata.setStickerQuantityRemaining(sticker.getStickerQuantityRemaining());
-        metadata.setImageUrl(buildImageUrl(sticker.getStickerId()));
+        metadata.setImagePath(buildImagePath(sticker.getStickerId()));
         metadata.setImageKey(sticker.getImageKey());
         metadata.setCreatedAt(Date.from(sticker.getCreatedAt()));
         metadata.setUpdatedAt(
@@ -182,7 +202,7 @@ public class StickerRepository {
         return metadata;
     }
 
-    private String buildImageUrl(String stickerId) {
+    private String buildImagePath(String stickerId) {
         return "/api/stickers/v1/" + stickerId + "/image";
     }
 
@@ -217,12 +237,15 @@ public class StickerRepository {
      */
     @Transactional
     public boolean deleteSticker(String stickerId) {
-        Sticker sticker = Sticker.findById(stickerId);
+        Sticker sticker = findById(stickerId);
         if (sticker == null) {
             return false;
         }
 
         try {
+            // Publish sticker deleted event before deletion
+            eventPublisher.publishStickerDeleted(sticker.getStickerId(), sticker.getName());
+
             sticker.delete();
             return true;
         } catch (PersistenceException e) {
