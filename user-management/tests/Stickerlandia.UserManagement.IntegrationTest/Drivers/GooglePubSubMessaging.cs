@@ -77,7 +77,7 @@ internal sealed class GooglePubSubMessaging : IMessaging, IAsyncDisposable
         };
 
         var formatter = new JsonEventFormatter<StickerClaimedEventV1>();
-        var data = formatter.EncodeBinaryModeEventData(cloudEvent);
+        var data = formatter.EncodeStructuredModeMessage(cloudEvent, out _);
 
         var publishResult = await _client.PublishAsync(ByteString.CopyFrom(data.Span));
     }

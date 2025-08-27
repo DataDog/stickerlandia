@@ -56,7 +56,7 @@ public class ServiceBusEventPublisher(ILogger<ServiceBusEventPublisher> logger, 
             var sender = client.CreateSender(cloudEvent.Type);
 
             var formatter = new JsonEventFormatter<UserRegisteredEvent>();
-            var data = formatter.EncodeBinaryModeEventData(cloudEvent);
+            var data = formatter.EncodeStructuredModeMessage(cloudEvent, out _);
 
             var serviceBusMessage = new ServiceBusMessage(data)
             {

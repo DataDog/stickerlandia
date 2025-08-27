@@ -68,6 +68,8 @@ func (h *UserRegisteredHandler) Handle(ctx context.Context, message *sarama.Cons
 			"span_links_count": len(spanLinks),
 			"topic":            message.Topic,
 		}).Info("Creating processing span with span links")
+	} else {
+		log.WithContext(ctx).Warn("Couldn't find any span links")
 	}
 
 	// Start a new trace for message processing with span links
@@ -75,52 +77,24 @@ func (h *UserRegisteredHandler) Handle(ctx context.Context, message *sarama.Cons
 	span, ctx := tracer.StartSpanFromContext(context.Background(), "process users.userRegistered.v1", spanOpts...)
 	defer span.Finish()
 
-	// Debug: log the raw message content
-	log.WithContext(ctx).WithFields(log.Fields{
-		"value": string(message.Value),
-	}).Info("Raw message received")
-
-	// First try parsing as direct event (current format from user-management)
-	var event consumed.UserRegisteredEvent
-	if err := json.Unmarshal(message.Value, &event); err != nil {
+	// Parse CloudEvent
+	var cloudEvent events.CloudEvent[consumed.UserRegisteredEvent]
+	if err := json.Unmarshal(message.Value, &cloudEvent); err != nil {
+		span.SetTag("error", true)
+		span.SetTag("error.msg", err.Error())
 		log.WithContext(ctx).WithFields(log.Fields{
-			"error": err.Error(),
-		}).Info("Direct event parsing failed, trying CloudEvent format")
-
-		// Fallback: try parsing as CloudEvent wrapper
-		var cloudEvent events.CloudEvent[consumed.UserRegisteredEvent]
-		if fallbackErr := json.Unmarshal(message.Value, &cloudEvent); fallbackErr != nil {
-			span.SetTag("error", true)
-			span.SetTag("error.msg", err.Error())
-			log.WithContext(ctx).WithFields(log.Fields{
-				"directEventError": err,
-				"cloudEventError":  fallbackErr,
-				"rawMessage":       string(message.Value),
-			}).Error("Failed to parse user registered event as direct event or CloudEvent")
-			return fmt.Errorf("failed to parse user registered event: %w", err)
-		}
-
-		// Validate CloudEvent has data
-		if cloudEvent.Data.AccountID == "" {
-			span.SetTag("error", true)
-			span.SetTag("error.msg", "CloudEvent has empty data")
-			log.WithContext(ctx).WithFields(log.Fields{
-				"cloudEvent": cloudEvent,
-				"rawMessage": string(message.Value),
-			}).Error("CloudEvent parsed successfully but contains empty data")
-			return fmt.Errorf("CloudEvent contains no valid user registration data")
-		}
-
-		event = cloudEvent.Data
-		log.WithContext(ctx).WithFields(log.Fields{
-			"accountId": event.AccountID,
-			"eventData": event,
-		}).Info("Successfully parsed as CloudEvent")
-	} else {
-		log.WithContext(ctx).WithFields(log.Fields{
-			"accountId": event.AccountID,
-		}).Info("Successfully parsed as direct event")
+			"error":      err.Error(),
+			"rawMessage": string(message.Value),
+		}).Error("Failed to parse user registered CloudEvent")
+		return fmt.Errorf("failed to parse user registered CloudEvent: %w", err)
 	}
+
+	event := cloudEvent.Data
+	log.WithContext(ctx).WithFields(log.Fields{
+		"accountId": event.AccountID,
+		"eventId":   cloudEvent.Id,
+		"eventType": cloudEvent.Type,
+	}).Info("Successfully parsed CloudEvent")
 
 	// Validate event
 	if event.AccountID == "" {
