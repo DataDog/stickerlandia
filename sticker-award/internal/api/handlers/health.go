@@ -1,11 +1,11 @@
 package handlers
 
 import (
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 	"gorm.io/gorm"
 
 	"github.com/datadog/stickerlandia/sticker-award/internal/api/dto"
@@ -13,20 +13,20 @@ import (
 
 // HealthHandler handles health check requests
 type HealthHandler struct {
-	db     *gorm.DB
-	logger *zap.SugaredLogger
+	db *gorm.DB
 }
 
 // NewHealthHandler creates a new health handler
-func NewHealthHandler(db *gorm.DB, logger *zap.SugaredLogger) *HealthHandler {
+func NewHealthHandler(db *gorm.DB) *HealthHandler {
 	return &HealthHandler{
-		db:     db,
-		logger: logger,
+		db: db,
 	}
 }
 
 // Handle handles the health check endpoint
 func (h *HealthHandler) Handle(c *gin.Context) {
+	log.WithContext(c.Request.Context()).Info("HealthHandler.Handle")
+
 	// Simple liveness response – no DB checks to avoid extra spans
 	c.JSON(http.StatusOK, dto.HealthResponse{
 		Status: "healthy",

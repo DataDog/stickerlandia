@@ -1,25 +1,18 @@
 package router
 
 import (
-	"time"
-
+	gintrace "github.com/DataDog/dd-trace-go/contrib/gin-gonic/gin/v2"
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
-	gintrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/gin-gonic/gin"
 	"gorm.io/gorm"
 
 	"github.com/datadog/stickerlandia/sticker-award/internal/api/handlers"
 	"github.com/datadog/stickerlandia/sticker-award/internal/api/middleware"
-	"github.com/datadog/stickerlandia/sticker-award/internal/application/service"
 	"github.com/datadog/stickerlandia/sticker-award/internal/config"
-	"github.com/datadog/stickerlandia/sticker-award/internal/infrastructure/database/repository"
-	"github.com/datadog/stickerlandia/sticker-award/internal/infrastructure/external/catalogue"
-	"github.com/datadog/stickerlandia/sticker-award/internal/infrastructure/messaging"
-	"github.com/datadog/stickerlandia/sticker-award/pkg/validator"
+	domainservice "github.com/datadog/stickerlandia/sticker-award/internal/domain/service"
 )
 
 // Setup configures and returns the Gin router with all routes and middleware
-func Setup(db *gorm.DB, logger *zap.SugaredLogger, cfg *config.Config) *gin.Engine {
+func Setup(db *gorm.DB, cfg *config.Config, assignmentService domainservice.Assigner) *gin.Engine {
 	// Set Gin mode based on environment
 	if cfg.Logging.Level == "debug" {
 		gin.SetMode(gin.DebugMode)
@@ -31,25 +24,12 @@ func Setup(db *gorm.DB, logger *zap.SugaredLogger, cfg *config.Config) *gin.Engi
 
 	// Global middleware
 	r.Use(gintrace.Middleware("sticker-award"))
-	r.Use(middleware.Logger(logger))
-	r.Use(middleware.Recovery(logger))
+	r.Use(middleware.Logger())
+	r.Use(middleware.Recovery())
 	r.Use(middleware.CORS())
 
-	// Initialize dependencies
-	assignmentRepo := repository.NewAssignmentRepository(db)
-	catalogueClient := catalogue.NewClient(cfg.Catalogue.BaseURL, time.Duration(cfg.Catalogue.Timeout)*time.Second)
-	validator := validator.New()
-
-	// Initialize Kafka producer
-	producer, err := messaging.NewProducer(&cfg.Kafka, logger)
-	if err != nil {
-		logger.Fatalw("Failed to create Kafka producer", "error", err)
-	}
-
-	assignmentService := service.NewAssignmentService(assignmentRepo, catalogueClient, validator, producer, logger)
-
 	// Health check endpoint
-	r.GET("/health", handlers.NewHealthHandler(db, logger).Handle)
+	r.GET("/health", handlers.NewHealthHandler(db).Handle)
 
 	// API v1 routes
 	v1 := r.Group("/api/awards/v1")
@@ -57,7 +37,7 @@ func Setup(db *gorm.DB, logger *zap.SugaredLogger, cfg *config.Config) *gin.Engi
 		// Assignment routes
 		assignments := v1.Group("/assignments")
 		{
-			assignmentHandler := handlers.NewAssignmentHandler(assignmentService, logger)
+			assignmentHandler := handlers.NewAssignmentHandler(assignmentService)
 			assignments.GET("/:userId", assignmentHandler.GetUserStickers)
 			assignments.POST("/:userId", assignmentHandler.AssignSticker)
 			assignments.DELETE("/:userId/:stickerId", assignmentHandler.RemoveSticker)

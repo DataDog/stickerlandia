@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/datadog/stickerlandia/sticker-award/internal/messaging/events/published"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -40,7 +41,7 @@ func TestNewStickerAssignedToUserEvent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			event := NewStickerAssignedToUserEvent(tt.accountID, tt.stickerID, tt.assignedAt, tt.reason)
+			event := published.NewStickerAssignedToUserEvent(tt.accountID, tt.stickerID, tt.assignedAt, tt.reason)
 
 			// Test event structure
 			assert.Equal(t, "StickerAssignedToUser", event.EventName)
@@ -64,7 +65,7 @@ func TestNewStickerRemovedFromUserEvent(t *testing.T) {
 	stickerID := "sticker-456"
 	removedAt := time.Now().UTC()
 
-	event := NewStickerRemovedFromUserEvent(accountID, stickerID, removedAt)
+	event := published.NewStickerRemovedFromUserEvent(accountID, stickerID, removedAt)
 
 	// Test event structure
 	assert.Equal(t, "StickerRemovedFromUser", event.EventName)
@@ -79,7 +80,7 @@ func TestNewStickerClaimedEvent(t *testing.T) {
 	stickerID := "sticker-456"
 	claimedAt := time.Now().UTC()
 
-	event := NewStickerClaimedEvent(accountID, stickerID, claimedAt)
+	event := published.NewStickerClaimedEvent(accountID, stickerID, claimedAt)
 
 	// Test event structure
 	assert.Equal(t, "StickerClaimed", event.EventName)
@@ -95,7 +96,7 @@ func TestStickerAssignedToUserEvent_JSONSerialization(t *testing.T) {
 	assignedAt := time.Date(2023, 1, 1, 12, 0, 0, 0, time.UTC)
 	reason := "Test reason"
 
-	event := NewStickerAssignedToUserEvent(accountID, stickerID, assignedAt, &reason)
+	event := published.NewStickerAssignedToUserEvent(accountID, stickerID, assignedAt, &reason)
 
 	// Test JSON marshaling
 	jsonData, err := json.Marshal(event)
@@ -117,7 +118,7 @@ func TestStickerAssignedToUserEvent_JSONSerialization(t *testing.T) {
 	assert.Equal(t, expected, actual)
 
 	// Test JSON unmarshaling
-	var unmarshaled StickerAssignedToUserEvent
+	var unmarshaled published.StickerAssignedToUserEvent
 	err = json.Unmarshal(jsonData, &unmarshaled)
 	require.NoError(t, err)
 
@@ -135,7 +136,7 @@ func TestStickerAssignedToUserEvent_JSONSerialization_NoReason(t *testing.T) {
 	stickerID := "sticker-456"
 	assignedAt := time.Date(2023, 1, 1, 12, 0, 0, 0, time.UTC)
 
-	event := NewStickerAssignedToUserEvent(accountID, stickerID, assignedAt, nil)
+	event := published.NewStickerAssignedToUserEvent(accountID, stickerID, assignedAt, nil)
 
 	// Test JSON marshaling
 	jsonData, err := json.Marshal(event)
@@ -153,7 +154,7 @@ func TestStickerRemovedFromUserEvent_JSONSerialization(t *testing.T) {
 	stickerID := "sticker-456"
 	removedAt := time.Date(2023, 1, 1, 12, 0, 0, 0, time.UTC)
 
-	event := NewStickerRemovedFromUserEvent(accountID, stickerID, removedAt)
+	event := published.NewStickerRemovedFromUserEvent(accountID, stickerID, removedAt)
 
 	// Test JSON marshaling
 	jsonData, err := json.Marshal(event)
@@ -179,7 +180,7 @@ func TestStickerClaimedEvent_JSONSerialization(t *testing.T) {
 	stickerID := "sticker-456"
 	claimedAt := time.Date(2023, 1, 1, 12, 0, 0, 0, time.UTC)
 
-	event := NewStickerClaimedEvent(accountID, stickerID, claimedAt)
+	event := published.NewStickerClaimedEvent(accountID, stickerID, claimedAt)
 
 	// Test JSON marshaling
 	jsonData, err := json.Marshal(event)
@@ -200,22 +201,11 @@ func TestStickerClaimedEvent_JSONSerialization(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
-func TestDomainEvent_Structure(t *testing.T) {
-	// Test the base DomainEvent struct can be created and used
-	event := DomainEvent{
-		EventName:    "TestEvent",
-		EventVersion: "v1",
-	}
-
-	assert.Equal(t, "TestEvent", event.EventName)
-	assert.Equal(t, "v1", event.EventVersion)
-}
-
 func TestEventVersionConsistency(t *testing.T) {
 	// Ensure all events use the same version format
-	assignedEvent := NewStickerAssignedToUserEvent("user", "sticker", time.Now(), nil)
-	removedEvent := NewStickerRemovedFromUserEvent("user", "sticker", time.Now())
-	claimedEvent := NewStickerClaimedEvent("user", "sticker", time.Now())
+	assignedEvent := published.NewStickerAssignedToUserEvent("user", "sticker", time.Now(), nil)
+	removedEvent := published.NewStickerRemovedFromUserEvent("user", "sticker", time.Now())
+	claimedEvent := published.NewStickerClaimedEvent("user", "sticker", time.Now())
 
 	assert.Equal(t, "v1", assignedEvent.EventVersion)
 	assert.Equal(t, "v1", removedEvent.EventVersion)

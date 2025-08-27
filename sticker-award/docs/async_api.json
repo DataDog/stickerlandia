@@ -42,10 +42,56 @@
           "$ref": "#/components/messages/certificationCompletedEventV1"
         }
       }
+    },
+    "users.userRegistered.v1": {
+      "subscribe": {
+        "operationId": "ProcessUserRegisteredEventAsync",
+        "summary": "Subscribed to assign welcome stickers to newly registered users",
+        "message": {
+          "$ref": "#/components/messages/userRegisteredEventV1"
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "cloudEvent": {
+        "id": "cloudEvent",
+        "type": "object",
+        "description": "CloudEvents v1.0 specification compliant wrapper",
+        "additionalProperties": false,
+        "properties": {
+          "specversion": {
+            "type": "string",
+            "const": "1.0",
+            "description": "CloudEvents specification version"
+          },
+          "type": {
+            "type": "string",
+            "description": "Event type identifier (typically the topic name)"
+          },
+          "source": {
+            "type": "string",
+            "description": "Source service that produced the event"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for this event instance"
+          },
+          "time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "RFC3339 timestamp when the event was created"
+          },
+          "traceparent": {
+            "type": "string",
+            "pattern": "^00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$",
+            "description": "W3C trace context for distributed tracing"
+          }
+        },
+        "required": ["specversion", "type", "source", "id", "time"]
+      },
       "domainEvent": {
         "id": "domainEvent",
         "type": "object",
@@ -60,8 +106,8 @@
           }
         }
       },
-      "stickerAssignedToUserEvent": {
-        "id": "stickerAssignedToUserEvent",
+      "stickerAssignedToUserEventData": {
+        "id": "stickerAssignedToUserEventData",
         "allOf": [
           {
             "$ref": "#/components/schemas/domainEvent"
@@ -89,20 +135,39 @@
               "assignedAt": {
                 "type": "string",
                 "format": "date-time",
-                "description": "When the assignment occurred"
+                "description": "RFC3339 timestamp when the assignment occurred"
               },
               "reason": {
                 "type": "string",
-                "nullable": true,
-                "description": "Optional reason for the assignment"
+                "description": "Optional reason for the assignment (omitted if not provided)"
               }
             },
             "required": ["eventName", "eventVersion", "accountId", "stickerId", "assignedAt"]
           }
         ]
       },
-      "stickerRemovedFromUserEvent": {
-        "id": "stickerRemovedFromUserEvent",
+      "stickerAssignedToUserEvent": {
+        "id": "stickerAssignedToUserEvent",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/cloudEvent"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "stickers.stickerAssignedToUser.v1"
+              },
+              "data": {
+                "$ref": "#/components/schemas/stickerAssignedToUserEventData"
+              }
+            },
+            "required": ["data"]
+          }
+        ]
+      },
+      "stickerRemovedFromUserEventData": {
+        "id": "stickerRemovedFromUserEventData",
         "allOf": [
           {
             "$ref": "#/components/schemas/domainEvent"
@@ -130,41 +195,88 @@
               "removedAt": {
                 "type": "string",
                 "format": "date-time",
-                "description": "When the removal occurred"
+                "description": "RFC3339 timestamp when the removal occurred"
               }
             },
             "required": ["eventName", "eventVersion", "accountId", "stickerId", "removedAt"]
           }
         ]
       },
+      "stickerRemovedFromUserEvent": {
+        "id": "stickerRemovedFromUserEvent",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/cloudEvent"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "stickers.stickerRemovedFromUser.v1"
+              },
+              "data": {
+                "$ref": "#/components/schemas/stickerRemovedFromUserEventData"
+              }
+            },
+            "required": ["data"]
+          }
+        ]
+      },
+      "stickerClaimedEventV1Data": {
+        "id": "stickerClaimedEventV1Data",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/domainEvent"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "eventName": {
+                "type": "string",
+                "const": "StickerClaimed"
+              },
+              "eventVersion": {
+                "type": "string",
+                "const": "v1"
+              },
+              "accountId": {
+                "type": "string",
+                "description": "The user who claimed the sticker"
+              },
+              "stickerId": {
+                "type": "string",
+                "description": "The sticker that was claimed"
+              },
+              "claimedAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "RFC3339 timestamp when the claim occurred"
+              }
+            },
+            "required": ["eventName", "eventVersion", "accountId", "stickerId", "claimedAt"]
+          }
+        ]
+      },
       "stickerClaimedEventV1": {
         "id": "stickerClaimedEventV1",
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "eventName": {
-            "type": "string",
-            "const": "StickerClaimed"
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/cloudEvent"
           },
-          "eventVersion": {
-            "type": "string",
-            "const": "v1"
-          },
-          "accountId": {
-            "type": "string",
-            "description": "The user who claimed the sticker"
-          },
-          "stickerId": {
-            "type": "string",
-            "description": "The sticker that was claimed"
-          },
-          "claimedAt": {
-            "type": "string",
-            "format": "date-time",
-            "description": "When the claim occurred"
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "users.stickerClaimed.v1"
+              },
+              "data": {
+                "$ref": "#/components/schemas/stickerClaimedEventV1Data"
+              }
+            },
+            "required": ["data"]
           }
-        },
-        "required": ["eventName", "eventVersion", "accountId", "stickerId", "claimedAt"]
+        ]
       },
       "certificationCompletedEventV1": {
         "id": "certificationCompletedEventV1",
@@ -194,6 +306,31 @@
           }
         },
         "required": ["eventName", "eventVersion", "accountId", "certificationId", "completedAt"]
+      },
+      "userRegisteredEventV1": {
+        "id": "userRegisteredEventV1",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "eventName": {
+            "type": "string",
+            "const": "users.userRegistered.v1"
+          },
+          "eventVersion": {
+            "type": "string",
+            "const": "1.0"
+          },
+          "accountId": {
+            "type": "string",
+            "description": "The newly registered user"
+          },
+          "registeredAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the user was registered"
+          }
+        },
+        "required": ["eventName", "eventVersion", "accountId"]
       }
     },
     "messages": {
@@ -202,24 +339,27 @@
           "$ref": "#/components/schemas/stickerAssignedToUserEvent"
         },
         "name": "stickerAssignedToUserEvent",
-        "title": "Sticker Assigned to User",
-        "summary": "Event published when a sticker is assigned to a user"
+        "title": "Sticker Assigned to User (CloudEvent)",
+        "summary": "CloudEvent wrapper containing sticker assignment event data",
+        "contentType": "application/json"
       },
       "stickerRemovedFromUserEvent": {
         "payload": {
           "$ref": "#/components/schemas/stickerRemovedFromUserEvent"
         },
         "name": "stickerRemovedFromUserEvent",
-        "title": "Sticker Removed from User",
-        "summary": "Event published when a sticker is removed from a user"
+        "title": "Sticker Removed from User (CloudEvent)",
+        "summary": "CloudEvent wrapper containing sticker removal event data",
+        "contentType": "application/json"
       },
       "stickerClaimedEventV1": {
         "payload": {
           "$ref": "#/components/schemas/stickerClaimedEventV1"
         },
         "name": "stickerClaimedEventV1",
-        "title": "Sticker Claimed",
-        "summary": "Event published when a user claims a sticker"
+        "title": "Sticker Claimed (CloudEvent)",
+        "summary": "CloudEvent wrapper containing sticker claim event data",
+        "contentType": "application/json"
       },
       "certificationCompletedEventV1": {
         "payload": {
@@ -227,7 +367,17 @@
         },
         "name": "certificationCompletedEventV1",
         "title": "Certification Completed",
-        "summary": "Event consumed to trigger automatic sticker assignments"
+        "summary": "Event consumed to trigger automatic sticker assignments",
+        "contentType": "application/json"
+      },
+      "userRegisteredEventV1": {
+        "payload": {
+          "$ref": "#/components/schemas/userRegisteredEventV1"
+        },
+        "name": "userRegisteredEventV1",
+        "title": "User Registered",
+        "summary": "Event consumed to assign welcome stickers to new users",
+        "contentType": "application/json"
       }
     }
   }

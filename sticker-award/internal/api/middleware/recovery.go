@@ -4,18 +4,18 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
+	log "github.com/sirupsen/logrus"
 )
 
 // Recovery returns a Gin middleware that recovers from panics
-func Recovery(logger *zap.SugaredLogger) gin.HandlerFunc {
+func Recovery() gin.HandlerFunc {
 	return gin.RecoveryWithWriter(gin.DefaultWriter, func(c *gin.Context, err interface{}) {
-		logger.Errorw("Panic recovered",
-			"error", err,
-			"method", c.Request.Method,
-			"path", c.Request.URL.Path,
-			"client_ip", c.ClientIP(),
-		)
+		log.WithContext(c.Request.Context()).WithFields(log.Fields{
+			"error":     err,
+			"method":    c.Request.Method,
+			"path":      c.Request.URL.Path,
+			"client_ip": c.ClientIP(),
+		}).Error("Panic recovered")
 
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"type":   "about:blank",

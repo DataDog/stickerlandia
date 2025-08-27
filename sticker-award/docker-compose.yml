@@ -110,6 +110,9 @@ services:
       KAFKA_PRODUCER_BATCH_SIZE: 16384
       KAFKA_REQUIRE_ACKS: 1
       KAFKA_ENABLE_IDEMPOTENT: true
+      
+      # Datadog configuration
+      DD_DATA_STREAMS_ENABLED: true
     ports:
       - "8080:8080"
       - "2345:2345"  # Delve debugger port

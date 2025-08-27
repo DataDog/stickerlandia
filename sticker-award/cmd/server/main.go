@@ -3,21 +3,28 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+
+	log "github.com/sirupsen/logrus"
+
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
+	dd_logrus "github.com/DataDog/dd-trace-go/contrib/sirupsen/logrus/v2"
+	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
+	"github.com/DataDog/dd-trace-go/v2/profiler"
 	"github.com/datadog/stickerlandia/sticker-award/internal/api/router"
+	"github.com/datadog/stickerlandia/sticker-award/internal/clients/catalogue"
 	"github.com/datadog/stickerlandia/sticker-award/internal/config"
-	"github.com/datadog/stickerlandia/sticker-award/internal/infrastructure/database"
-	"github.com/datadog/stickerlandia/sticker-award/pkg/logger"
-	"github.com/lib/pq"
-	sqltrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/database/sql"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
-	"gopkg.in/DataDog/dd-trace-go.v1/profiler"
+	"github.com/datadog/stickerlandia/sticker-award/internal/database"
+	"github.com/datadog/stickerlandia/sticker-award/internal/database/repository"
+	"github.com/datadog/stickerlandia/sticker-award/internal/domain/service"
+	"github.com/datadog/stickerlandia/sticker-award/internal/messaging"
+	"github.com/datadog/stickerlandia/sticker-award/internal/messaging/handlers"
+	"github.com/datadog/stickerlandia/sticker-award/pkg/validator"
 )
 
 func main() {
@@ -26,9 +33,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
-
-	// Register SQL driver with DataDog tracing BEFORE starting tracer
-	sqltrace.Register("postgres", &pq.Driver{}, sqltrace.WithServiceName("sticker-award"))
 
 	// Start the DataDog tracer
 	tracer.Start()
@@ -47,33 +51,65 @@ func main() {
 		defer profiler.Stop()
 	}
 
-	// Initialize logger
-	baseLogger, err := logger.New(cfg.Logging.Level, cfg.Logging.Format)
-	if err != nil {
-		log.Fatalf("Failed to initialize logger: %v", err)
-	}
-	defer baseLogger.Sync()
+	// Initialize logger backend with logrus + Datadog
+	log.SetFormatter(&log.JSONFormatter{})
+	log.AddHook(&dd_logrus.DDContextLogHook{})
 
-	logger := baseLogger.Sugar()
-	logger.Infow("Starting Sticker Award Service",
-		"port", cfg.Server.Port,
-	)
+	// Parse log level
+	level, err := log.ParseLevel(cfg.Logging.Level)
+	if err != nil {
+		log.Fatalf("Invalid log level %s: %v", cfg.Logging.Level, err)
+	}
+	log.SetLevel(level)
+
+	log.WithFields(log.Fields{
+		"port": cfg.Server.Port,
+	}).Info("Starting Sticker Award Service")
 
 	// Initialize database connection
 	db, err := database.Connect(&cfg.Database)
 	if err != nil {
-		logger.Fatalw("Failed to connect to database", "error", err)
+		log.WithFields(log.Fields{"error": err}).Fatal("Failed to connect to database")
 	}
 
 	// Run database migrations
-	logger.Info("Running database migrations...")
+	log.Info("Running database migrations...")
 	if err := database.RunMigrations(db); err != nil {
-		logger.Fatalw("Failed to run database migrations", "error", err)
+		log.WithFields(log.Fields{"error": err}).Fatal("Failed to run database migrations")
 	}
-	logger.Info("Database migrations completed successfully")
+	log.Info("Database migrations completed successfully")
+
+	// Initialize services dependencies
+	assignmentRepo := repository.NewAssignmentRepository(db)
+	catalogueClient := catalogue.NewClient(cfg.Catalogue.BaseURL, time.Duration(cfg.Catalogue.Timeout)*time.Second)
+	validator := validator.New()
+
+	// Initialize Kafka producer
+	producer, err := messaging.NewProducer(&cfg.Kafka)
+	if err != nil {
+		log.WithFields(log.Fields{"error": err}).Fatal("Failed to create Kafka producer")
+	}
+
+	assignmentService := service.NewAssigner(assignmentRepo, catalogueClient, validator, producer)
 
 	// Initialize HTTP router
-	r := router.Setup(db, logger, cfg)
+	r := router.Setup(db, cfg, assignmentService)
+
+	// Log Kafka configuration being used
+	log.WithFields(log.Fields{
+		"brokers": cfg.Kafka.Brokers,
+		"groupID": cfg.Kafka.GroupID,
+	}).Info("Kafka configuration loaded")
+
+	// Initialize Kafka consumer
+	consumer, err := messaging.NewConsumer(cfg.Kafka.Brokers, cfg.Kafka.GroupID)
+	if err != nil {
+		log.WithFields(log.Fields{"error": err}).Fatal("Failed to create Kafka consumer")
+	}
+
+	// Register user registered event handler
+	userRegisteredHandler := handlers.NewUserRegisteredHandler(assignmentService)
+	consumer.RegisterHandler(userRegisteredHandler)
 
 	// Create HTTP server
 	srv := &http.Server{
@@ -85,28 +121,50 @@ func main() {
 		MaxHeaderBytes: 1 << 20, // 1MB
 	}
 
-	// Start server in a goroutine
+	var wg sync.WaitGroup
+
+	// Start HTTP server in a goroutine
+	wg.Add(1)
 	go func() {
-		logger.Infow("HTTP server starting", "addr", srv.Addr)
+		defer wg.Done()
+		log.WithFields(log.Fields{"addr": srv.Addr}).Info("HTTP server starting")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Fatalw("Failed to start HTTP server", "error", err)
+			log.WithFields(log.Fields{"error": err}).Error("HTTP server error")
 		}
 	}()
 
-	// Wait for interrupt signal to gracefully shutdown the server
+	// Start Kafka consumer in a goroutine
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		log.Info("Starting Kafka consumer...")
+		if err := consumer.Start(); err != nil {
+			log.WithFields(log.Fields{"error": err}).Error("Kafka consumer error")
+		}
+	}()
+
+	// Wait for interrupt signal to gracefully shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	logger.Info("Shutting down server...")
+	log.Info("Shutting down services...")
 
-	// Give outstanding requests 30 seconds to complete
+	// Give outstanding requests and consumer 30 seconds to complete
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	// Shutdown HTTP server
 	if err := srv.Shutdown(ctx); err != nil {
-		logger.Fatalw("Server forced to shutdown", "error", err)
+		log.WithFields(log.Fields{"error": err}).Error("HTTP server forced to shutdown")
 	}
 
-	logger.Info("Server exited")
+	// Shutdown Kafka consumer
+	if err := consumer.Stop(); err != nil {
+		log.WithFields(log.Fields{"error": err}).Error("Error stopping Kafka consumer")
+	}
+
+	// Wait for goroutines to finish
+	wg.Wait()
+	log.Info("All services exited gracefully")
 }
