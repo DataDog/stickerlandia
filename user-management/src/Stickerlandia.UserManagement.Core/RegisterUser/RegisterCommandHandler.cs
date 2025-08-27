@@ -33,20 +33,25 @@ public class RegisterCommandHandler
             {
                 throw new UserExistsException("A user with this email address already exists.");
             }
+
+            var user = PostgresUserAccount.New(command.EmailAddress, command.FirstName, command.LastName);
+            var createUserResult = await _userManager.CreateAsync(user, command.Password);
             
-            //using var transactionScope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
 
-            var user = new PostgresUserAccount();
-            user.UserName = command.EmailAddress;
-            user.Email = command.EmailAddress;
-            user.EmailConfirmed = true;
-            user.FirstName = command.FirstName;
-            user.LastName = command.LastName;
-            user.DateCreated = DateTime.UtcNow;
-            var result = await _userManager.CreateAsync(user, command.Password);
-
-            if (result.Succeeded)
+            if (createUserResult.Succeeded)
             {
+                switch (accountType)
+                {
+                    case AccountType.User:
+                        await _userManager.AddToRoleAsync(user, UserTypes.User);
+                        break;
+                    case AccountType.Admin:
+                        await _userManager.AddToRoleAsync(user, UserTypes.Admin);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(accountType), accountType, null);
+                }
+                
                 var userId = await _userManager.GetUserIdAsync(user);
 
                 await _outbox.StoreEventFor(userId, new UserRegisteredEvent
@@ -63,7 +68,7 @@ public class RegisterCommandHandler
 
             var response = new RegisterResponse();
 
-            foreach (var error in result.Errors) response.Errors.Add(error.Description);
+            foreach (var error in createUserResult.Errors) response.Errors.Add(error.Description);
             
             //transactionScope.Complete();
 

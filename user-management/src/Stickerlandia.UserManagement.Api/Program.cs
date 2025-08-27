@@ -106,7 +106,8 @@ v1ApiEndpoints.MapGet("{userId}/details", GetUserDetails.HandleAsync)
     {
         policyBuilder.AuthenticationSchemes = new List<string>(1)
             { OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme };
-        policyBuilder.RequireAuthenticatedUser();
+        policyBuilder.RequireAuthenticatedUser()
+            .RequireRole(UserTypes.Admin, UserTypes.User);
     })
     .WithDescription("Get the current authenticated users details")
     .Produces<ApiResponse<UserAccountDto>>(200)
@@ -118,7 +119,8 @@ v1ApiEndpoints.MapPut("{userId}/details", UpdateUserDetailsEndpoint.HandleAsync)
     {
         policyBuilder.AuthenticationSchemes = new List<string>(1)
             { OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme };
-        policyBuilder.RequireAuthenticatedUser();
+        policyBuilder.RequireAuthenticatedUser()
+            .RequireRole(UserTypes.Admin, UserTypes.User);
     })
     .WithDescription("Update the user details")
     .Produces<ApiResponse<string>>(200)
