@@ -39,7 +39,7 @@ public class GooglePubSubEventPublisher([FromKeyedServices("users.userRegistered
         }
         
         var formatter = new JsonEventFormatter<UserRegisteredEvent>();
-        var data = formatter.EncodeBinaryModeEventData(cloudEvent);
+        var data = formatter.EncodeStructuredModeMessage(cloudEvent, out _);
         
         await publisherClient.PublishAsync(ByteString.CopyFrom(data.Span));
     }

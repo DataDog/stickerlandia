@@ -2,6 +2,7 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
+using System.Net.Mime;
 using System.Text;
 using CloudNative.CloudEvents;
 using CloudNative.CloudEvents.SystemTextJson;
@@ -53,7 +54,7 @@ public class KafkaEventPublisher(ProducerConfig config, ILogger<KafkaEventPublis
             }
 
             var formatter = new JsonEventFormatter<UserRegisteredEvent>();
-            var data = formatter.EncodeBinaryModeEventData(cloudEvent);
+            var data = formatter.EncodeStructuredModeMessage(cloudEvent, out _);
 
             using var producer = new ProducerBuilder<string, string>(config).Build();
 
