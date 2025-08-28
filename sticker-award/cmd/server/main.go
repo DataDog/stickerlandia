@@ -23,6 +23,7 @@ import (
 	"github.com/datadog/stickerlandia/sticker-award/internal/database/repository"
 	"github.com/datadog/stickerlandia/sticker-award/internal/domain/service"
 	"github.com/datadog/stickerlandia/sticker-award/internal/messaging"
+	"github.com/datadog/stickerlandia/sticker-award/internal/messaging/factory"
 	"github.com/datadog/stickerlandia/sticker-award/internal/messaging/handlers"
 	"github.com/datadog/stickerlandia/sticker-award/pkg/validator"
 )
@@ -107,8 +108,11 @@ func main() {
 		log.WithFields(log.Fields{"error": err}).Fatal("Failed to create Kafka consumer")
 	}
 
-	// Register user registered event handler
-	userRegisteredHandler := handlers.NewUserRegisteredHandler(assignmentService)
+	// Create handler factory for automatic middleware stacking
+	handlerFactory := factory.NewHandlerFactory("sticker-award")
+
+	// Register user registered event handler (automatically gets DSM + CloudEvent middleware)
+	userRegisteredHandler := handlers.NewUserRegisteredMessageHandler(assignmentService, handlerFactory)
 	consumer.RegisterHandler(userRegisteredHandler)
 
 	// Create HTTP server

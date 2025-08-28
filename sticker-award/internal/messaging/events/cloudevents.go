@@ -3,10 +3,13 @@ package events
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
 	"github.com/google/uuid"
+	log "github.com/sirupsen/logrus"
 )
 
 // CloudEvent represents a CloudEvents specification v1.0 compliant event
@@ -47,4 +50,66 @@ func NewCloudEvent[T any](ctx context.Context, eventType string, source string, 
 	}
 
 	return event
+}
+
+// ExtractSpanLinksFromCloudEvent extracts span links from a CloudEvent's traceparent field
+func ExtractSpanLinksFromCloudEvent[T any](ctx context.Context, cloudEvent CloudEvent[T]) []tracer.SpanLink {
+	var spanLinks []tracer.SpanLink
+
+	if cloudEvent.TraceParent == "" {
+		log.WithContext(ctx).Info("No traceparent found in CloudEvent, no span links to create")
+		return spanLinks
+	}
+
+	// Parse W3C traceparent format: "version-traceId-spanId-flags"
+	parts := strings.Split(cloudEvent.TraceParent, "-")
+	if len(parts) != 4 {
+		log.WithContext(ctx).WithFields(log.Fields{"traceparent": cloudEvent.TraceParent}).Info("Invalid traceparent format - expected 4 parts separated by dashes")
+		return spanLinks
+	}
+
+	// Convert hex trace ID and span ID to uint64
+	// For DD trace go, we need the full 128-bit trace ID but represented as uint64
+	// We can take the lower 64 bits of the 128-bit W3C trace ID
+	traceIDHex := parts[1]
+	if len(traceIDHex) == 32 {
+		// Take the lower 64 bits (last 16 hex characters)
+		traceIDHex = traceIDHex[16:]
+	}
+	traceID, err := strconv.ParseUint(traceIDHex, 16, 64)
+	if err != nil {
+		log.WithContext(ctx).WithFields(log.Fields{
+			"traceId":     parts[1],
+			"traceIdHex":  traceIDHex,
+			"error":       err,
+			"traceparent": cloudEvent.TraceParent,
+		}).Info("Failed to parse trace ID from traceparent - invalid hex format")
+		return spanLinks
+	}
+
+	spanID, err := strconv.ParseUint(parts[2], 16, 64)
+	if err != nil {
+		log.WithContext(ctx).WithFields(log.Fields{
+			"spanId":      parts[2],
+			"error":       err,
+			"traceparent": cloudEvent.TraceParent,
+		}).Info("Failed to parse span ID from traceparent - invalid hex format")
+		return spanLinks
+	}
+
+	// Create span link
+	spanLink := tracer.SpanLink{
+		TraceID: traceID,
+		SpanID:  spanID,
+	}
+
+	spanLinks = append(spanLinks, spanLink)
+	log.WithContext(ctx).WithFields(log.Fields{
+		"trace_id":         traceID,
+		"span_id":          spanID,
+		"traceparent":      cloudEvent.TraceParent,
+		"span_links_count": 1,
+	}).Info("Successfully created span link from CloudEvent traceparent")
+
+	return spanLinks
 }

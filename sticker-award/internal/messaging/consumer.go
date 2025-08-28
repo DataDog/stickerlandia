@@ -2,27 +2,15 @@ package messaging
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
-	"strconv"
-	"strings"
 	"sync"
 	"syscall"
 
-	ddsarama "github.com/DataDog/dd-trace-go/contrib/IBM/sarama/v2"
-	"github.com/DataDog/dd-trace-go/v2/datastreams"
-	"github.com/DataDog/dd-trace-go/v2/datastreams/options"
-	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
 	"github.com/IBM/sarama"
 )
-
-// Context key for span links
-type contextKey string
-
-const SpanLinksContextKey contextKey = "span_links"
 
 // Consumer represents a Kafka consumer with Datadog DSM integration
 type Consumer struct {
@@ -115,7 +103,7 @@ func (c *Consumer) Start() error {
 				log.WithContext(c.ctx).Info("Kafka consumer context cancelled")
 				return
 			default:
-				if err := c.client.Consume(c.ctx, c.topics, ddsarama.WrapConsumerGroupHandler(c)); err != nil {
+				if err := c.client.Consume(c.ctx, c.topics, c); err != nil {
 					log.WithFields(log.Fields{"error": err}).Error("Error from consumer")
 					return
 				}
@@ -191,55 +179,29 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 				return nil
 			}
 
-			// Extract Datadog DSM context from message headers
-			ctx := c.extractDatadogContext(session.Context(), message)
-
-			// Extract span links from CloudEvent message
-			spanLinks := c.extractSpanLinksFromMessage(ctx, message)
-
-			// Add span links to context so handlers can access them
-			ctx = context.WithValue(ctx, SpanLinksContextKey, spanLinks)
-
-			// Get the span from context to finish it after processing
-			span, _ := tracer.SpanFromContext(ctx)
-
 			// Get handler for this topic
 			handler, exists := c.handlers[message.Topic]
 			if !exists {
-				log.WithContext(ctx).WithFields(log.Fields{"topic": message.Topic}).Warn("No handler registered for topic")
-				if span != nil {
-					span.SetTag("error", true)
-					span.SetTag("error.msg", "no handler registered")
-					span.Finish()
-				}
+				log.WithContext(session.Context()).WithFields(log.Fields{"topic": message.Topic}).Warn("No handler registered for topic")
 				session.MarkMessage(message, "")
 				continue
 			}
 
-			// Process message
-			err := handler.Handle(ctx, message)
+			// Process message - middleware handles DSM, tracing, and CloudEvent parsing
+			err := handler.Handle(session.Context(), message)
 			if err != nil {
-				log.WithContext(ctx).WithFields(log.Fields{
+				log.WithContext(session.Context()).WithFields(log.Fields{
 					"topic":     message.Topic,
 					"partition": message.Partition,
 					"offset":    message.Offset,
 					"error":     err,
 				}).Error("Error handling message")
-				if span != nil {
-					span.SetTag("error", true)
-					span.SetTag("error.msg", err.Error())
-				}
 			} else {
-				log.WithContext(ctx).WithFields(log.Fields{
+				log.WithContext(session.Context()).WithFields(log.Fields{
 					"topic":     message.Topic,
 					"partition": message.Partition,
 					"offset":    message.Offset,
 				}).Debug("Message processed successfully")
-			}
-
-			// Finish the consumer span
-			if span != nil {
-				span.Finish()
 			}
 
 			session.MarkMessage(message, "")
@@ -248,106 +210,6 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 			return nil
 		}
 	}
-}
-
-// extractDatadogContext extracts Datadog tracing context from Kafka message headers
-func (c *Consumer) extractDatadogContext(ctx context.Context, message *sarama.ConsumerMessage) context.Context {
-	// Extract DSM context from message headers first
-	ctx = datastreams.ExtractFromBase64Carrier(ctx, ddsarama.NewConsumerMessageCarrier(message))
-
-	// Set manual DSM checkpoint for inbound message with service override
-	ctx, _ = tracer.SetDataStreamsCheckpointWithParams(ctx, options.CheckpointParams{
-		ServiceOverride: "sticker-award",
-	}, "direction:in", "type:kafka", "topic:"+message.Topic, "manual_checkpoint:true")
-
-	// Create span for consumer operation with proper messaging tags
-	span, spanCtx := tracer.StartSpanFromContext(ctx, "kafka.consume",
-		tracer.ServiceName("sticker-award"),
-		tracer.ResourceName("consume "+message.Topic),
-		tracer.Tag("kafka.topic", message.Topic),
-		tracer.Tag("kafka.partition", message.Partition),
-		tracer.Tag("kafka.offset", message.Offset),
-		tracer.Tag("messaging.operation.name", "consume"),
-		tracer.Tag("messaging.operation.type", "receive"),
-		tracer.Tag("messaging.system", "kafka"),
-		tracer.Tag("messaging.message.envelope.size", len(message.Value)),
-		tracer.SpanType("queue"),
-	)
-
-	// Store span to finish later in the message processing
-	ctx = tracer.ContextWithSpan(spanCtx, span)
-
-	return ctx
-}
-
-// extractSpanLinksFromMessage attempts to extract span links from CloudEvent messages
-// Returns span links that can be used when creating processing spans
-func (c *Consumer) extractSpanLinksFromMessage(ctx context.Context, message *sarama.ConsumerMessage) []tracer.SpanLink {
-	var spanLinks []tracer.SpanLink
-
-	// Try to parse the message as a CloudEvent to extract traceparent
-	var cloudEvent struct {
-		TraceParent string `json:"traceparent"`
-	}
-
-	if err := json.Unmarshal(message.Value, &cloudEvent); err != nil {
-		log.WithContext(ctx).Debug("Could not parse message as CloudEvent, skipping span link extraction")
-		return spanLinks
-	}
-
-	if cloudEvent.TraceParent == "" {
-		log.WithContext(ctx).Debug("No traceparent found in CloudEvent, no span links to create")
-		return spanLinks
-	}
-
-	// Parse W3C traceparent format: "version-traceId-spanId-flags"
-	parts := strings.Split(cloudEvent.TraceParent, "-")
-	if len(parts) != 4 {
-		log.WithContext(ctx).WithFields(log.Fields{"traceparent": cloudEvent.TraceParent}).Debug("Invalid traceparent format")
-		return spanLinks
-	}
-
-	// Convert hex trace ID and span ID to uint64
-	// For DD trace go, we need the full 128-bit trace ID but represented as uint64
-	// We can take the lower 64 bits of the 128-bit W3C trace ID
-	traceIDHex := parts[1]
-	if len(traceIDHex) == 32 {
-		// Take the lower 64 bits (last 16 hex characters)
-		traceIDHex = traceIDHex[16:]
-	}
-	traceID, err := strconv.ParseUint(traceIDHex, 16, 64)
-	if err != nil {
-		log.WithContext(ctx).WithFields(log.Fields{"traceId": parts[1], "error": err}).Debug("Failed to parse trace ID from traceparent")
-		return spanLinks
-	}
-
-	spanID, err := strconv.ParseUint(parts[2], 16, 64)
-	if err != nil {
-		log.WithContext(ctx).WithFields(log.Fields{"spanId": parts[2], "error": err}).Debug("Failed to parse span ID from traceparent")
-		return spanLinks
-	}
-
-	// Create span link
-	spanLinks = append(spanLinks, tracer.SpanLink{
-		TraceID: traceID,
-		SpanID:  spanID,
-	})
-
-	log.WithContext(ctx).WithFields(log.Fields{
-		"traceId":     traceID,
-		"spanId":      spanID,
-		"traceparent": cloudEvent.TraceParent,
-	}).Debug("Created span link from traceparent")
-
-	return spanLinks
-}
-
-// GetSpanLinksFromContext extracts span links from the context
-func GetSpanLinksFromContext(ctx context.Context) []tracer.SpanLink {
-	if spanLinks, ok := ctx.Value(SpanLinksContextKey).([]tracer.SpanLink); ok {
-		return spanLinks
-	}
-	return nil
 }
 
 // DatadogInterceptor implements Datadog DSM for Kafka consumers
