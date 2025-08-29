@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 Setting up Stickerlandia development environment..."
+echo "🚀 Setting up Stickerlandia environment..."
 
 # Update package lists
 # sudo apt-get update
@@ -16,7 +16,7 @@ git config --global --add safe.directory /workspace
 
 # Build containers
 echo "Starting stickerlandia"
-make compose-dev-up
+make compose-up
 
 echo "✅ Development environment setup complete!"
 echo ""
