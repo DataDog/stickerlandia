@@ -21,5 +21,5 @@
 		8082  // Redpanda Console
 	],
 
-	"postCreateCommand": "chmod +x .devcontainer/setup.sh && .devcontainer/setup.sh",
+	"postAttachCommand": "chmod +x .devcontainer/setup.sh && .devcontainer/setup.sh",
 }
