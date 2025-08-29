@@ -155,8 +155,9 @@ app.post('/api/app/auth/login', loginRateLimit, (req, res) => {
     redirect_uri: redirectUri
   })
   
-  // Convert to relative URL by removing the hostname
-  const authUrl = internalAuthUrl.replace(OAUTH_ISSUER_INTERNAL, '')
+  // Extract just the path and query from the authorization URL
+  const authUrlObj = new URL(internalAuthUrl)
+  const authUrl = authUrlObj.pathname + authUrlObj.search
   
   // Redirect browser to IdP
   res.redirect(authUrl)
