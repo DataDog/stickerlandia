@@ -385,7 +385,6 @@ services:
       OAUTH_ISSUER_INTERNAL: http://user-management:8080
       OAUTH_CLIENT_ID: web-ui
       OAUTH_CLIENT_SECRET: stickerlandia-web-ui-secret-2025
-      OAUTH_REDIRECT_URI: http://localhost:8080/api/app/auth/callback
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.web-backend.rule=PathPrefix(`/api/app`)"
