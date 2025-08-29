@@ -9,6 +9,12 @@ type ImportMetaEnv = {
   MODE: string
   DEV: boolean
   PROD: boolean
+  DD_RUM_APPLICATION_ID: string
+  DD_RUM_CLIENT_TOKEN: string
+  DD_SITE: string
+  DD_ENV: string
+  DD_VERSION: string
+  DD_SERVICE: string
   // @user-defined-start
   /*
    *  You can use this section to explicitly extend the type definition of `import.meta.env`
