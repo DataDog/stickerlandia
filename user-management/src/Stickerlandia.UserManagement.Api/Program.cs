@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using OpenIddict.Validation.AspNetCore;
@@ -64,6 +65,7 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 app.UseRateLimiter();
+app.UseMiddleware<PathBaseOverrideMiddleware>();
 app.UseMiddleware<GlobalExceptionHandler>();
 
 // Enable Swagger UI
