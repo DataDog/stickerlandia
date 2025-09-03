@@ -64,6 +64,26 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Use our public URL to access the service if we have been configured.
+// This avoids relying on X-Forwarded-For and HTTP headers to work out
+// where e.g. redirects should go.
+var publicBaseUrl = builder.Configuration["DEPLOYMENT_HOST_URL"];
+if (!string.IsNullOrWhiteSpace(publicBaseUrl))
+{
+    var publicBase = new Uri(publicBaseUrl);
+
+    app.Use(async (ctx, next) =>
+    {
+        // Normalize request host/scheme for the rest of the pipeline
+        ctx.Request.Scheme = publicBase.Scheme;
+
+        // publicBase.Authority may contain host[:port]
+        ctx.Request.Host = new HostString(publicBase.Authority);
+
+        await next();
+    });
+}
+
 app.UseRateLimiter();
 app.UseMiddleware<GlobalExceptionHandler>();
 
