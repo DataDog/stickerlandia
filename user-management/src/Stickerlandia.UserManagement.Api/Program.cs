@@ -65,7 +65,6 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 app.UseRateLimiter();
-app.UseMiddleware<PathBaseOverrideMiddleware>();
 app.UseMiddleware<GlobalExceptionHandler>();
 
 // Enable Swagger UI
