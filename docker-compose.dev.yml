@@ -70,6 +70,7 @@ services:
       - DD_VERSION=${COMMIT_SHA:-dev}
       - DD_AGENT_HOST=datadog-agent
       - DD_DATA_STREAMS_ENABLED=true
+      - DD_TRACE_REMOVE_INTEGRATION_SERVICE_NAMES_ENABLED=true
     volumes:
       - ./sticker-award:/app:cached  # Live code reload
       - go-mod-cache:/go/pkg/mod     # Persist Go module cache

@@ -83,7 +83,7 @@ internal sealed class Worker(
                 },
                 RedirectUris =
                 {
-                    new Uri("http://localhost:8080/api/app/auth/callback")
+                    new Uri($"{Environment.GetEnvironmentVariable("DEPLOYMENT_HOST_URL") ?? "http://localhost:8080"}/api/app/auth/callback")
                 },
                 Permissions =
                 {

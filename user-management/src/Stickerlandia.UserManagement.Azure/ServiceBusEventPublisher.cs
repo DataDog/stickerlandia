@@ -2,6 +2,7 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
+using System.Globalization;
 using Azure.Messaging.ServiceBus;
 using CloudNative.CloudEvents;
 using CloudNative.CloudEvents.SystemTextJson;
@@ -51,8 +52,8 @@ public class ServiceBusEventPublisher(ILogger<ServiceBusEventPublisher> logger, 
                 });
 
                 // Convert TraceId and SpanId to proper hex format for W3C traceparent
-                var traceIdHex = activeSpan.TraceId.ToString("x32").PadLeft(32, '0');
-                var spanIdHex = activeSpan.SpanId.ToString("x16").PadLeft(16, '0');
+                var traceIdHex = activeSpan.TraceId.ToString("x32", CultureInfo.InvariantCulture).PadLeft(32, '0');
+                var spanIdHex = activeSpan.SpanId.ToString("x16", CultureInfo.InvariantCulture).PadLeft(16, '0');
                 cloudEvent.SetAttributeFromString("traceparent", $"00-{traceIdHex}-{spanIdHex}-01");
             }
 

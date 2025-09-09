@@ -47,6 +47,11 @@ clean:
 	DD_RUM_CLIENT_TOKEN=$${DD_RUM_CLIENT_TOKEN:-default-rum-client-token}; \
 	read -p "Commit SHA [latest]: " COMMIT_SHA; \
 	COMMIT_SHA=$${COMMIT_SHA:-latest}; \
+	if [ -n "$$CODESPACE_NAME" ]; then \
+		DEPLOYMENT_HOST_URL="https://$${CODESPACE_NAME}-8080.app.github.dev"; \
+	else \
+		DEPLOYMENT_HOST_URL="http://localhost:8080"; \
+	fi; \
 	echo "# Datadog Configuration" > .env; \
 	echo "# ===================" >> .env; \
 	echo "" >> .env; \
@@ -62,6 +67,12 @@ clean:
 	echo "" >> .env; \
 	echo "# Commit SHA for version tracking" >> .env; \
 	echo "COMMIT_SHA=$$COMMIT_SHA" >> .env; \
+	echo "" >> .env; \
+	echo "# Deployment Configuration" >> .env; \
+	echo "# ========================" >> .env; \
+	echo "" >> .env; \
+	echo "# Base URL for the deployment (auto-detected based on environment)" >> .env; \
+	echo "DEPLOYMENT_HOST_URL=$$DEPLOYMENT_HOST_URL" >> .env; \
 	echo ""; \
 	echo ".env file created successfully!"
 

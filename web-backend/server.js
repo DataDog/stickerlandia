@@ -71,7 +71,7 @@ const OAUTH_ISSUER_INTERNAL = process.env.OAUTH_ISSUER_INTERNAL || 'http://user-
 const OAUTH_ISSUER_EXTERNAL = process.env.OAUTH_ISSUER_EXTERNAL || 'http://localhost:8080'
 const OAUTH_CLIENT_ID = process.env.OAUTH_CLIENT_ID || 'web-ui'
 const OAUTH_CLIENT_SECRET = process.env.OAUTH_CLIENT_SECRET || 'stickerlandia-web-ui-secret-2025'
-const OAUTH_REDIRECT_URI = process.env.OAUTH_REDIRECT_URI || 'http://localhost:8080/api/app/auth/callback'
+const DEPLOYMENT_HOST_URL = process.env.DEPLOYMENT_HOST_URL || 'http://localhost:8080'
 
 let client = null
 let issuerMetadata = null
@@ -88,7 +88,6 @@ async function initializeOIDC() {
     client = new issuerMetadata.Client({
       client_id: OAUTH_CLIENT_ID,
       client_secret: OAUTH_CLIENT_SECRET,
-      redirect_uris: [OAUTH_REDIRECT_URI],
       response_types: ['code']
     })
     console.info('OIDC client initialized')
@@ -135,24 +134,30 @@ app.post('/api/app/auth/login', loginRateLimit, (req, res) => {
   const state = generators.state()
   const nonce = generators.nonce()
   
-  // Store PKCE verifier and state in server session
+  // Use environment-configured redirect URI
+  const redirectUri = `${DEPLOYMENT_HOST_URL}/api/app/auth/callback`
+  
+  // Store PKCE verifier, state, and redirect URI in server session
   req.session.oauth = {
     code_verifier,
     state,
-    nonce
+    nonce,
+    redirect_uri: redirectUri
   }
   
-  // Generate authorization URL and make it relative by dropping hostname
+  // Generate authorization URL using configured redirect URI
   const internalAuthUrl = client.authorizationUrl({
     scope: 'openid profile email roles',
     code_challenge,
     code_challenge_method: 'S256',
     state,
-    nonce
+    nonce,
+    redirect_uri: redirectUri
   })
   
-  // Convert to relative URL by removing the hostname
-  const authUrl = internalAuthUrl.replace(OAUTH_ISSUER_INTERNAL, '')
+  // Extract just the path and query from the authorization URL
+  const authUrlObj = new URL(internalAuthUrl)
+  const authUrl = authUrlObj.pathname + authUrlObj.search
   
   // Redirect browser to IdP
   res.redirect(authUrl)
@@ -192,7 +197,7 @@ app.get('/api/app/auth/callback', async (req, res) => {
 
     // Exchange authorization code for tokens
     console.debug('Attempting token exchange with:', {
-      redirect_uri: OAUTH_REDIRECT_URI,
+      redirect_uri: sessionOAuth.redirect_uri,
       code: code.substring(0, 10) + '...',
       state: state.substring(0, 10) + '...',
       issuer: client.issuer.issuer
@@ -213,8 +218,9 @@ app.get('/api/app/auth/callback', async (req, res) => {
     }
     console.debug('Callback params:', callbackParams)
     console.debug('Callback checks:', checks)
+    console.debug('Using configured redirect URI:', sessionOAuth.redirect_uri)
     
-    const tokenSet = await client.callback(OAUTH_REDIRECT_URI, callbackParams, checks)
+    const tokenSet = await client.callback(sessionOAuth.redirect_uri, callbackParams, checks)
     
     console.info('Token exchange successful, received tokens')
 

@@ -295,7 +295,8 @@ services:
       KAFKA__BOOTSTRAPSERVERS: "redpanda:9092"
       KAFKA__SCHEMAREGISTRY: "http://redpanda:8082"
       KAFKA__GROUPID: "stickerlandia-user-management"
-      OPENIDDICT_ISSUER: "http://user-management:8080"
+      OPENIDDICT_ISSUER: ${DEPLOYMENT_HOST_URL}
+      DEPLOYMENT_HOST_URL: ${DEPLOYMENT_HOST_URL}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/api/users/v1/health"]
       interval: 1s
@@ -364,6 +365,7 @@ services:
       KAFKA__BOOTSTRAPSERVERS: "redpanda:9092"
       KAFKA__SCHEMAREGISTRY: "http://redpanda:8082"
       KAFKA__GROUPID: "stickerlandia-user-management"
+      DEPLOYMENT_HOST_URL: ${DEPLOYMENT_HOST_URL}
     command: ["migrations/Stickerlandia.UserManagement.MigrationService.dll"]
 
   web-backend:
@@ -385,7 +387,7 @@ services:
       OAUTH_ISSUER_INTERNAL: http://user-management:8080
       OAUTH_CLIENT_ID: web-ui
       OAUTH_CLIENT_SECRET: stickerlandia-web-ui-secret-2025
-      OAUTH_REDIRECT_URI: http://localhost:8080/api/app/auth/callback
+      DEPLOYMENT_HOST_URL: ${DEPLOYMENT_HOST_URL}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.web-backend.rule=PathPrefix(`/api/app`)"

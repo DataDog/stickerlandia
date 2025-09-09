@@ -12,14 +12,23 @@
 		"ghcr.io/devcontainers/features/docker-in-docker:2": {}
 	},
 
-	"features": {},
-
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	"forwardPorts": [
-		8080, // Application traffic (Traefik ingress)
-		8081, // Traefik Dashboard
-		8082  // Redpanda Console
+		8080,
+		8081, 
+		8082
 	],
 
-	"postCreateCommand": "chmod +x .devcontainer/setup.sh && .devcontainer/setup.sh",
+	"portsAttributes": {
+	  "8080": {
+	    "label": "stickerlandia"
+	  },
+	  "8081": {
+	    "label": "Traefik dash"
+	  },
+	  "8082": {
+	  	"label": "Redpanda console"
+	  }
+	},
+
+	"postAttachCommand": "chmod +x .devcontainer/setup.sh && .devcontainer/setup.sh",
 }
