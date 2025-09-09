@@ -300,7 +300,7 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8080/api/users/v1/health"]
       interval: 1s
       timeout: 15s
-      retries: 5
+      retries: 10
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.user-management.rule=PathPrefix(`/api/users`)"
