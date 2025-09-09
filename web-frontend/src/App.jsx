@@ -33,6 +33,7 @@ function AppContent() {
         ) : (
           <div>
             <UserProfile />
+            <StickerList />
           </div>
         )}
       </main>
