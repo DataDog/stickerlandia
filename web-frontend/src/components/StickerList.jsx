@@ -42,69 +42,59 @@ const StickerList = () => {
   }
 
   return (
-    <div style={{ margin: '20px 0' }}>
-      <h2 style={{ color: 'inherit', marginBottom: '20px' }}>Stickers</h2>
-      <table style={{
-        width: '100%',
-        borderCollapse: 'collapse',
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        borderRadius: '8px',
-        overflow: 'hidden'
-      }}>
-        <thead>
-          <tr style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}>
-            <th style={{ padding: '12px', textAlign: 'left', color: 'inherit', borderBottom: '1px solid rgba(255, 255, 255, 0.2)' }}>
-              Image
-            </th>
-            <th style={{ padding: '12px', textAlign: 'left', color: 'inherit', borderBottom: '1px solid rgba(255, 255, 255, 0.2)' }}>
-              ID
-            </th>
-            <th style={{ padding: '12px', textAlign: 'left', color: 'inherit', borderBottom: '1px solid rgba(255, 255, 255, 0.2)' }}>
-              Name
-            </th>
-            <th style={{ padding: '12px', textAlign: 'left', color: 'inherit', borderBottom: '1px solid rgba(255, 255, 255, 0.2)' }}>
-              Description
-            </th>
-            <th style={{ padding: '12px', textAlign: 'left', color: 'inherit', borderBottom: '1px solid rgba(255, 255, 255, 0.2)' }}>
-              Quantity
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {stickers.map((sticker) => (
-            <tr key={sticker.stickerId} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
-              <td style={{ padding: '12px' }}>
-                <img 
-                  src={`http://localhost:8080/api/stickers/v1/${sticker.stickerId}/image`}
-                  alt={sticker.stickerName}
-                  style={{
-                    width: '50px',
-                    height: '50px',
-                    objectFit: 'cover',
-                    borderRadius: '4px',
-                    border: '1px solid rgba(255, 255, 255, 0.2)'
-                  }}
-                  onError={(e) => {
-                    e.target.style.display = 'none'
-                  }}
-                />
-              </td>
-              <td style={{ padding: '12px', color: 'inherit' }}>
-                {sticker.stickerId}
-              </td>
-              <td style={{ padding: '12px', color: 'inherit' }}>
-                {sticker.stickerName}
-              </td>
-              <td style={{ padding: '12px', color: 'inherit' }}>
-                {sticker.stickerDescription}
-              </td>
-              <td style={{ padding: '12px', color: 'inherit' }}>
-                {sticker.stickerQuantityRemaining === -1 ? 'Unlimited' : sticker.stickerQuantityRemaining}
-              </td>
+    <div className="mt-8">
+      <h2 className="text-xl font-semibold mb-4 text-gray-800">Available Stickers</h2>
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Image
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                ID
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Name
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Description
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Quantity
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {stickers.map((sticker) => (
+              <tr key={sticker.stickerId} className="hover:bg-gray-50">
+                <td className="px-4 py-4">
+                  <img 
+                    src={`http://localhost:8080/api/stickers/v1/${sticker.stickerId}/image`}
+                    alt={sticker.stickerName}
+                    className="w-12 h-12 object-cover rounded border border-gray-200"
+                    onError={(e) => {
+                      e.target.style.display = 'none'
+                    }}
+                  />
+                </td>
+                <td className="px-4 py-4 text-sm text-gray-900">
+                  {sticker.stickerId}
+                </td>
+                <td className="px-4 py-4 text-sm font-medium text-gray-900">
+                  {sticker.stickerName}
+                </td>
+                <td className="px-4 py-4 text-sm text-gray-700">
+                  {sticker.stickerDescription}
+                </td>
+                <td className="px-4 py-4 text-sm text-gray-900">
+                  {sticker.stickerQuantityRemaining === -1 ? 'Unlimited' : sticker.stickerQuantityRemaining}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }

@@ -1,42 +1,90 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+@layer theme, base, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@import "tailwindcss";
+
+body {
+    background-color: #f4f6ff;
+}
+
+main {
+    display: block;
+}
+
+.landing-wrapper {
+    display: grid;
+    flex: none;
+    gap: 12px;
+    grid-auto-rows: minmax(0, 1fr);
+    grid-template-columns: repeat(3, minmax(50px, 1fr));
+    grid-template-rows: repeat(1, minmax(0, 1fr));
+    height: min-content;
+    justify-content: center;
+    overflow: visible;
+    padding: 0;
+    position: relative;
+    width: 100%;
+}
+.landing-card {
+    --border-bottom-width: 1px;
+    --border-color: var(--token-1707e66c-e139-40d8-8020-8176f47ee22b, #e1e2e3);
+    --border-left-width: 1px;
+    --border-right-width: 1px;
+    --border-style: solid;
+    --border-top-width: 1px;
+    align-content: center;
+    align-items: center;
+    align-self: start;
+    background-color: #fff;
+    border-radius: 16px;
+    box-shadow: 0 1px 5px -4px #242424b3, 0 4px 8px #2424240d;
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 32px;
+    height: 100%;
+    justify-content: flex-start;
+    justify-self: start;
+    overflow: hidden;
+    padding: 24px;
+    position: relative;
+    width: 100%;
+    will-change: var(--framer-will-change-override, transform);
+}
+
+span.sparkle-logo > svg {
+    color: #632ca6;
+}
+
+.card-icon {
+    height: 30px;
+}
+
+.card-icon > svg {
+    width: 100%;
+    height: 100%;
 }
 
 .logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+    font-size: 18px;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.profile-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 3fr;
+  gap: 20px;
+  grid-template-areas:
+    "sidebar content"
+} 
+
+.profile-nav {
+  grid-area: sidebar;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
+.user-profile-wrapper {
+  grid-area: content;
 }

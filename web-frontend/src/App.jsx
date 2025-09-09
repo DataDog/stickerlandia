@@ -1,47 +1,44 @@
-import React from 'react'
-import { AuthProvider, useAuth } from './context/AuthContext'
-import LoginButton from './components/LoginButton'
-import LogoutButton from './components/LogoutButton'
-import UserProfile from './components/UserProfile'
-import StickerList from './components/StickerList'
-import './App.css'
+import React from "react";
+import { BrowserRouter } from "react-router";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import LoginButton from "./components/LoginButton";
+import LogoutButton from "./components/LogoutButton";
+import UserProfile from "./components/UserProfile";
+import StickerList from "./components/StickerList";
+import HeaderBar from "./components/HeaderBar";
+import Landing from "./components/Landing";
+import "./App.css";
 
 function AppContent() {
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
     return (
-      <div style={{ textAlign: 'center', padding: '50px' }}>
+      <div style={{ textAlign: "center", padding: "50px" }}>
         <h2>Loading...</h2>
       </div>
-    )
+    );
   }
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
-      <h1>Stickerlandia</h1>
-      
-      <div style={{ marginBottom: '20px' }}>
+    <div className="isolate flex flex-auto flex-col bg-[--root-bg]">
+      <HeaderBar />
+      <main id="main">
         {!isAuthenticated ? (
-          <div>
-            <p>Please sign in to access the application.</p>
-            <LoginButton />
+          <div className="text-center mx-auto w-full px-6 sm:max-w-[40rem] md:max-w-[48rem] md:px-8 lg:max-w-[64rem] xl:max-w-[80rem]">
+            <div style={{ marginBottom: "20px" }}>
+              <Landing />
+            </div>
           </div>
         ) : (
           <div>
             <UserProfile />
-            <LogoutButton />
+            <StickerList />
           </div>
         )}
-      </div>
-      
-      {isAuthenticated && (
-        <div>
-          <StickerList />
-        </div>
-      )}
+      </main>
     </div>
-  )
+  );
 }
 
 function App() {
@@ -49,7 +46,7 @@ function App() {
     <AuthProvider>
       <AppContent />
     </AuthProvider>
-  )
+  );
 }
 
-export default App
+export default App;
