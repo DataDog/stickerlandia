@@ -76,10 +76,8 @@ public class AuthorizationController(
             // used to skip the challenge if the user agent has already been redirected to the login endpoint.
             TempData["IgnoreAuthenticationChallenge"] = true;
 
-            var deploymentUrl = _configuration["DEPLOYMENT_HOST_URL"] ?? "";
-            
-            var redirectUri = deploymentUrl + Request.PathBase + Request.Path + QueryString.Create(
-                Request.HasFormContentType ? Request.Form : Request.Query);
+            var redirectUri = Request.PathBase + Request.Path + QueryString.Create(
+                Request.HasFormContentType ? Request.Form : Request.Query);            
             
             activeSpan?.SetTag("http.redirect_uri", redirectUri);
             
