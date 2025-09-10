@@ -1,223 +1,119 @@
 import React, { useState, useEffect } from "react";
-import { useAuth } from "../context/AuthContext";
-import AuthService from "../services/AuthService";
-import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
-import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
-import AssessmentOutlinedIcon from "@mui/icons-material/AssessmentOutlined";
-import LocalPrintshopOutlinedIcon from "@mui/icons-material/LocalPrintshopOutlined";
-import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
-import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
-import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
-import AutoAwesomeOutlinedIcon from "@mui/icons-material/AutoAwesomeOutlined";
-import HotelClassOutlinedIcon from '@mui/icons-material/HotelClassOutlined';
+import HotelClassOutlinedIcon from "@mui/icons-material/HotelClassOutlined";
+import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
+import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined";
+import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
+import CircleOutlinedIcon from '@mui/icons-material/CircleOutlined';
+import StarBorderOutlinedIcon from '@mui/icons-material/StarBorderOutlined';
+import DiamondOutlinedIcon from '@mui/icons-material/DiamondOutlined';
 
-const UserProfile = () => {
-  const { user, isAuthenticated } = useAuth();
-  const [userStickers, setUserStickers] = useState([]);
+
+const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchStickers = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(
-          "http://localhost:8080/api/awards/v1/assignments/" + user.email
-        );
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch stickers: ${response.status}`);
-        }
-
-        const data = await response.json();
-        const sortedStickers = (data.stickers || []).sort((a, b) =>
-          a.stickerId.localeCompare(b.stickerId)
-        );
-        setUserStickers(sortedStickers);
-      } catch (err) {
-        console.error("Error fetching stickers:", err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStickers();
-  }, []);
-
-  const getSessionExpiry = () => {
-    const tokenData = AuthService.getStoredToken();
-    if (tokenData?.expires_at) {
-      const expiryDate = new Date(tokenData.expires_at * 1000);
-      return expiryDate.toLocaleString();
-    }
-    return "Unknown";
-  };
-
-  if (!isAuthenticated || !user) {
-    return null;
-  }
-
   return (
-    <div className="profile-wrapper">
-      <div className="profile-menu bg-white h-screen">
-        <nav className="profile-nav">
-          <div className="my-4 px-5 border-gray-300 border-solid border-b">
-            <div className="logo font-bold my-2">
-              <span className="sparkle-logo">
-                <AutoAwesomeOutlinedIcon />
-              </span>
-              Stickerlandia
-            </div>
-          </div>
-          <div className="my-4 px-5 profile-card-wrapper grid grid-cols-4">
-            <div className="my-3 col-span-1 text-center">
-              <p className="bg-gray-200 rounded-full inline p-4 font-bold">
-                UN
-              </p>
-            </div>
-            <div className="profile-card col-span-3">
-              <span className="block font-bold">User Name</span>
-              <span className="block text-sm text-gray-600">24 Stickers</span>
-            </div>
-          </div>
-          <ul className="">
-            <li className="my-3 px-5">
-              <a className="block" href="">
-                <HomeOutlinedIcon />
-                User Dashboard
-              </a>
-            </li>
-            <li className="my-3 px-5">
-              <a className="block" href="">
-                <MenuBookOutlinedIcon />
-                My Collection
-              </a>
-            </li>
-            <li className="my-3 px-5">
-              <a className="block" href="">
-                <AssessmentOutlinedIcon />
-                Public Dashboard
-              </a>
-            </li>
-            <li className="my-3 px-5">
-              <a className="block" href="">
-                <LocalPrintshopOutlinedIcon />
-                Print Station
-              </a>
-            </li>
-          </ul>
-        </nav>
-        <nav className="user-nav border-gray-300 border-solid border-t">
-          <ul>
-            <li className="my-3 px-5">
-              <a className="block" href="">
-                <PersonOutlineOutlinedIcon />
-                Profile
-              </a>
-            </li>
-            <li className="my-3 px-5">
-              <a className="block" href="">
-                <SettingsOutlinedIcon />
-                Settings
-              </a>
-            </li>
-            <li className="my-3 px-5">
-              <a className="block" href="">
-                <LogoutOutlinedIcon />
-                Sign Out
-              </a>
-            </li>
-          </ul>
-        </nav>
-      </div>
-      <div className="user-profile-wrapper">
-        <div className="user-profile-greeting">
-          <div className="text-3xl font-bold my-3">
-            Welcome Back, User Name!
-          </div>
-          <div className="text-gray-600 my-3">
-            Here's what's happening with your collection.
-          </div>
-        </div>
-        <div className="user-profile-info grid grid-cols-4 gap-4">
-          <div className="col-span-1 landing-card items-start">
-            <span className="text-gray-400 font-bold">Total Stickers</span>
-            <span className="text-gray-600 font-bold text-xl">5</span>
-            <div className="collection-progress-bar bg-linear-65 from-gray-800 via-gray-400 to-gray-400 to-75% block h-5 w-full"></div>
-            <span className="text-gray-600">75% of available</span>
-          </div>
-          <div className="col-span-1 landing-card items-start">
-            <span className="text-gray-400 font-bold">Legendary Count</span>
-            <span className="text-gray-600 font-bold text-xl">1</span>
-            <span className="text-gray-600 text-yellow-500"><HotelClassOutlinedIcon/> Ultra Rare</span>
-          </div>
-          <div className="col-span-1 landing-card items-start">
-            <span className="text-gray-400 font-bold">Print Credits</span>
-            <span className="text-gray-600 font-bold text-xl">10</span>
-            <span className=" text-green-500">Ready for Events</span>
-          </div>
-          <div className="col-span-1 landing-card items-start">
-            <span className="text-gray-400 font-bold">Member Since</span>
-            <span className="text-gray-600 font-bold text-xl">July 2025</span>
-            <span className="text-gray-600">2 Months Collecting</span>
-          </div>
-          <div className="col-span-2 landing-card items-start">
-            <span className="text-gray-600 font-bold">Recent Stickers</span>
-            <span className="text-gray-600 font-bold text-xl">Your latest additions</span>
-            {user.roles && (
-          <p style={{ color: "inherit" }}>
-            <strong>Roles:</strong>{" "}
-            {Array.isArray(user.roles) ? user.roles.join(", ") : user.roles}
-          </p>
-        )}
-        <p style={{ color: "inherit" }}>
-          <strong>Session expires:</strong> {getSessionExpiry()}
-        </p>
-        {userStickers.map((sticker) => (
-          <tr
-            key={sticker.stickerId}
-            style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.1)" }}
-          >
-            <td style={{ padding: "12px" }}>
-              <img
-                src={`http://localhost:8080/api/stickers/v1/${sticker.stickerId}/image`}
-                alt={sticker.stickerName}
-                style={{
-                  width: "50px",
-                  height: "50px",
-                  objectFit: "cover",
-                  borderRadius: "4px",
-                  border: "1px solid rgba(255, 255, 255, 0.2)",
-                }}
-                onError={(e) => {
-                  e.target.style.display = "none";
-                }}
-              />
-            </td>
-            <td style={{ padding: "12px", color: "inherit" }}>
-              {sticker.stickerId}
-            </td>
-            <td style={{ padding: "12px", color: "inherit" }}>
-              {sticker.stickerName}
-            </td>
-            <td style={{ padding: "12px", color: "inherit" }}>
-              {sticker.reason}
-            </td>
-            <td style={{ padding: "12px", color: "inherit" }}>
-              {sticker.assignedAt}
-            </td>
-          </tr>
-        ))}
-          </div>
-          <div className="col-span-2 landing-card items-start">
-            <span className="text-gray-600 font-bold">Available Rewards</span>
-            <span className="text-gray-600 font-bold text-xl">Stickers you can claim</span>
-          </div>
+    <div className="dashboard-wrapper mx-auto w-full px-6 sm:max-w-[40rem] md:max-w-[48rem] md:px-8 lg:max-w-[64rem] xl:max-w-[80rem]">
+      <div className="dashboard-greeting">
+        <div className="text-3xl font-bold my-3">Public Dashboard</div>
+        <div className="text-gray-600 my-3">
+          Live statistics and trends from the Stickerlandia community.
         </div>
       </div>
+      <div className="dashboard-info grid grid-cols-4 gap-4">
+        <div className="col-span-1 landing-card items-start">
+          <span className="text-gray-400 font-bold">Total Stickers</span>
+          <span className="text-gray-600 font-bold text-xl">156</span>
+          <span className="text-green-500">
+            <TrendingUpOutlinedIcon /> +12% this week
+          </span>
+        </div>
+        <div className="col-span-1 landing-card items-start">
+          <span className="text-gray-400 font-bold">Active Users</span>
+          <span className="text-gray-600 font-bold text-xl">12,847</span>
+          <span className="text-green-500">
+            <TrendingUpOutlinedIcon /> +347 this week
+          </span>
+        </div>
+        <div className="col-span-1 landing-card items-start">
+          <span className="text-gray-400 font-bold">Stickers Collected</span>
+          <span className="text-gray-600 font-bold text-xl">89,234</span>
+          <span className=" text-blue-600">
+            <GroupOutlinedIcon /> 570 avg per user
+          </span>
+        </div>
+        <div className="col-span-1 landing-card items-start">
+          <span className="text-gray-400 font-bold">Events Hosted</span>
+          <span className="text-gray-600 font-bold text-xl">23</span>
+          <span className="text-purple-600">
+            <CalendarMonthOutlinedIcon /> DASH 2025 upcoming
+          </span>
+        </div>
+        <div className="col-span-2 landing-card items-start">
+          <span className="text-gray-600 font-bold">Rarity Distribution</span>
+          <span className="text-gray-600 font-bold text-xl">
+            Breakdown of stickers by rarity level
+          </span>
+          <div className="w-full">
+            <div className="rarity-wrapper grid grid-cols-2 my-3">
+              <span className="font-bold col-span-1"><CircleOutlinedIcon/> Common</span>
+              <div className="col-span-1 flex">
+                <div className="collection-progress-bar rounded-md bg-linear-65 from-gray-800 via-gray-400 to-gray-400 to-75% block h-5 w-2/3 "></div>
+                <p className="inline text-gray-600 px-5">10%</p>
+              </div>
+            </div>
+            <div className="rarity-wrapper grid grid-cols-2 my-3">
+              <span className="font-bold col-span-1"><StarBorderOutlinedIcon/> Rare</span>
+              <div className="col-span-1 flex">
+                <div className="collection-progress-bar rounded-md bg-linear-65 from-gray-800 via-gray-400 to-gray-400 to-75% block h-5 w-2/3 "></div>
+                <p className="inline text-gray-600 px-5">30%</p>
+              </div>
+            </div>
+            <div className="rarity-wrapper grid grid-cols-2 my-3">
+              <span className="font-bold col-span-1"><DiamondOutlinedIcon/> Epic</span>
+              <div className="col-span-1 flex">
+                <div className="collection-progress-bar rounded-md bg-linear-65 from-gray-800 via-gray-400 to-gray-400 to-75% block h-5 w-2/3 "></div>
+                <p className="inline text-gray-600 px-5">20%</p>
+              </div>
+            </div>
+            <div className="rarity-wrapper grid grid-cols-2 my-3">
+              <span className="font-bold col-span-1"><HotelClassOutlinedIcon/> Legendary</span>
+              <div className="col-span-1 flex">
+                <div className="collection-progress-bar rounded-md bg-linear-65 from-gray-800 via-gray-400 to-gray-400 to-75% block h-5 w-2/3 "></div>
+                <p className="inline text-gray-600 px-5">40%</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="col-span-2 landing-card">
+          <span className="text-gray-600 font-bold">Recent Activity</span>
+          <span className="text-gray-600 font-bold text-xl">
+            Latest sticker collections and events
+          </span>
+          <div className="grid grid-rows-2">
+            <div className="font-bold">Dash 2024 Attendee sticker claimed</div>
+            <div className="text-sm">2 minutes ago</div>
+          </div>
+          <div className="grid grid-rows-2">
+            <div className="font-bold">New certification stickers released</div>
+            <div className="text-sm">1 hour ago</div>
+          </div>
+          <div className="grid grid-rows-2">
+            <div className="font-bold">Community milestone reached</div>
+            <div className="text-sm">3 hours ago</div>
+          </div>
+        </div>
+        <div className="col-span-4 landing-card items-start">
+          <span className="text-gray-600 font-bold">Most Collected Stickers</span>
+          <span className="text-gray-600 font-bold text-sm">Top Stickers in the Community</span>
+          <span className="text-green-500">
+            
+          </span>
+        </div>
+      </div>
+      
     </div>
   );
 };
 
-export default UserProfile;
+export default Dashboard;
