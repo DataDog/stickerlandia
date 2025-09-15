@@ -28,6 +28,7 @@ public class StickerRepository {
 
     @Inject StickerEventPublisher eventPublisher;
 
+
     /**
      * Creates a new sticker.
      *
