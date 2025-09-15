@@ -20,9 +20,9 @@ import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
 @QuarkusTest
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class StickerImageServiceTest {
+class StickerImageStoreTest {
 
-    @Inject StickerImageService stickerImageService;
+    @Inject StickerImageStore stickerImageStore;
 
     private static String uploadedImageKey;
 
@@ -33,7 +33,7 @@ class StickerImageServiceTest {
         InputStream imageStream = new ByteArrayInputStream(testImageData);
 
         String imageKey =
-                stickerImageService.uploadImage(imageStream, "image/png", testImageData.length);
+                stickerImageStore.uploadImage(imageStream, "image/png", testImageData.length);
 
         assertNotNull(imageKey);
         assertTrue(imageKey.startsWith("stickers/"));
@@ -46,7 +46,7 @@ class StickerImageServiceTest {
     void testGetImage() {
         assertNotNull(uploadedImageKey, "Must run upload test first");
 
-        InputStream retrievedImage = stickerImageService.getImage(uploadedImageKey);
+        InputStream retrievedImage = stickerImageStore.getImage(uploadedImageKey);
 
         assertNotNull(retrievedImage);
 
@@ -60,7 +60,7 @@ class StickerImageServiceTest {
     void testGetImageUrl() {
         assertNotNull(uploadedImageKey, "Must run upload test first");
 
-        String imageUrl = stickerImageService.getImageUrl(uploadedImageKey);
+        String imageUrl = stickerImageStore.getImageUrl(uploadedImageKey);
 
         assertNotNull(imageUrl);
         assertTrue(imageUrl.contains(uploadedImageKey));
@@ -71,17 +71,16 @@ class StickerImageServiceTest {
     void testDeleteImage() {
         assertNotNull(uploadedImageKey, "Must run upload test first");
 
-        assertDoesNotThrow(() -> stickerImageService.deleteImage(uploadedImageKey));
+        assertDoesNotThrow(() -> stickerImageStore.deleteImage(uploadedImageKey));
 
-        assertThrows(
-                NoSuchKeyException.class, () -> stickerImageService.getImage(uploadedImageKey));
+        assertThrows(NoSuchKeyException.class, () -> stickerImageStore.getImage(uploadedImageKey));
     }
 
     @Test
     void testGetNonExistentImage() {
         String nonExistentKey = "stickers/non-existent-image";
 
-        assertThrows(NoSuchKeyException.class, () -> stickerImageService.getImage(nonExistentKey));
+        assertThrows(NoSuchKeyException.class, () -> stickerImageStore.getImage(nonExistentKey));
     }
 
     @Test
@@ -89,16 +88,16 @@ class StickerImageServiceTest {
         byte[] emptyData = new byte[0];
         InputStream emptyStream = new ByteArrayInputStream(emptyData);
 
-        String imageKey = stickerImageService.uploadImage(emptyStream, "image/png", 0);
+        String imageKey = stickerImageStore.uploadImage(emptyStream, "image/png", 0);
 
         assertNotNull(imageKey);
         assertTrue(imageKey.startsWith("stickers/"));
 
-        InputStream retrievedImage = stickerImageService.getImage(imageKey);
+        InputStream retrievedImage = stickerImageStore.getImage(imageKey);
         byte[] retrievedData = assertDoesNotThrow(() -> retrievedImage.readAllBytes());
         assertEquals(0, retrievedData.length);
 
-        stickerImageService.deleteImage(imageKey);
+        stickerImageStore.deleteImage(imageKey);
     }
 
     @Test
@@ -111,16 +110,16 @@ class StickerImageServiceTest {
         InputStream imageStream = new ByteArrayInputStream(largeImageData);
 
         String imageKey =
-                stickerImageService.uploadImage(imageStream, "image/png", largeImageData.length);
+                stickerImageStore.uploadImage(imageStream, "image/png", largeImageData.length);
 
         assertNotNull(imageKey);
         assertTrue(imageKey.startsWith("stickers/"));
 
-        InputStream retrievedImage = stickerImageService.getImage(imageKey);
+        InputStream retrievedImage = stickerImageStore.getImage(imageKey);
         byte[] retrievedData = assertDoesNotThrow(() -> retrievedImage.readAllBytes());
         assertEquals(largeImageData.length, retrievedData.length);
         assertArrayEquals(largeImageData, retrievedData);
 
-        stickerImageService.deleteImage(imageKey);
+        stickerImageStore.deleteImage(imageKey);
     }
 }

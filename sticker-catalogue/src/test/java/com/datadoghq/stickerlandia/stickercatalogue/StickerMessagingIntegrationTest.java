@@ -5,9 +5,9 @@ import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.datadoghq.stickerlandia.common.event.CloudEvent;
 import com.datadoghq.stickerlandia.stickercatalogue.dto.CreateStickerRequest;
 import com.datadoghq.stickerlandia.stickercatalogue.entity.Sticker;
-import com.datadoghq.stickerlandia.stickercatalogue.event.CloudEvent;
 import com.datadoghq.stickerlandia.stickercatalogue.event.StickerAddedEvent;
 import com.datadoghq.stickerlandia.stickercatalogue.event.StickerDeletedEvent;
 import com.datadoghq.stickerlandia.stickercatalogue.event.StickerUpdatedEvent;

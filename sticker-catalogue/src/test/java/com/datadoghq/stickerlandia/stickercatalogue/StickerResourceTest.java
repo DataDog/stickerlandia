@@ -122,7 +122,7 @@ class StickerResourceTest {
                 .contentType("application/problem+json")
                 .body("status", is(404))
                 .body("title", is("Not Found"))
-                .body("detail", is("Sticker with ID " + NON_EXISTING_STICKER_ID + " not found"));
+                .body("detail", is("No image found for sticker " + NON_EXISTING_STICKER_ID));
     }
 
     @Test

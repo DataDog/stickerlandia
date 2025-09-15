@@ -12,9 +12,9 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetUrlRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
-/** Service for managing sticker images in AWS S3. */
+/** Store for managing sticker images in AWS S3. */
 @ApplicationScoped
-public class StickerImageService {
+public class StickerImageStore {
 
     @ConfigProperty(name = "sticker.images.bucket")
     String bucketName;

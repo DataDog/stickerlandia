@@ -1,12 +1,11 @@
 package com.datadoghq.stickerlandia.stickercatalogue.dto;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import java.util.Date;
+import java.time.Instant;
 
 /** DTO representing a sticker with all its details. */
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -40,19 +39,11 @@ public class StickerDTO {
     @JsonPropertyDescription("Path to the sticker image resource")
     private String imagePath;
 
-    @JsonFormat(
-            shape = JsonFormat.Shape.STRING,
-            pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'",
-            timezone = "UTC")
     @JsonProperty("createdAt")
-    private Date createdAt;
+    private Instant createdAt;
 
-    @JsonFormat(
-            shape = JsonFormat.Shape.STRING,
-            pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'",
-            timezone = "UTC")
     @JsonProperty("updatedAt")
-    private Date updatedAt;
+    private Instant updatedAt;
 
     @JsonIgnore private String imageKey;
 
@@ -117,22 +108,22 @@ public class StickerDTO {
     }
 
     @JsonProperty("createdAt")
-    public Date getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
     @JsonProperty("createdAt")
-    public void setCreatedAt(Date createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 
     @JsonProperty("updatedAt")
-    public Date getUpdatedAt() {
+    public Instant getUpdatedAt() {
         return updatedAt;
     }
 
     @JsonProperty("updatedAt")
-    public void setUpdatedAt(Date updatedAt) {
+    public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
     }
 

@@ -1,6 +1,9 @@
 package com.datadoghq.stickerlandia.stickercatalogue;
 
+import com.datadoghq.stickerlandia.stickercatalogue.dto.CreateStickerRequest;
+import com.datadoghq.stickerlandia.stickercatalogue.dto.CreateStickerResponse;
 import com.datadoghq.stickerlandia.stickercatalogue.entity.Sticker;
+import com.datadoghq.stickerlandia.stickercatalogue.result.StickerResult;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
@@ -19,11 +22,7 @@ public class StickerSeeder {
 
     private static final Logger LOG = Logger.getLogger(StickerSeeder.class);
 
-    @Inject StickerEventPublisher eventPublisher;
-
-    @Inject StickerImageService stickerImageService;
-
-    @Inject StickerRepository stickerRepository;
+    @Inject StickerService stickerService;
 
     @Inject Tracer tracer;
 
@@ -87,19 +86,18 @@ public class StickerSeeder {
     }
 
     private boolean seedSticker(Tracer tracer, SampleSticker sample) {
-        Sticker existingSticker = stickerRepository.findById(sample.id);
-        if (existingSticker != null) {
+        StickerResult result = stickerService.getStickerById(sample.id);
+        if (result instanceof StickerResult.Success) {
             LOG.debugf("Sticker %s already exists, skipping", sample.id);
             return false;
         }
 
-        Sticker sticker =
-                new Sticker(sample.id, sample.name, sample.description, sample.quantityRemaining);
+        CreateStickerRequest request = new CreateStickerRequest();
+        request.setStickerName(sample.name);
+        request.setStickerDescription(sample.description);
+        request.setStickerQuantityRemaining(sample.quantityRemaining);
 
-        sticker.persist();
-
-        eventPublisher.publishStickerAdded(
-                sticker.getStickerId(), sticker.getName(), sticker.getDescription());
+        stickerService.createSticker(request);
 
         LOG.infof("Created sample sticker: %s (%s)", sample.id, sample.name);
 
@@ -122,12 +120,13 @@ public class StickerSeeder {
 
         try (Scope scope = imageSpan.makeCurrent()) {
             // Check if sticker exists and doesn't already have an image
-            Sticker sticker = stickerRepository.findById(stickerId);
-            if (sticker == null) {
+            StickerResult result = stickerService.getStickerById(stickerId);
+            if (result instanceof StickerResult.NotFound) {
                 LOG.warnf("Sticker %s not found, skipping image seeding", stickerId);
                 return;
             }
 
+            Sticker sticker = ((StickerResult.Success) result).sticker();
             if (sticker.getImageKey() != null && !sticker.getImageKey().isEmpty()) {
                 LOG.infof(
                         "Sticker %s already has image key %s, skipping",
@@ -146,18 +145,13 @@ public class StickerSeeder {
             byte[] imageData = imageStream.readAllBytes();
             imageStream.close();
 
-            // Upload image to our storage service
+            // Upload image through service layer
             InputStream uploadStream = getClass().getResourceAsStream(resourcePath);
-            String imageKey =
-                    stickerImageService.uploadImage(uploadStream, "image/png", imageData.length);
+            stickerService.uploadStickerImage(
+                    stickerId, uploadStream, "image/png", imageData.length);
             uploadStream.close();
 
-            // Update sticker with image key
-            stickerRepository.updateStickerImageKey(stickerId, imageKey);
-
-            LOG.infof(
-                    "Successfully seeded image for sticker %s with key %s (%s)",
-                    stickerId, imageKey, description);
+            LOG.infof("Successfully seeded image for sticker %s (%s)", stickerId, description);
 
         } catch (Exception e) {
             imageSpan.recordException(e);

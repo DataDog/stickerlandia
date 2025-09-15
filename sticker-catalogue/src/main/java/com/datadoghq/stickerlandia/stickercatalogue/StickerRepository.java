@@ -15,7 +15,6 @@ import jakarta.persistence.PersistenceException;
 import jakarta.transaction.Transactional;
 import java.io.InputStream;
 import java.time.Instant;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -25,9 +24,6 @@ import org.hibernate.exception.ConstraintViolationException;
 @ApplicationScoped
 @StickerlandiaDatabaseRepository
 public class StickerRepository {
-
-    @Inject StickerEventPublisher eventPublisher;
-
 
     /**
      * Creates a new sticker.
@@ -47,10 +43,6 @@ public class StickerRepository {
                         request.getStickerQuantityRemaining());
 
         sticker.persist();
-
-        // Publish sticker added event
-        eventPublisher.publishStickerAdded(
-                sticker.getStickerId(), sticker.getName(), sticker.getDescription());
 
         CreateStickerResponse response = new CreateStickerResponse();
         response.setStickerId(sticker.getStickerId());
@@ -144,10 +136,6 @@ public class StickerRepository {
         sticker.setUpdatedAt(Instant.now());
         sticker.persist();
 
-        // Publish sticker updated event
-        eventPublisher.publishStickerUpdated(
-                sticker.getStickerId(), sticker.getName(), sticker.getDescription());
-
         return toStickerMetadata(sticker);
     }
 
@@ -199,9 +187,8 @@ public class StickerRepository {
         metadata.setStickerQuantityRemaining(sticker.getStickerQuantityRemaining());
         metadata.setImagePath(buildImagePath(sticker.getStickerId()));
         metadata.setImageKey(sticker.getImageKey());
-        metadata.setCreatedAt(Date.from(sticker.getCreatedAt()));
-        metadata.setUpdatedAt(
-                sticker.getUpdatedAt() != null ? Date.from(sticker.getUpdatedAt()) : null);
+        metadata.setCreatedAt(sticker.getCreatedAt());
+        metadata.setUpdatedAt(sticker.getUpdatedAt());
         return metadata;
     }
 
@@ -246,9 +233,6 @@ public class StickerRepository {
         }
 
         try {
-            // Publish sticker deleted event before deletion
-            eventPublisher.publishStickerDeleted(sticker.getStickerId(), sticker.getName());
-
             sticker.delete();
             return true;
         } catch (PersistenceException e) {

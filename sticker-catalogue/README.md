@@ -1,7 +1,11 @@
 # Sticker Catalogue Service
 
 The Sticker Catalogue Service manages stickers in the Stickerlandia platform. It stores both relational data
-about the stickers, and the images of the stickers themselves.
+about the stickers, and the images of the stickers themselves. It is built on top of Quarkus, and uses the typical
+quarkus extension points for the functionality it requires:
+
+* **Panache** - to provide data access
+* **
 
 - **Catalog API** (`/api/stickers/v1`) - Manages the sticker catalog (metadata, images, CRUD)
 
@@ -20,10 +24,62 @@ about the stickers, and the images of the stickers themselves.
   - `events/` - Domain events
 
 ### Separation of Concerns
-- **Resource** - HTTP layer, handles requests/responses, only works with DTOs
-- **Repository** - Data layer, maps between entities and DTOs, contains business logic
-- **Entity** - Database layer, JPA entities for persistence
-- **DTO** - API layer, request/response objects for HTTP APIs
+#### Models
+
+* **DTOs** are spoken by the Resources only 
+* **Entities** are used both as the persistence model _and_ the domain model. 
+This is an active decision to reduce needless mapping as we do not foresee significant
+increase in domain complexity.
+
+#### Layering
+
+- **Resource** - HTTP layer, handles requests/responses, exposes **DTOs** in interface
+- **Service** - Service layer, deals in the domain model (which happens to be our entity model) 
+- **Repository** - Data layer, deals in the entity model
+
+Here's a helpful diagram showing how the models and layering match up:
+
+```mermaid
+graph LR
+%% Left column: Models
+    subgraph ModelsCol[Models]
+        direction TB
+        K[DTOs<br/>- StickerDTO<br/>- CreateStickerRequest<br/>- UpdateStickerRequest]
+        M[Results<br/>- Explicit success/failure<br/>- Type-safe errors]
+        L[Entities<br/>- Sticker<br/>domain logic & behavior]
+    end
+
+%% Right column: stack the layers vertically
+    subgraph Layers
+        direction TB
+
+        subgraph HTTPLayer[HTTP Layer]
+            A[StickerResource]
+        end
+
+        subgraph ServiceLayer[Service Layer]
+            C[StickerService]
+        end
+
+        subgraph DataLayer[Data Layer]
+            F[StickerRepository]
+            H[StickerImageStore]
+            E[StickerEventPublisher]
+        end
+    end
+
+%% Call hierarchy (right column)
+    A --> C
+    C --> F
+    C --> H
+    C --> E
+
+%% Abstract acceptance lines (layer -> model)
+    HTTPLayer -.->|accepts| K
+    ServiceLayer -.->|accepts| M
+    ServiceLayer -.->|accepts| L
+    DataLayer -.->|accepts| L
+``` 
 
 ## API Endpoints
 
@@ -35,10 +91,6 @@ about the stickers, and the images of the stickers themselves.
 - `DELETE /api/stickers/v1/{stickerId}` - Delete sticker
 - `GET /api/stickers/v1/{stickerId}/image` - Get sticker image
 - `PUT /api/stickers/v1/{stickerId}/image` - Upload/update sticker image
-
-## Authentication
-
-All API endpoints (except `/health`) require authentication via JWT token in the Authorization header. 
 
 ## Error Handling
 

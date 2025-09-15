@@ -4,9 +4,12 @@ import com.datadoghq.stickerlandia.common.dto.exception.ProblemDetailsResponseBu
 import com.datadoghq.stickerlandia.stickercatalogue.dto.CreateStickerRequest;
 import com.datadoghq.stickerlandia.stickercatalogue.dto.CreateStickerResponse;
 import com.datadoghq.stickerlandia.stickercatalogue.dto.GetAllStickersResponse;
-import com.datadoghq.stickerlandia.stickercatalogue.dto.StickerDTO;
 import com.datadoghq.stickerlandia.stickercatalogue.dto.StickerImageUploadResponse;
 import com.datadoghq.stickerlandia.stickercatalogue.dto.UpdateStickerRequest;
+import com.datadoghq.stickerlandia.stickercatalogue.mapper.StickerMapper;
+import com.datadoghq.stickerlandia.stickercatalogue.result.DeleteResult;
+import com.datadoghq.stickerlandia.stickercatalogue.result.ImageUploadResult;
+import com.datadoghq.stickerlandia.stickercatalogue.result.StickerResult;
 import io.opentelemetry.api.trace.Span;
 import io.smallrye.common.constraint.NotNull;
 import jakarta.inject.Inject;
@@ -22,7 +25,6 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Response;
 import java.io.InputStream;
-import java.time.Instant;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.jboss.logging.Logger;
 
@@ -30,9 +32,7 @@ import org.jboss.logging.Logger;
 @Path("/api/stickers/v1")
 public class StickerResource {
 
-    @Inject StickerRepository stickerRepository;
-
-    @Inject StickerImageService stickerImageService;
+    @Inject StickerService stickerService;
 
     private static final Logger LOG = Logger.getLogger(StickerResource.class);
 
@@ -52,7 +52,7 @@ public class StickerResource {
 
         LOG.info("GetAllStickers");
 
-        return stickerRepository.getAllStickers(page, size);
+        return stickerService.getAllStickers(page, size);
     }
 
     /**
@@ -70,7 +70,16 @@ public class StickerResource {
         Span span = Span.current();
         span.setAttribute("sticker.name", data.getStickerName());
 
-        CreateStickerResponse createdSticker = stickerRepository.createSticker(data);
+        // Validate input
+        if (data.getStickerName() == null || data.getStickerName().trim().isEmpty()) {
+            return ProblemDetailsResponseBuilder.badRequest("Sticker name cannot be empty");
+        }
+        if (data.getStickerName().length() > 100) {
+            return ProblemDetailsResponseBuilder.badRequest(
+                    "Sticker name too long (max 100 characters)");
+        }
+
+        CreateStickerResponse createdSticker = stickerService.createSticker(data);
         return Response.status(Response.Status.CREATED).entity(createdSticker).build();
     }
 
@@ -89,12 +98,13 @@ public class StickerResource {
         Span span = Span.current();
         span.setAttribute("sticker.id", stickerId);
 
-        StickerDTO metadata = stickerRepository.getStickerMetadata(stickerId);
-        if (metadata == null) {
-            return ProblemDetailsResponseBuilder.notFound(
-                    "Sticker with ID " + stickerId + " not found");
-        }
-        return Response.ok(metadata).build();
+        StickerResult result = stickerService.getStickerById(stickerId);
+        return switch (result) {
+            case StickerResult.Success(var sticker) ->
+                    Response.ok(StickerMapper.toDTO(sticker)).build();
+            case StickerResult.NotFound(String id) ->
+                    ProblemDetailsResponseBuilder.notFound("Sticker with ID " + id + " not found");
+        };
     }
 
     /**
@@ -116,12 +126,24 @@ public class StickerResource {
         Span span = Span.current();
         span.setAttribute("sticker.id", stickerId);
 
-        StickerDTO updated = stickerRepository.updateStickerMetadata(stickerId, data);
-        if (updated == null) {
-            return ProblemDetailsResponseBuilder.notFound(
-                    "Sticker with ID " + stickerId + " not found");
+        // Validate input
+        if (data.getStickerName() != null) {
+            if (data.getStickerName().trim().isEmpty()) {
+                return ProblemDetailsResponseBuilder.badRequest("Sticker name cannot be empty");
+            }
+            if (data.getStickerName().length() > 100) {
+                return ProblemDetailsResponseBuilder.badRequest(
+                        "Sticker name too long (max 100 characters)");
+            }
         }
-        return Response.ok(updated).build();
+
+        StickerResult result = stickerService.updateSticker(stickerId, data);
+        return switch (result) {
+            case StickerResult.Success(var sticker) ->
+                    Response.ok(StickerMapper.toDTO(sticker)).build();
+            case StickerResult.NotFound(String id) ->
+                    ProblemDetailsResponseBuilder.notFound("Sticker with ID " + id + " not found");
+        };
     }
 
     /**
@@ -138,17 +160,12 @@ public class StickerResource {
         Span span = Span.current();
         span.setAttribute("sticker.id", stickerId);
 
-        try {
-            boolean deleted = stickerRepository.deleteSticker(stickerId);
-            if (!deleted) {
-                return ProblemDetailsResponseBuilder.notFound(
-                        "Sticker with ID " + stickerId + " not found");
-            }
-            return Response.noContent().build();
-        } catch (IllegalStateException e) {
-            return ProblemDetailsResponseBuilder.badRequest(
-                    "Cannot delete sticker that is assigned to users");
-        }
+        DeleteResult result = stickerService.deleteSticker(stickerId);
+        return switch (result) {
+            case DeleteResult.Success() -> Response.noContent().build();
+            case DeleteResult.NotFound(String id) ->
+                    ProblemDetailsResponseBuilder.notFound("Sticker with ID " + id + " not found");
+        };
     }
 
     /**
@@ -167,19 +184,12 @@ public class StickerResource {
         Span span = Span.current();
         span.setAttribute("sticker.id", stickerId);
 
-        StickerDTO metadata = stickerRepository.getStickerMetadata(stickerId);
-        if (metadata == null) {
-            return ProblemDetailsResponseBuilder.notFound(
-                    "Sticker with ID " + stickerId + " not found");
-        }
-
-        if (metadata.getImageKey() == null) {
-            return ProblemDetailsResponseBuilder.notFound(
-                    "No image found for sticker " + stickerId);
-        }
-
         try {
-            InputStream imageStream = stickerImageService.getImage(metadata.getImageKey());
+            InputStream imageStream = stickerService.getStickerImageStream(stickerId);
+            if (imageStream == null) {
+                return ProblemDetailsResponseBuilder.notFound(
+                        "No image found for sticker " + stickerId);
+            }
             return Response.ok(imageStream).type("image/png").build();
         } catch (Exception e) {
             return ProblemDetailsResponseBuilder.internalServerError(
@@ -206,34 +216,37 @@ public class StickerResource {
         Span span = Span.current();
         span.setAttribute("sticker.id", stickerId);
 
-        StickerDTO metadata = stickerRepository.getStickerMetadata(stickerId);
-        if (metadata == null) {
-            return ProblemDetailsResponseBuilder.notFound(
-                    "Sticker with ID " + stickerId + " not found");
+        // Validate content type - only PNG accepted in this endpoint
+        String contentType = "image/png";
+        if (!isValidImageContentType(contentType)) {
+            return ProblemDetailsResponseBuilder.badRequest(
+                    "Only PNG and JPEG images are supported");
         }
 
         try {
             byte[] imageBytes = data.readAllBytes();
-            String imageKey =
-                    stickerImageService.uploadImage(
-                            new java.io.ByteArrayInputStream(imageBytes),
-                            "image/png",
-                            imageBytes.length);
+            InputStream imageStream = new java.io.ByteArrayInputStream(imageBytes);
 
-            stickerRepository.updateStickerImageKey(stickerId, imageKey);
+            ImageUploadResult result =
+                    stickerService.uploadStickerImage(
+                            stickerId, imageStream, contentType, imageBytes.length);
 
-            String imageUrl = stickerImageService.getImageUrl(imageKey);
-
-            StickerImageUploadResponse response = new StickerImageUploadResponse();
-            response.setStickerId(stickerId);
-            response.setImageUrl(imageUrl);
-            response.setUploadedAt(Instant.now());
-
-            return Response.ok(response).build();
+            return switch (result) {
+                case ImageUploadResult.Success(StickerImageUploadResponse response) ->
+                        Response.ok(response).build();
+                case ImageUploadResult.StickerNotFound(String id) ->
+                        ProblemDetailsResponseBuilder.notFound(
+                                "Sticker with ID " + id + " not found");
+            };
         } catch (Exception e) {
-            System.out.println(e);
+            LOG.error("Failed to upload image", e);
             return ProblemDetailsResponseBuilder.internalServerError(
                     "Failed to upload image for sticker " + stickerId);
         }
+    }
+
+    private boolean isValidImageContentType(String contentType) {
+        return contentType != null
+                && (contentType.equals("image/png") || contentType.equals("image/jpeg"));
     }
 }

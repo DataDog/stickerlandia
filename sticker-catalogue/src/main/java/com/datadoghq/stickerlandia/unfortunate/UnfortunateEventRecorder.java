@@ -1,10 +1,10 @@
-//package com.datadoghq.stickerlandia.unfortunate;
+// package com.datadoghq.stickerlandia.unfortunate;
 //
-//import java.text.SimpleDateFormat;
-//import java.util.Date;
-//import java.util.Objects;
+// import java.text.SimpleDateFormat;
+// import java.util.Date;
+// import java.util.Objects;
 //
-//class Event {
+// class Event {
 //    private final String message;
 //    private final byte priority;
 //    private final String category;
@@ -22,9 +22,9 @@
 //    public String getMessage() { return message; }
 //    public byte getPriority() { return priority; }
 //    public String getCategory() { return category; }
-//}
+// }
 //
-//public class UnfortunateEventRecorder {
+// public class UnfortunateEventRecorder {
 //
 //    private static UnfortunateEventRecorder instance;
 //    private static Integer instance_lock = 0;
@@ -51,9 +51,12 @@
 //    public void recordEvent(Event event) {
 //        synchronized(count) {
 //            count++;
-//            String priorityIndicator = isCriticalPriority(event.getPriority()) ? " [CRITICAL]" : "";
-//            String categoryPrefix = matchesCategory(event.getCategory(), "system") ? "[SYS] " : "";
-//            System.out.println("Recorded event #" + count + priorityIndicator + ": " + categoryPrefix + event.getMessage());
+//            String priorityIndicator = isCriticalPriority(event.getPriority()) ? " [CRITICAL]" :
+// "";
+//            String categoryPrefix = matchesCategory(event.getCategory(), "system") ? "[SYS] " :
+// "";
+//            System.out.println("Recorded event #" + count + priorityIndicator + ": " +
+// categoryPrefix + event.getMessage());
 //        }
 //    }
 //
@@ -130,4 +133,4 @@
 //        EventData event2 = new EventData("1", "test");
 //        event1.equals(event2);
 //    }
-//}
+// }

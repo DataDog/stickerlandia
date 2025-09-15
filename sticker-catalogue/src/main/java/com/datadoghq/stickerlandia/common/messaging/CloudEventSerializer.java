@@ -1,6 +1,6 @@
 package com.datadoghq.stickerlandia.common.messaging;
 
-import com.datadoghq.stickerlandia.stickercatalogue.event.CloudEvent;
+import com.datadoghq.stickerlandia.common.event.CloudEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Map;
 import org.apache.kafka.common.serialization.Serializer;

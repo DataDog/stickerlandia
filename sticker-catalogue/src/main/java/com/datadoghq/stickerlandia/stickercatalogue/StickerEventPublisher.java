@@ -1,6 +1,6 @@
 package com.datadoghq.stickerlandia.stickercatalogue;
 
-import com.datadoghq.stickerlandia.stickercatalogue.event.CloudEvent;
+import com.datadoghq.stickerlandia.common.event.CloudEvent;
 import com.datadoghq.stickerlandia.stickercatalogue.event.StickerAddedEvent;
 import com.datadoghq.stickerlandia.stickercatalogue.event.StickerDeletedEvent;
 import com.datadoghq.stickerlandia.stickercatalogue.event.StickerUpdatedEvent;

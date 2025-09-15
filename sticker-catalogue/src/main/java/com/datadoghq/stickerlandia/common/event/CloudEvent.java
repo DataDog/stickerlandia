@@ -1,4 +1,4 @@
-package com.datadoghq.stickerlandia.stickercatalogue.event;
+package com.datadoghq.stickerlandia.common.event;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.Instant;
