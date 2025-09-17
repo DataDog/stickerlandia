@@ -1,3 +1,6 @@
+-- Copyright 2025 Datadog, Inc.
+-- SPDX-License-Identifier: Apache-2.0
+
 -- Add indexes for optimal query performance on assignments table
 
 -- Index for finding assignments by user_id (most common query pattern)

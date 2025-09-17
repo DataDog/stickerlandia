@@ -233,6 +233,15 @@
                 <version>${spotless-plugin.version}</version>
                 <configuration>
                     <java>
+                        <!-- Add license header -->
+                        <licenseHeader>
+                            <content>/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2025 Datadog, Inc.
+ */</content>
+                        </licenseHeader>
+
                         <!-- Apply Google Java Format with 4-space indentation -->
                         <googleJavaFormat>
                             <version>1.19.2</version>
@@ -250,9 +259,11 @@
                 </configuration>
                 <executions>
                     <execution>
+                        <id>spotless-check</id>
                         <goals>
                             <goal>check</goal>
                         </goals>
+                        <phase>verify</phase>
                     </execution>
                 </executions>
             </plugin>

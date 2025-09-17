@@ -1,3 +1,6 @@
+// Copyright 2025 Datadog, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 package dto
 
 // ProblemDetails represents RFC 7807 Problem Details for HTTP APIs

@@ -1,3 +1,6 @@
+-- Copyright 2025 Datadog, Inc.
+-- SPDX-License-Identifier: Apache-2.0
+
 -- Drop indexes in reverse order
 DROP INDEX IF EXISTS idx_assignments_unique_active;
 DROP INDEX IF EXISTS idx_assignments_assigned_at;

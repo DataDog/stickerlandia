@@ -1,3 +1,6 @@
+# Copyright 2025 Datadog, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
 # Build stage
 FROM golang:1.23-alpine AS builder
 

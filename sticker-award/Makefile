@@ -64,9 +64,10 @@ fmt:
 	go fmt ./...
 	goimports -w $$(find . -type f -name '*.go' -not -path "./vendor/*")
 
-## lint: Run linter
+## lint: Run linter and check license headers
 lint:
 	golangci-lint run ./...
+	addlicense -check -c "Datadog, Inc." -l apache -s=only -f ../LICENSE_HEADER.txt .
 
 ## clean: Clean build artifacts
 clean:
@@ -88,6 +89,14 @@ dev-setup: deps
 		echo "Installing goimports..."; \
 		go install golang.org/x/tools/cmd/goimports@latest; \
 	}
+	@command -v addlicense >/dev/null 2>&1 || { \
+		echo "Installing addlicense..."; \
+		go install github.com/google/addlicense@latest; \
+	}
+
+## license-add: Add license headers to source files
+license-add:
+	addlicense -c "Datadog, Inc." -l apache -s=only -f ../LICENSE_HEADER.txt .
 
 ## docker-up: Start development environment with Docker Compose
 docker-up:

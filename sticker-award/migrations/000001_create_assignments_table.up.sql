@@ -1,3 +1,6 @@
+-- Copyright 2025 Datadog, Inc.
+-- SPDX-License-Identifier: Apache-2.0
+
 -- Create assignments table
 -- This table stores sticker assignments to users with soft deletion support
 

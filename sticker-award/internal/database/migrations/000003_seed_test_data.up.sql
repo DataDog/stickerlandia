@@ -1,3 +1,6 @@
+-- Copyright 2025 Datadog, Inc.
+-- SPDX-License-Identifier: Apache-2.0
+
 -- Seed test data for development and testing
 -- This migration adds sample assignment data for testing purposes
 

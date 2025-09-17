@@ -1,4 +1,7 @@
 #!/bin/bash
+# Copyright 2025 Datadog, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
 
 # Database Migration Script for Sticker Award Service
 # This script helps manage database migrations using golang-migrate
