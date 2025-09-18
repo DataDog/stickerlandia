@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+# This product includes software developed at Datadog (https://www.datadoghq.com/).
+# Copyright 2025-Present Datadog, Inc.
+
 
 # Docker Startup Timing Script
 # Usage: ./scripts/time-docker-startup.sh [--no-shutdown] [docker-compose-file]

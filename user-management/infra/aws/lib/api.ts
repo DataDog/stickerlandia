@@ -1,3 +1,9 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2025-Present Datadog, Inc.
+ */
+
 import { IVpc } from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
 import { SharedProps } from "./constructs/shared-props";
