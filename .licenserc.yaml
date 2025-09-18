@@ -1,0 +1,47 @@
+# Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+# This product includes software developed at Datadog (https://www.datadoghq.com/).
+# Copyright 2025-Present Datadog, Inc.
+
+header:
+  license:
+    spdx-id: Apache-2.0
+    copyright-owner: Datadog, Inc.
+    content: |
+      Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+      This product includes software developed at Datadog (https://www.datadoghq.com/).
+      Copyright 2025-Present Datadog, Inc.
+
+  paths:
+    - "**/*.cs"
+    - "**/*.java"
+    - "**/*.go"
+    - "**/*.js"
+    - "**/*.ts"
+    - "**/*.tsx"
+    - "**/*.sh"
+    - "**/*.sql"
+    - "**/*.yaml"
+    - "**/*.yml"
+    - "**/*.xml"
+    - "**/*.toml"
+    - "**/*.cfg"
+    - "**/*.conf"
+    - "**/*.properties"
+    - "**/*.csproj"
+    - "**/*.ini"
+    - "**/*.config"
+    - "Dockerfile*"
+    - "docker-compose*"
+    - "Makefile*"
+    - "pom.xml"
+
+  exclude:
+    - "vendor/**"
+    - "node_modules/**"
+    - "bin/**"
+    - "obj/**"
+    - "target/**"
+    - "**/LICENSE_HEADER.txt"
+    - "**/*.json"
+    - "**/*.lock"
+

@@ -30,6 +30,14 @@ LICENSE-3rdparty.csv:
 clean: 
 	rm -f LICENSE-3rdparty.csv
 
+# Validate source files license headers
+verify-license-headers:
+	docker run -it --rm -v $$(pwd):/github/workspace apache/skywalking-eyes header check
+
+# Update source files license headers
+update-license-headers:
+	docker run -it --rm -v $$(pwd):/github/workspace apache/skywalking-eyes header fix
+
 #
 # Environment setup
 #
