@@ -16,9 +16,7 @@ import java.io.InputStream;
 import java.time.Instant;
 import org.jboss.logging.Logger;
 
-/**
- * Service layer for sticker business logic.
- */
+/** Service layer for sticker business logic. */
 @ApplicationScoped
 public class StickerService {
 
@@ -56,7 +54,9 @@ public class StickerService {
 
         // Publish sticker added event
         eventPublisher.publishStickerAdded(
-                response.getStickerId(), response.getStickerName(), request.getStickerDescription());
+                response.getStickerId(),
+                response.getStickerName(),
+                request.getStickerDescription());
 
         return response;
     }

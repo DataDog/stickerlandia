@@ -1,7 +1,6 @@
 package com.datadoghq.stickerlandia.stickercatalogue;
 
 import com.datadoghq.stickerlandia.stickercatalogue.dto.CreateStickerRequest;
-import com.datadoghq.stickerlandia.stickercatalogue.dto.CreateStickerResponse;
 import com.datadoghq.stickerlandia.stickercatalogue.entity.Sticker;
 import com.datadoghq.stickerlandia.stickercatalogue.result.StickerResult;
 import io.opentelemetry.api.trace.Span;

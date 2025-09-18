@@ -10,16 +10,16 @@ import jakarta.ws.rs.Path;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests specific to REST API design and HTTP endpoint patterns.
- * These tests ensure consistent and proper HTTP API implementation.
+ * Tests specific to REST API design and HTTP endpoint patterns. These tests ensure consistent and
+ * proper HTTP API implementation.
  */
 public class HttpApiTest {
 
     private static final JavaClasses classes = new ClassFileImporter().importPath("target/classes");
 
     /**
-     * No reason to manually implement HEAD endpoints.
-     * JAX-RS automatically provides HEAD for GET endpoints.
+     * No reason to manually implement HEAD endpoints. JAX-RS automatically provides HEAD for GET
+     * endpoints.
      */
     @Test
     public void no_explicit_head_endpoints() {
@@ -30,14 +30,15 @@ public class HttpApiTest {
                         .should()
                         .beDeclaredInClassesThat()
                         .areAnnotatedWith(Path.class)
-                        .allowEmptyShould(true); // We optimally find no methods annotated with HEAD!
+                        .allowEmptyShould(
+                                true); // We optimally find no methods annotated with HEAD!
 
         rule.check(classes);
     }
 
     /**
-     * All REST endpoints should use proper OpenAPI annotations for documentation.
-     * This ensures comprehensive API documentation.
+     * All REST endpoints should use proper OpenAPI annotations for documentation. This ensures
+     * comprehensive API documentation.
      */
     @Test
     public void endpoints_should_have_openapi_annotations() {
@@ -64,8 +65,8 @@ public class HttpApiTest {
     }
 
     /**
-     * REST resources should use proper HTTP status codes through Response objects.
-     * This ensures consistent status code usage.
+     * REST resources should use proper HTTP status codes through Response objects. This ensures
+     * consistent status code usage.
      */
     @Test
     public void rest_methods_should_return_response_objects() {
@@ -77,17 +78,20 @@ public class HttpApiTest {
                         .areDeclaredInClassesThat()
                         .areAnnotatedWith(Path.class)
                         .and()
-                        .areNotAnnotatedWith("jakarta.ws.rs.GET") // GET methods may return DTOs directly
+                        .areNotAnnotatedWith(
+                                "jakarta.ws.rs.GET") // GET methods may return DTOs directly
                         .should()
                         .haveRawReturnType("jakarta.ws.rs.core.Response")
-                        .because("Non-GET REST methods should return Response objects for proper status codes");
+                        .because(
+                                "Non-GET REST methods should return Response objects for proper status codes");
 
         rule.check(classes);
     }
 
     /**
-     * Domain REST resources should use ProblemDetailsResponseBuilder for consistent error responses.
-     * This ensures standardized error response format across the API (excluding health endpoints).
+     * Domain REST resources should use ProblemDetailsResponseBuilder for consistent error
+     * responses. This ensures standardized error response format across the API (excluding health
+     * endpoints).
      */
     @Test
     public void http_resources_should_use_problem_details_for_errors() {
@@ -100,15 +104,16 @@ public class HttpApiTest {
                         .should()
                         .dependOnClassesThat()
                         .haveSimpleName("ProblemDetailsResponseBuilder")
-                        .because("Domain REST resources should use ProblemDetailsResponseBuilder for error responses");
+                        .because(
+                                "Domain REST resources should use ProblemDetailsResponseBuilder for error responses");
 
         rule.check(classes);
     }
 
     /**
-     * REST endpoint methods should return appropriate types for HTTP serialization.
-     * This ensures proper API contracts by allowing DTOs (for data), Response objects
-     * (for status code control), or InputStreams (for binary content).
+     * REST endpoint methods should return appropriate types for HTTP serialization. This ensures
+     * proper API contracts by allowing DTOs (for data), Response objects (for status code control),
+     * or InputStreams (for binary content).
      */
     @Test
     public void rest_methods_should_return_serializable_types() {
@@ -130,11 +135,14 @@ public class HttpApiTest {
                         .should()
                         .haveRawReturnType("jakarta.ws.rs.core.Response")
                         .orShould()
-                        .haveRawReturnType(com.tngtech.archunit.base.DescribedPredicate.describe("DTO type",
-                                clazz -> clazz.getPackageName().contains(".dto")))
+                        .haveRawReturnType(
+                                com.tngtech.archunit.base.DescribedPredicate.describe(
+                                        "DTO type",
+                                        clazz -> clazz.getPackageName().contains(".dto")))
                         .orShould()
-                        .haveRawReturnType(java.io.InputStream.class)  // For binary content
-                        .because("REST methods should return Response (status control), DTOs (data), or InputStreams (binary)");
+                        .haveRawReturnType(java.io.InputStream.class) // For binary content
+                        .because(
+                                "REST methods should return Response (status control), DTOs (data), or InputStreams (binary)");
 
         rule.check(classes);
     }

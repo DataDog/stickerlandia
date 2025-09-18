@@ -10,8 +10,8 @@ import com.tngtech.archunit.lang.syntax.elements.GivenClassesConjunction;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests to validate dependency relationships and cycles across the application.
- * These tests ensure proper dependency direction and prevent problematic circular dependencies.
+ * Tests to validate dependency relationships and cycles across the application. These tests ensure
+ * proper dependency direction and prevent problematic circular dependencies.
  */
 public class DependencyTest {
 
@@ -44,8 +44,8 @@ public class DependencyTest {
     }
 
     /**
-     * HTTP resources should depend on DTOs for proper serialization contracts.
-     * This ensures the HTTP layer uses appropriate data transfer objects.
+     * HTTP resources should depend on DTOs for proper serialization contracts. This ensures the
+     * HTTP layer uses appropriate data transfer objects.
      */
     @Test
     public void http_resources_should_depend_on_dtos() {
@@ -59,8 +59,8 @@ public class DependencyTest {
     }
 
     /**
-     * Repositories should depend on entities for data persistence.
-     * This ensures the data layer works with proper domain entities.
+     * Repositories should depend on entities for data persistence. This ensures the data layer
+     * works with proper domain entities.
      */
     @Test
     public void domain_repositories_should_depend_on_entities() {

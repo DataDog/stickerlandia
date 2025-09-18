@@ -76,7 +76,6 @@ public class DomainStructureTest {
                 .check(classes);
     }
 
-
     @Test
     public void services_should_be_annotated_with_application_scoped() {
         domainClasses()

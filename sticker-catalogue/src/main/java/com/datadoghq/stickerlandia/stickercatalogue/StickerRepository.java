@@ -10,7 +10,6 @@ import com.datadoghq.stickerlandia.stickercatalogue.dto.UpdateStickerRequest;
 import com.datadoghq.stickerlandia.stickercatalogue.entity.Sticker;
 import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.persistence.PersistenceException;
 import jakarta.transaction.Transactional;
 import java.io.InputStream;

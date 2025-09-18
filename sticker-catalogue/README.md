@@ -5,37 +5,51 @@ about the stickers, and the images of the stickers themselves. It is built on to
 quarkus extension points for the functionality it requires:
 
 * **Panache** - to provide data access
-* **
+* **Smallrye Reactive Messaging** - to provide a messaging abstraction (currently over the top of Kafka, but pluggable!)
+* **OpenTelemetry** - to collect telemetry
 
-- **Catalog API** (`/api/stickers/v1`) - Manages the sticker catalog (metadata, images, CRUD)
+The catalogue service provides a single domain API, the **Catalogue API**, presented at `/api/stickers/v1`. 
+Start the local development environment with `quarkus dev` and visit the quarkus UI at
+[http://localhost:8080/q/dev-ui](http://localhost:8080/http://localhost:8080/q/dev-ui) to get started!
 
 ## Architecture
 
 ### Domain Structure
 
-- **`sticker/`** - Sticker catalog domain (`/api/stickers/v1`)
+The service is structured in a way to allow us to add additional domains / bounded-contexts in the future. Currently 
+we support one - the `stickercatalogue`: 
+
+- **`stickercatalogue/`** - Sticker catalog domain (`/api/stickers/v1`)
   - `StickerResource.java` - HTTP API for sticker catalog
   - `StickerRepository.java` - Data access and entity-DTO mapping
   - `dto/` - Request/Response DTOs (CreateStickerRequest, StickerDTO, etc.)
   - `entity/` - Database entities (Sticker)
+  - `event/` - Event models 
 
 - **`common/`** - Shared utilities
   - `dto/` - Common DTOs (PagedResponse)
   - `events/` - Domain events
+  - `architecture/` - architectural role annotations 
+  - `messaging/` - common serialization code
 
 ### Separation of Concerns
 #### Models
 
+* **Entities** are used both as the persistence model _and_ the domain model.
+  This is an active decision to reduce needless mapping as we do not foresee significant
+  increase in domain complexity.
 * **DTOs** are spoken by the Resources only 
-* **Entities** are used both as the persistence model _and_ the domain model. 
-This is an active decision to reduce needless mapping as we do not foresee significant
-increase in domain complexity.
+* **Events** are emitted by the messaging system 
 
 #### Layering
 
 - **Resource** - HTTP layer, handles requests/responses, exposes **DTOs** in interface
-- **Service** - Service layer, deals in the domain model (which happens to be our entity model) 
+- **Service** - Service layer, deals in the domain model (which happens to be our entity model)- 
 - **Repository** - Data layer, deals in the entity model
+
+Additionally, **Publisher**s and **Store**s sit conceptually at the same layer as the repository,
+exposing an interface that deals in the domain model to their callers, and dealing with external,
+non-relational systems (e.g. object storage, messaging).
 
 Here's a helpful diagram showing how the models and layering match up:
 

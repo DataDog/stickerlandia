@@ -8,8 +8,8 @@ import com.tngtech.archunit.lang.ArchRule;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests to enforce consistent technology stack choices across the application.
- * These tests ensure we use standard technologies and avoid problematic alternatives.
+ * Tests to enforce consistent technology stack choices across the application. These tests ensure
+ * we use standard technologies and avoid problematic alternatives.
  */
 public class TechnologyGovernanceTest {
 

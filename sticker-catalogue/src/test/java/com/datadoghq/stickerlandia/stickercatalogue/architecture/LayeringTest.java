@@ -35,7 +35,6 @@ public class LayeringTest {
         rule.check(classes);
     }
 
-
     /**
      * We can also be creative and use custom annotations to assign architectural roles to different
      * pieces of our application, and then assert on them.
@@ -102,7 +101,8 @@ public class LayeringTest {
 
     /**
      * Only Services should publish events directly. This enforces that business logic and event
-     * publishing are centralized in the service layer, not scattered across repositories or seeders.
+     * publishing are centralized in the service layer, not scattered across repositories or
+     * seeders.
      */
     @Test
     public void only_services_should_use_event_publishers() {
