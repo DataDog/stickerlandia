@@ -1,3 +1,9 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2025-Present Datadog, Inc.
+ */
+
 
 // Catching generic exceptions is not recommended, but in this case we want to catch all exceptions so that a failure in outbox processing does not crash the application and we can return a 500 error.
 #pragma warning disable CA1031
