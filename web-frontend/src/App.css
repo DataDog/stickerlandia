@@ -35,8 +35,6 @@ main {
     --border-right-width: 1px;
     --border-style: solid;
     --border-top-width: 1px;
-    align-content: center;
-    align-items: center;
     align-self: start;
     background-color: #fff;
     border-radius: 16px;
@@ -87,4 +85,9 @@ span.sparkle-logo > svg {
 
 .user-profile-wrapper {
   grid-area: content;
+}
+
+.profile-nav svg,
+.user-nav svg {
+    margin-right: 15px;
 }

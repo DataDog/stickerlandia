@@ -1,10 +1,8 @@
 import React from "react";
-import { BrowserRouter } from "react-router";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import LoginButton from "./components/LoginButton";
 import LogoutButton from "./components/LogoutButton";
 import UserProfile from "./components/UserProfile";
-import StickerList from "./components/StickerList";
 import HeaderBar from "./components/HeaderBar";
 import Landing from "./components/Landing";
 import "./App.css";
@@ -33,7 +31,6 @@ function AppContent() {
         ) : (
           <div>
             <UserProfile />
-            <StickerList />
           </div>
         )}
       </main>

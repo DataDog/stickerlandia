@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import AuthService from "../services/AuthService";
-import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
-import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
-import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
-import LocalPrintshopOutlinedIcon from '@mui/icons-material/LocalPrintshopOutlined';
-import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
-import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
-import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
+import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
+import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
+import AssessmentOutlinedIcon from "@mui/icons-material/AssessmentOutlined";
+import LocalPrintshopOutlinedIcon from "@mui/icons-material/LocalPrintshopOutlined";
+import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
+import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
+import AutoAwesomeOutlinedIcon from "@mui/icons-material/AutoAwesomeOutlined";
+import HotelClassOutlinedIcon from '@mui/icons-material/HotelClassOutlined';
 
 const UserProfile = () => {
   const { user, isAuthenticated } = useAuth();
@@ -60,46 +62,110 @@ const UserProfile = () => {
     <div className="profile-wrapper">
       <div className="profile-menu bg-white h-screen">
         <nav className="profile-nav">
-          <ul>
-            <li className="flex">
-              <a className="flex-1" href=""><HomeOutlinedIcon/>User Dashboard</a>
+          <div className="my-4 px-5 border-gray-300 border-solid border-b">
+            <div className="logo font-bold my-2">
+              <span className="sparkle-logo">
+                <AutoAwesomeOutlinedIcon />
+              </span>
+              Stickerlandia
+            </div>
+          </div>
+          <div className="my-4 px-5 profile-card-wrapper grid grid-cols-4">
+            <div className="my-3 col-span-1 text-center">
+              <p className="bg-gray-200 rounded-full inline p-4 font-bold">
+                UN
+              </p>
+            </div>
+            <div className="profile-card col-span-3">
+              <span className="block font-bold">User Name</span>
+              <span className="block text-sm text-gray-600">24 Stickers</span>
+            </div>
+          </div>
+          <ul className="">
+            <li className="my-3 px-5">
+              <a className="block" href="">
+                <HomeOutlinedIcon />
+                User Dashboard
+              </a>
             </li>
-            <li className="flex">
-              <a className="flex-1" href=""><MenuBookOutlinedIcon/>My Collection</a>
+            <li className="my-3 px-5">
+              <a className="block" href="">
+                <MenuBookOutlinedIcon />
+                My Collection
+              </a>
             </li>
-            <li className="flex">
-              <a className="flex-1" href=""><AssessmentOutlinedIcon/>Public Dashboard</a>
+            <li className="my-3 px-5">
+              <a className="block" href="">
+                <AssessmentOutlinedIcon />
+                Public Dashboard
+              </a>
             </li>
-            <li className="flex">
-              <a className="flex-1" href=""><LocalPrintshopOutlinedIcon/>Print Station</a>
+            <li className="my-3 px-5">
+              <a className="block" href="">
+                <LocalPrintshopOutlinedIcon />
+                Print Station
+              </a>
             </li>
           </ul>
         </nav>
-        <nav className="user-nav">
+        <nav className="user-nav border-gray-300 border-solid border-t">
           <ul>
-            <li className="flex">
-              <a className="flex-1" href=""><PersonOutlineOutlinedIcon/>Profile</a>
+            <li className="my-3 px-5">
+              <a className="block" href="">
+                <PersonOutlineOutlinedIcon />
+                Profile
+              </a>
             </li>
-            <li className="flex">
-              <a className="flex-1" href=""><SettingsOutlinedIcon/>Settings</a>
+            <li className="my-3 px-5">
+              <a className="block" href="">
+                <SettingsOutlinedIcon />
+                Settings
+              </a>
             </li>
-            <li className="flex">
-              <a className="flex-1" href=""><LogoutOutlinedIcon/>Sign Out</a>
+            <li className="my-3 px-5">
+              <a className="block" href="">
+                <LogoutOutlinedIcon />
+                Sign Out
+              </a>
             </li>
           </ul>
         </nav>
       </div>
       <div className="user-profile-wrapper">
-        <p style={{ color: "inherit" }}>
-          <strong>User ID:</strong> {user.sub || "N/A"}
-        </p>
-        <p style={{ color: "inherit" }}>
-          <strong>Name:</strong> {user.name || user.given_name || "N/A"}
-        </p>
-        <p style={{ color: "inherit" }}>
-          <strong>Email:</strong> {user.email || "N/A"}
-        </p>
-        {user.roles && (
+        <div className="user-profile-greeting">
+          <div className="text-3xl font-bold my-3">
+            Welcome Back, User Name!
+          </div>
+          <div className="text-gray-600 my-3">
+            Here's what's happening with your collection.
+          </div>
+        </div>
+        <div className="user-profile-info grid grid-cols-4 gap-4">
+          <div className="col-span-1 landing-card items-start">
+            <span className="text-gray-400 font-bold">Total Stickers</span>
+            <span className="text-gray-600 font-bold text-xl">5</span>
+            <div className="collection-progress-bar bg-linear-65 from-gray-800 via-gray-400 to-gray-400 to-75% block h-5 w-full"></div>
+            <span className="text-gray-600">75% of available</span>
+          </div>
+          <div className="col-span-1 landing-card items-start">
+            <span className="text-gray-400 font-bold">Legendary Count</span>
+            <span className="text-gray-600 font-bold text-xl">1</span>
+            <span className="text-gray-600 text-yellow-500"><HotelClassOutlinedIcon/> Ultra Rare</span>
+          </div>
+          <div className="col-span-1 landing-card items-start">
+            <span className="text-gray-400 font-bold">Print Credits</span>
+            <span className="text-gray-600 font-bold text-xl">10</span>
+            <span className=" text-green-500">Ready for Events</span>
+          </div>
+          <div className="col-span-1 landing-card items-start">
+            <span className="text-gray-400 font-bold">Member Since</span>
+            <span className="text-gray-600 font-bold text-xl">July 2025</span>
+            <span className="text-gray-600">2 Months Collecting</span>
+          </div>
+          <div className="col-span-2 landing-card items-start">
+            <span className="text-gray-600 font-bold">Recent Stickers</span>
+            <span className="text-gray-600 font-bold text-xl">Your latest additions</span>
+            {user.roles && (
           <p style={{ color: "inherit" }}>
             <strong>Roles:</strong>{" "}
             {Array.isArray(user.roles) ? user.roles.join(", ") : user.roles}
@@ -143,6 +209,12 @@ const UserProfile = () => {
             </td>
           </tr>
         ))}
+          </div>
+          <div className="col-span-2 landing-card items-start">
+            <span className="text-gray-600 font-bold">Available Rewards</span>
+            <span className="text-gray-600 font-bold text-xl">Stickers you can claim</span>
+          </div>
+        </div>
       </div>
     </div>
   );
