@@ -18,6 +18,21 @@ codeql database analyze cql-db --format=csv --output=results.csv codeql/java-que
 cat results.csv
 ```
 
+Example findings from the default linting group - a SAST issue:
+```java
+// Log Injection: Building log entries from user-controlled data may allow
+// insertion of forged log entries by malicious users.
+// This log entry depends on a user-provided value from StickerResource.java:96
+LOG.infof("Getting sticker by ID: %s", id);
+```
+... as well as a  generic linting error: 
+```java
+// Unsafe use of getResource: Calling 'this.getClass().getResource()' may yield
+// unexpected results if called from a subclass in another package.
+// The idiom getClass().getResource() is unsafe for classes that may be extended.
+InputStream imageStream = getClass().getResourceAsStream(resourcePath);
+```
+
 ## Debug and exploration
 
 Want to see what classes we have?

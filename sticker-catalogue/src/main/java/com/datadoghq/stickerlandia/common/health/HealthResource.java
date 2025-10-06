@@ -25,6 +25,5 @@ public class HealthResource {
         Map<String, Object> healthStatus = new HashMap<>();
         healthStatus.put("status", "OK");
         return Response.ok(healthStatus).build();
-
     }
 }
