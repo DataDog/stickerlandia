@@ -1,0 +1,571 @@
+[
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "@datadog/browser-core",
+      "origin": "@datadog/browser-core"
+    },
+    "replacement": {
+      "name": "@datadog/browser-core",
+      "origin": "https://github.com/DataDog/browser-sdk",
+      "license": [
+        "Apache-2.0"
+      ],
+      "copyright": [
+        "Datadog Inc."
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "@datadog/browser-rum",
+      "origin": "@datadog/browser-rum"
+    },
+    "replacement": {
+      "name": "@datadog/browser-rum",
+      "origin": "https://github.com/DataDog/browser-sdk",
+      "license": [
+        "Apache-2.0"
+      ],
+      "copyright": [
+        "Datadog Inc."
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "@datadog/browser-rum-core",
+      "origin": "@datadog/browser-rum-core"
+    },
+    "replacement": {
+      "name": "@datadog/browser-rum-core",
+      "origin": "https://github.com/DataDog/browser-sdk",
+      "license": [
+        "Apache-2.0"
+      ],
+      "copyright": [
+        "Datadog Inc."
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "@datadog/browser-rum-react",
+      "origin": "@datadog/browser-rum-react"
+    },
+    "replacement": {
+      "name": "@datadog/browser-rum-react",
+      "origin": "https://github.com/DataDog/browser-sdk",
+      "license": [
+        "Apache-2.0"
+      ],
+      "copyright": [
+        "Datadog Inc."
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "@datadog/native-appsec",
+      "origin": "@datadog/native-appsec"
+    },
+    "replacement": {
+      "name": "@datadog/native-appsec",
+      "origin": "https://github.com/DataDog/dd-native-appsec-js",
+      "license": [
+        "Apache-2.0"
+      ],
+      "copyright": [
+        "Datadog",
+        "Inc."
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "@tailwindcss/vite",
+      "origin": "@tailwindcss/vite"
+    },
+    "replacement": {
+      "name": "@tailwindcss/vite",
+      "origin": "https://github.com/tailwindlabs/tailwindcss",
+      "license": [
+        "MIT"
+      ],
+      "copyright": [
+        "Tailwind Labs",
+        "Inc."
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "Amazon.Lambda.APIGatewayEvents",
+      "origin": "Amazon.Lambda.APIGatewayEvents"
+    },
+    "replacement": {
+      "name": "Amazon.Lambda.APIGatewayEvents",
+      "origin": "https://github.com/aws/aws-lambda-dotnet",
+      "license": [
+        "Apache-2.0"
+      ],
+      "copyright": [
+        "Amazon.com",
+        "Inc. or its affiliates."
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "Amazon.Lambda.KafkaEvents",
+      "origin": "Amazon.Lambda.KafkaEvents"
+    },
+    "replacement": {
+      "name": "Amazon.Lambda.KafkaEvents",
+      "origin": "https://github.com/aws/aws-lambda-dotnet/",
+      "license": [
+        "Apache-2.0"
+      ],
+      "copyright": [
+        "Amazon.com",
+        "Inc. or its affiliates."
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "Aspire.Hosting.PostgreSQL",
+      "origin": "Aspire.Hosting.PostgreSQL"
+    },
+    "replacement": {
+      "name": "Aspire.Hosting.PostgreSQL",
+      "origin": "https://github.com/dotnet/aspire",
+      "license": [
+        "MIT"
+      ],
+      "copyright": [
+        ".NET Foundation and Contributors"
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "cdk-nag",
+      "origin": "cdk-nag"
+    },
+    "replacement": {
+      "name": "cdk-nag",
+      "origin": "https://github.com/cdklabs/cdk-nag",
+      "license": [
+        "Apache-2.0"
+      ],
+      "copyright": [
+        "Amazon.com",
+        "Inc. or its affiliates"
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "datadog-cdk-constructs-v2",
+      "origin": "datadog-cdk-constructs-v2"
+    },
+    "replacement": {
+      "name": "datadog-cdk-constructs-v2",
+      "origin": "https://github.com/DataDog/datadog-cdk-constructs",
+      "license": [
+        "Apache-2.0"
+      ],
+      "copyright": [
+        "Datadog",
+        "Inc."
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "dd-trace",
+      "origin": "dd-trace"
+    },
+    "replacement": {
+      "name": "dd-trace",
+      "origin": "https://github.com/DataDog/dd-trace-js",
+      "license": [
+        "Apache-2.0"
+      ],
+      "copyright": [
+        "Datadog",
+        "Inc."
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "io.quarkiverse.amazonservices:quarkus-amazon-s3",
+      "origin": "io.quarkiverse.amazonservices:quarkus-amazon-s3"
+    },
+    "replacement": {
+      "name": "io.quarkiverse.amazonservices:quarkus-amazon-s3",
+      "origin": "https://github.com/quarkiverse/quarkus-amazon-services",
+      "license": [
+        "Apache-2.0"
+      ],
+      "copyright": [
+        "Quarkiverse contributors"
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "io.quarkiverse.loggingjson:quarkus-logging-json",
+      "origin": "io.quarkiverse.loggingjson:quarkus-logging-json"
+    },
+    "replacement": {
+      "name": "io.quarkiverse.loggingjson:quarkus-logging-json",
+      "origin": "https://github.com/quarkiverse/quarkus-logging-json",
+      "license": [
+        "Apache-2.0"
+      ],
+      "copyright": [
+        "Quarkiverse contributors"
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "io.quarkus.platform:quarkus-amazon-services-bom",
+      "origin": "io.quarkus.platform:quarkus-amazon-services-bom"
+    },
+    "replacement": {
+      "name": "io.quarkus.platform:quarkus-amazon-services-bom",
+      "origin": "https://github.com/quarkiverse/quarkus-amazon-services",
+      "license": [
+        "Apache-2.0"
+      ],
+      "copyright": [
+        "Quarkiverse contributors"
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "io.quarkus.platform:quarkus-bom",
+      "origin": "io.quarkus.platform:quarkus-bom"
+    },
+    "replacement": {
+      "name": "io.quarkus.platform:quarkus-bom",
+      "origin": "https://github.com/quarkusio/quarkus-platform",
+      "license": [
+        "Apache-2.0"
+      ],
+      "copyright": [
+        "Quarkus Community"
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "io.quarkus.platform:quarkus-maven-plugin",
+      "origin": "io.quarkus.platform:quarkus-maven-plugin"
+    },
+    "replacement": {
+      "name": "io.quarkus.platform:quarkus-maven-plugin",
+      "origin": "https://github.com/quarkusio/quarkus-platform",
+      "license": [
+        "Apache-2.0"
+      ],
+      "copyright": [
+        "Quarkus Community"
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "io.quarkus:quarkus-flyway",
+      "origin": "io.quarkus:quarkus-flyway"
+    },
+    "replacement": {
+      "name": "io.quarkus:quarkus-flyway",
+      "origin": "https://github.com/quarkusio/quarkus",
+      "license": [
+        "Apache-2.0"
+      ],
+      "copyright": [
+        "Quarkus Community"
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "io.quarkus:quarkus-hibernate-orm",
+      "origin": "io.quarkus:quarkus-hibernate-orm"
+    },
+    "replacement": {
+      "name": "io.quarkus:quarkus-hibernate-orm",
+      "origin": "https://github.com/quarkusio/quarkus",
+      "license": [
+        "Apache-2.0"
+      ],
+      "copyright": [
+        "Quarkus Community"
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "io.quarkus:quarkus-hibernate-orm-panache",
+      "origin": "io.quarkus:quarkus-hibernate-orm-panache"
+    },
+    "replacement": {
+      "name": "io.quarkus:quarkus-hibernate-orm-panache",
+      "origin": "https://github.com/quarkusio/quarkus",
+      "license": [
+        "Apache-2.0"
+      ],
+      "copyright": [
+        "Quarkus Community"
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "io.quarkus:quarkus-jdbc-postgresql",
+      "origin": "io.quarkus:quarkus-jdbc-postgresql"
+    },
+    "replacement": {
+      "name": "io.quarkus:quarkus-jdbc-postgresql",
+      "origin": "https://github.com/quarkusio/quarkus",
+      "license": [
+        "Apache-2.0"
+      ],
+      "copyright": [
+        "Quarkus Community"
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "io.quarkus:quarkus-junit5",
+      "origin": "io.quarkus:quarkus-junit5"
+    },
+    "replacement": {
+      "name": "io.quarkus:quarkus-junit5",
+      "origin": "https://github.com/quarkusio/quarkus",
+      "license": [
+        "Apache-2.0"
+      ],
+      "copyright": [
+        "Quarkus Community"
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "io.quarkus:quarkus-junit5-mockito",
+      "origin": "io.quarkus:quarkus-junit5-mockito"
+    },
+    "replacement": {
+      "name": "io.quarkus:quarkus-junit5-mockito",
+      "origin": "https://github.com/quarkusio/quarkus",
+      "license": [
+        "Apache-2.0"
+      ],
+      "copyright": [
+        "Quarkus Community"
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "io.quarkus:quarkus-messaging-kafka",
+      "origin": "io.quarkus:quarkus-messaging-kafka"
+    },
+    "replacement": {
+      "name": "io.quarkus:quarkus-messaging-kafka",
+      "origin": "https://github.com/quarkusio/quarkus",
+      "license": [
+        "Apache-2.0"
+      ],
+      "copyright": [
+        "Quarkus Community"
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "io.quarkus:quarkus-opentelemetry",
+      "origin": "io.quarkus:quarkus-opentelemetry"
+    },
+    "replacement": {
+      "name": "io.quarkus:quarkus-opentelemetry",
+      "origin": "https://github.com/quarkusio/quarkus",
+      "license": [
+        "Apache-2.0"
+      ],
+      "copyright": [
+        "Quarkus Community"
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "io.quarkus:quarkus-rest",
+      "origin": "io.quarkus:quarkus-rest"
+    },
+    "replacement": {
+      "name": "io.quarkus:quarkus-rest",
+      "origin": "https://github.com/quarkusio/quarkus",
+      "license": [
+        "Apache-2.0"
+      ],
+      "copyright": [
+        "Quarkus Community"
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "io.quarkus:quarkus-rest-jackson",
+      "origin": "io.quarkus:quarkus-rest-jackson"
+    },
+    "replacement": {
+      "name": "io.quarkus:quarkus-rest-jackson",
+      "origin": "https://github.com/quarkusio/quarkus",
+      "license": [
+        "Apache-2.0"
+      ],
+      "copyright": [
+        "Quarkus Community"
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "io.quarkus:quarkus-smallrye-openapi",
+      "origin": "io.quarkus:quarkus-smallrye-openapi"
+    },
+    "replacement": {
+      "name": "io.quarkus:quarkus-smallrye-openapi",
+      "origin": "https://github.com/quarkusio/quarkus",
+      "license": [
+        "Apache-2.0"
+      ],
+      "copyright": [
+        "Quarkus Community"
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "io.rest-assured:rest-assured",
+      "origin": "io.rest-assured:rest-assured"
+    },
+    "replacement": {
+      "name": "io.rest-assured:rest-assured",
+      "origin": "https://github.com/rest-assured/rest-assured",
+      "license": [
+        "Apache-2.0"
+      ],
+      "copyright": [
+        "Johan Haleby"
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "org.awaitility:awaitility",
+      "origin": "org.awaitility:awaitility"
+    },
+    "replacement": {
+      "name": "org.awaitility:awaitility",
+      "origin": "https://github.com/awaitility/awaitility",
+      "license": [
+        "Apache-2.0"
+      ],
+      "copyright": [
+        "Johan Haleby"
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "org.mockito:mockito-core",
+      "origin": "org.mockito:mockito-core"
+    },
+    "replacement": {
+      "name": "org.mockito:mockito-core",
+      "origin": "https://github.com/mockito/mockito",
+      "license": [
+        "MIT"
+      ],
+      "copyright": [
+        "Mockito contributors"
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "software.amazon.awssdk:url-connection-client",
+      "origin": "software.amazon.awssdk:url-connection-client"
+    },
+    "replacement": {
+      "name": "software.amazon.awssdk:url-connection-client",
+      "origin": "https://github.com/aws/aws-sdk-java-v2",
+      "license": [
+        "Apache-2.0"
+      ],
+      "copyright": [
+        "Amazon.com",
+        "Inc. or its affiliates."
+      ]
+    }
+  },
+  {
+    "override_type": "replace",
+    "target": {
+      "component": "vite-envs",
+      "origin": "vite-envs"
+    },
+    "replacement": {
+      "name": "vite-envs",
+      "origin": "https://github.com/garronej/vite-envs",
+      "license": [
+        "MIT"
+      ],
+      "copyright": [
+        "GitHub user u/garronej"
+      ]
+    }
+  }
+]
