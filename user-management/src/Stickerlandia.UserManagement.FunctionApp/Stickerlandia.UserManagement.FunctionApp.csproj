@@ -26,7 +26,6 @@
         <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Kafka" Version="4.1.1" />
         <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="2.0.4" />
         <PackageReference Include="Datadog.Trace.Bundle" Version="3.15.0" />
-        <PackageReference Include="Datadog.Sma" Version="0.11.0" />
     </ItemGroup>
     <ItemGroup>
         <None Update="host.json">

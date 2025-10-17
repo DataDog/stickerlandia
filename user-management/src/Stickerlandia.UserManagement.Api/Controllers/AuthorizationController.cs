@@ -35,12 +35,9 @@ public class AuthorizationController(
     IOpenIddictAuthorizationManager authorizationManager,
     IOpenIddictScopeManager scopeManager,
     SignInManager<PostgresUserAccount> signInManager,
-    UserManager<PostgresUserAccount> userManager,
-    IConfiguration configuration)
+    UserManager<PostgresUserAccount> userManager)
     : Controller
 {
-    private readonly IConfiguration _configuration = configuration;
-
     /// <summary>
     /// This action is invoked when a GET/POST is sent to the authorization endpoint
     /// (e.g when the user agent is redirected to the authorization endpoint by the client application
@@ -53,9 +50,9 @@ public class AuthorizationController(
     public async Task<IActionResult> Authorize()
     {
         var activeSpan = Tracer.Instance.ActiveScope?.Span;
-        
+
         var request = HttpContext.GetOpenIddictServerRequest() ??
-                      throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
+              throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
 
         var result = await HttpContext.AuthenticateAsync();
         if (result is not { Succeeded: true } ||
@@ -83,10 +80,10 @@ public class AuthorizationController(
             TempData["IgnoreAuthenticationChallenge"] = true;
 
             var redirectUri = Request.PathBase + Request.Path + QueryString.Create(
-                Request.HasFormContentType ? Request.Form : Request.Query);            
-            
+                Request.HasFormContentType ? Request.Form : Request.Query);
+
             activeSpan?.SetTag("http.redirect_uri", redirectUri);
-            
+
             return Challenge(new AuthenticationProperties
             {
                 RedirectUri = redirectUri,
@@ -101,7 +98,7 @@ public class AuthorizationController(
         var application = await applicationManager.FindByClientIdAsync(request.ClientId!) ??
                           throw new InvalidOperationException(
                               "Details concerning the calling client application cannot be found.");
-        
+
         activeSpan?.SetTag("user.authenticated", "true");
         activeSpan?.SetTag("user.id", user.Id);
         activeSpan?.SetTag("client.id", request.ClientId!);
@@ -148,7 +145,7 @@ public class AuthorizationController(
                     .SetClaim(OpenIddictConstants.Claims.Name, await userManager.GetUserNameAsync(user))
                     .SetClaim(OpenIddictConstants.Claims.PreferredUsername, await userManager.GetUserNameAsync(user))
                     .SetClaims(OpenIddictConstants.Claims.Role, [.. await userManager.GetRolesAsync(user)]);
-                
+
                 identity.SetScopes(request.GetScopes());
                 identity.SetResources(await scopeManager.ListResourcesAsync(identity.GetScopes()).ToListAsync());
 
@@ -219,7 +216,7 @@ public class AuthorizationController(
                 RedirectUri = "/"
             });
     }
-    
+
     /// <summary>
     /// This action is invoked when a POST is sent to the token endpoint as part of the OAuth 2.0
     /// authorization code or refresh token flows, to exchange an authorization code or a refresh token
