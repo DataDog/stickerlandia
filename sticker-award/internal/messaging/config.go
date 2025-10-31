@@ -25,9 +25,9 @@ func NewSaramaConfig(clientID string, cfg *config.KafkaConfig) *sarama.Config {
 	config.Net.WriteTimeout = 10 * time.Second
 
 	if cfg.EnableTls {
-		config.Net.TLS.Enable = true
-		config.Net.SASL.Enable = true
 		config.Net.SASL.Mechanism = sarama.SASLTypePlaintext
+		config.Net.SASL.Enable = true
+		config.Net.TLS.Enable = true
 		config.Net.SASL.User = cfg.Username
 		config.Net.SASL.Password = cfg.Password
 	}
