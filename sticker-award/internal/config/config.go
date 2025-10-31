@@ -109,6 +109,9 @@ func setDefaults() {
 	// Kafka defaults
 	viper.SetDefault("kafka.brokers", []string{"localhost:9092"})
 	viper.SetDefault("kafka.group_id", "sticker-award-service")
+	viper.SetDefault("kafka.enable_tls", false)
+	viper.SetDefault("kafka.username", "")
+	viper.SetDefault("kafka.password", "")
 	viper.SetDefault("kafka.producer_timeout", 5000) // 5 seconds in milliseconds
 	viper.SetDefault("kafka.producer_retries", 3)
 	viper.SetDefault("kafka.producer_batch_size", 16384) // 16KB
