@@ -8,8 +8,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	ddsamarama "github.com/DataDog/dd-trace-go/contrib/IBM/sarama/v2"
 	"github.com/DataDog/dd-trace-go/v2/datastreams"
@@ -36,7 +37,7 @@ const (
 // NewProducer creates a new Kafka producer using Sarama with Datadog instrumentation
 func NewProducer(cfg *config.KafkaConfig) (*Producer, error) {
 	// Create shared Sarama configuration
-	config := NewSaramaConfig("sticker-award-producer")
+	config := NewSaramaConfig("sticker-award-producer", cfg)
 	ConfigureProducer(config, cfg)
 
 	// Create base Sarama producer first

@@ -38,8 +38,11 @@ type DatabaseConfig struct {
 
 // KafkaConfig holds Kafka configuration
 type KafkaConfig struct {
-	Brokers []string `mapstructure:"brokers"`
-	GroupID string   `mapstructure:"group_id"`
+	Brokers   []string `mapstructure:"brokers"`
+	GroupID   string   `mapstructure:"group_id"`
+	EnableTls bool     `mapstructure:"enable_tls"`
+	Username  string   `mapstructure:"username"`
+	Password  string   `mapstructure:"password"`
 	// Producer configuration
 	ProducerTimeout   int  `mapstructure:"producer_timeout"`
 	ProducerRetries   int  `mapstructure:"producer_retries"`

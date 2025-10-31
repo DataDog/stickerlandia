@@ -107,7 +107,7 @@ func main() {
 	}).Info("Kafka configuration loaded")
 
 	// Initialize Kafka consumer
-	consumer, err := messaging.NewConsumer(cfg.Kafka.Brokers, cfg.Kafka.GroupID)
+	consumer, err := messaging.NewConsumer(&cfg.Kafka)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err}).Fatal("Failed to create Kafka consumer")
 	}
