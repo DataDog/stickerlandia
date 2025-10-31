@@ -7,11 +7,13 @@ package messaging
 import (
 	"context"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
+
+	"github.com/datadog/stickerlandia/sticker-award/internal/config"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/IBM/sarama"
 )
@@ -36,30 +38,30 @@ type MessageHandler interface {
 }
 
 // NewConsumer creates a new Kafka consumer with Datadog DSM integration
-func NewConsumer(brokers []string, groupID string) (*Consumer, error) {
+func NewConsumer(cfg *config.KafkaConfig) (*Consumer, error) {
 	// Configure Sarama to use logrus for consistent JSON logging
 	sarama.Logger = log.StandardLogger()
 
 	log.WithFields(log.Fields{
-		"brokers":          brokers,
-		"groupID":          groupID,
+		"brokers":          cfg.Brokers,
+		"groupID":          cfg.GroupID,
 		"protocol_version": "2.1.0.0",
 	}).Info("Creating Kafka consumer")
 
 	// Create shared Sarama configuration
-	config := NewSaramaConfig("sticker-award-consumer")
+	config := NewSaramaConfig("sticker-award-consumer", cfg)
 	ConfigureConsumer(config)
 
 	log.WithFields(log.Fields{
-		"brokers": brokers,
-		"groupID": groupID,
+		"brokers": cfg.Brokers,
+		"groupID": cfg.GroupID,
 	}).Info("Attempting to create Sarama consumer group")
 
-	client, err := sarama.NewConsumerGroup(brokers, groupID, config)
+	client, err := sarama.NewConsumerGroup(cfg.Brokers, cfg.GroupID, config)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"brokers": brokers,
-			"groupID": groupID,
+			"brokers": cfg.Brokers,
+			"groupID": cfg.GroupID,
 			"error":   err,
 		}).Error("Failed to create Sarama consumer group")
 		return nil, fmt.Errorf("failed to create consumer group: %w", err)
@@ -70,8 +72,8 @@ func NewConsumer(brokers []string, groupID string) (*Consumer, error) {
 	consumer := Consumer{
 		client:   client,
 		handlers: make(map[string]MessageHandler),
-		groupID:  groupID,
-		brokers:  brokers,
+		groupID:  cfg.GroupID,
+		brokers:  cfg.Brokers,
 		ready:    make(chan bool),
 		ctx:      ctx,
 		cancel:   cancel,

@@ -12,7 +12,7 @@ import (
 )
 
 // NewSaramaConfig creates a shared Sarama configuration for both producer and consumer
-func NewSaramaConfig(clientID string) *sarama.Config {
+func NewSaramaConfig(clientID string, cfg *config.KafkaConfig) *sarama.Config {
 	config := sarama.NewConfig()
 
 	// Common configuration
@@ -23,6 +23,14 @@ func NewSaramaConfig(clientID string) *sarama.Config {
 	config.Net.DialTimeout = 10 * time.Second
 	config.Net.ReadTimeout = 10 * time.Second
 	config.Net.WriteTimeout = 10 * time.Second
+
+	if cfg.EnableTls {
+		config.Net.TLS.Enable = true
+		config.Net.SASL.Enable = true
+		config.Net.SASL.Mechanism = sarama.SASLTypePlaintext
+		config.Net.SASL.User = cfg.Username
+		config.Net.SASL.Password = cfg.Password
+	}
 
 	return config
 }
