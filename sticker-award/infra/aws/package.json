@@ -1,0 +1,28 @@
+{
+  "name": "aws-ts",
+  "version": "0.1.0",
+  "bin": {
+    "aws-ts": "bin/aws.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "jest",
+    "cdk": "cdk"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "24.9.2",
+    "aws-cdk": "2.1031.1",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.5",
+    "ts-node": "^10.9.2",
+    "typescript": "~5.9.3"
+  },
+  "dependencies": {
+    "@aws-cdk/aws-lambda-dotnet": "^0.0.6",
+    "aws-cdk-lib": "2.221.1",
+    "constructs": "^10.0.0",
+    "datadog-cdk-constructs-v2": "^3.2.2"
+  }
+}
