@@ -6,9 +6,9 @@
 
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
-import { SharedProps } from "./constructs/shared-props";
+import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
 import { DatadogECSFargate, DatadogLambda } from "datadog-cdk-constructs-v2";
-import { SharedResources } from "./sharedResources";
+import { SharedResources } from "../../../../shared/lib/shared-constructs/lib/shared-resources";
 import { Api } from "./api";
 import { Cluster } from "aws-cdk-lib/aws-ecs";
 import { BackgroundWorkers } from "./background-workers";
@@ -20,7 +20,6 @@ export class UserServiceStack extends cdk.Stack {
 
     const serviceName = "user-service";
     const environment = process.env.ENV || "dev";
-    const version = process.env.VERSION || "latest";
     const connectionString = process.env.CONNECTION_STRING;
 
     if (!connectionString) {
@@ -29,7 +28,7 @@ export class UserServiceStack extends cdk.Stack {
 
     const sharedResources = new SharedResources(this, "SharedResources", {
       networkName: `${serviceName}-${environment}-vpc`,
-      existingVpcId: process.env.VPC_ID,
+      environment: environment,
     });
 
     const ddSite = process.env.DD_SITE || "datadoghq.com";
@@ -46,59 +45,23 @@ export class UserServiceStack extends cdk.Stack {
       clusterName: `${serviceName}-${environment}`,
     });
 
-    const sharedProps: SharedProps = {
-      connectionString,
-      serviceName: "user-service",
-      environment: process.env.ENV || "dev",
-      version: process.env.VERSION || "latest",
-      team: "users",
-      domain: "users",
-      datadog: {
-        apiKey: ddApiKey,
-        apiKeyParameter: ddApiKeyParam,
-        site: ddSite,
-        lambda: new DatadogLambda(this, "DatadogLambda", {
-          apiKey: ddApiKey,
-          site: ddSite,
-        }),
-        ecsFargate: new DatadogECSFargate({
-          // One of the following 3 apiKey params are required
-          apiKey: ddApiKey,
-          cpu: 256,
-          memoryLimitMiB: 512,
-          isDatadogEssential: true,
-          isDatadogDependencyEnabled: true,
-          site: ddSite,
-          clusterName: cluster.clusterName,
-          environmentVariables: {},
-          dogstatsd: {
-            isEnabled: true,
-          },
-          apm: {
-            isEnabled: true,
-            traceInferredProxyServices: true,
-          },
-          logCollection: {
-            isEnabled: true,
-            fluentbitConfig: {
-              firelensOptions: {
-                enableECSLogMetadata: true,
-              },
-              logDriverConfig: {
-                hostEndpoint: `http-intake.logs.${ddSite}`,
-                serviceName: serviceName,
-              },
-            },
-          },
-          env: environment,
-          service: serviceName,
-          version: version,
-        }),
-      },
+    const sharedProps = new SharedProps(
+      this,
+      "users",
+      serviceName,
+      cluster,
+      ddApiKey,
+      ddApiKeyParam,
+      ddSite
+    );
+
+    const serviceProps = {
+      connectionString: connectionString,
     };
 
     const api = new Api(this, "Api", {
       sharedProps: sharedProps,
+      serviceProps,
       vpc: sharedResources.vpc,
       vpcLink: sharedResources.vpcLink,
       vpcLinkSecurityGroupId: sharedResources.vpcLinkSecurityGroupId,
@@ -106,10 +69,13 @@ export class UserServiceStack extends cdk.Stack {
       serviceDiscoveryName: "users.api",
       serviceDiscoveryNamespace: sharedResources.serviceDiscoveryNamespace,
       cluster: cluster,
+      applicationLoadBalancer: sharedResources.applicationLoadBalancer,
+      applicationListener: sharedResources.applicationListener,
     });
 
     const backgroundWorkers = new BackgroundWorkers(this, "BackgroundWorkers", {
       sharedProps: sharedProps,
+      serviceProps,
       sharedEventBus: sharedResources.sharedEventBus,
       stickerClaimedQueue: api.stickerClaimedQueue,
       stickerClaimedDLQ: api.stickerClaimedDLQ,

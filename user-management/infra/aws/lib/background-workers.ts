@@ -5,7 +5,7 @@
  */
 
 import { Construct } from "constructs";
-import { SharedProps } from "./constructs/shared-props";
+import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
 import { InstrumentedLambdaFunction } from "./constructs/instrumented-function";
 import { Duration } from "aws-cdk-lib";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
@@ -19,9 +19,11 @@ import {
 } from "aws-cdk-lib/aws-events";
 import { LambdaFunction, SqsQueue } from "aws-cdk-lib/aws-events-targets";
 import { ITopic } from "aws-cdk-lib/aws-sns";
+import { ServiceProps } from "./service-props";
 
 export interface BackgroundWorkersProps {
   sharedProps: SharedProps;
+  serviceProps: ServiceProps;
   sharedEventBus: IEventBus;
   stickerClaimedQueue: IQueue;
   stickerClaimedDLQ: IQueue;
@@ -38,7 +40,7 @@ export class BackgroundWorkers extends Construct {
         props.sharedProps.environment === "prod" ? "WARN" : "INFO",
       ENV: props.sharedProps.environment,
       ConnectionStrings__messaging: "",
-      ConnectionStrings__database: props.sharedProps.connectionString,
+      ConnectionStrings__database: props.serviceProps.connectionString,
       Aws__UserRegisteredTopicArn: props.userRegisteredTopic.topicArn,
       Aws__StickerClaimedQueueUrl: props.stickerClaimedQueue.queueUrl,
       Aws__StickerClaimedDLQUrl: props.stickerClaimedDLQ.queueUrl,
@@ -54,8 +56,7 @@ export class BackgroundWorkers extends Construct {
         sharedProps: props.sharedProps,
         handler:
           "Stickerlandia.UserManagement.Lambda::Stickerlandia.UserManagement.Lambda.Sqs_StickerClaimed_Generated::StickerClaimed",
-        buildDef:
-          "../../src/Stickerlandia.UserManagement.Lambda/",
+        buildDef: "../../src/Stickerlandia.UserManagement.Lambda/",
         functionName: "sticker-claimed-worker",
         environment: environmentVariables,
         memorySize: 1024,
@@ -89,8 +90,7 @@ export class BackgroundWorkers extends Construct {
         sharedProps: props.sharedProps,
         handler:
           "Stickerlandia.UserManagement.Lambda::Stickerlandia.UserManagement.Lambda.OutboxFunctions_Worker_Generated::Worker",
-        buildDef:
-          "../../src/Stickerlandia.UserManagement.Lambda/",
+        buildDef: "../../src/Stickerlandia.UserManagement.Lambda/",
         functionName: "outbox-worker",
         environment: environmentVariables,
         memorySize: 1024,

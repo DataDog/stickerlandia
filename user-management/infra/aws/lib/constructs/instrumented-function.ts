@@ -20,7 +20,7 @@ import {
 } from "aws-cdk-lib/aws-lambda";
 import { Duration, RemovalPolicy, Stack, Tags } from "aws-cdk-lib";
 import { Alias } from "aws-cdk-lib/aws-kms";
-import { SharedProps } from "./shared-props";
+import { SharedProps } from "../../../../../shared/lib/shared-constructs/lib/shared-props";
 import { Effect, PolicyStatement } from "aws-cdk-lib/aws-iam";
 import { DotNetFunction } from "@aws-cdk/aws-lambda-dotnet";
 

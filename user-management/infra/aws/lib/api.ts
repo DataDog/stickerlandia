@@ -6,16 +6,19 @@
 
 import { IVpc } from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
-import { SharedProps } from "./constructs/shared-props";
+import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
 import { Cluster, Secret } from "aws-cdk-lib/aws-ecs";
 import { Topic } from "aws-cdk-lib/aws-sns";
 import { Queue } from "aws-cdk-lib/aws-sqs";
-import { WebService } from "./constructs/web-service";
 import { IHttpApi, IVpcLink } from "aws-cdk-lib/aws-apigatewayv2";
 import { IPrivateDnsNamespace } from "aws-cdk-lib/aws-servicediscovery";
+import { IApplicationListener, IApplicationLoadBalancer } from "aws-cdk-lib/aws-elasticloadbalancingv2";
+import { WebService } from "../../../../shared/lib/shared-constructs/lib/web-service";
+import { ServiceProps } from "./service-props";
 
 export class ApiProps {
   sharedProps: SharedProps;
+  serviceProps: ServiceProps;
   vpc: IVpc;
   vpcLink: IVpcLink;
   vpcLinkSecurityGroupId: string;
@@ -24,6 +27,8 @@ export class ApiProps {
   serviceDiscoveryName: string;
   deployInPrivateSubnet?: boolean;
   cluster: Cluster;
+  applicationLoadBalancer: IApplicationLoadBalancer;
+  applicationListener: IApplicationListener;
 }
 
 export class Api extends Construct {
@@ -63,7 +68,7 @@ export class Api extends Construct {
       port: 8080,
       environmentVariables: {
         ConnectionStrings__messaging: "",
-        ConnectionStrings__database: props.sharedProps.connectionString,
+        ConnectionStrings__database: props.serviceProps.connectionString,
         Aws__UserRegisteredTopicArn: this.userRegisteredTopic.topicArn,
         Aws__StickerClaimedQueueUrl: this.stickerClaimedQueue.queueUrl,
         Aws__StickerClaimedDLQUrl: this.stickerClaimedDLQ.queueUrl,
@@ -76,11 +81,13 @@ export class Api extends Construct {
           props.sharedProps.datadog.apiKeyParameter
         ),
       },
-      path: "/{proxy+}",
+      path: "/api/users/{proxy+}",
       healthCheckPath: "/api/users/v1/health",
       serviceDiscoveryNamespace: props.serviceDiscoveryNamespace,
       serviceDiscoveryName: props.serviceDiscoveryName,
       deployInPrivateSubnet: props.deployInPrivateSubnet,
+      applicationLoadBalancer: props.applicationLoadBalancer,
+      applicationListener: props.applicationListener,
     });
 
     this.userRegisteredTopic.grantPublish(webService.taskRole);
