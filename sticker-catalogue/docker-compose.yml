@@ -1,0 +1,120 @@
+services:
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    ports:
+      - "8080:80"     # App traffic
+      - "8081:8080"   # Dashboard
+    command:
+      - --api.dashboard=true
+      - --api.insecure=true
+      - --entrypoints.web.address=:80
+      - --entrypoints.dashboard.address=:8081
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/entrypoints"]
+      interval: 1s
+      timeout: 10s
+      retries: 5
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=PathPrefix(`/dashboard`)"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.entrypoints=dashboard"
+
+  minio:
+    image: minio/minio:latest
+    container_name: stickerlandia-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 1s
+      timeout: 10s
+      retries: 3
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      "mc alias set myminio http://minio:9000 minioadmin minioadmin &&
+       mc mb myminio/sticker-images --ignore-existing"
+    restart: "no"
+
+  sticker-catalogue:
+    image: ghcr.io/datadog/stickerlandia/sticker-catalogue-service:6ed796b
+    container_name: sticker-catalogue
+    depends_on:
+      minio:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      # DataDog APM configuration
+      - QUARKUS_DATASOURCE_DB_KIND=postgresql
+      - DD_IAST_ENABLED=true
+      - STICKER_IMAGES_BUCKET=sticker-images-dev-148203325623
+      - DD_VERSION=latest
+      - DD_RUNTIME_METRICS_ENABLED=true
+      - ECS_ENABLE_CONTAINER_METADATA=true
+      - QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://ep-divine-snow-abgipduo-pooler.eu-west-2.aws.neon.tech/stickerlandia-catalogue?sslmode=require&channelBinding=require
+      - DD_PROFILING_ENABLED=true
+      - ENV=dev
+      - KAFKA_BOOTSTRAP_SERVERS=pkc-41mxj.uksouth.azure.confluent.cloud:9092
+      - QUARKUS_DATASOURCE_USERNAME=stickerlandia-catalogue_owner
+      - DD_SERVICE=sticker-catalogue-service
+      - MP_MESSAGING_CONNECTOR_SMALLRYE_KAFKA_BOOTSTRAP_SERVERS=pkc-41mxj.uksouth.azure.confluent.cloud:9092
+      - DD_GIT_REPOSITORY_URL=https://github.com/Datadog/stickerlandia
+      - QUARKUS_S3_PATH_STYLE_ACCESS=true
+      - MP_MESSAGING_CONNECTOR_SMALLRYE_KAFKA_SASL_JAAS_CONFIG=org.apache.kafka.common.security.plain.PlainLoginModule required username='WEBRTIFAC6UFUM6D' password='cflt3sPfz3sOLxQlN2fB8lmN+Ui9QnqVWzKpRtqpoL+KhFqGmn8Ed8pcpAYRQ7yg';
+      - MP_MESSAGING_CONNECTOR_SMALLRYE_KAFKA_SECURITY_PROTOCOL=SASL_SSL
+      - QUARKUS_KAFKA_STREAMS_BOOTSTRAP_SERVERS=pkc-41mxj.uksouth.azure.confluent.cloud:9092
+      - QUARKUS_DATASOURCE_DEVSERVICES_ENABLED=false
+      - KAFKA_SECURITY_PROTOCOL=SASL_SSL
+      - DD_AGENT_HOST=127.0.0.1
+      - KAFKA_SASL_MECHANISM=PLAIN
+      - QUARKUS_LOG_LEVEL=debug
+      - DD_LOGS_INJECTION=true
+      - DD_ENV=dev
+      - QUARKUS_DATASOURCE_PASSWORD=npg_VjsCLq4YZA3W
+      - MP_MESSAGING_CONNECTOR_SMALLRYE_KAFKA_SASL_MECHANISM=PLAIN
+      - DD_TRACE_ROUTE_TEMPLATE_RESOURCE_NAMES_ENABLED=true
+      - KAFKA_SASL_JAAS_CONFIG=org.apache.kafka.common.security.plain.PlainLoginModule required username='WEBRTIFAC6UFUM6D' password='cflt3sPfz3sOLxQlN2fB8lmN+Ui9QnqVWzKpRtqpoL+KhFqGmn8Ed8pcpAYRQ7yg';
+      - QUARKUS_S3_ENDPOINT_OVERRIDE=http://minio:9000
+      - QUARKUS_S3_AWS_REGION=us-east-1
+      - QUARKUS_S3_AWS_CREDENTIALS_TYPE=static
+      - QUARKUS_S3_AWS_CREDENTIALS_STATIC_PROVIDER_ACCESS_KEY_ID=minioadmin
+      - QUARKUS_S3_AWS_CREDENTIALS_STATIC_PROVIDER_SECRET_ACCESS_KEY=minioadmin
+      - QUARKUS_S3_PATH_STYLE_ACCESS="true"
+      - STICKER_IMAGES_BUCKET=sticker-images
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 1s
+      timeout: 15s
+      retries: 60
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sticker-catalogue.rule=PathPrefix(`/api/stickers`)"
+      - "traefik.http.routers.sticker-catalogue.priority=100"
+      - "traefik.http.services.sticker-catalogue.loadbalancer.server.port=8080"
+
+volumes:
+  sticker-catalogue-data:
+  sticker-award-data:
+  user-management-data:
+  redpanda-data:
+  minio-data:
