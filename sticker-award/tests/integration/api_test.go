@@ -35,7 +35,7 @@ import (
 	"github.com/datadog/stickerlandia/sticker-award/internal/database"
 	"github.com/datadog/stickerlandia/sticker-award/internal/database/repository"
 	"github.com/datadog/stickerlandia/sticker-award/internal/domain/service"
-	"github.com/datadog/stickerlandia/sticker-award/pkg/validator"
+	"github.com/go-playground/validator/v10"
 )
 
 type TestEnvironment struct {
