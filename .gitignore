@@ -7,3 +7,4 @@
 # empty copy is needed for vite-envs to work.
 .env
 !web-frontend/.env
+.beads

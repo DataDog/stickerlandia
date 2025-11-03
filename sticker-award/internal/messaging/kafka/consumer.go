@@ -2,7 +2,7 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025-Present Datadog, Inc.
 
-package messaging
+package kafka
 
 import (
 	"context"
@@ -13,22 +13,28 @@ import (
 	"syscall"
 
 	"github.com/datadog/stickerlandia/sticker-award/internal/config"
+	"github.com/datadog/stickerlandia/sticker-award/internal/messaging"
+	"github.com/datadog/stickerlandia/sticker-award/internal/messaging/events/consumed"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/IBM/sarama"
 )
 
+// CloudEventMessageHandler is a type alias for convenience
+type CloudEventMessageHandler[T any] messaging.CloudEventMessageHandler[T]
+
 // Consumer represents a Kafka consumer with Datadog DSM integration
 type Consumer struct {
-	client   sarama.ConsumerGroup
-	handlers map[string]MessageHandler
-	groupID  string
-	brokers  []string
-	topics   []string
-	ready    chan bool
-	ctx      context.Context
-	cancel   context.CancelFunc
-	wg       sync.WaitGroup
+	client      sarama.ConsumerGroup
+	handlers    map[string]MessageHandler
+	serviceName string
+	groupID     string
+	brokers     []string
+	topics      []string
+	ready       chan bool
+	ctx         context.Context
+	cancel      context.CancelFunc
+	wg          sync.WaitGroup
 }
 
 // MessageHandler defines the interface for handling different message types
@@ -38,7 +44,7 @@ type MessageHandler interface {
 }
 
 // NewConsumer creates a new Kafka consumer with Datadog DSM integration
-func NewConsumer(cfg *config.KafkaConfig) (*Consumer, error) {
+func NewConsumer(cfg *config.KafkaConfig, serviceName string) (*Consumer, error) {
 	// Configure Sarama to use logrus for consistent JSON logging
 	sarama.Logger = log.StandardLogger()
 
@@ -70,22 +76,73 @@ func NewConsumer(cfg *config.KafkaConfig) (*Consumer, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	consumer := Consumer{
-		client:   client,
-		handlers: make(map[string]MessageHandler),
-		groupID:  cfg.GroupID,
-		brokers:  cfg.Brokers,
-		ready:    make(chan bool),
-		ctx:      ctx,
-		cancel:   cancel,
+		client:      client,
+		handlers:    make(map[string]MessageHandler),
+		serviceName: serviceName,
+		groupID:     cfg.GroupID,
+		brokers:     cfg.Brokers,
+		ready:       make(chan bool),
+		ctx:         ctx,
+		cancel:      cancel,
 	}
 
 	return &consumer, nil
 }
 
-// RegisterHandler registers a message handler for a specific topic
-func (c *Consumer) RegisterHandler(handler MessageHandler) {
-	c.handlers[handler.Topic()] = handler
-	c.topics = append(c.topics, handler.Topic())
+// RegisterHandler registers a message handler for a specific topic.
+// The handler can be either:
+// 1. A CloudEventMessageHandler[T] that will be wrapped with Kafka middleware
+// 2. An already-wrapped kafka.MessageHandler
+func (c *Consumer) RegisterHandler(handler interface{}) {
+	// First check if it's already a wrapped MessageHandler
+	if h, ok := handler.(MessageHandler); ok {
+		c.handlers[h.Topic()] = h
+		c.topics = append(c.topics, h.Topic())
+		return
+	}
+
+	// Otherwise, try to wrap as CloudEventMessageHandler
+	// Get operation name if available
+	type operationNamer interface {
+		OperationName() string
+		Topic() string
+	}
+
+	var operationName, topic string
+	if on, ok := handler.(operationNamer); ok {
+		operationName = on.OperationName()
+		topic = on.Topic()
+	} else {
+		log.WithFields(log.Fields{
+			"handlerType": fmt.Sprintf("%T", handler),
+		}).Panic("RegisterHandler requires handler with OperationName() and Topic() methods")
+	}
+
+	// Wrap the CloudEventMessageHandler with Kafka middleware
+	var wrapped MessageHandler
+	wrapped = c.wrapCloudEventHandler(handler, operationName)
+
+	if wrapped == nil {
+		log.WithFields(log.Fields{
+			"handlerType": fmt.Sprintf("%T", handler),
+		}).Panic("RegisterHandler received unsupported CloudEventMessageHandler type")
+	}
+
+	c.handlers[topic] = wrapped
+	c.topics = append(c.topics, topic)
+}
+
+// wrapCloudEventHandler wraps a CloudEventMessageHandler with Kafka middleware.
+// This uses a type switch to handle known event types.
+func (c *Consumer) wrapCloudEventHandler(handler interface{}, operationName string) MessageHandler {
+	// Import the consumed events package to access event types
+	// Type switch on known CloudEventMessageHandler types
+	switch h := handler.(type) {
+	case CloudEventMessageHandler[consumed.UserRegisteredEvent]:
+		return NewMessagingHandler(h, operationName, c.serviceName)
+	default:
+		return nil
+	}
 }
 
 // Start starts the consumer
