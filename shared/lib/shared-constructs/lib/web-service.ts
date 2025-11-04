@@ -100,9 +100,11 @@ export class WebService extends Construct {
       ...props.environmentVariables,
     };
 
+    let taskDefinition: ecs.FargateTaskDefinition | undefined = undefined;
+
     // Task Definition
-    const taskDefinition =
-      props.sharedProps.datadog.ecsFargate.fargateTaskDefinition(
+    if (!props.sharedProps.enableDatadog) {
+      taskDefinition = new ecs.FargateTaskDefinition(
         this,
         `${props.sharedProps.serviceName}Definition`,
         {
@@ -115,9 +117,25 @@ export class WebService extends Construct {
           taskRole: this.taskRole,
         }
       );
+    } else {
+      taskDefinition =
+        props.sharedProps.datadog.ecsFargate.fargateTaskDefinition(
+          this,
+          `${props.sharedProps.serviceName}Definition`,
+          {
+            memoryLimitMiB: 512,
+            runtimePlatform: {
+              cpuArchitecture: ecs.CpuArchitecture.X86_64,
+              operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
+            },
+            executionRole: this.executionRole,
+            taskRole: this.taskRole,
+          }
+        );
+    }
 
     // Application Container
-    const applicationContainer = taskDefinition.addContainer("application", {
+    const applicationContainer = taskDefinition!.addContainer("application", {
       image: ecs.ContainerImage.fromRegistry(
         `${props.image}:${props.imageTag}`
       ),

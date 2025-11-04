@@ -22,6 +22,7 @@ export class SharedProps {
   serviceName: string;
   environment: string;
   version: string;
+  enableDatadog: boolean;
   datadog: {
     lambda: DatadogLambda;
     ecsFargate: DatadogECSFargate;
@@ -37,7 +38,8 @@ export class SharedProps {
     cluster: ICluster,
     ddApiKey: string,
     ddApiKeyParam: IStringParameter,
-    ddSite: string | undefined = undefined
+    ddSite: string | undefined = undefined,
+    enableDatadog: boolean = true
   ) {
     const environment = process.env.ENV || "dev";
     const version = process.env.VERSION || "latest";
@@ -48,6 +50,7 @@ export class SharedProps {
       version,
       team: domain,
       domain: domain,
+      enableDatadog: enableDatadog,
       datadog: {
         apiKey: ddApiKey,
         apiKeyParameter: ddApiKeyParam,
@@ -67,7 +70,7 @@ export class SharedProps {
           clusterName: cluster.clusterName,
           environmentVariables: {},
           dogstatsd: {
-            isEnabled: false,
+            isEnabled: true,
           },
           apm: {
             isEnabled: true,
