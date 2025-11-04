@@ -41,7 +41,6 @@ export class Api extends Construct {
       ddApiKey: props.sharedProps.datadog.apiKeyParameter,
       port: 8080,
       environmentVariables: {
-        ECS_ENABLE_CONTAINER_METADATA: "true",
         ENV: "dev",
         LOG_LEVEL: "info",
         KAFKA_SECURITY_PROTOCOL: "SASL_SSL",
