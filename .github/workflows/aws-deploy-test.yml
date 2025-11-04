@@ -6,6 +6,8 @@ name: User Management Deploy Test
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: ["main"]
 
 env:
   REGISTRY: ghcr.io

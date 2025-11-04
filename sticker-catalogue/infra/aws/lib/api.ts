@@ -43,13 +43,12 @@ export class Api extends Construct {
   constructor(scope: Construct, id: string, props: ApiProps) {
     super(scope, id);
     const webService = new WebService(this, "StickerCatalogueWebService", {
+      sharedProps: props.sharedProps,
       vpc: props.vpc,
       vpcLink: props.vpcLink,
       vpcLinkSecurityGroupId: props.vpcLinkSecurityGroupId,
       httpApi: props.httpApi,
       cluster: props.cluster,
-      serviceName: props.sharedProps.serviceName,
-      environment: props.sharedProps.environment,
       image: "ghcr.io/datadog/stickerlandia/sticker-catalogue-service",
       imageTag: props.sharedProps.version,
       ddApiKey: props.sharedProps.datadog.apiKeyParameter,

@@ -47,8 +47,6 @@ export class Api extends Construct {
       vpcLinkSecurityGroupId: props.vpcLinkSecurityGroupId,
       httpApi: props.httpApi,
       cluster: props.cluster,
-      serviceName: props.sharedProps.serviceName,
-      environment: props.sharedProps.environment,
       image: "ghcr.io/datadog/stickerlandia/web-backend-service",
       imageTag: props.sharedProps.version,
       ddApiKey: props.sharedProps.datadog.apiKeyParameter,

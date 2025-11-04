@@ -67,7 +67,7 @@ export class SharedProps {
           clusterName: cluster.clusterName,
           environmentVariables: {},
           dogstatsd: {
-            isEnabled: true,
+            isEnabled: false,
           },
           apm: {
             isEnabled: true,

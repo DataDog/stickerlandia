@@ -20,4 +20,3 @@ cdk.Tags.of(webBackendStack).add("env", process.env.ENV || "dev");
 cdk.Tags.of(webBackendStack).add("project", "stickerlandia");
 cdk.Tags.of(webBackendStack).add("service", "web-backend");
 cdk.Tags.of(webBackendStack).add("team", "advocacy");
-cdk.Tags.of(webBackendStack).add("primary-contact", "rachel.white@datadoghq.com");

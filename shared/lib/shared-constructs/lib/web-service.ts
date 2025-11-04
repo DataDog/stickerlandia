@@ -10,10 +10,12 @@ import * as integrations from "aws-cdk-lib/aws-apigatewayv2-integrations";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import {
+  ApplicationProtocolVersion,
   ApplicationTargetGroup,
   IApplicationListener,
   IApplicationLoadBalancer,
   ListenerCondition,
+  TargetGroupIpAddressType,
 } from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as servicediscovery from "aws-cdk-lib/aws-servicediscovery";
@@ -116,12 +118,13 @@ export class WebService extends Construct {
       );
 
     // Application Container
-    const container = taskDefinition.addContainer("application", {
+    const applicationContainer = taskDefinition.addContainer("application", {
       image: ecs.ContainerImage.fromRegistry(
         `${props.image}:${props.imageTag}`
       ),
       portMappings: [
         {
+          name: "application",
           containerPort: props.port,
           protocol: ecs.Protocol.TCP,
         },
@@ -129,77 +132,7 @@ export class WebService extends Construct {
       //TODO: Add health checks
       containerName: props.sharedProps.serviceName,
       environment: finalEnvironmentVariables,
-      // logging: ecs.LogDrivers.firelens({
-      //   options: {
-      //     Name: "datadog",
-      //     Host: "http-intake.logs.datadoghq.eu",
-      //     TLS: "on",
-      //     dd_service: props.sharedProps.serviceName,
-      //     dd_source: "aspnet",
-      //     dd_message_key: "log",
-      //     dd_tags: `project:${props.sharedProps.serviceName}`,
-      //     provider: "ecs",
-      //   },
-      //   secretOptions: {
-      //     apikey: ecs.Secret.fromSsmParameter(props.ddApiKey),
-      //   },
-      // }),
     });
-
-    // // Add Docker labels
-    // container.addDockerLabel("com.datadoghq.tags.env", props.environment);
-    // container.addDockerLabel("com.datadoghq.tags.service", props.serviceName);
-    // container.addDockerLabel("com.datadoghq.tags.version", props.imageTag);
-
-    // // DataDog Agent Container
-    // taskDefinition.addContainer("datadog-agent", {
-    //   image: ecs.ContainerImage.fromRegistry(
-    //     "public.ecr.aws/datadog/agent:latest"
-    //   ),
-    //   portMappings: [
-    //     {
-    //       containerPort: 4317,
-    //     },
-    //     {
-    //       containerPort: 4318,
-    //     },
-    //     {
-    //       containerPort: 8126,
-    //     },
-    //   ],
-    //   containerName: "datadog-agent",
-    //   environment: {
-    //     DD_SITE: "datadoghq.eu",
-    //     ECS_FARGATE: "true",
-    //     DD_LOGS_ENABLED: "false",
-    //     DD_PROCESS_AGENT_ENABLED: "true",
-    //     DD_APM_ENABLED: "true",
-    //     DD_APM_NON_LOCAL_TRAFFIC: "true",
-    //     DD_DOGSTATSD_NON_LOCAL_TRAFFIC: "true",
-    //     DD_ENV: props.environment,
-    //     DD_SERVICE: props.serviceName,
-    //     DD_VERSION: props.imageTag,
-    //     DD_APM_IGNORE_RESOURCES: `(GET) ${props.healthCheckPath}`,
-    //   },
-    //   secrets: {
-    //     DD_API_KEY: ecs.Secret.fromSsmParameter(props.ddApiKey),
-    //   },
-    // });
-
-    // // Firelens Log Router
-    // taskDefinition.addFirelensLogRouter("firelens", {
-    //   essential: true,
-    //   image: ecs.ContainerImage.fromRegistry(
-    //     "amazon/aws-for-fluent-bit:stable"
-    //   ),
-    //   containerName: "log-router",
-    //   firelensConfig: {
-    //     type: ecs.FirelensLogRouterType.FLUENTBIT,
-    //     options: {
-    //       enableECSLogMetadata: true,
-    //     },
-    //   },
-    // });
 
     // Cloud Map Service
     this.cloudMapService = new servicediscovery.Service(
@@ -227,12 +160,25 @@ export class WebService extends Construct {
             ? props.vpc.privateSubnets
             : props.vpc.publicSubnets,
         },
+        // serviceConnectConfiguration: {
+        //   namespace: props.serviceDiscoveryNamespace.namespaceName,
+        //   services: [
+        //     {
+        //       discoveryName: "users",
+        //       portMappingName: "application",
+        //       port: props.port,
+        //       dnsName: props.serviceDiscoveryName,
+        //     },
+        //   ],
+        // },
       }
     );
 
     // Associate with Cloud Map
     service.associateCloudMapService({
       service: this.cloudMapService,
+      container: applicationContainer,
+      containerPort: props.port,
     });
 
     // Add security group ingress rules
@@ -261,26 +207,28 @@ export class WebService extends Construct {
         }
       );
 
-    // const targetGroup = new ApplicationTargetGroup(this, id + 'target-group', {
-    //   targetGroupName: props.serviceName + '-TG-' + props.environment,
+    // const targetGroup = new ApplicationTargetGroup(this, id + "target-group", {
+    //   targetGroupName:
+    //     props.sharedProps.serviceName + "-TG-" + props.sharedProps.environment,
     //   vpc: props.vpc,
     //   port: 80,
+    //   protocolVersion: ApplicationProtocolVersion.HTTP1,
+    //   ipAddressType: TargetGroupIpAddressType.IPV4,
     //   healthCheck: {
-    //     healthyHttpCodes: '200-499',
-    //     path: props.healthCheckPath ?? '/',
+    //     healthyHttpCodes: "200-499",
+    //     path: props.healthCheckPath,
     //     port: props.port.toString(),
-    //   }
+    //   },
+    //   targets: [service],
     // });
 
-    // props.applicationListener.addTargetGroups(id + '-listener-target', {
+    // props.applicationListener.addTargetGroups(id + "-listener-target", {
     //   targetGroups: [targetGroup],
     //   priority: 10,
     //   conditions: [
-    //     ListenerCondition.pathPatterns(['/api/users/v1/*'])
-    //   ]
+    //     ListenerCondition.pathPatterns([props.path.replace("{proxy+}", "*")]),
+    //   ],
     // });
-
-    // targetGroup.addTarget(service);
 
     // HTTP Route
     new apigatewayv2.HttpRoute(this, "ProxyRoute", {

@@ -15,3 +15,8 @@ const stickerCatalogueServiceStack = new StickerCatalogueServiceStack(
     },
   }
 );
+
+cdk.Tags.of(app).add("project", "stickerlandia");
+cdk.Tags.of(app).add("service", "catalogue");
+cdk.Tags.of(app).add("team", "advocacy");
+cdk.Tags.of(app).add("env", process.env.ENV ?? "dev");

@@ -15,3 +15,8 @@ const stickerAwardServiceStack = new StickerAwardServiceStack(
     },
   }
 );
+
+cdk.Tags.of(app).add("project", "stickerlandia");
+cdk.Tags.of(app).add("service", "award");
+cdk.Tags.of(app).add("team", "advocacy");
+cdk.Tags.of(app).add("env", process.env.ENV ?? "dev");
