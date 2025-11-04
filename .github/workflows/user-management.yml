@@ -275,7 +275,7 @@ jobs:
 
   deploy-aws-dev:
     runs-on: ubuntu-latest
-    needs: [push-image]
+    needs: [push-image, push-worker-image, push-migration-service]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: read
