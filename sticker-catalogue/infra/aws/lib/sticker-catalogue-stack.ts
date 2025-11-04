@@ -47,7 +47,8 @@ export class StickerCatalogueServiceStack extends cdk.Stack {
       cluster,
       ddApiKey,
       ddApiKeyParam,
-      ddSite
+      ddSite,
+      false
     );
 
     const serviceProps = {

@@ -52,7 +52,6 @@ export class Api extends Construct {
       ddApiKey: props.sharedProps.datadog.apiKeyParameter,
       port: 8080,
       environmentVariables: {
-        JAVA_TOOLS_OPTIONS: "-Djava.net.preferIPv4Stack=true",
         QUARKUS_DATASOURCE_DB_KIND: "postgresql",
         QUARKUS_DATASOURCE_DEVSERVICES_ENABLED: "false",
         QUARKUS_DATASOURCE_JDBC_ACQUISITION_TIMEOUT: "30S",
@@ -89,7 +88,6 @@ export class Api extends Construct {
           Secret.fromSsmParameter(props.serviceProps.kafkaBootstrapServers),
         MP_MESSAGING_CONNECTOR_SMALLRYE_KAFKA_SASL_JAAS_CONFIG:
           Secret.fromSsmParameter(props.serviceProps.jaslConfig),
-
       },
       path: "/api/stickers/v1/{proxy+}",
       additionalPathMappings: [],
