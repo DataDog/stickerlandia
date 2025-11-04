@@ -44,55 +44,54 @@ export class SharedProps {
     const environment = process.env.ENV || "dev";
     const version = process.env.VERSION || "latest";
 
-    return {
-      serviceName: serviceName,
-      environment,
-      version,
-      team: domain,
-      domain: domain,
-      enableDatadog: enableDatadog,
-      datadog: {
+    this.datadog = {
+      apiKey: ddApiKey,
+      apiKeyParameter: ddApiKeyParam,
+      site: ddSite ?? "datadoghq.com",
+      lambda: new DatadogLambda(scope, "DatadogLambda", {
         apiKey: ddApiKey,
-        apiKeyParameter: ddApiKeyParam,
-        site: ddSite ?? "datadoghq.com",
-        lambda: new DatadogLambda(scope, "DatadogLambda", {
-          apiKey: ddApiKey,
-          site: ddSite,
-        }),
-        ecsFargate: new DatadogECSFargate({
-          // One of the following 3 apiKey params are required
-          apiKey: ddApiKey,
-          cpu: 256,
-          memoryLimitMiB: 512,
-          isDatadogEssential: true,
-          isDatadogDependencyEnabled: true,
-          site: ddSite,
-          clusterName: cluster.clusterName,
-          environmentVariables: {},
-          dogstatsd: {
-            isEnabled: true,
-          },
-          apm: {
-            isEnabled: true,
-            traceInferredProxyServices: true,
-          },
-          logCollection: {
-            isEnabled: true,
-            fluentbitConfig: {
-              firelensOptions: {
-                enableECSLogMetadata: true,
-              },
-              logDriverConfig: {
-                hostEndpoint: `http-intake.logs.${ddSite}`,
-                serviceName: serviceName,
-              },
+        site: ddSite,
+      }),
+      ecsFargate: new DatadogECSFargate({
+        // One of the following 3 apiKey params are required
+        apiKey: ddApiKey,
+        cpu: 256,
+        memoryLimitMiB: 512,
+        isDatadogEssential: true,
+        isDatadogDependencyEnabled: true,
+        site: ddSite,
+        clusterName: cluster.clusterName,
+        environmentVariables: {},
+        dogstatsd: {
+          isEnabled: true,
+        },
+        apm: {
+          isEnabled: true,
+          traceInferredProxyServices: true,
+        },
+        logCollection: {
+          isEnabled: true,
+          fluentbitConfig: {
+            firelensOptions: {
+              enableECSLogMetadata: true,
+            },
+            logDriverConfig: {
+              hostEndpoint: `http-intake.logs.${ddSite}`,
+              serviceName: serviceName,
             },
           },
-          env: environment,
-          service: serviceName,
-          version: version,
-        }),
-      },
+        },
+        env: environment,
+        service: serviceName,
+        version: version,
+      }),
     };
+
+    this.serviceName = serviceName;
+    this.environment = environment;
+    this.version = version;
+    this.team = domain;
+    this.domain = domain;
+    this.enableDatadog = enableDatadog;
   }
 }
