@@ -73,10 +73,8 @@ app.use(lusca({
 }))
 
 // OAuth configuration
-const OAUTH_ISSUER_INTERNAL =
-  process.env.OAUTH_ISSUER_INTERNAL || "https://d3nwzze63j01g4.cloudfront.net";
-const OAUTH_ISSUER_EXTERNAL =
-  process.env.OAUTH_ISSUER_EXTERNAL || "https://d3nwzze63j01g4.cloudfront.net";
+const OAUTH_ISSUER_INTERNAL = process.env.OAUTH_ISSUER_INTERNAL || 'http://user-management:8080'
+const OAUTH_ISSUER_EXTERNAL = process.env.OAUTH_ISSUER_EXTERNAL || 'http://localhost:8080'
 const OAUTH_CLIENT_ID = process.env.OAUTH_CLIENT_ID || 'web-ui'
 const OAUTH_CLIENT_SECRET = process.env.OAUTH_CLIENT_SECRET || 'stickerlandia-web-ui-secret-2025'
 const DEPLOYMENT_HOST_URL = process.env.DEPLOYMENT_HOST_URL || 'http://localhost:8080'
