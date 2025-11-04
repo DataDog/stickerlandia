@@ -54,6 +54,7 @@ export class Network extends Construct {
   loadBalancer: ApplicationLoadBalancer;
   applicationListener: ApplicationListener;
   httpApi: cdk.aws_apigatewayv2.HttpApi;
+  distribution: Distribution;
 
   constructor(scope: Construct, id: string, props: NetworkProps) {
     super(scope, id);
@@ -130,40 +131,6 @@ export class Network extends Construct {
       }
     );
 
-    const loadBalancerSecurityGroup = new SecurityGroup(
-      this,
-      "LoadBalancerSG",
-      {
-        vpc: this.vpc,
-      }
-    );
-    loadBalancerSecurityGroup.addEgressRule(
-      Peer.anyIpv4(),
-      Port.allTraffic(),
-      "Allow all outbound traffic"
-    );
-    // Cloudfront Prefix List.
-    loadBalancerSecurityGroup.addIngressRule(
-      Peer.prefixList("pl-4fa04526"),
-      Port.tcp(80),
-      "Allow HTTPS traffic from anywhere"
-    );
-
-    this.loadBalancer = new ApplicationLoadBalancer(this, "StickerlandiaALB", {
-      vpc: this.vpc,
-      internetFacing: true,
-      loadBalancerName: `StickerlandiaALB-${props.env}`,
-      securityGroup: loadBalancerSecurityGroup,
-    });
-
-    this.applicationListener = this.loadBalancer.addListener("HTTPSListener", {
-      port: 80,
-      open: true,
-      protocol: ApplicationProtocol.HTTP,
-      certificates: [],
-      defaultAction: ListenerAction.fixedResponse(404),
-    });
-
     this.httpApi = new HttpApi(this, "StickerlandiaHttpApi", {
       apiName: `Stickerlandia-${props.env}`,
       corsPreflight: {
@@ -186,7 +153,7 @@ export class Network extends Construct {
     });
     webFrontendBucket.grantRead(originIdentity);
 
-    const distribution = new Distribution(this, `Stickerlandia-${props.env}`, {
+    this.distribution = new Distribution(this, `Stickerlandia-${props.env}`, {
       minimumProtocolVersion: SecurityPolicyProtocol.TLS_V1_2_2021,
       defaultRootObject: "index.html",
       defaultBehavior: {
@@ -196,8 +163,59 @@ export class Network extends Construct {
       },
     });
 
-    distribution.addBehavior(
+    this.distribution.addBehavior(
       "/api*",
+      new HttpOrigin(
+        `${this.httpApi.apiId}.execute-api.eu-west-1.amazonaws.com`,
+        {
+          protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
+        }
+      ),
+      {
+        cachePolicy: CachePolicy.CACHING_DISABLED,
+        originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
+        responseHeadersPolicy:
+          ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS,
+        allowedMethods: AllowedMethods.ALLOW_ALL,
+      }
+    );
+
+    this.distribution.addBehavior(
+      "/.well-known*",
+      new HttpOrigin(
+        `${this.httpApi.apiId}.execute-api.eu-west-1.amazonaws.com`,
+        {
+          protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
+        }
+      ),
+      {
+        cachePolicy: CachePolicy.CACHING_DISABLED,
+        originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
+        responseHeadersPolicy:
+          ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS,
+        allowedMethods: AllowedMethods.ALLOW_ALL,
+      }
+    );
+
+    this.distribution.addBehavior(
+      "/auth*",
+      new HttpOrigin(
+        `${this.httpApi.apiId}.execute-api.eu-west-1.amazonaws.com`,
+        {
+          protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
+        }
+      ),
+      {
+        cachePolicy: CachePolicy.CACHING_DISABLED,
+        originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
+        responseHeadersPolicy:
+          ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS,
+        allowedMethods: AllowedMethods.ALLOW_ALL,
+      }
+    );
+
+    this.distribution.addBehavior(
+      "/Auth*",
       new HttpOrigin(
         `${this.httpApi.apiId}.execute-api.eu-west-1.amazonaws.com`,
         {

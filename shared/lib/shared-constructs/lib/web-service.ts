@@ -29,8 +29,6 @@ export interface WebServiceProps {
   readonly vpcLink: apigatewayv2.IVpcLink;
   readonly vpcLinkSecurityGroupId: string;
   readonly httpApi: apigatewayv2.IHttpApi;
-  readonly applicationLoadBalancer: IApplicationLoadBalancer;
-  readonly applicationListener: IApplicationListener;
   readonly cluster: ecs.ICluster;
   readonly image: string;
   readonly imageTag: string;
@@ -43,6 +41,7 @@ export interface WebServiceProps {
   readonly serviceDiscoveryNamespace: servicediscovery.IPrivateDnsNamespace;
   readonly serviceDiscoveryName: string;
   readonly deployInPrivateSubnet?: boolean;
+  readonly additionalPathMappings: string[];
 }
 
 export class WebService extends Construct {
@@ -132,6 +131,7 @@ export class WebService extends Construct {
       //TODO: Add health checks
       containerName: props.sharedProps.serviceName,
       environment: finalEnvironmentVariables,
+      secrets: props.secrets,
     });
 
     // Cloud Map Service
@@ -238,6 +238,17 @@ export class WebService extends Construct {
         apigatewayv2.HttpMethod.ANY
       ),
       integration: serviceDiscoveryIntegration,
+    });
+
+    props.additionalPathMappings.forEach((additionalPath, index) => {
+      new apigatewayv2.HttpRoute(this, `AdditionalPathRoute${index}`, {
+        httpApi: props.httpApi,
+        routeKey: apigatewayv2.HttpRouteKey.with(
+          additionalPath,
+          apigatewayv2.HttpMethod.ANY
+        ),
+        integration: serviceDiscoveryIntegration,
+      });
     });
   }
 }

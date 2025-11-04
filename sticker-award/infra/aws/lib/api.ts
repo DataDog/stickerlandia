@@ -9,10 +9,6 @@ import { Construct } from "constructs";
 import { Cluster, Secret } from "aws-cdk-lib/aws-ecs";
 import { IHttpApi, IVpcLink } from "aws-cdk-lib/aws-apigatewayv2";
 import { IPrivateDnsNamespace } from "aws-cdk-lib/aws-servicediscovery";
-import {
-  IApplicationListener,
-  IApplicationLoadBalancer,
-} from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
 import { WebService } from "../../../../shared/lib/shared-constructs/lib/web-service";
 import { ServiceProps } from "./service-props";
@@ -28,8 +24,6 @@ export class ApiProps {
   serviceDiscoveryName: string;
   deployInPrivateSubnet?: boolean;
   cluster: Cluster;
-  applicationLoadBalancer: IApplicationLoadBalancer;
-  applicationListener: IApplicationListener;
 }
 
 export class Api extends Construct {
@@ -47,39 +41,50 @@ export class Api extends Construct {
       ddApiKey: props.sharedProps.datadog.apiKeyParameter,
       port: 8080,
       environmentVariables: {
-        KAFKA_USERNAME: props.serviceProps.kafkaUsername,
-        DATABASE_HOST: props.serviceProps.databaseHost,
         ECS_ENABLE_CONTAINER_METADATA: "true",
         ENV: "dev",
-        KAFKA_SASL_USERNAME: props.serviceProps.kafkaUsername,
         LOG_LEVEL: "info",
-        KAFKA_BROKERS: props.serviceProps.kafkaBootstrapServers,
         KAFKA_SECURITY_PROTOCOL: "SASL_SSL",
-        DATABASE_NAME: props.serviceProps.databaseName,
         KAFKA_GROUP_ID: "sticker-award-service",
         DATABASE_PORT: props.serviceProps.databasePort,
         KAFKA_SASL_MECHANISM: "PLAIN",
         LOG_FORMAT: "json",
         KAFKA_ENABLE_TLS: "true",
-        KAFKA_PASSWORD: props.serviceProps.kafkaPassword,
-        CATALOGUE_BASE_URL: "http://sticker-catalogue:8080",
+        CATALOGUE_BASE_URL: `https://${props.serviceProps.cloudfrontDistribution.distributionDomainName}`,
         DATABASE_SSL_MODE: "require",
-        KAFKA_SASL_PASSWORD: props.serviceProps.kafkaPassword,
-        DATABASE_PASSWORD: props.serviceProps.dbPassword,
-        DATABASE_USER: props.serviceProps.dbUsername,
       },
       secrets: {
         DD_API_KEY: Secret.fromSsmParameter(
           props.sharedProps.datadog.apiKeyParameter
         ),
+        KAFKA_USERNAME: Secret.fromSsmParameter(
+          props.serviceProps.kafkaUsername
+        ),
+        DATABASE_HOST: Secret.fromSsmParameter(props.serviceProps.databaseHost),
+        KAFKA_SASL_USERNAME: Secret.fromSsmParameter(
+          props.serviceProps.kafkaUsername
+        ),
+        KAFKA_BROKERS: Secret.fromSsmParameter(
+          props.serviceProps.kafkaBootstrapServers
+        ),
+        DATABASE_NAME: Secret.fromSsmParameter(props.serviceProps.databaseName),
+        KAFKA_PASSWORD: Secret.fromSsmParameter(
+          props.serviceProps.kafkaPassword
+        ),
+        KAFKA_SASL_PASSWORD: Secret.fromSsmParameter(
+          props.serviceProps.kafkaPassword
+        ),
+        DATABASE_PASSWORD: Secret.fromSsmParameter(
+          props.serviceProps.dbPassword
+        ),
+        DATABASE_USER: Secret.fromSsmParameter(props.serviceProps.dbUsername),
       },
       path: "/api/awards/v1/{proxy+}",
       healthCheckPath: "/api/awards/v1",
       serviceDiscoveryNamespace: props.serviceDiscoveryNamespace,
       serviceDiscoveryName: props.serviceDiscoveryName,
       deployInPrivateSubnet: props.deployInPrivateSubnet,
-      applicationLoadBalancer: props.applicationLoadBalancer,
-      applicationListener: props.applicationListener,
+      additionalPathMappings: [],
     });
   }
 }

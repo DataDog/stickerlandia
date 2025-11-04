@@ -30,8 +30,6 @@ export class ApiProps {
   serviceDiscoveryName: string;
   deployInPrivateSubnet?: boolean;
   cluster: Cluster;
-  applicationLoadBalancer: IApplicationLoadBalancer;
-  applicationListener: IApplicationListener;
 }
 
 export class Api extends Construct {
@@ -64,12 +62,11 @@ export class Api extends Construct {
         ),
       },
       path: "/api/app/{proxy+}",
+      additionalPathMappings: [],
       healthCheckPath: "/api/app",
       serviceDiscoveryNamespace: props.serviceDiscoveryNamespace,
       serviceDiscoveryName: props.serviceDiscoveryName,
       deployInPrivateSubnet: props.deployInPrivateSubnet,
-      applicationLoadBalancer: props.applicationLoadBalancer,
-      applicationListener: props.applicationListener,
     });
   }
 }

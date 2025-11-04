@@ -20,11 +20,6 @@ export class UserServiceStack extends cdk.Stack {
 
     const serviceName = "user-service";
     const environment = process.env.ENV || "dev";
-    const connectionString = process.env.CONNECTION_STRING;
-
-    if (!connectionString) {
-      throw new Error("CONNECTION_STRING environment variable is required");
-    }
 
     const sharedResources = new SharedResources(this, "SharedResources", {
       networkName: `${serviceName}-${environment}-vpc`,
@@ -56,7 +51,12 @@ export class UserServiceStack extends cdk.Stack {
     );
 
     const serviceProps = {
-      connectionString: connectionString,
+      cloudfrontDistribution: sharedResources.cloudfrontDistribution,
+      connectionString: StringParameter.fromStringParameterName(
+        this,
+        "ConnectionStringParam",
+        `/stickerlandia/${environment}/users/connection_string`
+      ),
     };
 
     const api = new Api(this, "Api", {
@@ -69,8 +69,6 @@ export class UserServiceStack extends cdk.Stack {
       serviceDiscoveryName: "users.api",
       serviceDiscoveryNamespace: sharedResources.serviceDiscoveryNamespace,
       cluster: cluster,
-      applicationLoadBalancer: sharedResources.applicationLoadBalancer,
-      applicationListener: sharedResources.applicationListener,
     });
 
     const backgroundWorkers = new BackgroundWorkers(this, "BackgroundWorkers", {

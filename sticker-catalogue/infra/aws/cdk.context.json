@@ -83,5 +83,7 @@
     "allowAllOutbound": false
   },
   "ssm:account=148203325623:parameterName=/stickerlandia/dev/shared/vpc-id:region=eu-west-1": "vpc-0553289055b15866a",
-  "ssm:account=148203325623:parameterName=/stickerlandia/dev/shared/alb-arn:region=eu-west-1": "arn:aws:elasticloadbalancing:eu-west-1:148203325623:loadbalancer/app/StickerlandiaALB-dev/6ea2c9ccbc32f093"
+  "ssm:account=148203325623:parameterName=/stickerlandia/dev/shared/alb-arn:region=eu-west-1": "arn:aws:elasticloadbalancing:eu-west-1:148203325623:loadbalancer/app/StickerlandiaALB-dev/6ea2c9ccbc32f093",
+  "ssm:account=148203325623:parameterName=/stickerlandia/dev/shared/cloudfront-endpoint:region=eu-west-1": "d3nwzze63j01g4.cloudfront.net",
+  "ssm:account=148203325623:parameterName=/stickerlandia/dev/shared/cloudfront-id:region=eu-west-1": "E746TMT19LY9O"
 }

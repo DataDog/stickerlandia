@@ -51,6 +51,20 @@ export class StickerlandiaSharedResourcesStack extends cdk.Stack {
       parameterName: `/stickerlandia/${env}/shared/vpc-link-id`,
     });
 
+    const cloudfrontEndpoint = new StringParameter(
+      this,
+      "CloudFrontEndpointParam",
+      {
+        stringValue: network.distribution.domainName,
+        parameterName: `/stickerlandia/${env}/shared/cloudfront-endpoint`,
+      }
+    );
+
+    const cloudfrontId = new StringParameter(this, "CloudFrontIdParam", {
+      stringValue: network.distribution.distributionId,
+      parameterName: `/stickerlandia/${env}/shared/cloudfront-id`,
+    });
+
     const eventBus = new EventBus(this, "StickerlandiaSharedEventBus", {
       eventBusName: `stickerlandia-${env}-event-bus`,
     });
@@ -64,19 +78,5 @@ export class StickerlandiaSharedResourcesStack extends cdk.Stack {
       stringValue: eventBus.eventBusArn,
       parameterName: `/stickerlandia/${env}/shared/eb-arn`,
     });
-
-    const loadBalancerArn = new StringParameter(this, "LoadBalancerArnParam", {
-      stringValue: network.loadBalancer.loadBalancerArn,
-      parameterName: `/stickerlandia/${env}/shared/alb-arn`,
-    });
-
-    const httpsListenerArn = new StringParameter(
-      this,
-      "HttpsListenerArnParam",
-      {
-        stringValue: network.applicationListener.listenerArn,
-        parameterName: `/stickerlandia/${env}/shared/https-listener-arn`,
-      }
-    );
   }
 }

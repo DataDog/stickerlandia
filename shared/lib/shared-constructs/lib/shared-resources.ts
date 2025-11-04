@@ -12,6 +12,21 @@ import {
   VpcLink,
 } from "aws-cdk-lib/aws-apigatewayv2";
 import {
+  AllowedMethods,
+  CachePolicy,
+  Distribution,
+  IDistribution,
+  OriginProtocolPolicy,
+  OriginRequestPolicy,
+  ResponseHeadersPolicy,
+  SecurityPolicyProtocol,
+} from "aws-cdk-lib/aws-cloudfront";
+import {
+  HttpOrigin,
+  LoadBalancerV2Origin,
+  S3BucketOrigin,
+} from "aws-cdk-lib/aws-cloudfront-origins";
+import {
   IVpc,
   Peer,
   Port,
@@ -19,13 +34,6 @@ import {
   SubnetType,
   Vpc,
 } from "aws-cdk-lib/aws-ec2";
-import {
-  ApplicationListener,
-  ApplicationLoadBalancer,
-  ApplicationProtocol,
-  IApplicationListener,
-  IApplicationLoadBalancer,
-} from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { IEventBus } from "aws-cdk-lib/aws-events";
 import {
   IPrivateDnsNamespace,
@@ -45,9 +53,8 @@ export class SharedResources extends Construct {
   sharedEventBus: IEventBus;
   httpApi: IHttpApi;
   serviceDiscoveryNamespace: IPrivateDnsNamespace;
-  applicationLoadBalancer: IApplicationLoadBalancer;
-  applicationListener: IApplicationListener;
   integrationEnvironments: string[] = ["dev", "prod"];
+  cloudfrontDistribution: IDistribution;
 
   constructor(scope: Construct, id: string, props: SharedResourcesProps) {
     super(scope, id);
@@ -95,19 +102,18 @@ export class SharedResources extends Construct {
         "ServiceDiscoveryNamespaceArnParameter",
         `/stickerlandia/${props.environment}/shared/namespace-arn`
       );
-    const listenerArnParameter = StringParameter.fromStringParameterName(
+    const cloudfrontEndpoint = StringParameter.valueFromLookup(
       this,
-      "ListenerArnParameter",
-      `/stickerlandia/${props.environment}/shared/https-listener-arn`
+      `/stickerlandia/${props.environment}/shared/cloudfront-endpoint`
+    );
+    const cloudfrontId = StringParameter.valueFromLookup(
+      this,
+      `/stickerlandia/${props.environment}/shared/cloudfront-id`
     );
 
     const vpcId = StringParameter.valueFromLookup(
       this,
       `/stickerlandia/${props.environment}/shared/vpc-id`
-    );
-    const albArn = StringParameter.valueFromLookup(
-      this,
-      `/stickerlandia/${props.environment}/shared/alb-arn`
     );
 
     const vpcLinkId = vpcLinkParameter.stringValue;
@@ -119,21 +125,19 @@ export class SharedResources extends Construct {
       serviceDiscoveryNamespaceNameParameter.stringValue;
     const serviceDiscoveryNamespaceArn =
       serviceDiscoveryNamespaceArnParameter.stringValue;
-    const listenerArn = listenerArnParameter.stringValue;
 
     if (
+      !vpcId ||
       !vpcLinkId ||
       !vpcLinkSecurityGroupId ||
       !httpApiId ||
       !serviceDiscoveryNamespaceId ||
       !serviceDiscoveryNamespaceName ||
       !serviceDiscoveryNamespaceArn ||
-      !albArn ||
-      !listenerArn
+      !cloudfrontEndpoint ||
+      !cloudfrontId
     ) {
-      throw new Error(
-        "Parameters for shared resources are not set correctly."
-      );
+      throw new Error("Parameters for shared resources are not set correctly.");
     }
     this.vpc = Vpc.fromLookup(this, "StickerlandiaVpc", {
       vpcId: vpcId,
@@ -156,22 +160,12 @@ export class SharedResources extends Construct {
           namespaceArn: serviceDiscoveryNamespaceArn,
         }
       );
-
-    this.applicationLoadBalancer = ApplicationLoadBalancer.fromLookup(
+    this.cloudfrontDistribution = Distribution.fromDistributionAttributes(
       this,
-      "ALB",
+      "StickerlandiaCloudfrontDistribution",
       {
-        loadBalancerArn: albArn,
-      }
-    );
-
-    this.applicationListener = ApplicationListener.fromLookup(
-      this,
-      "HttpListener",
-      {
-        loadBalancerArn: albArn,
-        listenerProtocol: ApplicationProtocol.HTTP,
-        listenerPort: 80,
+        distributionId: cloudfrontId,
+        domainName: cloudfrontEndpoint,
       }
     );
   }
@@ -249,5 +243,64 @@ export class SharedResources extends Construct {
         vpc: this.vpc,
       }
     );
+
+    const distribution = new Distribution(
+      this,
+      `Stickerlandia-${props.environment}`,
+      {
+        minimumProtocolVersion: SecurityPolicyProtocol.TLS_V1_2_2021,
+        defaultRootObject: "index.html",
+        defaultBehavior: {
+          origin: new HttpOrigin(
+            `${this.httpApi.apiId}.execute-api.eu-west-1.amazonaws.com`,
+            {
+              protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
+            }
+          ),
+          cachePolicy: CachePolicy.CACHING_DISABLED,
+          originRequestPolicy:
+            OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
+          responseHeadersPolicy:
+            ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS,
+          allowedMethods: AllowedMethods.ALLOW_ALL,
+        },
+      }
+    );
+
+    distribution.addBehavior(
+      "/.well-known*",
+      new HttpOrigin(
+        `${this.httpApi.apiId}.execute-api.eu-west-1.amazonaws.com`,
+        {
+          protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
+        }
+      ),
+      {
+        cachePolicy: CachePolicy.CACHING_DISABLED,
+        originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
+        responseHeadersPolicy:
+          ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS,
+        allowedMethods: AllowedMethods.ALLOW_ALL,
+      }
+    );
+
+    distribution.addBehavior(
+      "/auth*",
+      new HttpOrigin(
+        `${this.httpApi.apiId}.execute-api.eu-west-1.amazonaws.com`,
+        {
+          protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
+        }
+      ),
+      {
+        cachePolicy: CachePolicy.CACHING_DISABLED,
+        originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
+        responseHeadersPolicy:
+          ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS,
+        allowedMethods: AllowedMethods.ALLOW_ALL,
+      }
+    );
+
+    this.cloudfrontDistribution = distribution;
   }
 }

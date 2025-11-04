@@ -51,12 +51,43 @@ export class StickerCatalogueServiceStack extends cdk.Stack {
     );
 
     const serviceProps = {
-      jdbcUrl: process.env.JDBC_URL || "",
-      dbUsername: process.env.DB_USERNAME || "",
-      dbPassword: process.env.DB_PASSWORD || "",
-      kafkaBootstrapServers: process.env.KAFKA_BOOTSTRAP_SERVERS || "",
-      kafkaUsername: process.env.KAFKA_USERNAME || "",
-      kafkaPassword: process.env.KAFKA_PASSWORD || "",
+      cloudfrontDistribution: sharedResources.cloudfrontDistribution,
+      jdbcUrl: StringParameter.fromStringParameterName(
+        this,
+        "DatabaseHostParam",
+        `/stickerlandia/${environment}/catalogue/database-host`
+      ),
+      databasePort: process.env.DATABASE_PORT || "5432",
+      dbUsername: StringParameter.fromStringParameterName(
+        this,
+        "DatabaseUsernameParam",
+        `/stickerlandia/${environment}/catalogue/database-user`
+      ),
+      dbPassword: StringParameter.fromStringParameterName(
+        this,
+        "DatabasePasswordParam",
+        `/stickerlandia/${environment}/catalogue/database-password`
+      ),
+      kafkaBootstrapServers: StringParameter.fromStringParameterName(
+        this,
+        "KafkaBootstrapServersParam",
+        `/stickerlandia/${environment}/catalogue/kafka-broker`
+      ),
+      kafkaUsername: StringParameter.fromStringParameterName(
+        this,
+        "KafkaUsernameParam",
+        `/stickerlandia/${environment}/catalogue/kafka-username`
+      ),
+      kafkaPassword: StringParameter.fromStringParameterName(
+        this,
+        "KafkaPasswordParam",
+        `/stickerlandia/${environment}/catalogue/kafka-password`
+      ),
+      jaslConfig: StringParameter.fromStringParameterName(
+        this,
+        "KafkaJaslConfigParam",
+        `/stickerlandia/${environment}/catalogue/jasl-config`
+      ),
     };
 
     const stickerImageBucket = new Bucket(this, "StickerImageBucket", {
@@ -75,8 +106,6 @@ export class StickerCatalogueServiceStack extends cdk.Stack {
       serviceDiscoveryName: "catalogue.api",
       serviceDiscoveryNamespace: sharedResources.serviceDiscoveryNamespace,
       cluster: cluster,
-      applicationLoadBalancer: sharedResources.applicationLoadBalancer,
-      applicationListener: sharedResources.applicationListener,
       stickerImagesBucket: stickerImageBucket,
     });
   }

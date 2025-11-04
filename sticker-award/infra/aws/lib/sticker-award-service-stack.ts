@@ -49,14 +49,43 @@ export class StickerAwardServiceStack extends cdk.Stack {
     );
 
     const serviceProps = {
-      databaseHost: process.env.DATABASE_HOST || "",
-      databaseName: process.env.DATABASE_NAME || "",
-      databasePort: process.env.DATABASE_PORT || "",
-      dbUsername: process.env.DATABASE_USER || "",
-      dbPassword: process.env.DATABASE_PASSWORD || "",
-      kafkaBootstrapServers: process.env.KAFKA_BROKERS || "",
-      kafkaUsername: process.env.KAFKA_USERNAME || "",
-      kafkaPassword: process.env.KAFKA_PASSWORD || "",
+      cloudfrontDistribution: sharedResources.cloudfrontDistribution,
+      databaseHost: StringParameter.fromStringParameterName(
+        this,
+        "DatabaseHostParam",
+        `/stickerlandia/${environment}/sticker-award/database-host`
+      ),
+      databaseName: StringParameter.fromStringParameterName(
+        this,
+        "DatabaseNameParam",
+        `/stickerlandia/${environment}/sticker-award/database-name`
+      ),
+      databasePort: process.env.DATABASE_PORT || "5432",
+      dbUsername: StringParameter.fromStringParameterName(
+        this,
+        "DatabaseUsernameParam",
+        `/stickerlandia/${environment}/sticker-award/database-user`
+      ),
+      dbPassword: StringParameter.fromStringParameterName(
+        this,
+        "DatabasePasswordParam",
+        `/stickerlandia/${environment}/sticker-award/database-password`
+      ),
+      kafkaBootstrapServers: StringParameter.fromStringParameterName(
+        this,
+        "KafkaBootstrapServersParam",
+        `/stickerlandia/${environment}/sticker-award/kafka-broker`
+      ),
+      kafkaUsername: StringParameter.fromStringParameterName(
+        this,
+        "KafkaUsernameParam",
+        `/stickerlandia/${environment}/sticker-award/kafka-username`
+      ),
+      kafkaPassword: StringParameter.fromStringParameterName(
+        this,
+        "KafkaPasswordParam",
+        `/stickerlandia/${environment}/sticker-award/kafka-password`
+      ),
     };
 
     const api = new Api(this, "Api", {
@@ -69,8 +98,6 @@ export class StickerAwardServiceStack extends cdk.Stack {
       serviceDiscoveryName: "awards.api",
       serviceDiscoveryNamespace: sharedResources.serviceDiscoveryNamespace,
       cluster: cluster,
-      applicationLoadBalancer: sharedResources.applicationLoadBalancer,
-      applicationListener: sharedResources.applicationListener,
     });
   }
 }

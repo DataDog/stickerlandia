@@ -1,8 +1,13 @@
+import { IDistribution } from "aws-cdk-lib/aws-cloudfront";
+import { IStringParameter } from "aws-cdk-lib/aws-ssm";
+
 export interface ServiceProps {
-  jdbcUrl: string;
-  dbUsername: string;
-  dbPassword: string;
-  kafkaBootstrapServers: string;
-  kafkaUsername: string;
-  kafkaPassword: string;
+  cloudfrontDistribution: IDistribution;
+  jdbcUrl: IStringParameter;
+  dbUsername: IStringParameter;
+  dbPassword: IStringParameter;
+  kafkaBootstrapServers: IStringParameter;
+  kafkaUsername: IStringParameter;
+  kafkaPassword: IStringParameter;
+  jaslConfig: IStringParameter
 }

@@ -40,7 +40,7 @@ export class BackgroundWorkers extends Construct {
         props.sharedProps.environment === "prod" ? "WARN" : "INFO",
       ENV: props.sharedProps.environment,
       ConnectionStrings__messaging: "",
-      ConnectionStrings__database: props.serviceProps.connectionString,
+      ConnectionStrings__database: props.serviceProps.connectionString.stringValue,
       Aws__UserRegisteredTopicArn: props.userRegisteredTopic.topicArn,
       Aws__StickerClaimedQueueUrl: props.stickerClaimedQueue.queueUrl,
       Aws__StickerClaimedDLQUrl: props.stickerClaimedDLQ.queueUrl,

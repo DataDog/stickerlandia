@@ -31,8 +31,6 @@ export class ApiProps {
   serviceDiscoveryName: string;
   deployInPrivateSubnet?: boolean;
   cluster: Cluster;
-  applicationLoadBalancer: IApplicationLoadBalancer;
-  applicationListener: IApplicationListener;
   stickerImagesBucket: Bucket;
 }
 
@@ -55,25 +53,13 @@ export class Api extends Construct {
       port: 8080,
       environmentVariables: {
         JAVA_TOOLS_OPTIONS: "-Djava.net.preferIPv4Stack=true",
-        QUARKUS_DATASOURCE_JDBC_URL: props.serviceProps.jdbcUrl,
-        QUARKUS_DATASOURCE_USERNAME: props.serviceProps.dbUsername,
-        QUARKUS_DATASOURCE_PASSWORD: props.serviceProps.dbPassword,
         QUARKUS_DATASOURCE_DB_KIND: "postgresql",
         QUARKUS_DATASOURCE_DEVSERVICES_ENABLED: "false",
         QUARKUS_DATASOURCE_JDBC_ACQUISITION_TIMEOUT: "30S",
-        KAFKA_BOOTSTRAP_SERVERS: props.serviceProps.kafkaBootstrapServers,
-        MP_MESSAGING_CONNECTOR_SMALLRYE_KAFKA_BOOTSTRAP_SERVERS:
-          props.serviceProps.kafkaBootstrapServers,
-        QUARKUS_KAFKA_STREAMS_BOOTSTRAP_SERVERS:
-          props.serviceProps.kafkaBootstrapServers,
         KAFKA_SASL_MECHANISM: "PLAIN",
         KAFKA_SECURITY_PROTOCOL: "SASL_SSL",
-        KAFKA_SASL_JAAS_CONFIG:
-          `org.apache.kafka.common.security.plain.PlainLoginModule required username='${props.serviceProps.kafkaUsername}' password='${props.serviceProps.kafkaPassword}';`,
         MP_MESSAGING_CONNECTOR_SMALLRYE_KAFKA_SECURITY_PROTOCOL: "SASL_SSL",
         MP_MESSAGING_CONNECTOR_SMALLRYE_KAFKA_SASL_MECHANISM: "PLAIN",
-        MP_MESSAGING_CONNECTOR_SMALLRYE_KAFKA_SASL_JAAS_CONFIG:
-          `org.apache.kafka.common.security.plain.PlainLoginModule required username='${props.serviceProps.kafkaUsername}' password='${props.serviceProps.kafkaPassword}';`,
         QUARKUS_S3_PATH_STYLE_ACCESS: "true",
         STICKER_IMAGES_BUCKET: props.stickerImagesBucket.bucketName,
       },
@@ -81,14 +67,36 @@ export class Api extends Construct {
         DD_API_KEY: Secret.fromSsmParameter(
           props.sharedProps.datadog.apiKeyParameter
         ),
+        QUARKUS_DATASOURCE_JDBC_URL: Secret.fromSsmParameter(
+          props.serviceProps.jdbcUrl
+        ),
+        QUARKUS_DATASOURCE_USERNAME: Secret.fromSsmParameter(
+          props.serviceProps.dbUsername
+        ),
+        QUARKUS_DATASOURCE_PASSWORD: Secret.fromSsmParameter(
+          props.serviceProps.dbPassword
+        ),
+        QUARKUS_KAFKA_STREAMS_BOOTSTRAP_SERVERS: Secret.fromSsmParameter(
+          props.serviceProps.kafkaBootstrapServers
+        ),
+        KAFKA_BOOTSTRAP_SERVERS: Secret.fromSsmParameter(
+          props.serviceProps.kafkaBootstrapServers
+        ),
+        KAFKA_SASL_JAAS_CONFIG: Secret.fromSsmParameter(
+          props.serviceProps.jaslConfig
+        ),
+        MP_MESSAGING_CONNECTOR_SMALLRYE_KAFKA_BOOTSTRAP_SERVERS:
+          Secret.fromSsmParameter(props.serviceProps.kafkaBootstrapServers),
+        MP_MESSAGING_CONNECTOR_SMALLRYE_KAFKA_SASL_JAAS_CONFIG:
+          Secret.fromSsmParameter(props.serviceProps.jaslConfig),
+
       },
       path: "/api/stickers/v1/{proxy+}",
+      additionalPathMappings: [],
       healthCheckPath: "/api/stickers/v1",
       serviceDiscoveryNamespace: props.serviceDiscoveryNamespace,
       serviceDiscoveryName: props.serviceDiscoveryName,
       deployInPrivateSubnet: props.deployInPrivateSubnet,
-      applicationLoadBalancer: props.applicationLoadBalancer,
-      applicationListener: props.applicationListener,
     });
 
     props.stickerImagesBucket.grantReadWrite(webService.taskRole);

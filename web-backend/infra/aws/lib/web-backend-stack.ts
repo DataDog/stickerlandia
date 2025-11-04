@@ -6,13 +6,11 @@
 
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
-import { DatadogECSFargate, DatadogLambda } from "datadog-cdk-constructs-v2";
 import { SharedResources } from "../../../../shared/lib/shared-constructs/lib/shared-resources";
 import { Api } from "./api";
 import { Cluster } from "aws-cdk-lib/aws-ecs";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
 import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
-import { Bucket } from "aws-cdk-lib/aws-s3";
 
 export class WebBackendStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -63,8 +61,6 @@ export class WebBackendStack extends cdk.Stack {
       serviceDiscoveryName: "backend.api",
       serviceDiscoveryNamespace: sharedResources.serviceDiscoveryNamespace,
       cluster: cluster,
-      applicationLoadBalancer: sharedResources.applicationLoadBalancer,
-      applicationListener: sharedResources.applicationListener,
     });
   }
 }

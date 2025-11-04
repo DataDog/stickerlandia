@@ -12,7 +12,6 @@ import { Topic } from "aws-cdk-lib/aws-sns";
 import { Queue } from "aws-cdk-lib/aws-sqs";
 import { IHttpApi, IVpcLink } from "aws-cdk-lib/aws-apigatewayv2";
 import { IPrivateDnsNamespace } from "aws-cdk-lib/aws-servicediscovery";
-import { IApplicationListener, IApplicationLoadBalancer } from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { WebService } from "../../../../shared/lib/shared-constructs/lib/web-service";
 import { ServiceProps } from "./service-props";
 
@@ -27,8 +26,6 @@ export class ApiProps {
   serviceDiscoveryName: string;
   deployInPrivateSubnet?: boolean;
   cluster: Cluster;
-  applicationLoadBalancer: IApplicationLoadBalancer;
-  applicationListener: IApplicationListener;
 }
 
 export class Api extends Construct {
@@ -67,10 +64,10 @@ export class Api extends Construct {
       port: 8080,
       environmentVariables: {
         ConnectionStrings__messaging: "",
-        ConnectionStrings__database: props.serviceProps.connectionString,
         Aws__UserRegisteredTopicArn: this.userRegisteredTopic.topicArn,
         Aws__StickerClaimedQueueUrl: this.stickerClaimedQueue.queueUrl,
         Aws__StickerClaimedDLQUrl: this.stickerClaimedDLQ.queueUrl,
+        DEPLOYMENT_HOST_URL: "https://d3nwzze63j01g4.cloudfront.net",
         DRIVING: "ASPNET",
         DRIVEN: "AWS",
         DISABLE_SSL: "true",
@@ -79,14 +76,20 @@ export class Api extends Construct {
         DD_API_KEY: Secret.fromSsmParameter(
           props.sharedProps.datadog.apiKeyParameter
         ),
+        ConnectionStrings__database: Secret.fromSsmParameter(
+          props.serviceProps.connectionString
+        ),
       },
       path: "/api/users/{proxy+}",
+      additionalPathMappings: [
+        "/.well-known/{proxy+}",
+        "/auth/{proxy+}",
+        "/Auth/{proxy+}",
+      ],
       healthCheckPath: "/api/users/v1/health",
       serviceDiscoveryNamespace: props.serviceDiscoveryNamespace,
       serviceDiscoveryName: props.serviceDiscoveryName,
       deployInPrivateSubnet: props.deployInPrivateSubnet,
-      applicationLoadBalancer: props.applicationLoadBalancer,
-      applicationListener: props.applicationListener,
     });
 
     this.userRegisteredTopic.grantPublish(webService.taskRole);
