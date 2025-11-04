@@ -32,6 +32,11 @@ jobs:
       - name: Install CDK
         run: |
           npm install -g aws-cdk
+      - name: Install dependencies
+        shell: bash
+        run: |
+          cd shared/lib/shared-constructs
+          npm i
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"

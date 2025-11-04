@@ -53,10 +53,10 @@ export class Api extends Construct {
       port: 3000,
       environmentVariables: {
         NODE_ENV: "development",
-        OAUTH_ISSUER_INTERNAL: `http://users.api.${props.sharedProps.environment}.stickerlandia.local`,
+        OAUTH_ISSUER_INTERNAL: `https://d3nwzze63j01g4.cloudfront.net`,
         OAUTH_CLIENT_ID: "web-ui",
         OAUTH_CLIENT_SECRET: "stickerlandia-web-ui-secret-2025",
-        DEPLOYMENT_HOST_URL: `http://${props.serviceDiscoveryName}.${props.sharedProps.environment}.stickerlandia.local`,
+        DEPLOYMENT_HOST_URL: `https://d3nwzze63j01g4.cloudfront.net`,
       },
       secrets: {
         DD_API_KEY: Secret.fromSsmParameter(
