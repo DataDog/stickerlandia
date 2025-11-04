@@ -6,19 +6,17 @@
 
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
-import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
-import { DatadogECSFargate, DatadogLambda } from "datadog-cdk-constructs-v2";
 import { SharedResources } from "../../../../shared/lib/shared-constructs/lib/shared-resources";
 import { Api } from "./api";
 import { Cluster } from "aws-cdk-lib/aws-ecs";
-import { BackgroundWorkers } from "./background-workers";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
+import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
 
-export class UserServiceStack extends cdk.Stack {
+export class StickerAwardServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    const serviceName = "user-service";
+    const serviceName = "sticker-award";
     const environment = process.env.ENV || "dev";
 
     const sharedResources = new SharedResources(this, "SharedResources", {
@@ -30,7 +28,7 @@ export class UserServiceStack extends cdk.Stack {
     const ddApiKey = process.env.DD_API_KEY || "";
 
     const ddApiKeyParam = new StringParameter(this, "DDApiKeyParam", {
-      parameterName: `/stickerlandia/${environment}/users/dd-api-key`,
+      parameterName: `/stickerlandia/${environment}/sticker-award/dd-api-key`,
       stringValue: ddApiKey,
       simpleName: false,
     });
@@ -42,7 +40,7 @@ export class UserServiceStack extends cdk.Stack {
 
     const sharedProps = new SharedProps(
       this,
-      "users",
+      "awards",
       serviceName,
       cluster,
       ddApiKey,
@@ -52,32 +50,54 @@ export class UserServiceStack extends cdk.Stack {
 
     const serviceProps = {
       cloudfrontDistribution: sharedResources.cloudfrontDistribution,
-      connectionString: StringParameter.fromStringParameterName(
+      databaseHost: StringParameter.fromStringParameterName(
         this,
-        "ConnectionStringParam",
-        `/stickerlandia/${environment}/users/connection_string`
+        "DatabaseHostParam",
+        `/stickerlandia/${environment}/sticker-award/database-host`
+      ),
+      databaseName: StringParameter.fromStringParameterName(
+        this,
+        "DatabaseNameParam",
+        `/stickerlandia/${environment}/sticker-award/database-name`
+      ),
+      databasePort: process.env.DATABASE_PORT || "5432",
+      dbUsername: StringParameter.fromStringParameterName(
+        this,
+        "DatabaseUsernameParam",
+        `/stickerlandia/${environment}/sticker-award/database-user`
+      ),
+      dbPassword: StringParameter.fromStringParameterName(
+        this,
+        "DatabasePasswordParam",
+        `/stickerlandia/${environment}/sticker-award/database-password`
+      ),
+      kafkaBootstrapServers: StringParameter.fromStringParameterName(
+        this,
+        "KafkaBootstrapServersParam",
+        `/stickerlandia/${environment}/sticker-award/kafka-broker`
+      ),
+      kafkaUsername: StringParameter.fromStringParameterName(
+        this,
+        "KafkaUsernameParam",
+        `/stickerlandia/${environment}/sticker-award/kafka-username`
+      ),
+      kafkaPassword: StringParameter.fromStringParameterName(
+        this,
+        "KafkaPasswordParam",
+        `/stickerlandia/${environment}/sticker-award/kafka-password`
       ),
     };
 
     const api = new Api(this, "Api", {
-      sharedProps: sharedProps,
+      sharedProps,
       serviceProps,
       vpc: sharedResources.vpc,
       vpcLink: sharedResources.vpcLink,
       vpcLinkSecurityGroupId: sharedResources.vpcLinkSecurityGroupId,
       httpApi: sharedResources.httpApi,
-      serviceDiscoveryName: "users.api",
+      serviceDiscoveryName: "awards.api",
       serviceDiscoveryNamespace: sharedResources.serviceDiscoveryNamespace,
       cluster: cluster,
-    });
-
-    const backgroundWorkers = new BackgroundWorkers(this, "BackgroundWorkers", {
-      sharedProps: sharedProps,
-      serviceProps,
-      sharedEventBus: sharedResources.sharedEventBus,
-      stickerClaimedQueue: api.stickerClaimedQueue,
-      stickerClaimedDLQ: api.stickerClaimedDLQ,
-      userRegisteredTopic: api.userRegisteredTopic,
     });
   }
 }

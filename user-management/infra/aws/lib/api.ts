@@ -6,16 +6,18 @@
 
 import { IVpc } from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
-import { SharedProps } from "./constructs/shared-props";
+import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
 import { Cluster, Secret } from "aws-cdk-lib/aws-ecs";
 import { Topic } from "aws-cdk-lib/aws-sns";
 import { Queue } from "aws-cdk-lib/aws-sqs";
-import { WebService } from "./constructs/web-service";
 import { IHttpApi, IVpcLink } from "aws-cdk-lib/aws-apigatewayv2";
 import { IPrivateDnsNamespace } from "aws-cdk-lib/aws-servicediscovery";
+import { WebService } from "../../../../shared/lib/shared-constructs/lib/web-service";
+import { ServiceProps } from "./service-props";
 
 export class ApiProps {
   sharedProps: SharedProps;
+  serviceProps: ServiceProps;
   vpc: IVpc;
   vpcLink: IVpcLink;
   vpcLinkSecurityGroupId: string;
@@ -50,23 +52,22 @@ export class Api extends Construct {
     });
 
     const webService = new WebService(this, "UserServiceWebService", {
+      sharedProps: props.sharedProps,
       vpc: props.vpc,
       vpcLink: props.vpcLink,
       vpcLinkSecurityGroupId: props.vpcLinkSecurityGroupId,
       httpApi: props.httpApi,
       cluster: props.cluster,
-      serviceName: props.sharedProps.serviceName,
-      environment: props.sharedProps.environment,
       image: "ghcr.io/datadog/stickerlandia/user-management-service",
       imageTag: props.sharedProps.version,
       ddApiKey: props.sharedProps.datadog.apiKeyParameter,
       port: 8080,
       environmentVariables: {
         ConnectionStrings__messaging: "",
-        ConnectionStrings__database: props.sharedProps.connectionString,
         Aws__UserRegisteredTopicArn: this.userRegisteredTopic.topicArn,
         Aws__StickerClaimedQueueUrl: this.stickerClaimedQueue.queueUrl,
         Aws__StickerClaimedDLQUrl: this.stickerClaimedDLQ.queueUrl,
+        DEPLOYMENT_HOST_URL: `https://${props.serviceProps.cloudfrontDistribution.distributionDomainName}`,
         DRIVING: "ASPNET",
         DRIVEN: "AWS",
         DISABLE_SSL: "true",
@@ -75,8 +76,16 @@ export class Api extends Construct {
         DD_API_KEY: Secret.fromSsmParameter(
           props.sharedProps.datadog.apiKeyParameter
         ),
+        ConnectionStrings__database: Secret.fromSsmParameter(
+          props.serviceProps.connectionString
+        ),
       },
-      path: "/{proxy+}",
+      path: "/api/users/{proxy+}",
+      additionalPathMappings: [
+        "/.well-known/{proxy+}",
+        "/auth/{proxy+}",
+        "/Auth/{proxy+}",
+      ],
       healthCheckPath: "/api/users/v1/health",
       serviceDiscoveryNamespace: props.serviceDiscoveryNamespace,
       serviceDiscoveryName: props.serviceDiscoveryName,

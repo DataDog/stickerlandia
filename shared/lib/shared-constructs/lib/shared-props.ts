@@ -1,0 +1,97 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2025-Present Datadog, Inc.
+ */
+
+//
+// Unless explicitly stated otherwise all files in this repository are licensed
+// under the Apache License Version 2.0.
+// This product includes software developed at Datadog (https://www.datadoghq.com/).
+// Copyright 2024 Datadog, Inc.
+//
+
+import { ICluster } from "aws-cdk-lib/aws-ecs";
+import { IStringParameter } from "aws-cdk-lib/aws-ssm";
+import { Construct } from "constructs/lib/construct";
+import { DatadogECSFargate, DatadogLambda } from "datadog-cdk-constructs-v2";
+
+export class SharedProps {
+  team: string;
+  domain: string;
+  serviceName: string;
+  environment: string;
+  version: string;
+  enableDatadog: boolean;
+  datadog: {
+    lambda: DatadogLambda;
+    ecsFargate: DatadogECSFargate;
+    apiKey: string;
+    apiKeyParameter: IStringParameter;
+    site: string;
+  };
+
+  constructor(
+    scope: Construct,
+    domain: string,
+    serviceName: string,
+    cluster: ICluster,
+    ddApiKey: string,
+    ddApiKeyParam: IStringParameter,
+    ddSite: string | undefined = undefined,
+    enableDatadog: boolean = true
+  ) {
+    const environment = process.env.ENV || "dev";
+    const version = process.env.VERSION || "latest";
+
+    this.datadog = {
+      apiKey: ddApiKey,
+      apiKeyParameter: ddApiKeyParam,
+      site: ddSite ?? "datadoghq.com",
+      lambda: new DatadogLambda(scope, "DatadogLambda", {
+        apiKey: ddApiKey,
+        site: ddSite,
+      }),
+      ecsFargate: new DatadogECSFargate({
+        // One of the following 3 apiKey params are required
+        apiKey: ddApiKey,
+        cpu: 256,
+        memoryLimitMiB: 512,
+        isDatadogEssential: true,
+        isDatadogDependencyEnabled: true,
+        site: ddSite,
+        clusterName: cluster.clusterName,
+        environmentVariables: {},
+        dogstatsd: {
+          isEnabled: true,
+        },
+        apm: {
+          isEnabled: true,
+          traceInferredProxyServices: true,
+        },
+        logCollection: {
+          isEnabled: true,
+          fluentbitConfig: {
+            firelensOptions: {
+              enableECSLogMetadata: true,
+            },
+            logDriverConfig: {
+              hostEndpoint: `http-intake.logs.${ddSite}`,
+              serviceName: serviceName,
+            },
+          },
+        },
+        env: environment,
+        service: serviceName,
+        version: version,
+      }),
+    };
+
+    this.serviceName = serviceName;
+    this.environment = environment;
+    this.version = version;
+    this.team = domain;
+    this.domain = domain;
+    this.enableDatadog = enableDatadog;
+  }
+}

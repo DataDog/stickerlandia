@@ -6,19 +6,17 @@
 
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
-import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
-import { DatadogECSFargate, DatadogLambda } from "datadog-cdk-constructs-v2";
 import { SharedResources } from "../../../../shared/lib/shared-constructs/lib/shared-resources";
 import { Api } from "./api";
 import { Cluster } from "aws-cdk-lib/aws-ecs";
-import { BackgroundWorkers } from "./background-workers";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
+import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
 
-export class UserServiceStack extends cdk.Stack {
+export class WebBackendStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    const serviceName = "user-service";
+    const serviceName = "web-backend";
     const environment = process.env.ENV || "dev";
 
     const sharedResources = new SharedResources(this, "SharedResources", {
@@ -30,7 +28,7 @@ export class UserServiceStack extends cdk.Stack {
     const ddApiKey = process.env.DD_API_KEY || "";
 
     const ddApiKeyParam = new StringParameter(this, "DDApiKeyParam", {
-      parameterName: `/stickerlandia/${environment}/users/dd-api-key`,
+      parameterName: `/stickerlandia/${environment}/${serviceName}/dd-api-key`,
       stringValue: ddApiKey,
       simpleName: false,
     });
@@ -42,7 +40,7 @@ export class UserServiceStack extends cdk.Stack {
 
     const sharedProps = new SharedProps(
       this,
-      "users",
+      "web-backend",
       serviceName,
       cluster,
       ddApiKey,
@@ -51,33 +49,18 @@ export class UserServiceStack extends cdk.Stack {
     );
 
     const serviceProps = {
-      cloudfrontDistribution: sharedResources.cloudfrontDistribution,
-      connectionString: StringParameter.fromStringParameterName(
-        this,
-        "ConnectionStringParam",
-        `/stickerlandia/${environment}/users/connection_string`
-      ),
     };
 
     const api = new Api(this, "Api", {
       sharedProps: sharedProps,
-      serviceProps,
+      serviceProps: serviceProps,
       vpc: sharedResources.vpc,
       vpcLink: sharedResources.vpcLink,
       vpcLinkSecurityGroupId: sharedResources.vpcLinkSecurityGroupId,
       httpApi: sharedResources.httpApi,
-      serviceDiscoveryName: "users.api",
+      serviceDiscoveryName: "backend.api",
       serviceDiscoveryNamespace: sharedResources.serviceDiscoveryNamespace,
       cluster: cluster,
-    });
-
-    const backgroundWorkers = new BackgroundWorkers(this, "BackgroundWorkers", {
-      sharedProps: sharedProps,
-      serviceProps,
-      sharedEventBus: sharedResources.sharedEventBus,
-      stickerClaimedQueue: api.stickerClaimedQueue,
-      stickerClaimedDLQ: api.stickerClaimedDLQ,
-      userRegisteredTopic: api.userRegisteredTopic,
     });
   }
 }
