@@ -17,6 +17,8 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME_USER_SERVICE: ${{ github.repository_owner }}/stickerlandia/user-management-service
+  IMAGE_NAME_USER_WORKER: ${{ github.repository_owner }}/stickerlandia/user-management-worker
+  IMAGE_NAME_USER_MIGRATION: ${{ github.repository_owner }}/stickerlandia/user-management-migration
   REPOSITORY_URL: github.com/${{ github.repository }}
 
 jobs:
@@ -169,6 +171,108 @@ jobs:
             DD_GIT_REPOSITORY_URL=${{ env.REPOSITORY_URL }}
             DD_GIT_COMMIT_SHA=${{ env.COMMIT_SHA }}
 
+  push-worker-image:
+    runs-on: ubuntu-latest
+    needs: [integration-test-azure, integration-test-agnostic]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Get Commit Info
+        id: get_sha
+        run: |
+          echo "COMMIT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_USER_WORKER }}
+          tags: |
+            latest
+            ${{ env.COMMIT_SHA }}
+
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
+        with:
+          context: ./user-management
+          file: ./user-management/src/Stickerlandia.UserManagement.Worker/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            GIT_COMMIT_SHA=${{ env.COMMIT_SHA }}
+            GIT_REPOSITORY_URL=${{ env.REPOSITORY_URL }}
+            DD_GIT_REPOSITORY_URL=${{ env.REPOSITORY_URL }}
+            DD_GIT_COMMIT_SHA=${{ env.COMMIT_SHA }}
+
+  push-migration-service:
+    runs-on: ubuntu-latest
+    needs: [integration-test-azure, integration-test-agnostic]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Get Commit Info
+        id: get_sha
+        run: |
+          echo "COMMIT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_USER_MIGRATION }}
+          tags: |
+            latest
+            ${{ env.COMMIT_SHA }}
+
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
+        with:
+          context: ./user-management
+          file: ./user-management/src/Stickerlandia.UserManagement.MigrationService/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            GIT_COMMIT_SHA=${{ env.COMMIT_SHA }}
+            GIT_REPOSITORY_URL=${{ env.REPOSITORY_URL }}
+            DD_GIT_REPOSITORY_URL=${{ env.REPOSITORY_URL }}
+            DD_GIT_COMMIT_SHA=${{ env.COMMIT_SHA }}
+
   deploy-aws-dev:
     runs-on: ubuntu-latest
     needs: [push-image]
@@ -188,6 +292,11 @@ jobs:
       - name: Install CDK
         run: |
           npm install -g aws-cdk
+      - name: Install dependencies
+        shell: bash
+        run: |
+          cd shared/lib/shared-constructs
+          npm i
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
@@ -205,15 +314,13 @@ jobs:
         run: |
           echo "sha_short=$(git rev-parse --short "$GITHUB_SHA")" >> "$GITHUB_ENV"
       - name: Deploy to dev AWS
-        if: github.event_name == 'push'
         shell: bash
         env:
-          # VERSION: ${{ env.sha_short }}
-          VERSIOn: "latest"
+          VERSION: ${{ env.sha_short }}
           ENV: "dev"
           DD_API_KEY: ${{secrets.DD_API_KEY}}
-          CONNECTION_STRING: ${{secrets.USERS_CONNECTION_STRING}}
           DD_SITE: "datadoghq.com"
         run: |
           cd user-management/infra/aws
+          npm i
           cdk deploy
