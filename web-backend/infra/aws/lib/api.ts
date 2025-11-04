@@ -6,13 +6,16 @@
 
 import { IVpc } from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
-import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
 import { Cluster, Secret } from "aws-cdk-lib/aws-ecs";
 import { Topic } from "aws-cdk-lib/aws-sns";
 import { Queue } from "aws-cdk-lib/aws-sqs";
 import { IHttpApi, IVpcLink } from "aws-cdk-lib/aws-apigatewayv2";
 import { IPrivateDnsNamespace } from "aws-cdk-lib/aws-servicediscovery";
-import { IApplicationListener, IApplicationLoadBalancer } from "aws-cdk-lib/aws-elasticloadbalancingv2";
+import {
+  IApplicationListener,
+  IApplicationLoadBalancer,
+} from "aws-cdk-lib/aws-elasticloadbalancingv2";
+import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
 import { WebService } from "../../../../shared/lib/shared-constructs/lib/web-service";
 import { ServiceProps } from "./service-props";
 
@@ -37,62 +40,38 @@ export class Api extends Construct {
   userRegisteredTopic: Topic;
   constructor(scope: Construct, id: string, props: ApiProps) {
     super(scope, id);
-
-    this.userRegisteredTopic = new Topic(this, "UserRegisteredTopic", {
-      topicName: `${props.sharedProps.serviceName}-${props.sharedProps.environment}-user-registered`,
-    });
-    this.stickerClaimedDLQ = new Queue(this, "StickerClaimedDLQ", {
-      queueName: `${props.sharedProps.serviceName}-${props.sharedProps.environment}-sticker-claimed-dlq`,
-    });
-
-    //TODO: Add EventBridge rule mapping to subscribe to sticker claimed events published to the shared EventBus.
-    this.stickerClaimedQueue = new Queue(this, "StickerClaimedQueue", {
-      queueName: `${props.sharedProps.serviceName}-${props.sharedProps.environment}-sticker-claimed`,
-      deadLetterQueue: {
-        queue: this.stickerClaimedDLQ,
-        maxReceiveCount: 5, // Messages will be sent to DLQ after 5 failed attempts
-      },
-    });
-
-    const webService = new WebService(this, "UserServiceWebService", {
+    const webService = new WebService(this, "WebBackendApplication", {
       sharedProps: props.sharedProps,
       vpc: props.vpc,
       vpcLink: props.vpcLink,
       vpcLinkSecurityGroupId: props.vpcLinkSecurityGroupId,
       httpApi: props.httpApi,
       cluster: props.cluster,
-      image: "ghcr.io/datadog/stickerlandia/user-management-service",
+      serviceName: props.sharedProps.serviceName,
+      environment: props.sharedProps.environment,
+      image: "ghcr.io/datadog/stickerlandia/web-backend-service",
       imageTag: props.sharedProps.version,
       ddApiKey: props.sharedProps.datadog.apiKeyParameter,
-      port: 8080,
+      port: 3000,
       environmentVariables: {
-        ConnectionStrings__messaging: "",
-        ConnectionStrings__database: props.serviceProps.connectionString,
-        Aws__UserRegisteredTopicArn: this.userRegisteredTopic.topicArn,
-        Aws__StickerClaimedQueueUrl: this.stickerClaimedQueue.queueUrl,
-        Aws__StickerClaimedDLQUrl: this.stickerClaimedDLQ.queueUrl,
-        DRIVING: "ASPNET",
-        DRIVEN: "AWS",
-        DISABLE_SSL: "true",
+        NODE_ENV: "development",
+        OAUTH_ISSUER_INTERNAL: `http://users.api.${props.sharedProps.environment}.stickerlandia.local`,
+        OAUTH_CLIENT_ID: "web-ui",
+        OAUTH_CLIENT_SECRET: "stickerlandia-web-ui-secret-2025",
+        DEPLOYMENT_HOST_URL: `http://${props.serviceDiscoveryName}.${props.sharedProps.environment}.stickerlandia.local`,
       },
       secrets: {
         DD_API_KEY: Secret.fromSsmParameter(
           props.sharedProps.datadog.apiKeyParameter
         ),
       },
-      path: "/api/users/{proxy+}",
-      healthCheckPath: "/api/users/v1/health",
+      path: "/api/app/{proxy+}",
+      healthCheckPath: "/api/app",
       serviceDiscoveryNamespace: props.serviceDiscoveryNamespace,
       serviceDiscoveryName: props.serviceDiscoveryName,
       deployInPrivateSubnet: props.deployInPrivateSubnet,
       applicationLoadBalancer: props.applicationLoadBalancer,
       applicationListener: props.applicationListener,
     });
-
-    this.userRegisteredTopic.grantPublish(webService.taskRole);
-    this.stickerClaimedQueue.grantSendMessages(webService.taskRole);
-    this.stickerClaimedDLQ.grantSendMessages(webService.taskRole);
-    this.stickerClaimedQueue.grantConsumeMessages(webService.taskRole);
-    this.stickerClaimedDLQ.grantConsumeMessages(webService.taskRole);
   }
 }

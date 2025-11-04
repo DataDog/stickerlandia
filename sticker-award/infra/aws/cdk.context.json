@@ -94,5 +94,7 @@
     "eu-west-1a",
     "eu-west-1b",
     "eu-west-1c"
-  ]
+  ],
+  "ssm:account=148203325623:parameterName=/stickerlandia/dev/shared/vpc-id:region=eu-west-1": "vpc-0553289055b15866a",
+  "ssm:account=148203325623:parameterName=/stickerlandia/dev/shared/alb-arn:region=eu-west-1": "arn:aws:elasticloadbalancing:eu-west-1:148203325623:loadbalancer/app/StickerlandiaALB-dev/6ea2c9ccbc32f093"
 }

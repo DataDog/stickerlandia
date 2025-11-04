@@ -4,6 +4,7 @@
  * Copyright 2025-Present Datadog, Inc.
  */
 
+import * as cdk from "aws-cdk-lib";
 import {
   CfnRoute,
   FlowLogDestination,
@@ -16,12 +17,13 @@ import {
   Vpc,
 } from "aws-cdk-lib/aws-ec2";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
-import { VpcLink } from "aws-cdk-lib/aws-apigatewayv2";
+import { CorsHttpMethod, HttpApi, VpcLink } from "aws-cdk-lib/aws-apigatewayv2";
 import { Construct } from "constructs";
 import {
   AllowedMethods,
   CachePolicy,
   Distribution,
+  OriginAccessIdentity,
   OriginProtocolPolicy,
   OriginRequestPolicy,
   ResponseHeadersPolicy,
@@ -34,10 +36,15 @@ import {
   ListenerAction,
   SslPolicy,
 } from "aws-cdk-lib/aws-elasticloadbalancingv2";
-import { LoadBalancerV2Origin } from "aws-cdk-lib/aws-cloudfront-origins";
+import {
+  HttpOrigin,
+  LoadBalancerV2Origin,
+  S3BucketOrigin,
+} from "aws-cdk-lib/aws-cloudfront-origins";
 
 export interface NetworkProps {
   env: string;
+  account: string;
 }
 
 export class Network extends Construct {
@@ -46,6 +53,7 @@ export class Network extends Construct {
   noInboundAllOutboundSecurityGroup: SecurityGroup;
   loadBalancer: ApplicationLoadBalancer;
   applicationListener: ApplicationListener;
+  httpApi: cdk.aws_apigatewayv2.HttpApi;
 
   constructor(scope: Construct, id: string, props: NetworkProps) {
     super(scope, id);
@@ -156,19 +164,53 @@ export class Network extends Construct {
       defaultAction: ListenerAction.fixedResponse(404),
     });
 
-    const distribution = new Distribution(this, `Stickerlandia-${props.env}`, {
-      minimumProtocolVersion: SecurityPolicyProtocol.TLS_V1_2_2021,
-      defaultBehavior: {
-        origin: new LoadBalancerV2Origin(this.loadBalancer, {
-          protocolPolicy: OriginProtocolPolicy.HTTP_ONLY,
-        }),
-        compress: false,
-        cachePolicy: CachePolicy.CACHING_DISABLED,
-        allowedMethods: AllowedMethods.ALLOW_ALL,
-        originRequestPolicy: OriginRequestPolicy.ALL_VIEWER,
-        responseHeadersPolicy:
-          ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS,
+    this.httpApi = new HttpApi(this, "StickerlandiaHttpApi", {
+      apiName: `Stickerlandia-${props.env}`,
+      corsPreflight: {
+        allowOrigins: ["*"],
+        allowMethods: [CorsHttpMethod.ANY],
+        allowHeaders: ["*"],
       },
     });
+
+    const webFrontendBucket = new cdk.aws_s3.Bucket(this, "WebFrontendBucket", {
+      bucketName: `stickerlandia-web-frontend-${props.env}-${props.account}`,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      accessControl: cdk.aws_s3.BucketAccessControl.PRIVATE,
+      autoDeleteObjects: true,
+      websiteIndexDocument: "index.html",
+    });
+
+    const originIdentity = new OriginAccessIdentity(this, "OAI", {
+      comment: `OAI for stickerlandia web frontend ${props.env}`,
+    });
+    webFrontendBucket.grantRead(originIdentity);
+
+    const distribution = new Distribution(this, `Stickerlandia-${props.env}`, {
+      minimumProtocolVersion: SecurityPolicyProtocol.TLS_V1_2_2021,
+      defaultRootObject: "index.html",
+      defaultBehavior: {
+        origin: S3BucketOrigin.withOriginAccessIdentity(webFrontendBucket, {
+          originAccessIdentity: originIdentity,
+        }),
+      },
+    });
+
+    distribution.addBehavior(
+      "/api*",
+      new HttpOrigin(
+        `${this.httpApi.apiId}.execute-api.eu-west-1.amazonaws.com`,
+        {
+          protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
+        }
+      ),
+      {
+        cachePolicy: CachePolicy.CACHING_DISABLED,
+        originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
+        responseHeadersPolicy:
+          ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS,
+        allowedMethods: AllowedMethods.ALLOW_ALL,
+      }
+    );
   }
 }

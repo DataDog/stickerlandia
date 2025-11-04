@@ -20,5 +20,6 @@ new StickerlandiaSharedResourcesStack(
 // cdk.Aspects.of(app).add(new ServerlessChecks({ verbose: true }));
 
 cdk.Tags.of(app).add("project", "stickerlandia");
-cdk.Tags.of(app).add("team", "platform");
+cdk.Tags.of(app).add("service", "shared-infra");
+cdk.Tags.of(app).add("team", "advocacy");
 cdk.Tags.of(app).add("env", env);

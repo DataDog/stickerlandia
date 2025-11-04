@@ -9,13 +9,20 @@ import * as apigatewayv2 from "aws-cdk-lib/aws-apigatewayv2";
 import * as integrations from "aws-cdk-lib/aws-apigatewayv2-integrations";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecs from "aws-cdk-lib/aws-ecs";
-import { ApplicationTargetGroup, IApplicationListener, IApplicationLoadBalancer, ListenerCondition } from "aws-cdk-lib/aws-elasticloadbalancingv2";
+import {
+  ApplicationTargetGroup,
+  IApplicationListener,
+  IApplicationLoadBalancer,
+  ListenerCondition,
+} from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as servicediscovery from "aws-cdk-lib/aws-servicediscovery";
 import * as ssm from "aws-cdk-lib/aws-ssm";
 import { Construct } from "constructs";
+import { SharedProps } from "./shared-props";
 
 export interface WebServiceProps {
+  readonly sharedProps: SharedProps;
   readonly vpc: ec2.IVpc;
   readonly vpcLink: apigatewayv2.IVpcLink;
   readonly vpcLinkSecurityGroupId: string;
@@ -23,8 +30,6 @@ export interface WebServiceProps {
   readonly applicationLoadBalancer: IApplicationLoadBalancer;
   readonly applicationListener: IApplicationListener;
   readonly cluster: ecs.ICluster;
-  readonly serviceName: string;
-  readonly environment: string;
   readonly image: string;
   readonly imageTag: string;
   readonly ddApiKey: ssm.IStringParameter;
@@ -48,7 +53,7 @@ export class WebService extends Construct {
     // Execution Role
     this.executionRole = new iam.Role(
       this,
-      `${props.serviceName}ExecutionRole`,
+      `${props.sharedProps.serviceName}ExecutionRole`,
       {
         assumedBy: new iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
       }
@@ -63,15 +68,19 @@ export class WebService extends Construct {
     );
 
     // Task Role
-    this.taskRole = new iam.Role(this, `${props.serviceName}TaskRole`, {
-      assumedBy: new iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
-    });
+    this.taskRole = new iam.Role(
+      this,
+      `${props.sharedProps.serviceName}TaskRole`,
+      {
+        assumedBy: new iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
+      }
+    );
 
     // Base environment variables
     const baseEnvironmentVariables: { [key: string]: string } = {
-      ENV: props.environment,
-      DD_ENV: props.environment,
-      DD_SERVICE: props.serviceName,
+      ENV: props.sharedProps.environment,
+      DD_ENV: props.sharedProps.environment,
+      DD_SERVICE: props.sharedProps.serviceName,
       DD_VERSION: props.imageTag,
       DD_GIT_COMMIT_SHA: props.imageTag,
       DD_GIT_REPOSITORY_URL: "https://github.com/Datadog/stickerlandia",
@@ -91,19 +100,20 @@ export class WebService extends Construct {
     };
 
     // Task Definition
-    const taskDefinition = new ecs.FargateTaskDefinition(
-      this,
-      `${props.serviceName}Definition`,
-      {
-        memoryLimitMiB: 512,
-        runtimePlatform: {
-          cpuArchitecture: ecs.CpuArchitecture.X86_64,
-          operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
-        },
-        executionRole: this.executionRole,
-        taskRole: this.taskRole,
-      }
-    );
+    const taskDefinition =
+      props.sharedProps.datadog.ecsFargate.fargateTaskDefinition(
+        this,
+        `${props.sharedProps.serviceName}Definition`,
+        {
+          memoryLimitMiB: 512,
+          runtimePlatform: {
+            cpuArchitecture: ecs.CpuArchitecture.X86_64,
+            operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
+          },
+          executionRole: this.executionRole,
+          taskRole: this.taskRole,
+        }
+      );
 
     // Application Container
     const container = taskDefinition.addContainer("application", {
@@ -117,79 +127,79 @@ export class WebService extends Construct {
         },
       ],
       //TODO: Add health checks
-      containerName: props.serviceName,
+      containerName: props.sharedProps.serviceName,
       environment: finalEnvironmentVariables,
-      logging: ecs.LogDrivers.firelens({
-        options: {
-          Name: "datadog",
-          Host: "http-intake.logs.datadoghq.eu",
-          TLS: "on",
-          dd_service: props.serviceName,
-          dd_source: "aspnet",
-          dd_message_key: "log",
-          dd_tags: `project:${props.serviceName}`,
-          provider: "ecs",
-        },
-        secretOptions: {
-          apikey: ecs.Secret.fromSsmParameter(props.ddApiKey),
-        },
-      }),
+      // logging: ecs.LogDrivers.firelens({
+      //   options: {
+      //     Name: "datadog",
+      //     Host: "http-intake.logs.datadoghq.eu",
+      //     TLS: "on",
+      //     dd_service: props.sharedProps.serviceName,
+      //     dd_source: "aspnet",
+      //     dd_message_key: "log",
+      //     dd_tags: `project:${props.sharedProps.serviceName}`,
+      //     provider: "ecs",
+      //   },
+      //   secretOptions: {
+      //     apikey: ecs.Secret.fromSsmParameter(props.ddApiKey),
+      //   },
+      // }),
     });
 
-    // Add Docker labels
-    container.addDockerLabel("com.datadoghq.tags.env", props.environment);
-    container.addDockerLabel("com.datadoghq.tags.service", props.serviceName);
-    container.addDockerLabel("com.datadoghq.tags.version", props.imageTag);
+    // // Add Docker labels
+    // container.addDockerLabel("com.datadoghq.tags.env", props.environment);
+    // container.addDockerLabel("com.datadoghq.tags.service", props.serviceName);
+    // container.addDockerLabel("com.datadoghq.tags.version", props.imageTag);
 
-    // DataDog Agent Container
-    taskDefinition.addContainer("datadog-agent", {
-      image: ecs.ContainerImage.fromRegistry(
-        "public.ecr.aws/datadog/agent:latest"
-      ),
-      portMappings: [
-        {
-          containerPort: 4317,
-        },
-        {
-          containerPort: 4318,
-        },
-        {
-          containerPort: 8126,
-        },
-      ],
-      containerName: "datadog-agent",
-      environment: {
-        DD_SITE: "datadoghq.eu",
-        ECS_FARGATE: "true",
-        DD_LOGS_ENABLED: "false",
-        DD_PROCESS_AGENT_ENABLED: "true",
-        DD_APM_ENABLED: "true",
-        DD_APM_NON_LOCAL_TRAFFIC: "true",
-        DD_DOGSTATSD_NON_LOCAL_TRAFFIC: "true",
-        DD_ENV: props.environment,
-        DD_SERVICE: props.serviceName,
-        DD_VERSION: props.imageTag,
-        DD_APM_IGNORE_RESOURCES: `(GET) ${props.healthCheckPath}`,
-      },
-      secrets: {
-        DD_API_KEY: ecs.Secret.fromSsmParameter(props.ddApiKey),
-      },
-    });
+    // // DataDog Agent Container
+    // taskDefinition.addContainer("datadog-agent", {
+    //   image: ecs.ContainerImage.fromRegistry(
+    //     "public.ecr.aws/datadog/agent:latest"
+    //   ),
+    //   portMappings: [
+    //     {
+    //       containerPort: 4317,
+    //     },
+    //     {
+    //       containerPort: 4318,
+    //     },
+    //     {
+    //       containerPort: 8126,
+    //     },
+    //   ],
+    //   containerName: "datadog-agent",
+    //   environment: {
+    //     DD_SITE: "datadoghq.eu",
+    //     ECS_FARGATE: "true",
+    //     DD_LOGS_ENABLED: "false",
+    //     DD_PROCESS_AGENT_ENABLED: "true",
+    //     DD_APM_ENABLED: "true",
+    //     DD_APM_NON_LOCAL_TRAFFIC: "true",
+    //     DD_DOGSTATSD_NON_LOCAL_TRAFFIC: "true",
+    //     DD_ENV: props.environment,
+    //     DD_SERVICE: props.serviceName,
+    //     DD_VERSION: props.imageTag,
+    //     DD_APM_IGNORE_RESOURCES: `(GET) ${props.healthCheckPath}`,
+    //   },
+    //   secrets: {
+    //     DD_API_KEY: ecs.Secret.fromSsmParameter(props.ddApiKey),
+    //   },
+    // });
 
-    // Firelens Log Router
-    taskDefinition.addFirelensLogRouter("firelens", {
-      essential: true,
-      image: ecs.ContainerImage.fromRegistry(
-        "amazon/aws-for-fluent-bit:stable"
-      ),
-      containerName: "log-router",
-      firelensConfig: {
-        type: ecs.FirelensLogRouterType.FLUENTBIT,
-        options: {
-          enableECSLogMetadata: true,
-        },
-      },
-    });
+    // // Firelens Log Router
+    // taskDefinition.addFirelensLogRouter("firelens", {
+    //   essential: true,
+    //   image: ecs.ContainerImage.fromRegistry(
+    //     "amazon/aws-for-fluent-bit:stable"
+    //   ),
+    //   containerName: "log-router",
+    //   firelensConfig: {
+    //     type: ecs.FirelensLogRouterType.FLUENTBIT,
+    //     options: {
+    //       enableECSLogMetadata: true,
+    //     },
+    //   },
+    // });
 
     // Cloud Map Service
     this.cloudMapService = new servicediscovery.Service(
@@ -206,7 +216,7 @@ export class WebService extends Construct {
     // Fargate Service
     const service = new ecs.FargateService(
       this,
-      `${props.serviceName}Service`,
+      `${props.sharedProps.serviceName}Service`,
       {
         cluster: props.cluster,
         taskDefinition,
@@ -234,7 +244,7 @@ export class WebService extends Construct {
     }
 
     // Add tags
-    Tags.of(service).add("service", props.serviceName);
+    Tags.of(service).add("service", props.sharedProps.serviceName);
     Tags.of(service).add("commitHash", props.imageTag);
 
     // Grant permissions

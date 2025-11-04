@@ -21,20 +21,12 @@ export class StickerlandiaSharedResourcesStack extends cdk.Stack {
 
     const network = new Network(this, "Network", {
       env,
+      account: this.account,
     });
 
     const dnsNamespace = new PrivateDnsNamespace(this, "PrivateDnsNamespace", {
       name: `${env}.stickerlandia.local`,
       vpc: network.vpc,
-    });
-
-    const httpApi = new HttpApi(this, "StickerlandiaHttpApi", {
-      apiName: `Stickerlandia-${env}`,
-      corsPreflight: {
-        allowOrigins: ["*"],
-        allowMethods: [CorsHttpMethod.ANY],
-        allowHeaders: ["*"],
-      },
     });
 
     new StringParameter(this, "DnsNamespaceIdParam", {
@@ -51,7 +43,7 @@ export class StickerlandiaSharedResourcesStack extends cdk.Stack {
     });
 
     new StringParameter(this, "HttpApiId", {
-      stringValue: httpApi.httpApiId,
+      stringValue: network.httpApi.httpApiId,
       parameterName: `/stickerlandia/${env}/shared/api-id`,
     });
     new StringParameter(this, "VpcLinkId", {
@@ -78,9 +70,13 @@ export class StickerlandiaSharedResourcesStack extends cdk.Stack {
       parameterName: `/stickerlandia/${env}/shared/alb-arn`,
     });
 
-    const httpsListenerArn = new StringParameter(this, "HttpsListenerArnParam", {
-      stringValue: network.applicationListener.listenerArn,
-      parameterName: `/stickerlandia/${env}/shared/https-listener-arn`,
-    });
+    const httpsListenerArn = new StringParameter(
+      this,
+      "HttpsListenerArnParam",
+      {
+        stringValue: network.applicationListener.listenerArn,
+        parameterName: `/stickerlandia/${env}/shared/https-listener-arn`,
+      }
+    );
   }
 }

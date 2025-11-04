@@ -6,17 +6,19 @@
 
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
+import { DatadogECSFargate, DatadogLambda } from "datadog-cdk-constructs-v2";
 import { SharedResources } from "../../../../shared/lib/shared-constructs/lib/shared-resources";
 import { Api } from "./api";
 import { Cluster } from "aws-cdk-lib/aws-ecs";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
 import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
+import { Bucket } from "aws-cdk-lib/aws-s3";
 
-export class StickerAwardServiceStack extends cdk.Stack {
+export class WebBackendStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    const serviceName = "sticker-award";
+    const serviceName = "web-backend";
     const environment = process.env.ENV || "dev";
 
     const sharedResources = new SharedResources(this, "SharedResources", {
@@ -28,7 +30,7 @@ export class StickerAwardServiceStack extends cdk.Stack {
     const ddApiKey = process.env.DD_API_KEY || "";
 
     const ddApiKeyParam = new StringParameter(this, "DDApiKeyParam", {
-      parameterName: `/stickerlandia/${environment}/sticker-award/dd-api-key`,
+      parameterName: `/stickerlandia/${environment}/${serviceName}/dd-api-key`,
       stringValue: ddApiKey,
       simpleName: false,
     });
@@ -40,7 +42,7 @@ export class StickerAwardServiceStack extends cdk.Stack {
 
     const sharedProps = new SharedProps(
       this,
-      "awards",
+      "web-backend",
       serviceName,
       cluster,
       ddApiKey,
@@ -49,24 +51,16 @@ export class StickerAwardServiceStack extends cdk.Stack {
     );
 
     const serviceProps = {
-      databaseHost: process.env.DATABASE_HOST || "",
-      databaseName: process.env.DATABASE_NAME || "",
-      databasePort: process.env.DATABASE_PORT || "",
-      dbUsername: process.env.DATABASE_USER || "",
-      dbPassword: process.env.DATABASE_PASSWORD || "",
-      kafkaBootstrapServers: process.env.KAFKA_BROKERS || "",
-      kafkaUsername: process.env.KAFKA_USERNAME || "",
-      kafkaPassword: process.env.KAFKA_PASSWORD || "",
     };
 
     const api = new Api(this, "Api", {
-      sharedProps,
-      serviceProps,
+      sharedProps: sharedProps,
+      serviceProps: serviceProps,
       vpc: sharedResources.vpc,
       vpcLink: sharedResources.vpcLink,
       vpcLinkSecurityGroupId: sharedResources.vpcLinkSecurityGroupId,
       httpApi: sharedResources.httpApi,
-      serviceDiscoveryName: "awards.api",
+      serviceDiscoveryName: "backend.api",
       serviceDiscoveryNamespace: sharedResources.serviceDiscoveryNamespace,
       cluster: cluster,
       applicationLoadBalancer: sharedResources.applicationLoadBalancer,
