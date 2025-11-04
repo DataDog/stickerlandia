@@ -20,19 +20,74 @@ import {
 import { LambdaFunction, SqsQueue } from "aws-cdk-lib/aws-events-targets";
 import { ITopic } from "aws-cdk-lib/aws-sns";
 import { ServiceProps } from "./service-props";
+import { WorkerService } from "../../../../shared/lib/shared-constructs/lib/worker-service";
+import { IVpc } from "aws-cdk-lib/aws-ec2";
+import { ICluster, Secret } from "aws-cdk-lib/aws-ecs";
+import { IPrivateDnsNamespace } from "aws-cdk-lib/aws-servicediscovery";
 
 export interface BackgroundWorkersProps {
+  cluster: ICluster;
+  vpc: IVpc;
+  serviceDiscoveryNamespace: IPrivateDnsNamespace;
+  serviceDiscoveryName: string;
+  deployInPrivateSubnet?: boolean;
   sharedProps: SharedProps;
   serviceProps: ServiceProps;
   sharedEventBus: IEventBus;
   stickerClaimedQueue: IQueue;
   stickerClaimedDLQ: IQueue;
   userRegisteredTopic: ITopic;
+  useLambda: boolean;
 }
 
 export class BackgroundWorkers extends Construct {
   constructor(scope: Construct, id: string, props: BackgroundWorkersProps) {
     super(scope, id);
+
+    if (props.useLambda) {
+    } else {
+      const workerService = new WorkerService(
+        this,
+        "UserServiceWorkerService",
+        {
+          sharedProps: props.sharedProps,
+          vpc: props.vpc,
+          cluster: props.cluster,
+          image: "ghcr.io/datadog/stickerlandia/user-management-worker",
+          imageTag: props.sharedProps.version,
+          ddApiKey: props.sharedProps.datadog.apiKeyParameter,
+          environmentVariables: {
+            POWERTOOLS_SERVICE_NAME: props.sharedProps.serviceName,
+            POWERTOOLS_LOG_LEVEL:
+              props.sharedProps.environment === "prod" ? "WARN" : "INFO",
+            ENV: props.sharedProps.environment,
+            DRIVING: "ASPNET",
+            DRIVEN: "AGNOSTIC",
+            DISABLE_SSL: "true",
+          },
+          secrets: {
+            DD_API_KEY: Secret.fromSsmParameter(
+              props.sharedProps.datadog.apiKeyParameter
+            ),
+            ConnectionStrings__database: Secret.fromSsmParameter(
+              props.serviceProps.connectionString
+            ),
+            ConnectionStrings__messaging: Secret.fromSsmParameter(
+              props.serviceProps.messagingConnectionString
+            ),
+            KAFKA_USERNAME: Secret.fromSsmParameter(
+              props.serviceProps.kafkaUsername
+            ),
+            KAFKA_PASSWORD: Secret.fromSsmParameter(
+              props.serviceProps.kafkaPassword
+            ),
+          },
+          serviceDiscoveryNamespace: props.serviceDiscoveryNamespace,
+          serviceDiscoveryName: props.serviceDiscoveryName,
+          deployInPrivateSubnet: props.deployInPrivateSubnet,
+        }
+      );
+    }
 
     const environmentVariables = {
       POWERTOOLS_SERVICE_NAME: props.sharedProps.serviceName,
@@ -40,7 +95,8 @@ export class BackgroundWorkers extends Construct {
         props.sharedProps.environment === "prod" ? "WARN" : "INFO",
       ENV: props.sharedProps.environment,
       ConnectionStrings__messaging: "",
-      ConnectionStrings__database: props.serviceProps.connectionString.stringValue,
+      ConnectionStrings__database:
+        props.serviceProps.connectionString.stringValue,
       Aws__UserRegisteredTopicArn: props.userRegisteredTopic.topicArn,
       Aws__StickerClaimedQueueUrl: props.stickerClaimedQueue.queueUrl,
       Aws__StickerClaimedDLQUrl: props.stickerClaimedDLQ.queueUrl,

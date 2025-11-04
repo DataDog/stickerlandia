@@ -7,7 +7,6 @@
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
-import { DatadogECSFargate, DatadogLambda } from "datadog-cdk-constructs-v2";
 import { SharedResources } from "../../../../shared/lib/shared-constructs/lib/shared-resources";
 import { Api } from "./api";
 import { Cluster } from "aws-cdk-lib/aws-ecs";
@@ -57,6 +56,21 @@ export class UserServiceStack extends cdk.Stack {
         "ConnectionStringParam",
         `/stickerlandia/${environment}/users/connection_string`
       ),
+      messagingConnectionString: StringParameter.fromStringParameterName(
+        this,
+        "MessagingConnectionStringParam",
+        `/stickerlandia/${environment}/users/kafka-broker`
+      ),
+      kafkaUsername: StringParameter.fromStringParameterName(
+        this,
+        "KafkaUsernameParam",
+        `/stickerlandia/${environment}/users/kafka-username`
+      ),
+      kafkaPassword: StringParameter.fromStringParameterName(
+        this,
+        "KafkaPasswordParam",
+        `/stickerlandia/${environment}/users/kafka-password`
+      ),
     };
 
     const api = new Api(this, "Api", {
@@ -75,6 +89,11 @@ export class UserServiceStack extends cdk.Stack {
       sharedProps: sharedProps,
       serviceProps,
       sharedEventBus: sharedResources.sharedEventBus,
+      vpc: sharedResources.vpc,
+      serviceDiscoveryName: "users.worker",
+      cluster: cluster,
+      useLambda: false,
+      serviceDiscoveryNamespace: sharedResources.serviceDiscoveryNamespace,
       stickerClaimedQueue: api.stickerClaimedQueue,
       stickerClaimedDLQ: api.stickerClaimedDLQ,
       userRegisteredTopic: api.userRegisteredTopic,

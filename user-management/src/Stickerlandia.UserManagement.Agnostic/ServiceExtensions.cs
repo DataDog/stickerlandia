@@ -33,21 +33,32 @@ public static class ServiceExtensions
 
     public static IServiceCollection AddKafkaMessaging(this IServiceCollection services, IConfiguration configuration)
     {
+        ArgumentNullException.ThrowIfNull(configuration);
+
+        var kafkaUsername = configuration?["KAFKA_USERNAME"];
+        var kafkaPassword = configuration?["KAFKA_PASSWORD"];
+        var securityProtocol = string.IsNullOrEmpty(kafkaUsername) ? SecurityProtocol.Plaintext : SecurityProtocol.SaslSsl;
+        
         var producerConfig = new ProducerConfig
         {
-            // User-specific properties that you must set
-            BootstrapServers = configuration.GetConnectionString("messaging"),
-            // Fixed properties
-            SecurityProtocol = SecurityProtocol.Plaintext,
+            BootstrapServers = configuration!.GetConnectionString("messaging"),
+            SecurityProtocol = securityProtocol,
+            SaslUsername = kafkaUsername ?? null,
+            SaslPassword = kafkaPassword ?? null,
+            SaslMechanism = SaslMechanism.Plain,
             Acks = Acks.All
         };
 
         var consumerConfig = new ConsumerConfig
         {
             // User-specific properties that you must set
-            BootstrapServers = configuration.GetConnectionString("messaging"),
+            BootstrapServers = configuration!.GetConnectionString("messaging"),
             // Fixed properties
-            SecurityProtocol = SecurityProtocol.Plaintext,
+            SecurityProtocol = securityProtocol,
+            SaslUsername = kafkaUsername ?? null,
+            SaslPassword = kafkaPassword ?? null,
+            SaslMechanism = SaslMechanism.Plain,
+            Acks = Acks.All,
             GroupId = "stickerlandia-users",
             AutoOffsetReset = AutoOffsetReset.Earliest,
             EnableAutoCommit = false

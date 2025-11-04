@@ -63,13 +63,9 @@ export class Api extends Construct {
       ddApiKey: props.sharedProps.datadog.apiKeyParameter,
       port: 8080,
       environmentVariables: {
-        ConnectionStrings__messaging: "",
-        Aws__UserRegisteredTopicArn: this.userRegisteredTopic.topicArn,
-        Aws__StickerClaimedQueueUrl: this.stickerClaimedQueue.queueUrl,
-        Aws__StickerClaimedDLQUrl: this.stickerClaimedDLQ.queueUrl,
         DEPLOYMENT_HOST_URL: `https://${props.serviceProps.cloudfrontDistribution.distributionDomainName}`,
         DRIVING: "ASPNET",
-        DRIVEN: "AWS",
+        DRIVEN: "AGNOSTIC",
         DISABLE_SSL: "true",
       },
       secrets: {
@@ -78,6 +74,15 @@ export class Api extends Construct {
         ),
         ConnectionStrings__database: Secret.fromSsmParameter(
           props.serviceProps.connectionString
+        ),
+        ConnectionStrings__messaging: Secret.fromSsmParameter(
+          props.serviceProps.messagingConnectionString
+        ),
+        KAFKA_USERNAME: Secret.fromSsmParameter(
+          props.serviceProps.kafkaUsername
+        ),
+        KAFKA_PASSWORD: Secret.fromSsmParameter(
+          props.serviceProps.kafkaPassword
         ),
       },
       path: "/api/users/{proxy+}",
