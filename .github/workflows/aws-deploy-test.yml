@@ -58,4 +58,5 @@ jobs:
           DD_SITE: "datadoghq.com"
         run: |
           cd user-management/infra/aws
+          npm i
           cdk deploy
