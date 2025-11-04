@@ -67,7 +67,7 @@ export class Api extends Construct {
         Aws__UserRegisteredTopicArn: this.userRegisteredTopic.topicArn,
         Aws__StickerClaimedQueueUrl: this.stickerClaimedQueue.queueUrl,
         Aws__StickerClaimedDLQUrl: this.stickerClaimedDLQ.queueUrl,
-        DEPLOYMENT_HOST_URL: "https://d3nwzze63j01g4.cloudfront.net",
+        DEPLOYMENT_HOST_URL: `https://${props.serviceProps.cloudfrontDistribution.distributionDomainName}`,
         DRIVING: "ASPNET",
         DRIVEN: "AWS",
         DISABLE_SSL: "true",
