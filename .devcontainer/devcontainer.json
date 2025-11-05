@@ -12,12 +12,6 @@
 		"ghcr.io/devcontainers/features/docker-in-docker:2": {}
 	},
 
-	"forwardPorts": [
-		8080,
-		8081, 
-		8082
-	],
-
 	"portsAttributes": {
 	  "8080": {
 	    "label": "stickerlandia"
