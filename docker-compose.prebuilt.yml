@@ -1,0 +1,34 @@
+# Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+# This product includes software developed at Datadog (https://www.datadoghq.com/).
+# Copyright 2025-Present Datadog, Inc.
+
+# Docker Compose override for using prebuilt images from GHCR
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.prebuilt.yml up
+services:
+  sticker-catalogue:
+    image: ghcr.io/datadog/stickerlandia/sticker-catalogue-service:latest
+    build: {}
+
+  sticker-award:
+    image: ghcr.io/datadog/stickerlandia/sticker-award-service:latest
+    build: {}
+
+  user-management:
+    image: ghcr.io/datadog/stickerlandia/user-management-service:latest
+    build: {}
+
+  user-management-worker:
+    image: ghcr.io/datadog/stickerlandia/user-management-worker:latest
+    build: {}
+
+  user-management-db-migrations:
+    image: ghcr.io/datadog/stickerlandia/user-management-migration:latest
+    build: {}
+
+  web-backend:
+    image: ghcr.io/datadog/stickerlandia/web-backend-service:latest
+    build: {}
+
+  web-frontend:
+    image: ghcr.io/datadog/stickerlandia/web-frontend:latest
+    build: {}

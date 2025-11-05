@@ -12,9 +12,10 @@ help:
 	@echo "===================================="
 	@echo ""
 	@echo "Main targets:"
-	@echo "  compose-up      - Start all services in production mode"
-	@echo "  compose-dev-up  - Start all services in development mode (with hot reloading)"
-	@echo "  compose-down    - Stop and remove all containers and storage volumes"
+	@echo "  compose-up          - Start all services in production mode"
+	@echo "  compose-dev-up      - Start all services in development mode (with hot reloading)"
+	@echo "  compose-prebuilt-up - Start all services using prebuilt images from GHCR"
+	@echo "  compose-down        - Stop and remove all containers and storage volumes"
 	@echo ""
 	@echo "Other targets:"
 	@echo "  time-startup    - Time the entire startup process"
@@ -97,7 +98,11 @@ compose-up: .env
 
 compose-dev-up: .env
 	docker compose --profile monitoring -f docker-compose.yml -f docker-compose.dev.yml build && docker compose --profile monitoring -f docker-compose.yml -f docker-compose.dev.yml up -d
-	
+
+compose-prebuilt-up: .env
+	docker compose --profile monitoring -f docker-compose.yml -f docker-compose.prebuilt.yml up -d
+	docker logs user-management
+
 compose-up-ci: .env
 	docker compose build && docker compose up -d
 	docker logs user-management

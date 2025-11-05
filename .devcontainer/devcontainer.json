@@ -1,5 +1,5 @@
 {
-	"name": "Hot-reloading dev env",
+	"name": "Prebuilt demo environment",
 
 	"dockerComposeFile": [
 		"docker-compose.yml"
