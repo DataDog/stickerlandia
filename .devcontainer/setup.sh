@@ -20,7 +20,7 @@ git config --global --add safe.directory /workspace
 
 # Build containers
 echo "Starting stickerlandia"
-make compose-up
+make compose-prebuilt-up
 
 echo "✅ Development environment setup complete!"
 echo ""
