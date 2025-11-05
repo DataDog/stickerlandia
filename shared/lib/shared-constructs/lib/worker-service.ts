@@ -26,6 +26,7 @@ export interface WorkerServiceProps {
   readonly serviceDiscoveryName: string;
   readonly runtimePlatform: ecs.RuntimePlatform;
   readonly deployInPrivateSubnet?: boolean;
+  readonly healthCheckCommand?: ecs.HealthCheck;
 }
 
 export class WorkerService extends Construct {
@@ -121,6 +122,7 @@ export class WorkerService extends Construct {
       containerName: props.sharedProps.serviceName,
       environment: finalEnvironmentVariables,
       secrets: props.secrets,
+      healthCheck: props.healthCheckCommand,
     });
 
     // Fargate Service
