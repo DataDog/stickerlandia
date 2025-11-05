@@ -39,6 +39,22 @@ public static class ServiceExtensions
         var kafkaPassword = configuration?["KAFKA_PASSWORD"];
         var securityProtocol = string.IsNullOrEmpty(kafkaUsername) ? SecurityProtocol.Plaintext : SecurityProtocol.SaslSsl;
         
+        using var adminClient = new AdminClientBuilder(new AdminClientConfig
+        {
+            BootstrapServers = configuration!.GetConnectionString("messaging"),
+            SecurityProtocol = securityProtocol,
+            SaslUsername = kafkaUsername ?? null,
+            SaslPassword = kafkaPassword ?? null,
+            SaslMechanism = SaslMechanism.Plain,
+        }).Build();
+        
+        var metadata = adminClient.GetMetadata(TimeSpan.FromSeconds(10));
+        
+        if (metadata.Brokers.Count == 0)
+        {
+            throw new InvalidOperationException("No Kafka brokers available with the provided configuration.");
+        }
+        
         var producerConfig = new ProducerConfig
         {
             BootstrapServers = configuration!.GetConnectionString("messaging"),
