@@ -4,7 +4,7 @@
  * Copyright 2025-Present Datadog, Inc.
  */
 
-import { Duration, Tags } from "aws-cdk-lib";
+import { Tags } from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as iam from "aws-cdk-lib/aws-iam";
@@ -24,6 +24,7 @@ export interface WorkerServiceProps {
   readonly secrets: { [key: string]: ecs.Secret };
   readonly serviceDiscoveryNamespace: servicediscovery.IPrivateDnsNamespace;
   readonly serviceDiscoveryName: string;
+  readonly runtimePlatform: ecs.RuntimePlatform;
   readonly deployInPrivateSubnet?: boolean;
 }
 
@@ -89,13 +90,10 @@ export class WorkerService extends Construct {
     if (!props.sharedProps.enableDatadog) {
       taskDefinition = new ecs.FargateTaskDefinition(
         this,
-        `${props.sharedProps.serviceName}Definition`,
+        `${props.sharedProps.serviceName}WorkerDefinition`,
         {
           memoryLimitMiB: 512,
-          runtimePlatform: {
-            cpuArchitecture: ecs.CpuArchitecture.X86_64,
-            operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
-          },
+          runtimePlatform: props.runtimePlatform,
           executionRole: this.executionRole,
           taskRole: this.taskRole,
         }
@@ -104,13 +102,10 @@ export class WorkerService extends Construct {
       taskDefinition =
         props.sharedProps.datadog.ecsFargate.fargateTaskDefinition(
           this,
-          `${props.sharedProps.serviceName}Definition`,
+          `${props.sharedProps.serviceName}WorkerDefinition`,
           {
             memoryLimitMiB: 512,
-            runtimePlatform: {
-              cpuArchitecture: ecs.CpuArchitecture.X86_64,
-              operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
-            },
+            runtimePlatform: props.runtimePlatform,
             executionRole: this.executionRole,
             taskRole: this.taskRole,
           }
@@ -123,28 +118,15 @@ export class WorkerService extends Construct {
         `${props.image}:${props.imageTag}`
       ),
       portMappings: [],
-      //TODO: Add health checks
       containerName: props.sharedProps.serviceName,
       environment: finalEnvironmentVariables,
       secrets: props.secrets,
     });
 
-    // Cloud Map Service
-    this.cloudMapService = new servicediscovery.Service(
-      this,
-      "CloudMapService",
-      {
-        namespace: props.serviceDiscoveryNamespace,
-        name: props.serviceDiscoveryName,
-        dnsTtl: Duration.seconds(60),
-        dnsRecordType: servicediscovery.DnsRecordType.SRV,
-      }
-    );
-
     // Fargate Service
     const service = new ecs.FargateService(
       this,
-      `${props.sharedProps.serviceName}Service`,
+      `${props.sharedProps.serviceName}WorkerService`,
       {
         cluster: props.cluster,
         taskDefinition,
@@ -157,12 +139,6 @@ export class WorkerService extends Construct {
         },
       }
     );
-
-    // Associate with Cloud Map
-    service.associateCloudMapService({
-      service: this.cloudMapService,
-      container: applicationContainer,
-    });
 
     // Add tags
     Tags.of(service).add("service", props.sharedProps.serviceName);

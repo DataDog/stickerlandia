@@ -22,7 +22,7 @@ import { ITopic } from "aws-cdk-lib/aws-sns";
 import { ServiceProps } from "./service-props";
 import { WorkerService } from "../../../../shared/lib/shared-constructs/lib/worker-service";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
-import { ICluster, Secret } from "aws-cdk-lib/aws-ecs";
+import { CpuArchitecture, ICluster, OperatingSystemFamily, Secret } from "aws-cdk-lib/aws-ecs";
 import { IPrivateDnsNamespace } from "aws-cdk-lib/aws-servicediscovery";
 
 export interface BackgroundWorkersProps {
@@ -45,6 +45,88 @@ export class BackgroundWorkers extends Construct {
     super(scope, id);
 
     if (props.useLambda) {
+      const environmentVariables = {
+        POWERTOOLS_SERVICE_NAME: props.sharedProps.serviceName,
+        POWERTOOLS_LOG_LEVEL:
+          props.sharedProps.environment === "prod" ? "WARN" : "INFO",
+        ENV: props.sharedProps.environment,
+        ConnectionStrings__messaging: "",
+        ConnectionStrings__database:
+          props.serviceProps.connectionString.stringValue,
+        Aws__UserRegisteredTopicArn: props.userRegisteredTopic.topicArn,
+        Aws__StickerClaimedQueueUrl: props.stickerClaimedQueue.queueUrl,
+        Aws__StickerClaimedDLQUrl: props.stickerClaimedDLQ.queueUrl,
+        DRIVING: "ASPNET",
+        DRIVEN: "AWS",
+        DISABLE_SSL: "true",
+      };
+
+      const stickerClaimedWorker = new InstrumentedLambdaFunction(
+        this,
+        "StickerClaimedWorkerFunction",
+        {
+          sharedProps: props.sharedProps,
+          handler:
+            "Stickerlandia.UserManagement.Lambda::Stickerlandia.UserManagement.Lambda.Sqs_StickerClaimed_Generated::StickerClaimed",
+          buildDef: "../../src/Stickerlandia.UserManagement.Lambda/",
+          functionName: "sticker-claimed-worker",
+          environment: environmentVariables,
+          memorySize: 1024,
+          timeout: Duration.seconds(25),
+          logLevel: props.sharedProps.environment === "prod" ? "WARN" : "INFO",
+          onFailure: new SqsDestination(props.stickerClaimedDLQ),
+        }
+      );
+
+      stickerClaimedWorker.function.addEventSource(
+        new SqsEventSource(props.stickerClaimedQueue, {
+          batchSize: 10,
+          reportBatchItemFailures: true,
+        })
+      );
+
+      const rule = new Rule(this, "StickerClaimedEventRule", {
+        eventBus: props.sharedEventBus,
+        ruleName: `${props.sharedProps.serviceName}-${props.sharedProps.environment}-sticker-claimed-rule`,
+        eventPattern: {
+          source: [`${props.sharedProps.environment}.stickers`],
+          detailType: ["users.stickerClaimed.v1"],
+        },
+      });
+      rule.addTarget(new SqsQueue(props.stickerClaimedQueue));
+
+      const outboxWorker = new InstrumentedLambdaFunction(
+        this,
+        "OutboxWorkerFunction",
+        {
+          sharedProps: props.sharedProps,
+          handler:
+            "Stickerlandia.UserManagement.Lambda::Stickerlandia.UserManagement.Lambda.OutboxFunctions_Worker_Generated::Worker",
+          buildDef: "../../src/Stickerlandia.UserManagement.Lambda/",
+          functionName: "outbox-worker",
+          environment: environmentVariables,
+          memorySize: 1024,
+          timeout: Duration.seconds(50),
+          logLevel: props.sharedProps.environment === "prod" ? "WARN" : "INFO",
+          onFailure: undefined,
+        }
+      );
+      props.userRegisteredTopic.grantPublish(outboxWorker.function);
+
+      const outboxWorkerSchedule = new Rule(this, "OutboxWorkerSchedule", {
+        description: "Trigger outbox worker every 1 minute",
+        schedule: Schedule.rate(Duration.minutes(1)),
+      });
+
+      // Add the Lambda function as a target
+      outboxWorkerSchedule.addTarget(
+        new LambdaFunction(outboxWorker.function, {
+          retryAttempts: 2,
+          event: RuleTargetInput.fromObject({
+            run: true,
+          }),
+        })
+      );
     } else {
       const workerService = new WorkerService(
         this,
@@ -85,91 +167,12 @@ export class BackgroundWorkers extends Construct {
           serviceDiscoveryNamespace: props.serviceDiscoveryNamespace,
           serviceDiscoveryName: props.serviceDiscoveryName,
           deployInPrivateSubnet: props.deployInPrivateSubnet,
+          runtimePlatform: {
+            cpuArchitecture: CpuArchitecture.ARM64,
+            operatingSystemFamily: OperatingSystemFamily.LINUX,
+          }
         }
       );
     }
-
-    const environmentVariables = {
-      POWERTOOLS_SERVICE_NAME: props.sharedProps.serviceName,
-      POWERTOOLS_LOG_LEVEL:
-        props.sharedProps.environment === "prod" ? "WARN" : "INFO",
-      ENV: props.sharedProps.environment,
-      ConnectionStrings__messaging: "",
-      ConnectionStrings__database:
-        props.serviceProps.connectionString.stringValue,
-      Aws__UserRegisteredTopicArn: props.userRegisteredTopic.topicArn,
-      Aws__StickerClaimedQueueUrl: props.stickerClaimedQueue.queueUrl,
-      Aws__StickerClaimedDLQUrl: props.stickerClaimedDLQ.queueUrl,
-      DRIVING: "ASPNET",
-      DRIVEN: "AWS",
-      DISABLE_SSL: "true",
-    };
-
-    const stickerClaimedWorker = new InstrumentedLambdaFunction(
-      this,
-      "StickerClaimedWorkerFunction",
-      {
-        sharedProps: props.sharedProps,
-        handler:
-          "Stickerlandia.UserManagement.Lambda::Stickerlandia.UserManagement.Lambda.Sqs_StickerClaimed_Generated::StickerClaimed",
-        buildDef: "../../src/Stickerlandia.UserManagement.Lambda/",
-        functionName: "sticker-claimed-worker",
-        environment: environmentVariables,
-        memorySize: 1024,
-        timeout: Duration.seconds(25),
-        logLevel: props.sharedProps.environment === "prod" ? "WARN" : "INFO",
-        onFailure: new SqsDestination(props.stickerClaimedDLQ),
-      }
-    );
-
-    stickerClaimedWorker.function.addEventSource(
-      new SqsEventSource(props.stickerClaimedQueue, {
-        batchSize: 10,
-        reportBatchItemFailures: true,
-      })
-    );
-
-    const rule = new Rule(this, "StickerClaimedEventRule", {
-      eventBus: props.sharedEventBus,
-      ruleName: `${props.sharedProps.serviceName}-${props.sharedProps.environment}-sticker-claimed-rule`,
-      eventPattern: {
-        source: [`${props.sharedProps.environment}.stickers`],
-        detailType: ["users.stickerClaimed.v1"],
-      },
-    });
-    rule.addTarget(new SqsQueue(props.stickerClaimedQueue));
-
-    const outboxWorker = new InstrumentedLambdaFunction(
-      this,
-      "OutboxWorkerFunction",
-      {
-        sharedProps: props.sharedProps,
-        handler:
-          "Stickerlandia.UserManagement.Lambda::Stickerlandia.UserManagement.Lambda.OutboxFunctions_Worker_Generated::Worker",
-        buildDef: "../../src/Stickerlandia.UserManagement.Lambda/",
-        functionName: "outbox-worker",
-        environment: environmentVariables,
-        memorySize: 1024,
-        timeout: Duration.seconds(50),
-        logLevel: props.sharedProps.environment === "prod" ? "WARN" : "INFO",
-        onFailure: undefined,
-      }
-    );
-    props.userRegisteredTopic.grantPublish(outboxWorker.function);
-
-    const outboxWorkerSchedule = new Rule(this, "OutboxWorkerSchedule", {
-      description: "Trigger outbox worker every 1 minute",
-      schedule: Schedule.rate(Duration.minutes(1)),
-    });
-
-    // Add the Lambda function as a target
-    outboxWorkerSchedule.addTarget(
-      new LambdaFunction(outboxWorker.function, {
-        retryAttempts: 2,
-        event: RuleTargetInput.fromObject({
-          run: true,
-        }),
-      })
-    );
   }
 }

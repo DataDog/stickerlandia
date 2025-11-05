@@ -42,6 +42,7 @@ export interface WebServiceProps {
   readonly serviceDiscoveryName: string;
   readonly deployInPrivateSubnet?: boolean;
   readonly additionalPathMappings: string[];
+  readonly healthCheckCommand?: ecs.HealthCheck;
 }
 
 export class WebService extends Construct {
@@ -146,10 +147,10 @@ export class WebService extends Construct {
           protocol: ecs.Protocol.TCP,
         },
       ],
-      //TODO: Add health checks
       containerName: props.sharedProps.serviceName,
       environment: finalEnvironmentVariables,
       secrets: props.secrets,
+      healthCheck: props.healthCheckCommand,
     });
 
     // Cloud Map Service
