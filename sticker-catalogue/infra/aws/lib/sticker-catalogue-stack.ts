@@ -39,6 +39,7 @@ export class StickerCatalogueServiceStack extends cdk.Stack {
       vpc: sharedResources.vpc,
       clusterName: `${serviceName}-${environment}`,
     });
+    cluster.enableFargateCapacityProviders();
 
     const sharedProps = new SharedProps(
       this,
@@ -108,6 +109,7 @@ export class StickerCatalogueServiceStack extends cdk.Stack {
       serviceDiscoveryNamespace: sharedResources.serviceDiscoveryNamespace,
       cluster: cluster,
       stickerImagesBucket: stickerImageBucket,
+      deployInPrivateSubnet: true,
     });
   }
 }

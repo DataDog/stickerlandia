@@ -43,6 +43,7 @@ export interface WebServiceProps {
   readonly deployInPrivateSubnet?: boolean;
   readonly additionalPathMappings: string[];
   readonly healthCheckCommand?: ecs.HealthCheck;
+  readonly enableReadonlyfileSystem?: boolean;
 }
 
 export class WebService extends Construct {
@@ -151,6 +152,7 @@ export class WebService extends Construct {
       environment: finalEnvironmentVariables,
       secrets: props.secrets,
       healthCheck: props.healthCheckCommand,
+      readonlyRootFilesystem: props.enableReadonlyfileSystem ?? false,
     });
 
     // Cloud Map Service
@@ -179,17 +181,15 @@ export class WebService extends Construct {
             ? props.vpc.privateSubnets
             : props.vpc.publicSubnets,
         },
-        // serviceConnectConfiguration: {
-        //   namespace: props.serviceDiscoveryNamespace.namespaceName,
-        //   services: [
-        //     {
-        //       discoveryName: "users",
-        //       portMappingName: "application",
-        //       port: props.port,
-        //       dnsName: props.serviceDiscoveryName,
-        //     },
-        //   ],
-        // },
+        capacityProviderStrategies: [
+          {
+            capacityProvider:
+              props.sharedProps.environment !== "prod"
+                ? "FARGATE_SPOT"
+                : "FARGATE",
+            weight: 1,
+          },
+        ],
       }
     );
 

@@ -38,6 +38,7 @@ export class UserServiceStack extends cdk.Stack {
       vpc: sharedResources.vpc,
       clusterName: `${serviceName}-${environment}`,
     });
+    cluster.enableFargateCapacityProviders();
 
     const sharedProps = new SharedProps(
       this,
@@ -83,6 +84,7 @@ export class UserServiceStack extends cdk.Stack {
       serviceDiscoveryName: "users.api",
       serviceDiscoveryNamespace: sharedResources.serviceDiscoveryNamespace,
       cluster: cluster,
+      deployInPrivateSubnet: true,
     });
 
     const backgroundWorkers = new BackgroundWorkers(this, "BackgroundWorkers", {
@@ -97,6 +99,7 @@ export class UserServiceStack extends cdk.Stack {
       stickerClaimedQueue: api.stickerClaimedQueue,
       stickerClaimedDLQ: api.stickerClaimedDLQ,
       userRegisteredTopic: api.userRegisteredTopic,
+      deployInPrivateSubnet: true,
     });
   }
 }

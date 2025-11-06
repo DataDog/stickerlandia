@@ -139,6 +139,15 @@ export class WorkerService extends Construct {
             ? props.vpc.privateSubnets
             : props.vpc.publicSubnets,
         },
+        capacityProviderStrategies: [
+          {
+            capacityProvider:
+              props.sharedProps.environment !== "prod"
+                ? "FARGATE_SPOT"
+                : "FARGATE",
+            weight: 1,
+          },
+        ],
       }
     );
 

@@ -37,6 +37,7 @@ export class StickerAwardServiceStack extends cdk.Stack {
       vpc: sharedResources.vpc,
       clusterName: `${serviceName}-${environment}`,
     });
+    cluster.enableFargateCapacityProviders();
 
     const sharedProps = new SharedProps(
       this,
@@ -98,6 +99,7 @@ export class StickerAwardServiceStack extends cdk.Stack {
       serviceDiscoveryName: "awards.api",
       serviceDiscoveryNamespace: sharedResources.serviceDiscoveryNamespace,
       cluster: cluster,
+      deployInPrivateSubnet: true
     });
   }
 }
