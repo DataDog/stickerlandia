@@ -68,6 +68,10 @@ export class Api extends Construct {
         DRIVING: "ASPNET",
         DRIVEN: "AGNOSTIC",
         DISABLE_SSL: "true",
+        LOGGING__LOGLEVEL__DEFAULT: "INFORMATION",
+        LOGGING__LOGLEVEL__MICROSOFT: "INFORMATION",
+        "LOGGING__LOGLEVEL__MICROSOFT.ENTITYFRAMEWORKCORE.DATABASE.COMMAND":
+          "WARNING",
       },
       secrets: {
         DD_API_KEY: Secret.fromSsmParameter(
