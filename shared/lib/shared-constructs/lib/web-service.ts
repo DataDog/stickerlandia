@@ -43,6 +43,7 @@ export interface WebServiceProps {
   readonly deployInPrivateSubnet?: boolean;
   readonly additionalPathMappings: string[];
   readonly healthCheckCommand?: ecs.HealthCheck;
+  readonly enableReadonlyfileSystem?: boolean;
 }
 
 export class WebService extends Construct {
@@ -151,7 +152,7 @@ export class WebService extends Construct {
       environment: finalEnvironmentVariables,
       secrets: props.secrets,
       healthCheck: props.healthCheckCommand,
-      readonlyRootFilesystem: true,
+      readonlyRootFilesystem: props.enableReadonlyfileSystem ?? false,
     });
 
     // Cloud Map Service
