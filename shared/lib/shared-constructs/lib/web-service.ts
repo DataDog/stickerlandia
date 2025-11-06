@@ -180,17 +180,15 @@ export class WebService extends Construct {
             ? props.vpc.privateSubnets
             : props.vpc.publicSubnets,
         },
-        // serviceConnectConfiguration: {
-        //   namespace: props.serviceDiscoveryNamespace.namespaceName,
-        //   services: [
-        //     {
-        //       discoveryName: "users",
-        //       portMappingName: "application",
-        //       port: props.port,
-        //       dnsName: props.serviceDiscoveryName,
-        //     },
-        //   ],
-        // },
+        capacityProviderStrategies: [
+          {
+            capacityProvider:
+              props.sharedProps.environment !== "prod"
+                ? "FARGATE_SPOT"
+                : "FARGATE",
+            weight: 1,
+          },
+        ],
       }
     );
 

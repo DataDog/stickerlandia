@@ -38,6 +38,7 @@ export class UserServiceStack extends cdk.Stack {
       vpc: sharedResources.vpc,
       clusterName: `${serviceName}-${environment}`,
     });
+    cluster.enableFargateCapacityProviders();
 
     const sharedProps = new SharedProps(
       this,
