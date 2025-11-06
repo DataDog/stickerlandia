@@ -151,6 +151,7 @@ export class WebService extends Construct {
       environment: finalEnvironmentVariables,
       secrets: props.secrets,
       healthCheck: props.healthCheckCommand,
+      readonlyRootFilesystem: true,
     });
 
     // Cloud Map Service
