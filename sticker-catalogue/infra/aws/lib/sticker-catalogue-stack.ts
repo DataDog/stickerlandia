@@ -108,6 +108,7 @@ export class StickerCatalogueServiceStack extends cdk.Stack {
       serviceDiscoveryNamespace: sharedResources.serviceDiscoveryNamespace,
       cluster: cluster,
       stickerImagesBucket: stickerImageBucket,
+      deployInPrivateSubnet: true,
     });
   }
 }

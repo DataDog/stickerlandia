@@ -98,6 +98,7 @@ export class StickerAwardServiceStack extends cdk.Stack {
       serviceDiscoveryName: "awards.api",
       serviceDiscoveryNamespace: sharedResources.serviceDiscoveryNamespace,
       cluster: cluster,
+      deployInPrivateSubnet: true
     });
   }
 }
