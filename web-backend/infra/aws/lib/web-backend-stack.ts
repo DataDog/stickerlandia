@@ -48,8 +48,7 @@ export class WebBackendStack extends cdk.Stack {
       ddSite
     );
 
-    const serviceProps = {
-    };
+    const serviceProps = {};
 
     const api = new Api(this, "Api", {
       sharedProps: sharedProps,
@@ -61,6 +60,7 @@ export class WebBackendStack extends cdk.Stack {
       serviceDiscoveryName: "backend.api",
       serviceDiscoveryNamespace: sharedResources.serviceDiscoveryNamespace,
       cluster: cluster,
+      deployInPrivateSubnet: true,
     });
   }
 }
