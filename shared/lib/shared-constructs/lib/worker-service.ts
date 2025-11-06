@@ -4,53 +4,37 @@
  * Copyright 2025-Present Datadog, Inc.
  */
 
-import { Duration, Tags } from "aws-cdk-lib";
-import * as apigatewayv2 from "aws-cdk-lib/aws-apigatewayv2";
-import * as integrations from "aws-cdk-lib/aws-apigatewayv2-integrations";
+import { Tags } from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecs from "aws-cdk-lib/aws-ecs";
-import {
-  ApplicationProtocolVersion,
-  ApplicationTargetGroup,
-  IApplicationListener,
-  IApplicationLoadBalancer,
-  ListenerCondition,
-  TargetGroupIpAddressType,
-} from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as servicediscovery from "aws-cdk-lib/aws-servicediscovery";
 import * as ssm from "aws-cdk-lib/aws-ssm";
 import { Construct } from "constructs";
 import { SharedProps } from "./shared-props";
 
-export interface WebServiceProps {
+export interface WorkerServiceProps {
   readonly sharedProps: SharedProps;
   readonly vpc: ec2.IVpc;
-  readonly vpcLink: apigatewayv2.IVpcLink;
-  readonly vpcLinkSecurityGroupId: string;
-  readonly httpApi: apigatewayv2.IHttpApi;
   readonly cluster: ecs.ICluster;
   readonly image: string;
   readonly imageTag: string;
   readonly ddApiKey: ssm.IStringParameter;
-  readonly port: number;
   readonly environmentVariables: { [key: string]: string };
   readonly secrets: { [key: string]: ecs.Secret };
-  readonly path: string;
-  readonly healthCheckPath: string;
   readonly serviceDiscoveryNamespace: servicediscovery.IPrivateDnsNamespace;
   readonly serviceDiscoveryName: string;
+  readonly runtimePlatform: ecs.RuntimePlatform;
   readonly deployInPrivateSubnet?: boolean;
-  readonly additionalPathMappings: string[];
   readonly healthCheckCommand?: ecs.HealthCheck;
 }
 
-export class WebService extends Construct {
+export class WorkerService extends Construct {
   public readonly executionRole: iam.IRole;
   public readonly taskRole: iam.IRole;
   public readonly cloudMapService: servicediscovery.Service;
 
-  constructor(scope: Construct, id: string, props: WebServiceProps) {
+  constructor(scope: Construct, id: string, props: WorkerServiceProps) {
     super(scope, id);
     // Execution Role
     this.executionRole = new iam.Role(
@@ -107,13 +91,10 @@ export class WebService extends Construct {
     if (!props.sharedProps.enableDatadog) {
       taskDefinition = new ecs.FargateTaskDefinition(
         this,
-        `${props.sharedProps.serviceName}Definition`,
+        `${props.sharedProps.serviceName}WorkerDefinition`,
         {
           memoryLimitMiB: 512,
-          runtimePlatform: {
-            cpuArchitecture: ecs.CpuArchitecture.X86_64,
-            operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
-          },
+          runtimePlatform: props.runtimePlatform,
           executionRole: this.executionRole,
           taskRole: this.taskRole,
         }
@@ -122,13 +103,10 @@ export class WebService extends Construct {
       taskDefinition =
         props.sharedProps.datadog.ecsFargate.fargateTaskDefinition(
           this,
-          `${props.sharedProps.serviceName}Definition`,
+          `${props.sharedProps.serviceName}WorkerDefinition`,
           {
             memoryLimitMiB: 512,
-            runtimePlatform: {
-              cpuArchitecture: ecs.CpuArchitecture.X86_64,
-              operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
-            },
+            runtimePlatform: props.runtimePlatform,
             executionRole: this.executionRole,
             taskRole: this.taskRole,
           }
@@ -140,35 +118,17 @@ export class WebService extends Construct {
       image: ecs.ContainerImage.fromRegistry(
         `${props.image}:${props.imageTag}`
       ),
-      portMappings: [
-        {
-          name: "application",
-          containerPort: props.port,
-          protocol: ecs.Protocol.TCP,
-        },
-      ],
+      portMappings: [],
       containerName: props.sharedProps.serviceName,
       environment: finalEnvironmentVariables,
       secrets: props.secrets,
       healthCheck: props.healthCheckCommand,
     });
 
-    // Cloud Map Service
-    this.cloudMapService = new servicediscovery.Service(
-      this,
-      "CloudMapService",
-      {
-        namespace: props.serviceDiscoveryNamespace,
-        name: props.serviceDiscoveryName,
-        dnsTtl: Duration.seconds(60),
-        dnsRecordType: servicediscovery.DnsRecordType.SRV,
-      }
-    );
-
     // Fargate Service
     const service = new ecs.FargateService(
       this,
-      `${props.sharedProps.serviceName}Service`,
+      `${props.sharedProps.serviceName}WorkerService`,
       {
         cluster: props.cluster,
         taskDefinition,
@@ -179,34 +139,8 @@ export class WebService extends Construct {
             ? props.vpc.privateSubnets
             : props.vpc.publicSubnets,
         },
-        // serviceConnectConfiguration: {
-        //   namespace: props.serviceDiscoveryNamespace.namespaceName,
-        //   services: [
-        //     {
-        //       discoveryName: "users",
-        //       portMappingName: "application",
-        //       port: props.port,
-        //       dnsName: props.serviceDiscoveryName,
-        //     },
-        //   ],
-        // },
       }
     );
-
-    // Associate with Cloud Map
-    service.associateCloudMapService({
-      service: this.cloudMapService,
-      container: applicationContainer,
-      containerPort: props.port,
-    });
-
-    // Add security group ingress rules
-    for (const securityGroup of service.connections.securityGroups) {
-      securityGroup.addIngressRule(
-        ec2.Peer.securityGroupId(props.vpcLinkSecurityGroupId),
-        ec2.Port.tcp(props.port)
-      );
-    }
 
     // Add tags
     Tags.of(service).add("service", props.sharedProps.serviceName);
@@ -214,60 +148,5 @@ export class WebService extends Construct {
 
     // Grant permissions
     props.ddApiKey.grantRead(this.executionRole);
-
-    // API Gateway Integration
-    const serviceDiscoveryIntegration =
-      new integrations.HttpServiceDiscoveryIntegration(
-        "ApplicationServiceDiscovery",
-        this.cloudMapService,
-        {
-          method: apigatewayv2.HttpMethod.ANY,
-          vpcLink: props.vpcLink,
-        }
-      );
-
-    // const targetGroup = new ApplicationTargetGroup(this, id + "target-group", {
-    //   targetGroupName:
-    //     props.sharedProps.serviceName + "-TG-" + props.sharedProps.environment,
-    //   vpc: props.vpc,
-    //   port: 80,
-    //   protocolVersion: ApplicationProtocolVersion.HTTP1,
-    //   ipAddressType: TargetGroupIpAddressType.IPV4,
-    //   healthCheck: {
-    //     healthyHttpCodes: "200-499",
-    //     path: props.healthCheckPath,
-    //     port: props.port.toString(),
-    //   },
-    //   targets: [service],
-    // });
-
-    // props.applicationListener.addTargetGroups(id + "-listener-target", {
-    //   targetGroups: [targetGroup],
-    //   priority: 10,
-    //   conditions: [
-    //     ListenerCondition.pathPatterns([props.path.replace("{proxy+}", "*")]),
-    //   ],
-    // });
-
-    // HTTP Route
-    new apigatewayv2.HttpRoute(this, "ProxyRoute", {
-      httpApi: props.httpApi,
-      routeKey: apigatewayv2.HttpRouteKey.with(
-        props.path,
-        apigatewayv2.HttpMethod.ANY
-      ),
-      integration: serviceDiscoveryIntegration,
-    });
-
-    props.additionalPathMappings.forEach((additionalPath, index) => {
-      new apigatewayv2.HttpRoute(this, `AdditionalPathRoute${index}`, {
-        httpApi: props.httpApi,
-        routeKey: apigatewayv2.HttpRouteKey.with(
-          additionalPath,
-          apigatewayv2.HttpMethod.ANY
-        ),
-        integration: serviceDiscoveryIntegration,
-      });
-    });
   }
 }

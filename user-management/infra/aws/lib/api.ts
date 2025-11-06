@@ -14,6 +14,7 @@ import { IHttpApi, IVpcLink } from "aws-cdk-lib/aws-apigatewayv2";
 import { IPrivateDnsNamespace } from "aws-cdk-lib/aws-servicediscovery";
 import { WebService } from "../../../../shared/lib/shared-constructs/lib/web-service";
 import { ServiceProps } from "./service-props";
+import { Duration } from "aws-cdk-lib/core";
 
 export class ApiProps {
   sharedProps: SharedProps;
@@ -63,13 +64,9 @@ export class Api extends Construct {
       ddApiKey: props.sharedProps.datadog.apiKeyParameter,
       port: 8080,
       environmentVariables: {
-        ConnectionStrings__messaging: "",
-        Aws__UserRegisteredTopicArn: this.userRegisteredTopic.topicArn,
-        Aws__StickerClaimedQueueUrl: this.stickerClaimedQueue.queueUrl,
-        Aws__StickerClaimedDLQUrl: this.stickerClaimedDLQ.queueUrl,
         DEPLOYMENT_HOST_URL: `https://${props.serviceProps.cloudfrontDistribution.distributionDomainName}`,
         DRIVING: "ASPNET",
-        DRIVEN: "AWS",
+        DRIVEN: "AGNOSTIC",
         DISABLE_SSL: "true",
       },
       secrets: {
@@ -79,6 +76,15 @@ export class Api extends Construct {
         ConnectionStrings__database: Secret.fromSsmParameter(
           props.serviceProps.connectionString
         ),
+        ConnectionStrings__messaging: Secret.fromSsmParameter(
+          props.serviceProps.messagingConnectionString
+        ),
+        KAFKA_USERNAME: Secret.fromSsmParameter(
+          props.serviceProps.kafkaUsername
+        ),
+        KAFKA_PASSWORD: Secret.fromSsmParameter(
+          props.serviceProps.kafkaPassword
+        ),
       },
       path: "/api/users/{proxy+}",
       additionalPathMappings: [
@@ -87,6 +93,16 @@ export class Api extends Construct {
         "/Auth/{proxy+}",
       ],
       healthCheckPath: "/api/users/v1/health",
+      healthCheckCommand: {
+        command: [
+          "CMD-SHELL",
+          `curl -f http://localhost:8080/api/users/v1/health || exit 1`,
+        ],
+        interval: Duration.seconds(30),
+        timeout: Duration.seconds(5),
+        retries: 3,
+        startPeriod: Duration.seconds(60),
+      },
       serviceDiscoveryNamespace: props.serviceDiscoveryNamespace,
       serviceDiscoveryName: props.serviceDiscoveryName,
       deployInPrivateSubnet: props.deployInPrivateSubnet,
