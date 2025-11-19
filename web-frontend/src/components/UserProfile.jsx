@@ -37,7 +37,9 @@ const UserProfile = () => {
       }
     };
 
-    fetchStickers();
+    if (user) {
+      fetchStickers();
+    }
   }, [user]);
 
   const getSessionExpiry = () => {
@@ -99,49 +101,53 @@ const UserProfile = () => {
             <span className="text-gray-600 font-bold">Recent Stickers</span>
             <span className="text-gray-600 font-bold text-xl">Your latest additions</span>
             {user.roles && (
-          <p style={{ color: "inherit" }}>
-            <strong>Roles:</strong>{" "}
-            {Array.isArray(user.roles) ? user.roles.join(", ") : user.roles}
-          </p>
-        )}
-        <p style={{ color: "inherit" }}>
-          <strong>Session expires:</strong> {getSessionExpiry()}
-        </p>
-        {userStickers.map((sticker) => (
-          <tr
-            key={sticker.stickerId}
-            style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.1)" }}
-          >
-            <td style={{ padding: "12px" }}>
-              <img
-                src={`http://localhost:8080/api/stickers/v1/${sticker.stickerId}/image`}
-                alt={sticker.stickerName}
-                style={{
-                  width: "50px",
-                  height: "50px",
-                  objectFit: "cover",
-                  borderRadius: "4px",
-                  border: "1px solid rgba(255, 255, 255, 0.2)",
-                }}
-                onError={(e) => {
-                  e.target.style.display = "none";
-                }}
-              />
-            </td>
-            <td style={{ padding: "12px", color: "inherit" }}>
-              {sticker.stickerId}
-            </td>
-            <td style={{ padding: "12px", color: "inherit" }}>
-              {sticker.stickerName}
-            </td>
-            <td style={{ padding: "12px", color: "inherit" }}>
-              {sticker.reason}
-            </td>
-            <td style={{ padding: "12px", color: "inherit" }}>
-              {sticker.assignedAt}
-            </td>
-          </tr>
-        ))}
+              <p style={{ color: "inherit" }}>
+                <strong>Roles:</strong>{" "}
+                {Array.isArray(user.roles) ? user.roles.join(", ") : user.roles}
+              </p>
+            )}
+            <p style={{ color: "inherit" }}>
+              <strong>Session expires:</strong> {getSessionExpiry()}
+            </p>
+            <table style={{ width: "100%", marginTop: "12px" }}>
+              <tbody>
+                {userStickers.map((sticker) => (
+                  <tr
+                    key={sticker.stickerId}
+                    style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.1)" }}
+                  >
+                    <td style={{ padding: "12px" }}>
+                      <img
+                        src={`http://localhost:8080/api/stickers/v1/${sticker.stickerId}/image`}
+                        alt={sticker.stickerName}
+                        style={{
+                          width: "50px",
+                          height: "50px",
+                          objectFit: "cover",
+                          borderRadius: "4px",
+                          border: "1px solid rgba(255, 255, 255, 0.2)",
+                        }}
+                        onError={(e) => {
+                          e.target.style.display = "none";
+                        }}
+                      />
+                    </td>
+                    <td style={{ padding: "12px", color: "inherit" }}>
+                      {sticker.stickerId}
+                    </td>
+                    <td style={{ padding: "12px", color: "inherit" }}>
+                      {sticker.stickerName}
+                    </td>
+                    <td style={{ padding: "12px", color: "inherit" }}>
+                      {sticker.reason}
+                    </td>
+                    <td style={{ padding: "12px", color: "inherit" }}>
+                      {sticker.assignedAt}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
           <div className="col-span-2 landing-card items-start">
             <span className="text-gray-600 font-bold">Available Rewards</span>
