@@ -2,7 +2,7 @@
 # Provides hot-reload via Air and debugging via Delve
 # Use docker-compose.dev.yml in the stickerlandia root to use this!
 
-FROM golang:1.24-alpine
+FROM golang:1.25-alpine
 
 ARG GIT_COMMIT_SHA
 ARG GIT_REPOSITORY_URL
@@ -11,7 +11,7 @@ ENV DD_GIT_COMMIT_SHA=${GIT_COMMIT_SHA}
 
 # Install OS dependencies and dev tools
 RUN apk add --no-cache git bash curl tzdata \
-    && go install github.com/air-verse/air@latest \
+    && go install github.com/air-verse/air@v1.63.1 \
     && go install github.com/go-delve/delve/cmd/dlv@latest
 
 # The working directory mirrors the bind-mount from the host
