@@ -17,26 +17,30 @@ public record UserAccountDto
     public UserAccountDto(PostgresUserAccount userAccount)
     {
         ArgumentNullException.ThrowIfNull(userAccount);
-        
+
         AccountId = userAccount.Id ?? "";
         EmailAddress = userAccount.Email!;
         FirstName = userAccount.FirstName;
         LastName = userAccount.LastName;
         ClaimedStickerCount = userAccount.ClaimedStickerCount;
+        DateCreated = userAccount.DateCreated;
     }
 
     [JsonPropertyName("accountId")]
     public string AccountId { get; set; }
-    
+
     [JsonPropertyName("emailAddress")]
     public string EmailAddress { get; set; }
-    
+
     [JsonPropertyName("firstName")]
     public string FirstName { get; set; }
-    
+
     [JsonPropertyName("lastName")]
     public string LastName { get; set; }
 
     [JsonPropertyName("claimedStickerCount")]
     public int ClaimedStickerCount { get; set; }
+
+    [JsonPropertyName("dateCreated")]
+    public DateTime DateCreated { get; set; }
 }

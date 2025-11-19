@@ -69,14 +69,43 @@ public static class AuthServiceExtensions
                 options.AddEventHandler<OpenIddictServerEvents.HandleUserInfoRequestContext>(options =>
                     options.UseInlineHandler(context =>
                     {
-                        if (context.Principal.HasScope(OpenIddictConstants.Permissions.Scopes.Profile))
+                        if (context.Principal.HasScope(OpenIddictConstants.Scopes.Profile))
                         {
                             context.Profile = context.Principal.GetClaim(OpenIddictConstants.Claims.Profile);
                             context.PreferredUsername =
                                 context.Principal.GetClaim(OpenIddictConstants.Claims.PreferredUsername);
-                            context.Claims[OpenIddictConstants.Claims.UpdatedAt] = long.Parse(
-                                context.Principal.GetClaim(OpenIddictConstants.Claims.UpdatedAt)!,
-                                NumberStyles.Number, CultureInfo.InvariantCulture);
+
+                            var name = context.Principal.GetClaim(OpenIddictConstants.Claims.Name);
+                            if (!string.IsNullOrEmpty(name))
+                            {
+                                context.Claims[OpenIddictConstants.Claims.Name] = name;
+                            }
+
+                            var givenName = context.Principal.GetClaim(OpenIddictConstants.Claims.GivenName);
+                            if (!string.IsNullOrEmpty(givenName))
+                            {
+                                context.Claims[OpenIddictConstants.Claims.GivenName] = givenName;
+                            }
+
+                            var familyName = context.Principal.GetClaim(OpenIddictConstants.Claims.FamilyName);
+                            if (!string.IsNullOrEmpty(familyName))
+                            {
+                                context.Claims[OpenIddictConstants.Claims.FamilyName] = familyName;
+                            }
+
+                            var signupDate = context.Principal.GetClaim("signup_date");
+                            if (!string.IsNullOrEmpty(signupDate))
+                            {
+                                context.Claims["signup_date"] = signupDate;
+                            }
+
+                            var updatedAt = context.Principal.GetClaim(OpenIddictConstants.Claims.UpdatedAt);
+                            if (!string.IsNullOrEmpty(updatedAt))
+                            {
+                                context.Claims[OpenIddictConstants.Claims.UpdatedAt] = long.Parse(
+                                    updatedAt,
+                                    NumberStyles.Number, CultureInfo.InvariantCulture);
+                            }
                         }
 
                         if (context.Principal.HasScope(OpenIddictConstants.Scopes.Email))
