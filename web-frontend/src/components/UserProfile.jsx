@@ -1,14 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import AuthService from "../services/AuthService";
-import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
-import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
-import AssessmentOutlinedIcon from "@mui/icons-material/AssessmentOutlined";
-import LocalPrintshopOutlinedIcon from "@mui/icons-material/LocalPrintshopOutlined";
-import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
-import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
-import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
-import AutoAwesomeOutlinedIcon from "@mui/icons-material/AutoAwesomeOutlined";
+import Sidebar from "./Sidebar";
 import HotelClassOutlinedIcon from '@mui/icons-material/HotelClassOutlined';
 
 const UserProfile = () => {
@@ -61,88 +54,14 @@ const UserProfile = () => {
   }
 
   return (
-    <div className="profile-wrapper">
-      <div className="profile-menu bg-white h-screen">
-        <nav className="profile-nav">
-          <div className="my-4 px-5 border-gray-300 border-solid border-b">
-            <div className="logo font-bold my-2">
-              <span className="sparkle-logo">
-                <AutoAwesomeOutlinedIcon />
-              </span>
-              Stickerlandia
-            </div>
-          </div>
-          <div className="my-4 px-5 profile-card-wrapper grid grid-cols-4">
-            <div className="my-3 col-span-1 text-center">
-              <p className="bg-gray-200 rounded-full inline p-4 font-bold">
-                {user.name ? user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'UN'}
-              </p>
-            </div>
-            <div className="profile-card col-span-3">
-              <span className="block font-bold">{user.name || user.email || 'User Name'}</span>
-              <span className="block text-sm text-gray-600">
-                {loading ? '...' : `${userStickers.length} Stickers`}
-              </span>
-            </div>
-          </div>
-          <ul className="">
-            <li className="my-3 px-5">
-              <a className="block" href="">
-                <HomeOutlinedIcon />
-                User Dashboard
-              </a>
-            </li>
-            <li className="my-3 px-5">
-              <a className="block" href="">
-                <MenuBookOutlinedIcon />
-                My Collection
-              </a>
-            </li>
-            <li className="my-3 px-5">
-              <a className="block" href="">
-                <AssessmentOutlinedIcon />
-                Public Dashboard
-              </a>
-            </li>
-            <li className="my-3 px-5">
-              <a className="block" href="">
-                <LocalPrintshopOutlinedIcon />
-                Print Station
-              </a>
-            </li>
-          </ul>
-        </nav>
-        <nav className="user-nav border-gray-300 border-solid border-t">
-          <ul>
-            <li className="my-3 px-5">
-              <a className="block" href="">
-                <PersonOutlineOutlinedIcon />
-                Profile
-              </a>
-            </li>
-            <li className="my-3 px-5">
-              <a className="block" href="">
-                <SettingsOutlinedIcon />
-                Settings
-              </a>
-            </li>
-            <li className="my-3 px-5">
-              <a className="block" href="">
-                <LogoutOutlinedIcon />
-                Sign Out
-              </a>
-            </li>
-          </ul>
-        </nav>
-      </div>
-      <div className="user-profile-wrapper">
-        <div className="user-profile-greeting">
-          <div className="text-3xl font-bold my-3">
-            Welcome Back, {user.given_name || user.name?.split(' ')[0] || user.email || 'User'}!
-          </div>
-          <div className="text-gray-600 my-3">
-            Here's what's happening with your collection.
-          </div>
+    <div className="grid grid-cols-5">
+      <Sidebar />
+      <div className="col-span-4 p-8">
+        <div className="text-3xl font-bold mb-4">
+          Welcome Back, {user.given_name || user.name?.split(' ')[0] || user.email || 'User'}!
+        </div>
+        <div className="text-gray-600 mb-6">
+          Here's what's happening with your collection.
         </div>
         <div className="user-profile-info grid grid-cols-4 gap-4">
           <div className="col-span-1 landing-card items-start">
