@@ -4,7 +4,7 @@ tmp_dir = "tmp"
 
 [build]
   # Build command with disabled optimisations for easier debugging
-  cmd = "go build -gcflags=all=-N ./cmd/server"
+  cmd = "go build -buildvcs=false -gcflags=all=-N ./cmd/server"
   bin = "server"
   include_ext = ["go", "tpl", "tmpl", "html"]
   exclude_dir = ["tmp", "vendor", ".git"]
