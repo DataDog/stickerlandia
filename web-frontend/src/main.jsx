@@ -6,6 +6,7 @@ import App from "./App.jsx";
 import PublicDashboardPage from "./components/PublicDashboardPage.jsx";
 import UserDashboard from "./components/UserDashboard.jsx";
 import MyCollection from "./components/MyCollection.jsx";
+import StickerDetail from "./components/StickerDetail.jsx";
 import { AuthProvider } from "./context/AuthContext";
 import { initializeDatadogRum } from "./services/DatadogRum.js";
 
@@ -20,6 +21,7 @@ createRoot(document.getElementById("root")).render(
           <Route path="/" element={<App />} />
           <Route path="dashboard" element={<UserDashboard />} />
           <Route path="collection" element={<MyCollection />} />
+          <Route path="stickers/:id" element={<StickerDetail />} />
           <Route path="public-dashboard" element={<PublicDashboardPage />} />
         </Routes>
       </AuthProvider>
