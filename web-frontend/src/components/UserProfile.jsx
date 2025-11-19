@@ -21,8 +21,10 @@ const UserProfile = () => {
     const fetchStickers = async () => {
       try {
         setLoading(true);
+        // Use sub (subject) as the unique user identifier from OIDC
+        const userId = user.sub || user.email;
         const response = await fetch(
-          "http://localhost:8080/api/awards/v1/assignments/" + user.email
+          "http://localhost:8080/api/awards/v1/assignments/" + userId
         );
 
         if (!response.ok) {
@@ -43,7 +45,7 @@ const UserProfile = () => {
     };
 
     fetchStickers();
-  }, []);
+  }, [user]);
 
   const getSessionExpiry = () => {
     const tokenData = AuthService.getStoredToken();
@@ -73,12 +75,14 @@ const UserProfile = () => {
           <div className="my-4 px-5 profile-card-wrapper grid grid-cols-4">
             <div className="my-3 col-span-1 text-center">
               <p className="bg-gray-200 rounded-full inline p-4 font-bold">
-                UN
+                {user.name ? user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'UN'}
               </p>
             </div>
             <div className="profile-card col-span-3">
-              <span className="block font-bold">User Name</span>
-              <span className="block text-sm text-gray-600">24 Stickers</span>
+              <span className="block font-bold">{user.name || user.email || 'User Name'}</span>
+              <span className="block text-sm text-gray-600">
+                {loading ? '...' : `${userStickers.length} Stickers`}
+              </span>
             </div>
           </div>
           <ul className="">
@@ -134,7 +138,7 @@ const UserProfile = () => {
       <div className="user-profile-wrapper">
         <div className="user-profile-greeting">
           <div className="text-3xl font-bold my-3">
-            Welcome Back, User Name!
+            Welcome Back, {user.given_name || user.name?.split(' ')[0] || user.email || 'User'}!
           </div>
           <div className="text-gray-600 my-3">
             Here's what's happening with your collection.
@@ -143,7 +147,9 @@ const UserProfile = () => {
         <div className="user-profile-info grid grid-cols-4 gap-4">
           <div className="col-span-1 landing-card items-start">
             <span className="text-gray-400 font-bold">Total Stickers</span>
-            <span className="text-gray-600 font-bold text-xl">5</span>
+            <span className="text-gray-600 font-bold text-xl">
+              {loading ? '...' : userStickers.length}
+            </span>
             <div className="collection-progress-bar bg-linear-65 from-gray-800 via-gray-400 to-gray-400 to-75% block h-5 w-full"></div>
             <span className="text-gray-600">75% of available</span>
           </div>
@@ -159,8 +165,16 @@ const UserProfile = () => {
           </div>
           <div className="col-span-1 landing-card items-start">
             <span className="text-gray-400 font-bold">Member Since</span>
-            <span className="text-gray-600 font-bold text-xl">July 2025</span>
-            <span className="text-gray-600">2 Months Collecting</span>
+            <span className="text-gray-600 font-bold text-xl">
+              {user.signup_date
+                ? new Date(user.signup_date).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+                : 'July 2025'}
+            </span>
+            <span className="text-gray-600">
+              {user.signup_date
+                ? Math.max(0, Math.floor((Date.now() - new Date(user.signup_date)) / (1000 * 60 * 60 * 24 * 30))) + ' Months Collecting'
+                : '2 Months Collecting'}
+            </span>
           </div>
           <div className="col-span-2 landing-card items-start">
             <span className="text-gray-600 font-bold">Recent Stickers</span>
