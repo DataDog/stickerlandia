@@ -95,7 +95,13 @@ public class StickerSeeder {
     private boolean seedSticker(Tracer tracer, SampleSticker sample) {
         Sticker existingSticker = stickerRepository.findById(sample.id);
         if (existingSticker != null) {
-            LOG.debugf("Sticker %s already exists, skipping", sample.id);
+            LOG.debugf("Sticker %s already exists, checking image", sample.id);
+
+            // Seed image if sticker exists but doesn't have an image
+            if (sample.imagePath != null) {
+                seedStickerImage(tracer, sample.id, sample.imagePath, sample.imageDescription);
+            }
+
             return false;
         }
 
