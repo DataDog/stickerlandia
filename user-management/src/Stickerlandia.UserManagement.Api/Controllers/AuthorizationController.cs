@@ -142,8 +142,11 @@ public class AuthorizationController(
                 // Add the claims that will be persisted in the tokens.
                 identity.SetClaim(OpenIddictConstants.Claims.Subject, await userManager.GetUserIdAsync(user))
                     .SetClaim(OpenIddictConstants.Claims.Email, await userManager.GetEmailAsync(user))
-                    .SetClaim(OpenIddictConstants.Claims.Name, await userManager.GetUserNameAsync(user))
+                    .SetClaim(OpenIddictConstants.Claims.Name, $"{user.FirstName} {user.LastName}")
+                    .SetClaim(OpenIddictConstants.Claims.GivenName, user.FirstName)
+                    .SetClaim(OpenIddictConstants.Claims.FamilyName, user.LastName)
                     .SetClaim(OpenIddictConstants.Claims.PreferredUsername, await userManager.GetUserNameAsync(user))
+                    .SetClaim("signup_date", user.DateCreated.ToString("o"))
                     .SetClaims(OpenIddictConstants.Claims.Role, [.. await userManager.GetRolesAsync(user)]);
 
                 identity.SetScopes(request.GetScopes());
@@ -271,8 +274,11 @@ public class AuthorizationController(
             // changed since the authorization code/refresh token was issued.
             identity.SetClaim(OpenIddictConstants.Claims.Subject, await userManager.GetUserIdAsync(user))
                 .SetClaim(OpenIddictConstants.Claims.Email, await userManager.GetEmailAsync(user))
-                .SetClaim(OpenIddictConstants.Claims.Name, await userManager.GetUserNameAsync(user))
+                .SetClaim(OpenIddictConstants.Claims.Name, $"{user.FirstName} {user.LastName}")
+                .SetClaim(OpenIddictConstants.Claims.GivenName, user.FirstName)
+                .SetClaim(OpenIddictConstants.Claims.FamilyName, user.LastName)
                 .SetClaim(OpenIddictConstants.Claims.PreferredUsername, await userManager.GetUserNameAsync(user))
+                .SetClaim("signup_date", user.DateCreated.ToString("o"))
                 .SetClaims(OpenIddictConstants.Claims.Role, [.. await userManager.GetRolesAsync(user)]);
 
             identity.SetDestinations(GetDestinations);
@@ -292,7 +298,8 @@ public class AuthorizationController(
 
         switch (claim.Type)
         {
-            case OpenIddictConstants.Claims.Name or OpenIddictConstants.Claims.PreferredUsername:
+            case OpenIddictConstants.Claims.Name or OpenIddictConstants.Claims.PreferredUsername
+                or OpenIddictConstants.Claims.GivenName or OpenIddictConstants.Claims.FamilyName:
                 yield return OpenIddictConstants.Destinations.AccessToken;
 
                 if (claim.Subject!.HasScope(OpenIddictConstants.Permissions.Scopes.Profile))
@@ -312,6 +319,14 @@ public class AuthorizationController(
                 yield return OpenIddictConstants.Destinations.AccessToken;
 
                 if (claim.Subject!.HasScope(OpenIddictConstants.Permissions.Scopes.Roles))
+                    yield return OpenIddictConstants.Destinations.IdentityToken;
+
+                yield break;
+
+            case "signup_date":
+                yield return OpenIddictConstants.Destinations.AccessToken;
+
+                if (claim.Subject!.HasScope(OpenIddictConstants.Permissions.Scopes.Profile))
                     yield return OpenIddictConstants.Destinations.IdentityToken;
 
                 yield break;

@@ -11,19 +11,39 @@ import DiamondOutlinedIcon from '@mui/icons-material/DiamondOutlined';
 const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [totalStickers, setTotalStickers] = useState(0);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('http://localhost:8080/api/stickers/v1/');
+        if (response.ok) {
+          const data = await response.json();
+          setTotalStickers(data.stickers?.length || 0);
+        }
+      } catch (err) {
+        console.error('Error fetching sticker stats:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   return (
-    <div className="dashboard-wrapper mx-auto w-full px-6 sm:max-w-[40rem] md:max-w-[48rem] md:px-8 lg:max-w-[64rem] xl:max-w-[80rem]">
-      <div className="dashboard-greeting">
-        <div className="text-3xl font-bold my-3">Public Dashboard</div>
-        <div className="text-gray-600 my-3">
-          Live statistics and trends from the Stickerlandia community.
-        </div>
+    <>
+      <div className="text-3xl font-bold mb-4">Public Dashboard</div>
+      <div className="text-gray-600 mb-6">
+        Live statistics and trends from the Stickerlandia community.
       </div>
-      <div className="dashboard-info grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         <div className="col-span-1 landing-card items-start">
           <span className="text-gray-400 font-bold">Total Stickers</span>
-          <span className="text-gray-600 font-bold text-xl">156</span>
+          <span className="text-gray-600 font-bold text-xl">
+            {loading ? '...' : totalStickers}
+          </span>
           <span className="text-green-500">
             <TrendingUpOutlinedIcon /> +12% this week
           </span>
@@ -111,8 +131,7 @@ const Dashboard = () => {
           </span>
         </div>
       </div>
-      
-    </div>
+    </>
   );
 };
 
