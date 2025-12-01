@@ -53,6 +53,7 @@ export class BackgroundWorkers extends Construct {
         ConnectionStrings__messaging: "",
         ConnectionStrings__database:
           props.serviceProps.connectionString.stringValue,
+        Aws__EventBusName: props.sharedEventBus.eventBusName,
         Aws__UserRegisteredTopicArn: props.userRegisteredTopic.topicArn,
         Aws__StickerClaimedQueueUrl: props.stickerClaimedQueue.queueUrl,
         Aws__StickerClaimedDLQUrl: props.stickerClaimedDLQ.queueUrl,
@@ -111,7 +112,7 @@ export class BackgroundWorkers extends Construct {
           onFailure: undefined,
         }
       );
-      props.userRegisteredTopic.grantPublish(outboxWorker.function);
+      props.sharedEventBus.grantPutEventsTo(outboxWorker.function);
 
       const outboxWorkerSchedule = new Rule(this, "OutboxWorkerSchedule", {
         description: "Trigger outbox worker every 1 minute",
@@ -157,15 +158,15 @@ export class BackgroundWorkers extends Construct {
             ConnectionStrings__database: Secret.fromSsmParameter(
               props.serviceProps.connectionString
             ),
-            ConnectionStrings__messaging: Secret.fromSsmParameter(
-              props.serviceProps.messagingConnectionString
-            ),
-            KAFKA_USERNAME: Secret.fromSsmParameter(
-              props.serviceProps.kafkaUsername
-            ),
-            KAFKA_PASSWORD: Secret.fromSsmParameter(
-              props.serviceProps.kafkaPassword
-            ),
+            //            ConnectionStrings__messaging: Secret.fromSsmParameter(
+            //              props.serviceProps.messagingConnectionString
+            //            ),
+            //            KAFKA_USERNAME: Secret.fromSsmParameter(
+            //              props.serviceProps.kafkaUsername
+            //            ),
+            //            KAFKA_PASSWORD: Secret.fromSsmParameter(
+            //              props.serviceProps.kafkaPassword
+            //            ),
           },
           serviceDiscoveryNamespace: props.serviceDiscoveryNamespace,
           serviceDiscoveryName: props.serviceDiscoveryName,

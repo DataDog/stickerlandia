@@ -8,6 +8,7 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
+using Amazon.EventBridge;
 using Amazon.SimpleNotificationService;
 using Amazon.SQS;
 using Microsoft.Extensions.Configuration;
@@ -19,20 +20,22 @@ namespace Stickerlandia.UserManagement.AWS;
 
 public static class ServiceExtensions
 {
-    public static IServiceCollection AddAwsAdapters(this IServiceCollection services, IConfiguration configuration, bool enableDefaultUi = true)
+    public static IServiceCollection AddAwsAdapters(this IServiceCollection services, IConfiguration configuration,
+        bool enableDefaultUi = true)
     {
         ArgumentNullException.ThrowIfNull(configuration);
-        
-        services.AddPostgresAuthServices(configuration, enableDefaultUi: enableDefaultUi);
+
+        services.AddPostgresAuthServices(configuration, enableDefaultUi);
 
         services.Configure<AwsConfiguration>(
             configuration.GetSection("Aws"));
 
         services.AddSingleton<IMessagingWorker, SqsStickerClaimedWorker>();
         services.AddSingleton(sp => new AmazonSQSClient());
+        services.AddSingleton(sp => new AmazonEventBridgeClient());
         services.AddSingleton(sp => new AmazonSimpleNotificationServiceClient());
 
-        services.AddSingleton<IUserEventPublisher, SnsEventPublisher>();
+        services.AddSingleton<IUserEventPublisher, EventBridgeEventPublisher>();
 
         return services;
     }

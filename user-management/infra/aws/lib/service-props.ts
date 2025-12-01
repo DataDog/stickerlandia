@@ -4,7 +4,7 @@ import { IStringParameter } from "aws-cdk-lib/aws-ssm";
 export interface ServiceProps {
   cloudfrontDistribution: IDistribution;
   connectionString: IStringParameter;
-  messagingConnectionString: IStringParameter;
-  kafkaUsername: IStringParameter;
-  kafkaPassword: IStringParameter;
+  messagingConnectionString: IStringParameter | undefined;
+  kafkaUsername: IStringParameter | undefined;
+  kafkaPassword: IStringParameter | undefined;
 }

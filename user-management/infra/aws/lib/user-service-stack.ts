@@ -57,21 +57,9 @@ export class UserServiceStack extends cdk.Stack {
         "ConnectionStringParam",
         `/stickerlandia/${environment}/users/connection_string`
       ),
-      messagingConnectionString: StringParameter.fromStringParameterName(
-        this,
-        "MessagingConnectionStringParam",
-        `/stickerlandia/${environment}/users/kafka-broker`
-      ),
-      kafkaUsername: StringParameter.fromStringParameterName(
-        this,
-        "KafkaUsernameParam",
-        `/stickerlandia/${environment}/users/kafka-username`
-      ),
-      kafkaPassword: StringParameter.fromStringParameterName(
-        this,
-        "KafkaPasswordParam",
-        `/stickerlandia/${environment}/users/kafka-password`
-      ),
+      messagingConnectionString: undefined,
+      kafkaUsername: undefined,
+      kafkaPassword: undefined
     };
 
     const api = new Api(this, "Api", {
@@ -94,7 +82,7 @@ export class UserServiceStack extends cdk.Stack {
       vpc: sharedResources.vpc,
       serviceDiscoveryName: "users.worker",
       cluster: cluster,
-      useLambda: false,
+      useLambda: true,
       serviceDiscoveryNamespace: sharedResources.serviceDiscoveryNamespace,
       stickerClaimedQueue: api.stickerClaimedQueue,
       stickerClaimedDLQ: api.stickerClaimedDLQ,

@@ -66,7 +66,7 @@ export class Api extends Construct {
       environmentVariables: {
         DEPLOYMENT_HOST_URL: `https://${props.serviceProps.cloudfrontDistribution.distributionDomainName}`,
         DRIVING: "ASPNET",
-        DRIVEN: "AGNOSTIC",
+        DRIVEN: "AWS",
         DISABLE_SSL: "true",
         LOGGING__LOGLEVEL__DEFAULT: "INFORMATION",
         LOGGING__LOGLEVEL__MICROSOFT: "INFORMATION",
@@ -80,15 +80,15 @@ export class Api extends Construct {
         ConnectionStrings__database: Secret.fromSsmParameter(
           props.serviceProps.connectionString
         ),
-        ConnectionStrings__messaging: Secret.fromSsmParameter(
-          props.serviceProps.messagingConnectionString
-        ),
-        KAFKA_USERNAME: Secret.fromSsmParameter(
-          props.serviceProps.kafkaUsername
-        ),
-        KAFKA_PASSWORD: Secret.fromSsmParameter(
-          props.serviceProps.kafkaPassword
-        ),
+        //        ConnectionStrings__messaging: Secret.fromSsmParameter(
+        //          props.serviceProps.messagingConnectionString
+        //        ),
+        //        KAFKA_USERNAME: Secret.fromSsmParameter(
+        //          props.serviceProps.kafkaUsername
+        //        ),
+        //        KAFKA_PASSWORD: Secret.fromSsmParameter(
+        //          props.serviceProps.kafkaPassword
+        //        ),
       },
       path: "/api/users/{proxy+}",
       additionalPathMappings: [
