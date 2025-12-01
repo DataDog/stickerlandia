@@ -12,10 +12,16 @@ import { IPrivateDnsNamespace } from "aws-cdk-lib/aws-servicediscovery";
 import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
 import { WebService } from "../../../../shared/lib/shared-constructs/lib/web-service";
 import { ServiceProps } from "./service-props";
+import { IEventBus, Rule } from "aws-cdk-lib/aws-events";
+import { Queue } from "aws-cdk-lib/aws-sqs";
+import { Duration } from "aws-cdk-lib";
+import { MessagingType } from "./sticker-award-service-stack";
+import { SqsQueue } from "aws-cdk-lib/aws-events-targets";
 
 export class ApiProps {
   sharedProps: SharedProps;
   serviceProps: ServiceProps;
+  sharedEventBus: IEventBus;
   vpc: IVpc;
   vpcLink: IVpcLink;
   vpcLinkSecurityGroupId: string;
@@ -24,11 +30,65 @@ export class ApiProps {
   serviceDiscoveryName: string;
   deployInPrivateSubnet?: boolean;
   cluster: Cluster;
+  messagingType: MessagingType;
 }
 
 export class Api extends Construct {
   constructor(scope: Construct, id: string, props: ApiProps) {
     super(scope, id);
+
+    const userRegisteredDLQ = new Queue(this, "UserRegisteredDLQ", {
+      queueName: `stickers-user-registered-dlq-${props.sharedProps.environment}`,
+      visibilityTimeout: Duration.seconds(120),
+    });
+
+    const userRegisteredQueue = new Queue(this, "UserRegisteredQueue", {
+      queueName: `stickers-user-registered-${props.sharedProps.environment}`,
+      visibilityTimeout: Duration.seconds(30),
+      deadLetterQueue: {
+        maxReceiveCount: 3,
+        queue: userRegisteredDLQ,
+      },
+    });
+
+    const rule = new Rule(this, "UserRegisteredEventRule", {
+      eventBus: props.sharedEventBus,
+      ruleName: `${props.sharedProps.serviceName}-${props.sharedProps.environment}-user-registered-rule`,
+      eventPattern: {
+        source: [`${props.sharedProps.environment}.users`],
+        detailType: ["users.userRegistered.v1"],
+      },
+    });
+    rule.addTarget(new SqsQueue(userRegisteredQueue));
+
+    const secrets: { [key: string]: Secret } = {
+      DD_API_KEY: Secret.fromSsmParameter(
+        props.sharedProps.datadog.apiKeyParameter
+      ),
+      DATABASE_HOST: Secret.fromSsmParameter(props.serviceProps.databaseHost),
+      DATABASE_NAME: Secret.fromSsmParameter(props.serviceProps.databaseName),
+      DATABASE_PASSWORD: Secret.fromSsmParameter(props.serviceProps.dbPassword),
+      DATABASE_USER: Secret.fromSsmParameter(props.serviceProps.dbUsername),
+    };
+
+    if (props.messagingType.toString() === "KAFKA") {
+      secrets.KAFKA_USERNAME = Secret.fromSsmParameter(
+        props.serviceProps.kafkaUsername!
+      );
+      secrets.KAFKA_SASL_USERNAME = Secret.fromSsmParameter(
+        props.serviceProps.kafkaUsername!
+      );
+      secrets.KAFKA_BROKERS = Secret.fromSsmParameter(
+        props.serviceProps.kafkaBootstrapServers!
+      );
+      secrets.KAFKA_PASSWORD = Secret.fromSsmParameter(
+        props.serviceProps.kafkaPassword!
+      );
+      secrets.KAFKA_SASL_PASSWORD = Secret.fromSsmParameter(
+        props.serviceProps.kafkaPassword!
+      );
+    }
+
     const webService = new WebService(this, "StickerAwardWebService", {
       sharedProps: props.sharedProps,
       vpc: props.vpc,
@@ -51,33 +111,9 @@ export class Api extends Construct {
         KAFKA_ENABLE_TLS: "true",
         CATALOGUE_BASE_URL: `https://${props.serviceProps.cloudfrontDistribution.distributionDomainName}`,
         DATABASE_SSL_MODE: "require",
+        USER_REGISTERED_QUEUE_URL: userRegisteredQueue.queueUrl,
       },
-      secrets: {
-        DD_API_KEY: Secret.fromSsmParameter(
-          props.sharedProps.datadog.apiKeyParameter
-        ),
-        KAFKA_USERNAME: Secret.fromSsmParameter(
-          props.serviceProps.kafkaUsername
-        ),
-        DATABASE_HOST: Secret.fromSsmParameter(props.serviceProps.databaseHost),
-        KAFKA_SASL_USERNAME: Secret.fromSsmParameter(
-          props.serviceProps.kafkaUsername
-        ),
-        KAFKA_BROKERS: Secret.fromSsmParameter(
-          props.serviceProps.kafkaBootstrapServers
-        ),
-        DATABASE_NAME: Secret.fromSsmParameter(props.serviceProps.databaseName),
-        KAFKA_PASSWORD: Secret.fromSsmParameter(
-          props.serviceProps.kafkaPassword
-        ),
-        KAFKA_SASL_PASSWORD: Secret.fromSsmParameter(
-          props.serviceProps.kafkaPassword
-        ),
-        DATABASE_PASSWORD: Secret.fromSsmParameter(
-          props.serviceProps.dbPassword
-        ),
-        DATABASE_USER: Secret.fromSsmParameter(props.serviceProps.dbUsername),
-      },
+      secrets: secrets,
       path: "/api/awards/v1/{proxy+}",
       healthCheckPath: "/api/awards/v1",
       serviceDiscoveryNamespace: props.serviceDiscoveryNamespace,
@@ -85,5 +121,8 @@ export class Api extends Construct {
       deployInPrivateSubnet: props.deployInPrivateSubnet,
       additionalPathMappings: [],
     });
+
+    props.sharedEventBus.grantPutEventsTo(webService.taskRole);
+    userRegisteredQueue.grantConsumeMessages(webService.taskRole);
   }
 }

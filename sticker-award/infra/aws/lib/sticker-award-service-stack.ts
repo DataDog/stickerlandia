@@ -12,12 +12,18 @@ import { Cluster } from "aws-cdk-lib/aws-ecs";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
 import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
 
+export enum MessagingType {
+  AWS,
+  KAFKA,
+}
+
 export class StickerAwardServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
     const serviceName = "sticker-award";
     const environment = process.env.ENV || "dev";
+    const messagingType: MessagingType = MessagingType.AWS;
 
     const sharedResources = new SharedResources(this, "SharedResources", {
       networkName: `${serviceName}-${environment}-vpc`,
@@ -72,21 +78,30 @@ export class StickerAwardServiceStack extends cdk.Stack {
         "DatabasePasswordParam",
         `/stickerlandia/${environment}/sticker-award/database-password`
       ),
-      kafkaBootstrapServers: StringParameter.fromStringParameterName(
-        this,
-        "KafkaBootstrapServersParam",
-        `/stickerlandia/${environment}/sticker-award/kafka-broker`
-      ),
-      kafkaUsername: StringParameter.fromStringParameterName(
-        this,
-        "KafkaUsernameParam",
-        `/stickerlandia/${environment}/sticker-award/kafka-username`
-      ),
-      kafkaPassword: StringParameter.fromStringParameterName(
-        this,
-        "KafkaPasswordParam",
-        `/stickerlandia/${environment}/sticker-award/kafka-password`
-      ),
+      kafkaBootstrapServers:
+        messagingType.toString() === "KAFKA"
+          ? StringParameter.fromStringParameterName(
+              this,
+              "KafkaBootstrapServersParam",
+              `/stickerlandia/${environment}/sticker-award/kafka-broker`
+            )
+          : undefined,
+      kafkaUsername:
+        messagingType.toString() === "KAFKA"
+          ? StringParameter.fromStringParameterName(
+              this,
+              "KafkaUsernameParam",
+              `/stickerlandia/${environment}/sticker-award/kafka-username`
+            )
+          : undefined,
+      kafkaPassword:
+        messagingType.toString() === "KAFKA"
+          ? StringParameter.fromStringParameterName(
+              this,
+              "KafkaPasswordParam",
+              `/stickerlandia/${environment}/sticker-award/kafka-password`
+            )
+          : undefined,
     };
 
     const api = new Api(this, "Api", {
@@ -99,7 +114,9 @@ export class StickerAwardServiceStack extends cdk.Stack {
       serviceDiscoveryName: "awards.api",
       serviceDiscoveryNamespace: sharedResources.serviceDiscoveryNamespace,
       cluster: cluster,
-      deployInPrivateSubnet: true
+      deployInPrivateSubnet: true,
+      sharedEventBus: sharedResources.sharedEventBus,
+      messagingType: messagingType,
     });
   }
 }
