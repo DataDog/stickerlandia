@@ -34,7 +34,7 @@ import {
   SubnetType,
   Vpc,
 } from "aws-cdk-lib/aws-ec2";
-import { IEventBus } from "aws-cdk-lib/aws-events";
+import { EventBus, IEventBus } from "aws-cdk-lib/aws-events";
 import {
   IPrivateDnsNamespace,
   PrivateDnsNamespace,
@@ -116,6 +116,11 @@ export class SharedResources extends Construct {
       `/stickerlandia/${props.environment}/shared/vpc-id`
     );
 
+    const sharedEventBus = StringParameter.valueFromLookup(
+      this,
+      `/stickerlandia/${props.environment}/shared/eb-name`
+    );
+
     const vpcLinkId = vpcLinkParameter.stringValue;
     const vpcLinkSecurityGroupId = vpcLinkSecurityGroupParameter.stringValue;
     const httpApiId = httpApiParameter.stringValue;
@@ -135,7 +140,8 @@ export class SharedResources extends Construct {
       !serviceDiscoveryNamespaceName ||
       !serviceDiscoveryNamespaceArn ||
       !cloudfrontEndpoint ||
-      !cloudfrontId
+      !cloudfrontId ||
+      !sharedEventBus
     ) {
       throw new Error("Parameters for shared resources are not set correctly.");
     }
@@ -150,6 +156,11 @@ export class SharedResources extends Construct {
     this.httpApi = HttpApi.fromHttpApiAttributes(this, "HttpApi", {
       httpApiId: httpApiId,
     });
+    this.sharedEventBus = EventBus.fromEventBusName(
+      this,
+      "SharedEventBus",
+      sharedEventBus
+    );
     this.serviceDiscoveryNamespace =
       PrivateDnsNamespace.fromPrivateDnsNamespaceAttributes(
         this,
@@ -243,6 +254,10 @@ export class SharedResources extends Construct {
         vpc: this.vpc,
       }
     );
+
+    this.sharedEventBus = new EventBus(this, "SharedEventBus", {
+      eventBusName: `Stickerlandia-Shared-${props.environment}`,
+    });
 
     const distribution = new Distribution(
       this,
