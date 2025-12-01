@@ -11,16 +11,15 @@ import { Topic } from "aws-cdk-lib/aws-sns";
 import { Queue } from "aws-cdk-lib/aws-sqs";
 import { IHttpApi, IVpcLink } from "aws-cdk-lib/aws-apigatewayv2";
 import { IPrivateDnsNamespace } from "aws-cdk-lib/aws-servicediscovery";
-import {
-  IApplicationListener,
-  IApplicationLoadBalancer,
-} from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
 import { WebService } from "../../../../shared/lib/shared-constructs/lib/web-service";
 import { Bucket } from "aws-cdk-lib/aws-s3";
 import { ServiceProps } from "./service-props";
+import { IEventBus } from "aws-cdk-lib/aws-events";
+import { MessagingType } from "./sticker-catalogue-stack";
 
 export class ApiProps {
+  messagingType: MessagingType;
   sharedProps: SharedProps;
   serviceProps: ServiceProps;
   vpc: IVpc;
@@ -32,6 +31,7 @@ export class ApiProps {
   deployInPrivateSubnet?: boolean;
   cluster: Cluster;
   stickerImagesBucket: Bucket;
+  sharedEventBus: IEventBus;
 }
 
 export class Api extends Construct {
@@ -40,6 +40,38 @@ export class Api extends Construct {
   userRegisteredTopic: Topic;
   constructor(scope: Construct, id: string, props: ApiProps) {
     super(scope, id);
+
+    const secrets: { [key: string]: Secret } = {
+      DD_API_KEY: Secret.fromSsmParameter(
+        props.sharedProps.datadog.apiKeyParameter
+      ),
+      QUARKUS_DATASOURCE_JDBC_URL: Secret.fromSsmParameter(
+        props.serviceProps.jdbcUrl
+      ),
+      QUARKUS_DATASOURCE_USERNAME: Secret.fromSsmParameter(
+        props.serviceProps.dbUsername
+      ),
+      QUARKUS_DATASOURCE_PASSWORD: Secret.fromSsmParameter(
+        props.serviceProps.dbPassword
+      ),
+    };
+
+    if (props.messagingType.toString() === "KAFKA") {
+      secrets.QUARKUS_KAFKA_STREAMS_BOOTSTRAP_SERVERS = Secret.fromSsmParameter(
+        props.serviceProps.kafkaBootstrapServers!
+      );
+      secrets.KAFKA_BOOTSTRAP_SERVERS = Secret.fromSsmParameter(
+        props.serviceProps.kafkaBootstrapServers!
+      );
+      secrets.KAFKA_SASL_JAAS_CONFIG = Secret.fromSsmParameter(
+        props.serviceProps.jaslConfig!
+      );
+      secrets.MP_MESSAGING_CONNECTOR_SMALLRYE_KAFKA_BOOTSTRAP_SERVERS =
+        Secret.fromSsmParameter(props.serviceProps.kafkaBootstrapServers!);
+      secrets.MP_MESSAGING_CONNECTOR_SMALLRYE_KAFKA_SASL_JAAS_CONFIG =
+        Secret.fromSsmParameter(props.serviceProps.jaslConfig!);
+    }
+
     const webService = new WebService(this, "StickerCatalogueWebService", {
       sharedProps: props.sharedProps,
       vpc: props.vpc,
@@ -61,34 +93,9 @@ export class Api extends Construct {
         MP_MESSAGING_CONNECTOR_SMALLRYE_KAFKA_SASL_MECHANISM: "PLAIN",
         QUARKUS_S3_PATH_STYLE_ACCESS: "true",
         STICKER_IMAGES_BUCKET: props.stickerImagesBucket.bucketName,
+        EVENT_BUS_NAME: props.sharedEventBus.eventBusName,
       },
-      secrets: {
-        DD_API_KEY: Secret.fromSsmParameter(
-          props.sharedProps.datadog.apiKeyParameter
-        ),
-        QUARKUS_DATASOURCE_JDBC_URL: Secret.fromSsmParameter(
-          props.serviceProps.jdbcUrl
-        ),
-        QUARKUS_DATASOURCE_USERNAME: Secret.fromSsmParameter(
-          props.serviceProps.dbUsername
-        ),
-        QUARKUS_DATASOURCE_PASSWORD: Secret.fromSsmParameter(
-          props.serviceProps.dbPassword
-        ),
-        QUARKUS_KAFKA_STREAMS_BOOTSTRAP_SERVERS: Secret.fromSsmParameter(
-          props.serviceProps.kafkaBootstrapServers
-        ),
-        KAFKA_BOOTSTRAP_SERVERS: Secret.fromSsmParameter(
-          props.serviceProps.kafkaBootstrapServers
-        ),
-        KAFKA_SASL_JAAS_CONFIG: Secret.fromSsmParameter(
-          props.serviceProps.jaslConfig
-        ),
-        MP_MESSAGING_CONNECTOR_SMALLRYE_KAFKA_BOOTSTRAP_SERVERS:
-          Secret.fromSsmParameter(props.serviceProps.kafkaBootstrapServers),
-        MP_MESSAGING_CONNECTOR_SMALLRYE_KAFKA_SASL_JAAS_CONFIG:
-          Secret.fromSsmParameter(props.serviceProps.jaslConfig),
-      },
+      secrets: secrets,
       path: "/api/stickers/v1/{proxy+}",
       additionalPathMappings: [],
       healthCheckPath: "/api/stickers/v1",
@@ -98,5 +105,6 @@ export class Api extends Construct {
     });
 
     props.stickerImagesBucket.grantReadWrite(webService.taskRole);
+    props.sharedEventBus.grantPutEventsTo(webService.taskRole);
   }
 }

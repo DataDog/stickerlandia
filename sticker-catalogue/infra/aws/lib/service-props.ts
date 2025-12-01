@@ -6,8 +6,8 @@ export interface ServiceProps {
   jdbcUrl: IStringParameter;
   dbUsername: IStringParameter;
   dbPassword: IStringParameter;
-  kafkaBootstrapServers: IStringParameter;
-  kafkaUsername: IStringParameter;
-  kafkaPassword: IStringParameter;
-  jaslConfig: IStringParameter
+  kafkaBootstrapServers: IStringParameter | undefined;
+  kafkaUsername: IStringParameter | undefined;
+  kafkaPassword: IStringParameter | undefined;
+  jaslConfig: IStringParameter | undefined;
 }

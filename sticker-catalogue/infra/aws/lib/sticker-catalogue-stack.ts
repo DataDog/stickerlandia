@@ -14,12 +14,18 @@ import { StringParameter } from "aws-cdk-lib/aws-ssm";
 import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
 import { Bucket } from "aws-cdk-lib/aws-s3";
 
+export enum MessagingType {
+  AWS,
+  KAFKA,
+}
+
 export class StickerCatalogueServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
     const serviceName = "sticker-service";
     const environment = process.env.ENV || "dev";
+    const messagingType: MessagingType = MessagingType.AWS;
 
     const sharedResources = new SharedResources(this, "SharedResources", {
       networkName: `${serviceName}-${environment}-vpc`,
@@ -70,26 +76,38 @@ export class StickerCatalogueServiceStack extends cdk.Stack {
         "DatabasePasswordParam",
         `/stickerlandia/${environment}/catalogue/database-password`
       ),
-      kafkaBootstrapServers: StringParameter.fromStringParameterName(
-        this,
-        "KafkaBootstrapServersParam",
-        `/stickerlandia/${environment}/catalogue/kafka-broker`
-      ),
-      kafkaUsername: StringParameter.fromStringParameterName(
-        this,
-        "KafkaUsernameParam",
-        `/stickerlandia/${environment}/catalogue/kafka-username`
-      ),
-      kafkaPassword: StringParameter.fromStringParameterName(
-        this,
-        "KafkaPasswordParam",
-        `/stickerlandia/${environment}/catalogue/kafka-password`
-      ),
-      jaslConfig: StringParameter.fromStringParameterName(
-        this,
-        "KafkaJaslConfigParam",
-        `/stickerlandia/${environment}/catalogue/jasl-config`
-      ),
+      kafkaBootstrapServers:
+        messagingType.toString() === "KAFKA"
+          ? StringParameter.fromStringParameterName(
+              this,
+              "KafkaBootstrapServersParam",
+              `/stickerlandia/${environment}/sticker-award/kafka-broker`
+            )
+          : undefined,
+      kafkaUsername:
+        messagingType.toString() === "KAFKA"
+          ? StringParameter.fromStringParameterName(
+              this,
+              "KafkaUsernameParam",
+              `/stickerlandia/${environment}/sticker-award/kafka-username`
+            )
+          : undefined,
+      kafkaPassword:
+        messagingType.toString() === "KAFKA"
+          ? StringParameter.fromStringParameterName(
+              this,
+              "KafkaPasswordParam",
+              `/stickerlandia/${environment}/sticker-award/kafka-password`
+            )
+          : undefined,
+      jaslConfig:
+        messagingType.toString() === "KAFKA"
+          ? StringParameter.fromStringParameterName(
+              this,
+              "KafkaJaslConfigParam",
+              `/stickerlandia/${environment}/sticker-award/kafka-jasl-config`
+            )
+          : undefined,
     };
 
     const stickerImageBucket = new Bucket(this, "StickerImageBucket", {
@@ -99,6 +117,7 @@ export class StickerCatalogueServiceStack extends cdk.Stack {
     });
 
     const api = new Api(this, "Api", {
+      messagingType,
       sharedProps: sharedProps,
       serviceProps: serviceProps,
       vpc: sharedResources.vpc,
@@ -110,6 +129,7 @@ export class StickerCatalogueServiceStack extends cdk.Stack {
       cluster: cluster,
       stickerImagesBucket: stickerImageBucket,
       deployInPrivateSubnet: true,
+      sharedEventBus: sharedResources.sharedEventBus,
     });
   }
 }
