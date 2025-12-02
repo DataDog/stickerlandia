@@ -16,10 +16,8 @@ import { WebService } from "../../../../shared/lib/shared-constructs/lib/web-ser
 import { Bucket } from "aws-cdk-lib/aws-s3";
 import { ServiceProps } from "./service-props";
 import { IEventBus } from "aws-cdk-lib/aws-events";
-import { MessagingType } from "./sticker-catalogue-stack";
 
 export class ApiProps {
-  messagingType: MessagingType;
   sharedProps: SharedProps;
   serviceProps: ServiceProps;
   vpc: IVpc;
@@ -54,23 +52,8 @@ export class Api extends Construct {
       QUARKUS_DATASOURCE_PASSWORD: Secret.fromSsmParameter(
         props.serviceProps.dbPassword
       ),
+      ...props.serviceProps.messagingProps.asSecrets(),
     };
-
-    if (props.messagingType.toString() === "KAFKA") {
-      secrets.QUARKUS_KAFKA_STREAMS_BOOTSTRAP_SERVERS = Secret.fromSsmParameter(
-        props.serviceProps.kafkaBootstrapServers!
-      );
-      secrets.KAFKA_BOOTSTRAP_SERVERS = Secret.fromSsmParameter(
-        props.serviceProps.kafkaBootstrapServers!
-      );
-      secrets.KAFKA_SASL_JAAS_CONFIG = Secret.fromSsmParameter(
-        props.serviceProps.jaslConfig!
-      );
-      secrets.MP_MESSAGING_CONNECTOR_SMALLRYE_KAFKA_BOOTSTRAP_SERVERS =
-        Secret.fromSsmParameter(props.serviceProps.kafkaBootstrapServers!);
-      secrets.MP_MESSAGING_CONNECTOR_SMALLRYE_KAFKA_SASL_JAAS_CONFIG =
-        Secret.fromSsmParameter(props.serviceProps.jaslConfig!);
-    }
 
     const webService = new WebService(this, "StickerCatalogueWebService", {
       sharedProps: props.sharedProps,
@@ -87,13 +70,9 @@ export class Api extends Construct {
         QUARKUS_DATASOURCE_DB_KIND: "postgresql",
         QUARKUS_DATASOURCE_DEVSERVICES_ENABLED: "false",
         QUARKUS_DATASOURCE_JDBC_ACQUISITION_TIMEOUT: "30S",
-        KAFKA_SASL_MECHANISM: "PLAIN",
-        KAFKA_SECURITY_PROTOCOL: "SASL_SSL",
-        MP_MESSAGING_CONNECTOR_SMALLRYE_KAFKA_SECURITY_PROTOCOL: "SASL_SSL",
-        MP_MESSAGING_CONNECTOR_SMALLRYE_KAFKA_SASL_MECHANISM: "PLAIN",
         QUARKUS_S3_PATH_STYLE_ACCESS: "true",
         STICKER_IMAGES_BUCKET: props.stickerImagesBucket.bucketName,
-        EVENT_BUS_NAME: props.sharedEventBus.eventBusName,
+        ...props.serviceProps.messagingProps.asEnvironmentVariables(),
       },
       secrets: secrets,
       path: "/api/stickers/v1/{proxy+}",
@@ -105,6 +84,6 @@ export class Api extends Construct {
     });
 
     props.stickerImagesBucket.grantReadWrite(webService.taskRole);
-    props.sharedEventBus.grantPutEventsTo(webService.taskRole);
+    props.serviceProps.messagingProps.grantPermissions(webService.taskRole);
   }
 }
