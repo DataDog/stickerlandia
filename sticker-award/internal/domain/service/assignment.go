@@ -19,7 +19,7 @@ import (
 	"github.com/datadog/stickerlandia/sticker-award/internal/messaging"
 	"github.com/datadog/stickerlandia/sticker-award/internal/messaging/events/published"
 	pkgErrors "github.com/datadog/stickerlandia/sticker-award/pkg/errors"
-	"github.com/datadog/stickerlandia/sticker-award/pkg/validator"
+	"github.com/go-playground/validator/v10"
 )
 
 // Assigner defines the interface for assignment business logic
@@ -46,16 +46,16 @@ const (
 type assignmentService struct {
 	assignmentRepo  repository.AssignmentRepository
 	catalogueClient *catalogue.Client
-	validator       *validator.Validator
-	producer        *messaging.Producer
+	validator       *validator.Validate
+	producer        messaging.EventPublisher
 }
 
 // NewAssigner creates a new assignment service
 func NewAssigner(
 	assignmentRepo repository.AssignmentRepository,
 	catalogueClient *catalogue.Client,
-	validator *validator.Validator,
-	producer *messaging.Producer,
+	validator *validator.Validate,
+	producer messaging.EventPublisher,
 ) Assigner {
 	return &assignmentService{
 		assignmentRepo:  assignmentRepo,
@@ -104,7 +104,7 @@ func (s *assignmentService) AssignSticker(ctx context.Context, userID string, re
 		return nil, pkgErrors.NewBadRequestError("user ID is required", pkgErrors.ErrInvalidUserID)
 	}
 
-	if err := s.validator.Validate(req); err != nil {
+	if err := s.validator.Struct(req); err != nil {
 		return nil, pkgErrors.NewBadRequestError("invalid request", err)
 	}
 

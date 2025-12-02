@@ -2,7 +2,7 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025-Present Datadog, Inc.
 
-package middleware
+package kafka
 
 import (
 	"context"
@@ -17,27 +17,22 @@ import (
 	"github.com/IBM/sarama"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/datadog/stickerlandia/sticker-award/internal/messaging"
 	"github.com/datadog/stickerlandia/sticker-award/internal/messaging/events"
 )
 
-// CloudEventMessageHandler defines the interface for handlers that work with parsed CloudEvents
-type CloudEventMessageHandler[T any] interface {
-	Handle(ctx context.Context, cloudEvent events.CloudEvent[T], rawMessage *sarama.ConsumerMessage) error
-	Topic() string
-}
-
-// MessagingHandler wraps a CloudEventMessageHandler to provide complete messaging infrastructure:
+// MessagingHandler wraps a messaging.CloudEventMessageHandler to provide complete messaging infrastructure:
 // - DSM tracking
 // - Root trace creation with span links
 // - CloudEvent parsing
 type MessagingHandler[T any] struct {
-	handler       CloudEventMessageHandler[T]
+	handler       messaging.CloudEventMessageHandler[T]
 	operationName string
 	serviceName   string
 }
 
 // NewMessagingHandler creates a new messaging middleware wrapper
-func NewMessagingHandler[T any](handler CloudEventMessageHandler[T], operationName, serviceName string) *MessagingHandler[T] {
+func NewMessagingHandler[T any](handler messaging.CloudEventMessageHandler[T], operationName, serviceName string) *MessagingHandler[T] {
 	return &MessagingHandler[T]{
 		handler:       handler,
 		operationName: operationName,
@@ -139,7 +134,8 @@ func (m *MessagingHandler[T]) Handle(ctx context.Context, message *sarama.Consum
 	}
 
 	// 5. Business Logic - Call handler with parsed CloudEvent and new trace context
-	return m.handler.Handle(ctx, cloudEvent, message)
+	// Business handlers are transport-agnostic and don't receive the raw message
+	return m.handler.Handle(ctx, cloudEvent)
 }
 
 // Topic returns the topic this handler processes

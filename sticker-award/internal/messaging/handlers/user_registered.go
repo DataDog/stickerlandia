@@ -8,12 +8,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/IBM/sarama"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/datadog/stickerlandia/sticker-award/internal/messaging/events"
 	"github.com/datadog/stickerlandia/sticker-award/internal/messaging/events/consumed"
-	"github.com/datadog/stickerlandia/sticker-award/internal/messaging/factory"
 )
 
 const TopicUserRegistered = "users.userRegistered.v1"
@@ -35,11 +33,16 @@ func NewUserRegisteredHandler(assigner WelcomeStickerAssigner) *UserRegisteredHa
 	}
 }
 
-// NewUserRegisteredMessageHandler creates a fully middleware-wrapped UserRegisteredHandler
-// This applies the complete messaging middleware (DSM + Root trace + CloudEvent) transparently
-func NewUserRegisteredMessageHandler(assigner WelcomeStickerAssigner, handlerFactory *factory.HandlerFactory) factory.MessageHandler {
-	handler := NewUserRegisteredHandler(assigner)
-	return factory.CreateCloudEventHandler(handlerFactory, handler, "process users.userRegistered.v1")
+// NewUserRegisteredMessageHandler creates a transport-agnostic handler for user registered events.
+// The returned handler implements CloudEventMessageHandler and will be wrapped with transport-specific
+// middleware (DSM, tracing, CloudEvent parsing) by the MessageConsumer when registered.
+func NewUserRegisteredMessageHandler(assigner WelcomeStickerAssigner) *UserRegisteredHandler {
+	return NewUserRegisteredHandler(assigner)
+}
+
+// OperationName returns the operation name for tracing
+func (h *UserRegisteredHandler) OperationName() string {
+	return "process " + TopicUserRegistered
 }
 
 // Topic returns the topic this handler processes
@@ -47,8 +50,9 @@ func (h *UserRegisteredHandler) Topic() string {
 	return TopicUserRegistered
 }
 
-// Handle processes a user registered event with pre-parsed CloudEvent
-func (h *UserRegisteredHandler) Handle(ctx context.Context, cloudEvent events.CloudEvent[consumed.UserRegisteredEvent], rawMessage *sarama.ConsumerMessage) error {
+// Handle processes a user registered event with pre-parsed CloudEvent.
+// This handler is transport-agnostic - it only works with the CloudEvent, not raw messages.
+func (h *UserRegisteredHandler) Handle(ctx context.Context, cloudEvent events.CloudEvent[consumed.UserRegisteredEvent]) error {
 	event := cloudEvent.Data
 	log.WithContext(ctx).WithFields(log.Fields{
 		"accountId": event.AccountID,

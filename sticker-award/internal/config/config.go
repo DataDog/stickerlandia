@@ -11,13 +11,24 @@ import (
 	"github.com/spf13/viper"
 )
 
+// MessagingProvider defines the messaging transport to use
+type MessagingProvider string
+
+const (
+	MessagingProviderKafka MessagingProvider = "kafka"
+	MessagingProviderAWS   MessagingProvider = "aws"
+)
+
 // Config holds all configuration for the application
 type Config struct {
-	Server    ServerConfig    `mapstructure:"server"`
-	Database  DatabaseConfig  `mapstructure:"database"`
-	Kafka     KafkaConfig     `mapstructure:"kafka"`
-	Catalogue CatalogueConfig `mapstructure:"catalogue"`
-	Logging   LoggingConfig   `mapstructure:"logging"`
+	ServiceName       string            `mapstructure:"service_name"`
+	Server            ServerConfig      `mapstructure:"server"`
+	Database          DatabaseConfig    `mapstructure:"database"`
+	MessagingProvider MessagingProvider `mapstructure:"messaging_provider"`
+	Kafka             KafkaConfig       `mapstructure:"kafka"`
+	AWS               AWSConfig         `mapstructure:"aws"`
+	Catalogue         CatalogueConfig   `mapstructure:"catalogue"`
+	Logging           LoggingConfig     `mapstructure:"logging"`
 }
 
 // ServerConfig holds HTTP server configuration
@@ -49,6 +60,16 @@ type KafkaConfig struct {
 	ProducerBatchSize int  `mapstructure:"producer_batch_size"`
 	RequireAcks       int  `mapstructure:"require_acks"`
 	EnableIdempotent  bool `mapstructure:"enable_idempotent"`
+}
+
+// AWSConfig holds AWS messaging configuration (EventBridge + SQS)
+type AWSConfig struct {
+	Region             string `mapstructure:"region"`
+	EventBridgeBusName string `mapstructure:"eventbridge_bus_name"`
+	SQSQueueURL        string `mapstructure:"sqs_queue_url"`
+	MaxConcurrency     int    `mapstructure:"max_concurrency"`
+	VisibilityTimeout  int    `mapstructure:"visibility_timeout"` // Seconds
+	WaitTimeSeconds    int    `mapstructure:"wait_time_seconds"`  // Long polling duration
 }
 
 // CatalogueConfig holds sticker catalogue service configuration
@@ -94,6 +115,9 @@ func Load() (*Config, error) {
 
 // setDefaults sets default configuration values
 func setDefaults() {
+	// Service name default
+	viper.SetDefault("service_name", "award-service")
+
 	// Server defaults
 	viper.SetDefault("server.port", "8080")
 	viper.SetDefault("server.host", "localhost")
@@ -106,6 +130,9 @@ func setDefaults() {
 	viper.SetDefault("database.name", "sticker_awards")
 	viper.SetDefault("database.ssl_mode", "disable")
 
+	// Messaging provider default (kafka for backward compatibility)
+	viper.SetDefault("messaging_provider", "kafka")
+
 	// Kafka defaults
 	viper.SetDefault("kafka.brokers", []string{"localhost:9092"})
 	viper.SetDefault("kafka.group_id", "sticker-award-service")
@@ -117,6 +144,14 @@ func setDefaults() {
 	viper.SetDefault("kafka.producer_batch_size", 16384) // 16KB
 	viper.SetDefault("kafka.require_acks", 1)            // Wait for leader acknowledgment
 	viper.SetDefault("kafka.enable_idempotent", true)
+
+	// AWS defaults
+	viper.SetDefault("aws.region", "us-east-1")
+	viper.SetDefault("aws.eventbridge_bus_name", "stickerlandia-events")
+	viper.SetDefault("aws.sqs_queue_url", "")
+	viper.SetDefault("aws.max_concurrency", 10)
+	viper.SetDefault("aws.visibility_timeout", 30) // 30 seconds
+	viper.SetDefault("aws.wait_time_seconds", 20)  // 20 seconds long polling
 
 	// Catalogue service defaults
 	viper.SetDefault("catalogue.base_url", "http://localhost:8080")
