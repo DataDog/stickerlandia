@@ -11,6 +11,7 @@ import { Api } from "./api";
 import { Cluster } from "aws-cdk-lib/aws-ecs";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
 import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
+import { KafkaMessagingProps, ServiceProps } from "./service-props";
 
 export enum MessagingType {
   AWS,
@@ -55,7 +56,7 @@ export class StickerAwardServiceStack extends cdk.Stack {
       ddSite
     );
 
-    const serviceProps = {
+    const serviceProps: ServiceProps = {
       cloudfrontDistribution: sharedResources.cloudfrontDistribution,
       databaseHost: StringParameter.fromStringParameterName(
         this,
@@ -78,30 +79,11 @@ export class StickerAwardServiceStack extends cdk.Stack {
         "DatabasePasswordParam",
         `/stickerlandia/${environment}/sticker-award/database-password`
       ),
-      kafkaBootstrapServers:
-        messagingType.toString() === "KAFKA"
-          ? StringParameter.fromStringParameterName(
-              this,
-              "KafkaBootstrapServersParam",
-              `/stickerlandia/${environment}/sticker-award/kafka-broker`
-            )
-          : undefined,
-      kafkaUsername:
-        messagingType.toString() === "KAFKA"
-          ? StringParameter.fromStringParameterName(
-              this,
-              "KafkaUsernameParam",
-              `/stickerlandia/${environment}/sticker-award/kafka-username`
-            )
-          : undefined,
-      kafkaPassword:
-        messagingType.toString() === "KAFKA"
-          ? StringParameter.fromStringParameterName(
-              this,
-              "KafkaPasswordParam",
-              `/stickerlandia/${environment}/sticker-award/kafka-password`
-            )
-          : undefined,
+      messagingConfiguration: new KafkaMessagingProps(
+        this,
+        "KafkaMessagingProps",
+        sharedProps
+      ),
     };
 
     const api = new Api(this, "Api", {
@@ -116,7 +98,6 @@ export class StickerAwardServiceStack extends cdk.Stack {
       cluster: cluster,
       deployInPrivateSubnet: true,
       sharedEventBus: sharedResources.sharedEventBus,
-      messagingType: messagingType,
     });
   }
 }

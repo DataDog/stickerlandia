@@ -138,3 +138,36 @@ The service is configured via environment variables:
 ### Logging
 - `LOG_LEVEL` - Log level (debug, info, warn, error)
 - `LOG_FORMAT` - Log format (json, console)
+
+# Deployment
+
+The sticker award service can be deployed to AWS, Azure & GCP. For deployment instructions see cloud provider specific instructions below:
+
+## AWS
+
+AWS deployment uses the AWS CDK. Inside the CDK code, there is the concept of an 'integrated' (dev, prod) and 'non-integrated' environment. For developing a development instance of the sticker award service you'll first need to copy some parameters inside AWS, and then deploy using the below commands.
+
+### Parameters
+
+The service expects SSM parameters named:
+
+- /stickerlandia/<ENV>/sticker-award/database-host
+- /stickerlandia/<ENV>/sticker-award/database-name
+- /stickerlandia/<ENV>/sticker-award/database-user
+- /stickerlandia/<ENV>/sticker-award/database-password
+- /stickerlandia/<ENV>/sticker-award/kafka-broker
+- /stickerlandia/<ENV>/sticker-award/kafka-username
+- /stickerlandia/<ENV>/sticker-award/kafka-password
+
+You will need to create those before running the deploy commands below.
+
+### Deployment
+
+```sh
+export ENV= # The environment name to use, don't use 'dev' or 'prod'. Your initials is normally a good start.
+export VERSION= # The commit hash you want to use, defaults to latest
+export DD_API_KEY= # The Datadog API key for your org
+export DD_SITE = # The Datadog site to use
+cd infra/aws
+cdk deploy
+```

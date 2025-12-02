@@ -11,11 +11,12 @@ import { IHttpApi, IVpcLink } from "aws-cdk-lib/aws-apigatewayv2";
 import { IPrivateDnsNamespace } from "aws-cdk-lib/aws-servicediscovery";
 import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
 import { WebService } from "../../../../shared/lib/shared-constructs/lib/web-service";
-import { ServiceProps } from "./service-props";
+import {
+  ServiceProps,
+} from "./service-props";
 import { IEventBus, Rule } from "aws-cdk-lib/aws-events";
 import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Duration } from "aws-cdk-lib";
-import { MessagingType } from "./sticker-award-service-stack";
 import { SqsQueue } from "aws-cdk-lib/aws-events-targets";
 
 export class ApiProps {
@@ -30,7 +31,6 @@ export class ApiProps {
   serviceDiscoveryName: string;
   deployInPrivateSubnet?: boolean;
   cluster: Cluster;
-  messagingType: MessagingType;
 }
 
 export class Api extends Construct {
@@ -69,25 +69,8 @@ export class Api extends Construct {
       DATABASE_NAME: Secret.fromSsmParameter(props.serviceProps.databaseName),
       DATABASE_PASSWORD: Secret.fromSsmParameter(props.serviceProps.dbPassword),
       DATABASE_USER: Secret.fromSsmParameter(props.serviceProps.dbUsername),
+      ...props.serviceProps.messagingConfiguration.asSecrets(),
     };
-
-    if (props.messagingType.toString() === "KAFKA") {
-      secrets.KAFKA_USERNAME = Secret.fromSsmParameter(
-        props.serviceProps.kafkaUsername!
-      );
-      secrets.KAFKA_SASL_USERNAME = Secret.fromSsmParameter(
-        props.serviceProps.kafkaUsername!
-      );
-      secrets.KAFKA_BROKERS = Secret.fromSsmParameter(
-        props.serviceProps.kafkaBootstrapServers!
-      );
-      secrets.KAFKA_PASSWORD = Secret.fromSsmParameter(
-        props.serviceProps.kafkaPassword!
-      );
-      secrets.KAFKA_SASL_PASSWORD = Secret.fromSsmParameter(
-        props.serviceProps.kafkaPassword!
-      );
-    }
 
     const webService = new WebService(this, "StickerAwardWebService", {
       sharedProps: props.sharedProps,
@@ -112,6 +95,7 @@ export class Api extends Construct {
         CATALOGUE_BASE_URL: `https://${props.serviceProps.cloudfrontDistribution.distributionDomainName}`,
         DATABASE_SSL_MODE: "require",
         USER_REGISTERED_QUEUE_URL: userRegisteredQueue.queueUrl,
+        ...props.serviceProps.messagingConfiguration.asEnvironmentVariables(),
       },
       secrets: secrets,
       path: "/api/awards/v1/{proxy+}",
