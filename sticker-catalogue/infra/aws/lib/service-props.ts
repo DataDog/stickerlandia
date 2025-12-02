@@ -22,12 +22,12 @@ export class KafkaMessagingProps extends Construct implements MessagingProps {
     this.kafkaBootstrapServers = StringParameter.fromStringParameterName(
       this,
       "KafkaBootstrapServersParam",
-      `/stickerlandia/${props.environment}/sticker-award/kafka-broker`
+      `/stickerlandia/${props.environment}/catalogue/kafka-broker`
     );
     this.jaslConfig = StringParameter.fromStringParameterName(
       this,
       "KafkaJaslConfigParam",
-      `/stickerlandia/${props.environment}/sticker-award/kafka-jasl-config`
+      `/stickerlandia/${props.environment}/catalogue/kafka-jasl-config`
     );
   }
 
