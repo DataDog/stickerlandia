@@ -4,6 +4,7 @@
  * Copyright 2025-Present Datadog, Inc.
  */
 
+import { RemovalPolicy } from "aws-cdk-lib";
 import {
   CorsHttpMethod,
   HttpApi,
@@ -36,10 +37,19 @@ import {
 } from "aws-cdk-lib/aws-ec2";
 import { EventBus, IEventBus } from "aws-cdk-lib/aws-events";
 import {
+  AuroraPostgresEngineVersion,
+  ClusterInstance,
+  Credentials,
+  DatabaseCluster,
+  DatabaseClusterEngine,
+  DatabaseSecret,
+  IDatabaseCluster,
+} from "aws-cdk-lib/aws-rds";
+import {
   IPrivateDnsNamespace,
   PrivateDnsNamespace,
 } from "aws-cdk-lib/aws-servicediscovery";
-import { StringParameter } from "aws-cdk-lib/aws-ssm";
+import { ParameterTier, StringParameter } from "aws-cdk-lib/aws-ssm";
 import { Construct } from "constructs";
 export interface SharedResourcesProps {
   environment?: string;
@@ -55,6 +65,7 @@ export class SharedResources extends Construct {
   serviceDiscoveryNamespace: IPrivateDnsNamespace;
   integrationEnvironments: string[] = ["dev", "prod"];
   cloudfrontDistribution: IDistribution;
+  sharedDatabaseCluster: IDatabaseCluster;
 
   constructor(scope: Construct, id: string, props: SharedResourcesProps) {
     super(scope, id);
@@ -121,6 +132,21 @@ export class SharedResources extends Construct {
       `/stickerlandia/${props.environment}/shared/eb-name`
     );
 
+    const sharedDbClusterIdentifier = StringParameter.valueFromLookup(
+      this,
+      `/stickerlandia/${props.environment}/shared/database-identifier`
+    );
+
+    const sharedDbClusterEndpoint = StringParameter.valueFromLookup(
+      this,
+      `/stickerlandia/${props.environment}/shared/database-endpoint`
+    );
+
+    const sharedDbResourceIdentifier = StringParameter.valueFromLookup(
+      this,
+      `/stickerlandia/${props.environment}/shared/database-resource-identifier`
+    );
+
     const vpcLinkId = vpcLinkParameter.stringValue;
     const vpcLinkSecurityGroupId = vpcLinkSecurityGroupParameter.stringValue;
     const httpApiId = httpApiParameter.stringValue;
@@ -141,7 +167,8 @@ export class SharedResources extends Construct {
       !serviceDiscoveryNamespaceArn ||
       !cloudfrontEndpoint ||
       !cloudfrontId ||
-      !sharedEventBus
+      !sharedEventBus ||
+      !sharedDbClusterIdentifier
     ) {
       throw new Error("Parameters for shared resources are not set correctly.");
     }
@@ -160,6 +187,15 @@ export class SharedResources extends Construct {
       this,
       "SharedEventBus",
       sharedEventBus
+    );
+    this.sharedDatabaseCluster = DatabaseCluster.fromDatabaseClusterAttributes(
+      this,
+      "SharedDatabaseCluster",
+      {
+        clusterIdentifier: sharedDbClusterIdentifier,
+        clusterEndpointAddress: sharedDbClusterEndpoint,
+        clusterResourceIdentifier: sharedDbResourceIdentifier,
+      }
     );
     this.serviceDiscoveryNamespace =
       PrivateDnsNamespace.fromPrivateDnsNamespaceAttributes(
@@ -258,6 +294,57 @@ export class SharedResources extends Construct {
     this.sharedEventBus = new EventBus(this, "SharedEventBus", {
       eventBusName: `Stickerlandia-Shared-${props.environment}`,
     });
+
+    var secret = new DatabaseSecret(this, "SharedDBSecret", {
+      username: "postgres",
+      excludeCharacters: '"@/\\',
+    });
+
+    var databaseSecurityGroup = new SecurityGroup(
+      this,
+      "DatabaseSecurityGroup",
+      {
+        vpc: this.vpc,
+        description: "Security group for Stickerlandia database",
+        allowAllOutbound: true,
+      }
+    );
+    databaseSecurityGroup.addIngressRule(
+      Peer.ipv4(this.vpc.vpcCidrBlock),
+      Port.tcp(5432),
+      "Allow Postgres access from within the VPC"
+    );
+
+    this.sharedDatabaseCluster = new DatabaseCluster(this, "SharedDB", {
+      clusterIdentifier: `stickerlandia-${props.environment}-db`,
+      engine: DatabaseClusterEngine.auroraPostgres({
+        version: AuroraPostgresEngineVersion.VER_17_4,
+      }),
+      vpc: this.vpc,
+      credentials: Credentials.fromSecret(secret),
+      serverlessV2MinCapacity: 0,
+      serverlessV2MaxCapacity: 1,
+      securityGroups: [databaseSecurityGroup],
+      removalPolicy: RemovalPolicy.DESTROY,
+      defaultDatabaseName: "stickerlandia",
+      writer: ClusterInstance.serverlessV2("StickerlandiaWriterInstance"),
+      readers: [
+        ClusterInstance.serverlessV2("StickerlandiaReaderInstance", {
+          scaleWithWriter: true,
+        }),
+      ],
+    });
+
+    var databaseEndpointParam = new StringParameter(
+      this,
+      "DatabaseEndpointParam",
+      {
+        parameterName: `/stickerlandia/${props.environment}/shared/database-endpoint`,
+        stringValue: this.sharedDatabaseCluster.clusterEndpoint.hostname,
+        description: `The database endpoint for the Stickerlandia ${props.environment} environment`,
+        tier: ParameterTier.STANDARD,
+      }
+    );
 
     const distribution = new Distribution(
       this,

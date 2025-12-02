@@ -11,6 +11,7 @@ import { CorsHttpMethod, HttpApi } from "aws-cdk-lib/aws-apigatewayv2";
 import { PrivateDnsNamespace } from "aws-cdk-lib/aws-servicediscovery";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
 import { EventBus } from "aws-cdk-lib/aws-events";
+import { Persistence } from "./persistence";
 // import * as sqs from 'aws-cdk-lib/aws-sqs';
 
 export class StickerlandiaSharedResourcesStack extends cdk.Stack {
@@ -22,6 +23,12 @@ export class StickerlandiaSharedResourcesStack extends cdk.Stack {
     const network = new Network(this, "Network", {
       env,
       account: this.account,
+    });
+
+    const persistence = new Persistence(this, "Persistence", {
+      env,
+      account: this.account,
+      vpc: network.vpc,
     });
 
     const dnsNamespace = new PrivateDnsNamespace(this, "PrivateDnsNamespace", {
