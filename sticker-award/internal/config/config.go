@@ -6,6 +6,9 @@ package config
 
 import (
 	"fmt"
+	"net/url"
+	"os"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -111,7 +114,59 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
+	// Override database config from DATABASE_URL if present
+	if dbURL := os.Getenv("DATABASE_URL"); dbURL != "" {
+		dbConfig, err := parseDatabaseURL(dbURL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse DATABASE_URL: %w", err)
+		}
+		config.Database = *dbConfig
+	}
+
 	return &config, nil
+}
+
+// parseDatabaseURL parses a PostgreSQL connection URL into DatabaseConfig
+// Supports format: postgres://user:password@host:port/dbname?sslmode=require
+func parseDatabaseURL(dbURL string) (*DatabaseConfig, error) {
+	u, err := url.Parse(dbURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid database URL: %w", err)
+	}
+
+	config := &DatabaseConfig{
+		Host:    u.Hostname(),
+		Port:    5432, // default
+		SSLMode: "disable",
+	}
+
+	// Parse port
+	if portStr := u.Port(); portStr != "" {
+		port, err := strconv.Atoi(portStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid port: %w", err)
+		}
+		config.Port = port
+	}
+
+	// Parse user/password
+	if u.User != nil {
+		config.User = u.User.Username()
+		if password, ok := u.User.Password(); ok {
+			config.Password = password
+		}
+	}
+
+	// Parse database name (remove leading slash)
+	config.Name = strings.TrimPrefix(u.Path, "/")
+
+	// Parse query parameters (sslmode, etc.)
+	query := u.Query()
+	if sslmode := query.Get("sslmode"); sslmode != "" {
+		config.SSLMode = sslmode
+	}
+
+	return config, nil
 }
 
 // setDefaults sets default configuration values

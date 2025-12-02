@@ -58,26 +58,10 @@ export class StickerAwardServiceStack extends cdk.Stack {
 
     const serviceProps: ServiceProps = {
       cloudfrontDistribution: sharedResources.cloudfrontDistribution,
-      databaseHost: StringParameter.fromStringParameterName(
+      connectionString: StringParameter.fromStringParameterName(
         this,
-        "DatabaseHostParam",
-        `/stickerlandia/${environment}/sticker-award/database-host`
-      ),
-      databaseName: StringParameter.fromStringParameterName(
-        this,
-        "DatabaseNameParam",
-        `/stickerlandia/${environment}/sticker-award/database-name`
-      ),
-      databasePort: process.env.DATABASE_PORT || "5432",
-      dbUsername: StringParameter.fromStringParameterName(
-        this,
-        "DatabaseUsernameParam",
-        `/stickerlandia/${environment}/sticker-award/database-user`
-      ),
-      dbPassword: StringParameter.fromStringParameterName(
-        this,
-        "DatabasePasswordParam",
-        `/stickerlandia/${environment}/sticker-award/database-password`
+        "ConnectionStringParam",
+        `/stickerlandia/${environment}/sticker-award/connection_string`
       ),
       messagingConfiguration: new KafkaMessagingProps(
         this,

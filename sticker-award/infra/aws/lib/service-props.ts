@@ -88,11 +88,7 @@ export class AWSMessagingProps extends Construct implements MessagingProps {
 }
 
 export interface ServiceProps {
-  databaseHost: IStringParameter;
-  databaseName: IStringParameter;
-  databasePort: string;
-  dbUsername: IStringParameter;
-  dbPassword: IStringParameter;
+  connectionString: IStringParameter;
   cloudfrontDistribution: IDistribution;
   messagingConfiguration: MessagingProps;
 }
