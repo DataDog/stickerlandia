@@ -387,6 +387,8 @@ internal sealed class AccountDriver : IDisposable
         using var doc = JsonDocument.Parse(tokenContent);
 
         if (!doc.RootElement.TryGetProperty("access_token", out var accessTokenElement)) return null;
+        
+        _testOutputHelper.WriteLine($"Test access token is: {accessTokenElement.GetString()}");
 
         var accessToken = accessTokenElement.GetString();
 
@@ -431,7 +433,10 @@ internal sealed class AccountDriver : IDisposable
                 var responseBody = await response.Content.ReadAsStringAsync();
 
                 if (response.IsSuccessStatusCode)
+                {
+                    _testOutputHelper.WriteLine("Found user account, deserializing and returning");
                     return JsonSerializer.Deserialize<ApiResponse<UserAccountDTO>>(responseBody)?.Data;
+                }
 
                 if (response.StatusCode == HttpStatusCode.ServiceUnavailable && attempt < maxRetries - 1)
                 {
@@ -479,11 +484,16 @@ internal sealed class AccountDriver : IDisposable
 
     public async Task InjectStickerClaimedMessage(string userId, string stickerId)
     {
+        var messagingType = _messaging.GetType();
+        _testOutputHelper.WriteLine($"Injecting sticker claimed messaging using {messagingType.FullName} messaging.");
+        
         await _messaging.SendMessageAsync("users.stickerClaimed.v1", new StickerClaimedEventV1
         {
             AccountId = userId,
             StickerId = stickerId
         });
+        
+        _testOutputHelper.WriteLine("Injected!");
     }
 
     private static bool HasValidationErrors(string htmlContent)

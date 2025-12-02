@@ -72,6 +72,7 @@ export class Api extends Construct {
         LOGGING__LOGLEVEL__MICROSOFT: "INFORMATION",
         "LOGGING__LOGLEVEL__MICROSOFT.ENTITYFRAMEWORKCORE.DATABASE.COMMAND":
           "WARNING",
+        ...props.serviceProps.messagingConfiguration.asEnvironmentVariables(),
       },
       secrets: {
         DD_API_KEY: Secret.fromSsmParameter(
@@ -80,15 +81,7 @@ export class Api extends Construct {
         ConnectionStrings__database: Secret.fromSsmParameter(
           props.serviceProps.connectionString
         ),
-        //        ConnectionStrings__messaging: Secret.fromSsmParameter(
-        //          props.serviceProps.messagingConnectionString
-        //        ),
-        //        KAFKA_USERNAME: Secret.fromSsmParameter(
-        //          props.serviceProps.kafkaUsername
-        //        ),
-        //        KAFKA_PASSWORD: Secret.fromSsmParameter(
-        //          props.serviceProps.kafkaPassword
-        //        ),
+        ...props.serviceProps.messagingConfiguration.asSecrets(),
       },
       path: "/api/users/{proxy+}",
       additionalPathMappings: [

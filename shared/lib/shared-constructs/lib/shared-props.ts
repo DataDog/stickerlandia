@@ -61,7 +61,9 @@ export class SharedProps {
         isDatadogDependencyEnabled: true,
         site: ddSite,
         clusterName: cluster.clusterName,
-        environmentVariables: {},
+        environmentVariables: {
+          DD_APM_IGNORE_RESOURCES: "(GET|HEAD) .*/health$",
+        },
         dogstatsd: {
           isEnabled: true,
         },

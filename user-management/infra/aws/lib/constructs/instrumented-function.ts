@@ -58,6 +58,7 @@ export class InstrumentedLambdaFunction extends Construct {
       timeout: props.timeout ?? Duration.seconds(29),
       onFailure: props.onFailure,
       environment: {
+        AWS_LAMBDA_EXEC_WRAPPER: "/opt/datadog_wrapper",
         POWERTOOLS_SERVICE_NAME: props.sharedProps.serviceName,
         POWERTOOLS_LOG_LEVEL:
           props.logLevel ?? props.sharedProps.environment === "prod"
@@ -71,6 +72,7 @@ export class InstrumentedLambdaFunction extends Construct {
         DD_API_KEY: props.sharedProps.datadog.apiKey,
         DD_SITE: props.sharedProps.datadog.site,
         DD_DATA_STREAMS_ENABLED: "true",
+        DD_CAPTURE_LAMBDA_PAYLOAD: "true",
         DD_APM_REPLACE_TAGS: `[
       {
         "name": "function.request.headers.Authorization",

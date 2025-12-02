@@ -12,6 +12,10 @@ import { Api } from "./api";
 import { Cluster } from "aws-cdk-lib/aws-ecs";
 import { BackgroundWorkers } from "./background-workers";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
+import {
+  AWSMessagingProps,
+  ServiceProps,
+} from "./service-props";
 
 export class UserServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -50,16 +54,18 @@ export class UserServiceStack extends cdk.Stack {
       ddSite
     );
 
-    const serviceProps = {
+    const serviceProps: ServiceProps = {
       cloudfrontDistribution: sharedResources.cloudfrontDistribution,
       connectionString: StringParameter.fromStringParameterName(
         this,
         "ConnectionStringParam",
         `/stickerlandia/${environment}/users/connection_string`
       ),
-      messagingConnectionString: undefined,
-      kafkaUsername: undefined,
-      kafkaPassword: undefined
+      messagingConfiguration: new AWSMessagingProps(
+        this,
+        "MessagingProps",
+        sharedResources
+      ),
     };
 
     const api = new Api(this, "Api", {

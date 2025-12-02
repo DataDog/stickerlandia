@@ -22,7 +22,12 @@ import { ITopic } from "aws-cdk-lib/aws-sns";
 import { ServiceProps } from "./service-props";
 import { WorkerService } from "../../../../shared/lib/shared-constructs/lib/worker-service";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
-import { CpuArchitecture, ICluster, OperatingSystemFamily, Secret } from "aws-cdk-lib/aws-ecs";
+import {
+  CpuArchitecture,
+  ICluster,
+  OperatingSystemFamily,
+  Secret,
+} from "aws-cdk-lib/aws-ecs";
 import { IPrivateDnsNamespace } from "aws-cdk-lib/aws-servicediscovery";
 
 export interface BackgroundWorkersProps {
@@ -50,16 +55,15 @@ export class BackgroundWorkers extends Construct {
         POWERTOOLS_LOG_LEVEL:
           props.sharedProps.environment === "prod" ? "WARN" : "INFO",
         ENV: props.sharedProps.environment,
-        ConnectionStrings__messaging: "",
         ConnectionStrings__database:
           props.serviceProps.connectionString.stringValue,
-        Aws__EventBusName: props.sharedEventBus.eventBusName,
         Aws__UserRegisteredTopicArn: props.userRegisteredTopic.topicArn,
         Aws__StickerClaimedQueueUrl: props.stickerClaimedQueue.queueUrl,
         Aws__StickerClaimedDLQUrl: props.stickerClaimedDLQ.queueUrl,
         DRIVING: "ASPNET",
         DRIVEN: "AWS",
         DISABLE_SSL: "true",
+        ...props.serviceProps.messagingConfiguration.asEnvironmentVariables(),
       };
 
       const stickerClaimedWorker = new InstrumentedLambdaFunction(
@@ -68,7 +72,7 @@ export class BackgroundWorkers extends Construct {
         {
           sharedProps: props.sharedProps,
           handler:
-            "Stickerlandia.UserManagement.Lambda::Stickerlandia.UserManagement.Lambda.Sqs_StickerClaimed_Generated::StickerClaimed",
+            "Stickerlandia.UserManagement.Lambda::Stickerlandia.UserManagement.Lambda.SqsHandler_StickerClaimed_Generated::StickerClaimed",
           buildDef: "../../src/Stickerlandia.UserManagement.Lambda/",
           functionName: "sticker-claimed-worker",
           environment: environmentVariables,
@@ -149,7 +153,9 @@ export class BackgroundWorkers extends Construct {
             DISABLE_SSL: "true",
             LOGGING__LOGLEVEL__DEFAULT: "INFORMATION",
             LOGGING__LOGLEVEL__MICROSOFT: "INFORMATION",
-            "LOGGING__LOGLEVEL__MICROSOFT.ENTITYFRAMEWORKCORE.DATABASE.COMMAND": "WARNING",
+            "LOGGING__LOGLEVEL__MICROSOFT.ENTITYFRAMEWORKCORE.DATABASE.COMMAND":
+              "WARNING",
+            ...props.serviceProps.messagingConfiguration.asEnvironmentVariables(),
           },
           secrets: {
             DD_API_KEY: Secret.fromSsmParameter(
@@ -158,15 +164,7 @@ export class BackgroundWorkers extends Construct {
             ConnectionStrings__database: Secret.fromSsmParameter(
               props.serviceProps.connectionString
             ),
-            //            ConnectionStrings__messaging: Secret.fromSsmParameter(
-            //              props.serviceProps.messagingConnectionString
-            //            ),
-            //            KAFKA_USERNAME: Secret.fromSsmParameter(
-            //              props.serviceProps.kafkaUsername
-            //            ),
-            //            KAFKA_PASSWORD: Secret.fromSsmParameter(
-            //              props.serviceProps.kafkaPassword
-            //            ),
+            ...props.serviceProps.messagingConfiguration.asSecrets(),
           },
           serviceDiscoveryNamespace: props.serviceDiscoveryNamespace,
           serviceDiscoveryName: props.serviceDiscoveryName,
@@ -174,7 +172,7 @@ export class BackgroundWorkers extends Construct {
           runtimePlatform: {
             cpuArchitecture: CpuArchitecture.ARM64,
             operatingSystemFamily: OperatingSystemFamily.LINUX,
-          }
+          },
         }
       );
     }

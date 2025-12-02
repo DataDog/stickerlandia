@@ -14,16 +14,9 @@ using Amazon.EventBridge.Model;
 
 namespace Stickerlandia.UserManagement.IntegrationTest.Drivers;
 
-internal sealed class EventBridgeMessaging : IMessaging, IAsyncDisposable
+internal sealed class EventBridgeMessaging(string environment) : IMessaging, IAsyncDisposable
 {
-    private readonly string _environment;
-    private readonly AmazonEventBridgeClient _client;
-
-    public EventBridgeMessaging(string environment)
-    {
-        _environment = environment;
-        _client = new AmazonEventBridgeClient();
-    }
+    private readonly AmazonEventBridgeClient _client = new();
 
     public async Task SendMessageAsync(string queueName, object message)
     {
@@ -33,8 +26,8 @@ internal sealed class EventBridgeMessaging : IMessaging, IAsyncDisposable
             {
                 new()
                 {
-                    EventBusName = $"user-service-{_environment}-bus",
-                    Source = $"{_environment}.stickers",
+                    EventBusName = $"Stickerlandia-Shared-{environment}",
+                    Source = $"{environment}.stickers",
                     DetailType = queueName,
                     Detail = JsonSerializer.Serialize(message)
                 }
