@@ -63,13 +63,14 @@ type KafkaConfig struct {
 }
 
 // AWSConfig holds AWS messaging configuration (EventBridge + SQS)
+// Field names match CDK environment variable names for direct binding
 type AWSConfig struct {
-	Region             string `mapstructure:"region"`
-	EventBridgeBusName string `mapstructure:"eventbridge_bus_name"`
-	SQSQueueURL        string `mapstructure:"sqs_queue_url"`
-	MaxConcurrency     int    `mapstructure:"max_concurrency"`
-	VisibilityTimeout  int    `mapstructure:"visibility_timeout"` // Seconds
-	WaitTimeSeconds    int    `mapstructure:"wait_time_seconds"`  // Long polling duration
+	Region                 string `mapstructure:"region"`
+	EventBusName           string `mapstructure:"event_bus_name"`            // EVENT_BUS_NAME from CDK
+	UserRegisteredQueueURL string `mapstructure:"user_registered_queue_url"` // USER_REGISTERED_QUEUE_URL from CDK
+	MaxConcurrency         int    `mapstructure:"max_concurrency"`
+	VisibilityTimeout      int    `mapstructure:"visibility_timeout"` // Seconds
+	WaitTimeSeconds        int    `mapstructure:"wait_time_seconds"`  // Long polling duration
 }
 
 // CatalogueConfig holds sticker catalogue service configuration
@@ -147,11 +148,15 @@ func setDefaults() {
 
 	// AWS defaults
 	viper.SetDefault("aws.region", "us-east-1")
-	viper.SetDefault("aws.eventbridge_bus_name", "stickerlandia-events")
-	viper.SetDefault("aws.sqs_queue_url", "")
+	viper.SetDefault("aws.event_bus_name", "")
+	viper.SetDefault("aws.user_registered_queue_url", "")
 	viper.SetDefault("aws.max_concurrency", 10)
 	viper.SetDefault("aws.visibility_timeout", 30) // 30 seconds
 	viper.SetDefault("aws.wait_time_seconds", 20)  // 20 seconds long polling
+
+	// Explicit env var bindings for AWS config (CDK uses these exact names)
+	_ = viper.BindEnv("aws.event_bus_name", "EVENT_BUS_NAME")
+	_ = viper.BindEnv("aws.user_registered_queue_url", "USER_REGISTERED_QUEUE_URL")
 
 	// Catalogue service defaults
 	viper.SetDefault("catalogue.base_url", "http://localhost:8080")

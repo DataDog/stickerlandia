@@ -31,8 +31,8 @@ type EventBridgeProducer struct {
 // NewEventBridgeProducer creates a new EventBridge producer with Datadog DSM integration
 func NewEventBridgeProducer(cfg *config.AWSConfig) (*EventBridgeProducer, error) {
 	// Validate required configuration
-	if cfg.EventBridgeBusName == "" {
-		return nil, fmt.Errorf("EventBridge bus name is required but not configured")
+	if cfg.EventBusName == "" {
+		return nil, fmt.Errorf("EventBridge bus name is required but not configured (EVENT_BUS_NAME)")
 	}
 	if cfg.Region == "" {
 		return nil, fmt.Errorf("AWS region is required but not configured")
@@ -40,7 +40,7 @@ func NewEventBridgeProducer(cfg *config.AWSConfig) (*EventBridgeProducer, error)
 
 	log.WithFields(log.Fields{
 		"region":  cfg.Region,
-		"busName": cfg.EventBridgeBusName,
+		"busName": cfg.EventBusName,
 	}).Info("Creating EventBridge producer")
 
 	// Load AWS configuration
@@ -55,13 +55,13 @@ func NewEventBridgeProducer(cfg *config.AWSConfig) (*EventBridgeProducer, error)
 
 	producer := &EventBridgeProducer{
 		client:  client,
-		busName: cfg.EventBridgeBusName,
+		busName: cfg.EventBusName,
 		source:  "sticker-award",
 	}
 
 	log.WithFields(log.Fields{
 		"region":  cfg.Region,
-		"busName": cfg.EventBridgeBusName,
+		"busName": cfg.EventBusName,
 	}).Info("EventBridge producer created successfully")
 
 	return producer, nil

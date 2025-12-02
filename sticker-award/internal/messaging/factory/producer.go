@@ -47,7 +47,7 @@ func NewEventPublisher(cfg *config.Config) (messaging.EventPublisher, error) {
 		log.WithFields(log.Fields{
 			"provider": "aws",
 			"region":   cfg.AWS.Region,
-			"busName":  cfg.AWS.EventBridgeBusName,
+			"busName":  cfg.AWS.EventBusName,
 		}).Info("AWS EventBridge producer created successfully")
 		return producer, nil
 

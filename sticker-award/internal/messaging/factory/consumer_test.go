@@ -17,8 +17,8 @@ func TestNewMessageConsumer_AWS(t *testing.T) {
 	cfg := &config.Config{
 		MessagingProvider: config.MessagingProviderAWS,
 		AWS: config.AWSConfig{
-			Region:      "us-east-1",
-			SQSQueueURL: "https://sqs.us-east-1.amazonaws.com/123456789/test-queue",
+			Region:                 "us-east-1",
+			UserRegisteredQueueURL: "https://sqs.us-east-1.amazonaws.com/123456789/test-queue",
 		},
 	}
 
@@ -84,8 +84,8 @@ func TestNewMessageConsumer_PassesConfigToAWS(t *testing.T) {
 	cfg := &config.Config{
 		MessagingProvider: config.MessagingProviderAWS,
 		AWS: config.AWSConfig{
-			Region:      testRegion,
-			SQSQueueURL: testQueueURL,
+			Region:                 testRegion,
+			UserRegisteredQueueURL: testQueueURL,
 		},
 	}
 
@@ -104,8 +104,8 @@ func TestNewMessageConsumer_DefaultValues(t *testing.T) {
 	cfg := &config.Config{
 		MessagingProvider: config.MessagingProviderAWS,
 		AWS: config.AWSConfig{
-			Region:      "us-west-2",
-			SQSQueueURL: "https://sqs.us-west-2.amazonaws.com/123/queue",
+			Region:                 "us-west-2",
+			UserRegisteredQueueURL: "https://sqs.us-west-2.amazonaws.com/123/queue",
 			// Not setting MaxConcurrency, VisibilityTimeout, WaitTimeSeconds
 			// Should use defaults from constructor
 		},

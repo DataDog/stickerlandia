@@ -58,8 +58,8 @@ type SQSMessage struct {
 // NewSQSConsumer creates a new SQS consumer with Datadog DSM integration
 func NewSQSConsumer(cfg *config.AWSConfig, serviceName string) (*Consumer, error) {
 	// Validate required configuration
-	if cfg.SQSQueueURL == "" {
-		return nil, fmt.Errorf("SQS queue URL is required but not configured")
+	if cfg.UserRegisteredQueueURL == "" {
+		return nil, fmt.Errorf("SQS queue URL is required but not configured (USER_REGISTERED_QUEUE_URL)")
 	}
 	if cfg.Region == "" {
 		return nil, fmt.Errorf("AWS region is required but not configured")
@@ -67,7 +67,7 @@ func NewSQSConsumer(cfg *config.AWSConfig, serviceName string) (*Consumer, error
 
 	log.WithFields(log.Fields{
 		"region":   cfg.Region,
-		"queueURL": cfg.SQSQueueURL,
+		"queueURL": cfg.UserRegisteredQueueURL,
 	}).Info("Creating SQS consumer")
 
 	// Load AWS configuration
@@ -84,7 +84,7 @@ func NewSQSConsumer(cfg *config.AWSConfig, serviceName string) (*Consumer, error
 
 	consumer := &Consumer{
 		client:            client,
-		queueURL:          cfg.SQSQueueURL,
+		queueURL:          cfg.UserRegisteredQueueURL,
 		serviceName:       serviceName,
 		handlers:          make(map[string]MessageHandler),
 		maxConcurrency:    cfg.MaxConcurrency,
@@ -106,7 +106,7 @@ func NewSQSConsumer(cfg *config.AWSConfig, serviceName string) (*Consumer, error
 
 	log.WithFields(log.Fields{
 		"region":            cfg.Region,
-		"queueURL":          cfg.SQSQueueURL,
+		"queueURL":          cfg.UserRegisteredQueueURL,
 		"maxConcurrency":    consumer.maxConcurrency,
 		"visibilityTimeout": consumer.visibilityTimeout,
 		"waitTimeSeconds":   consumer.waitTimeSeconds,

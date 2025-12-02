@@ -49,7 +49,7 @@ func NewMessageConsumer(cfg *config.Config) (messaging.MessageConsumer, error) {
 		log.WithFields(log.Fields{
 			"provider":    "aws",
 			"region":      cfg.AWS.Region,
-			"queueURL":    cfg.AWS.SQSQueueURL,
+			"queueURL":    cfg.AWS.UserRegisteredQueueURL,
 			"serviceName": cfg.ServiceName,
 		}).Info("AWS SQS consumer created successfully")
 		return consumer, nil

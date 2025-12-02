@@ -17,8 +17,8 @@ func TestNewEventPublisher_AWS(t *testing.T) {
 	cfg := &config.Config{
 		MessagingProvider: config.MessagingProviderAWS,
 		AWS: config.AWSConfig{
-			Region:             "us-east-1",
-			EventBridgeBusName: "test-bus",
+			Region:       "us-east-1",
+			EventBusName: "test-bus",
 		},
 	}
 
@@ -83,8 +83,8 @@ func TestNewEventPublisher_PassesConfigToAWS(t *testing.T) {
 	cfg := &config.Config{
 		MessagingProvider: config.MessagingProviderAWS,
 		AWS: config.AWSConfig{
-			Region:             testRegion,
-			EventBridgeBusName: testBusName,
+			Region:       testRegion,
+			EventBusName: testBusName,
 		},
 	}
 
