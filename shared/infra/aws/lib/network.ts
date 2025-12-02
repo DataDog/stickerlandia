@@ -141,7 +141,7 @@ export class Network extends Construct {
     });
 
     const webFrontendBucket = new cdk.aws_s3.Bucket(this, "WebFrontendBucket", {
-      bucketName: `stickerlandia-web-frontend-${props.env}-${props.account}`,
+      bucketName: `stickerlandia-web-frontend-${props.env}-${props.account}-${cdk.Stack.of(this).region}`,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       accessControl: cdk.aws_s3.BucketAccessControl.PRIVATE,
       autoDeleteObjects: true,

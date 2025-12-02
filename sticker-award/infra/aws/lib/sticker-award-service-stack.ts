@@ -11,7 +11,7 @@ import { Api } from "./api";
 import { Cluster } from "aws-cdk-lib/aws-ecs";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
 import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
-import { KafkaMessagingProps, ServiceProps } from "./service-props";
+import { AWSMessagingProps, KafkaMessagingProps, ServiceProps } from "./service-props";
 
 export enum MessagingType {
   AWS,
@@ -58,31 +58,15 @@ export class StickerAwardServiceStack extends cdk.Stack {
 
     const serviceProps: ServiceProps = {
       cloudfrontDistribution: sharedResources.cloudfrontDistribution,
-      databaseHost: StringParameter.fromStringParameterName(
+      connectionString: StringParameter.fromStringParameterName(
         this,
-        "DatabaseHostParam",
-        `/stickerlandia/${environment}/sticker-award/database-host`
+        "ConnectionStringParam",
+        `/stickerlandia/${environment}/sticker-award/connection_string`
       ),
-      databaseName: StringParameter.fromStringParameterName(
-        this,
-        "DatabaseNameParam",
-        `/stickerlandia/${environment}/sticker-award/database-name`
-      ),
-      databasePort: process.env.DATABASE_PORT || "5432",
-      dbUsername: StringParameter.fromStringParameterName(
-        this,
-        "DatabaseUsernameParam",
-        `/stickerlandia/${environment}/sticker-award/database-user`
-      ),
-      dbPassword: StringParameter.fromStringParameterName(
-        this,
-        "DatabasePasswordParam",
-        `/stickerlandia/${environment}/sticker-award/database-password`
-      ),
-      messagingConfiguration: new KafkaMessagingProps(
+      messagingConfiguration: new AWSMessagingProps(
         this,
         "KafkaMessagingProps",
-        sharedProps
+        sharedResources
       ),
     };
 

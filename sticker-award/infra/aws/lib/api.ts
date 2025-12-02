@@ -63,10 +63,7 @@ export class Api extends Construct {
       DD_API_KEY: Secret.fromSsmParameter(
         props.sharedProps.datadog.apiKeyParameter
       ),
-      DATABASE_HOST: Secret.fromSsmParameter(props.serviceProps.databaseHost),
-      DATABASE_NAME: Secret.fromSsmParameter(props.serviceProps.databaseName),
-      DATABASE_PASSWORD: Secret.fromSsmParameter(props.serviceProps.dbPassword),
-      DATABASE_USER: Secret.fromSsmParameter(props.serviceProps.dbUsername),
+      DATABASE_URL: Secret.fromSsmParameter(props.serviceProps.connectionString),
       ...props.serviceProps.messagingConfiguration.asSecrets(),
     };
 
@@ -84,10 +81,8 @@ export class Api extends Construct {
       environmentVariables: {
         ENV: "dev",
         LOG_LEVEL: "info",
-        DATABASE_PORT: props.serviceProps.databasePort,
         LOG_FORMAT: "json",
         CATALOGUE_BASE_URL: `https://${props.serviceProps.cloudfrontDistribution.distributionDomainName}`,
-        DATABASE_SSL_MODE: "require",
         USER_REGISTERED_QUEUE_URL: userRegisteredQueue.queueUrl,
         ...props.serviceProps.messagingConfiguration.asEnvironmentVariables(),
       },
