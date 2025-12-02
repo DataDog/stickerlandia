@@ -11,9 +11,7 @@ import { IHttpApi, IVpcLink } from "aws-cdk-lib/aws-apigatewayv2";
 import { IPrivateDnsNamespace } from "aws-cdk-lib/aws-servicediscovery";
 import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
 import { WebService } from "../../../../shared/lib/shared-constructs/lib/web-service";
-import {
-  ServiceProps,
-} from "./service-props";
+import { ServiceProps } from "./service-props";
 import { IEventBus, Rule } from "aws-cdk-lib/aws-events";
 import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Duration } from "aws-cdk-lib";
@@ -86,12 +84,8 @@ export class Api extends Construct {
       environmentVariables: {
         ENV: "dev",
         LOG_LEVEL: "info",
-        KAFKA_SECURITY_PROTOCOL: "SASL_SSL",
-        KAFKA_GROUP_ID: "sticker-award-service",
         DATABASE_PORT: props.serviceProps.databasePort,
-        KAFKA_SASL_MECHANISM: "PLAIN",
         LOG_FORMAT: "json",
-        KAFKA_ENABLE_TLS: "true",
         CATALOGUE_BASE_URL: `https://${props.serviceProps.cloudfrontDistribution.distributionDomainName}`,
         DATABASE_SSL_MODE: "require",
         USER_REGISTERED_QUEUE_URL: userRegisteredQueue.queueUrl,
@@ -106,7 +100,9 @@ export class Api extends Construct {
       additionalPathMappings: [],
     });
 
-    props.sharedEventBus.grantPutEventsTo(webService.taskRole);
+    props.serviceProps.messagingConfiguration.grantPermissions(
+      webService.taskRole
+    );
     userRegisteredQueue.grantConsumeMessages(webService.taskRole);
   }
 }

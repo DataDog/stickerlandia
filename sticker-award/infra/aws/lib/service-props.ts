@@ -5,10 +5,12 @@ import { Construct } from "constructs";
 import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
 import { Secret } from "aws-cdk-lib/aws-ecs";
 import { SharedResources } from "../../../../shared/lib/shared-constructs/lib/shared-resources";
+import { IGrantable } from "aws-cdk-lib/aws-iam";
 
 export interface MessagingProps {
   asSecrets(): { [key: string]: Secret };
   asEnvironmentVariables(): { [key: string]: string };
+  grantPermissions(grantable: IGrantable): void;
 }
 
 export class KafkaMessagingProps extends Construct implements MessagingProps {
@@ -46,7 +48,18 @@ export class KafkaMessagingProps extends Construct implements MessagingProps {
   }
 
   public asEnvironmentVariables(): { [key: string]: string } {
-    return {};
+    return {
+      KAFKA_SECURITY_PROTOCOL: "SASL_SSL",
+      KAFKA_GROUP_ID: "sticker-award-service",
+      KAFKA_SASL_MECHANISM: "PLAIN",
+      KAFKA_ENABLE_TLS: "true",
+    };
+  }
+
+  public grantPermissions(grantable: IGrantable): void {
+    this.kafkaBootstrapServers.grantRead(grantable);
+    this.kafkaUsername.grantRead(grantable);
+    this.kafkaPassword.grantRead(grantable);
   }
 }
 
@@ -67,6 +80,10 @@ export class AWSMessagingProps extends Construct implements MessagingProps {
     return {
       EVENT_BUS_NAME: this.sharedEventBus.eventBusName,
     };
+  }
+
+  public grantPermissions(grantable: IGrantable): void {
+    this.sharedEventBus.grantPutEventsTo(grantable);
   }
 }
 
