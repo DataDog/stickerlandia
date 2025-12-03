@@ -71,10 +71,16 @@ func main() {
 	}).Info("Starting Sticker Award Service")
 
 	// Initialize database connection
+	log.WithFields(log.Fields{
+		"host": cfg.Database.Host,
+		"port": cfg.Database.Port,
+		"name": cfg.Database.Name,
+	}).Info("Connecting to database...")
 	db, err := database.Connect(&cfg.Database)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err}).Fatal("Failed to connect to database")
 	}
+	log.Info("Database connection established")
 
 	// Run database migrations
 	log.Info("Running database migrations...")
@@ -84,11 +90,18 @@ func main() {
 	log.Info("Database migrations completed successfully")
 
 	// Initialize services dependencies
+	log.Info("Initializing repository and catalogue client...")
 	assignmentRepo := repository.NewAssignmentRepository(db)
 	catalogueClient := catalogue.NewClient(cfg.Catalogue.BaseURL, time.Duration(cfg.Catalogue.Timeout)*time.Second)
+	log.WithFields(log.Fields{
+		"catalogueBaseURL": cfg.Catalogue.BaseURL,
+	}).Info("Repository and catalogue client initialized")
 
 	// Initialize event publisher and consumer.
 	// Configuration can set us up with different impls
+	log.WithFields(log.Fields{
+		"provider": cfg.MessagingProvider,
+	}).Info("Creating event publisher...")
 	producer, err := factory.NewEventPublisher(cfg)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -97,6 +110,13 @@ func main() {
 		}).Fatal("Failed to create event publisher")
 	}
 	defer producer.Close()
+	log.Info("Event publisher created successfully")
+
+	log.WithFields(log.Fields{
+		"provider":     cfg.MessagingProvider,
+		"sqsQueueURL":  cfg.AWS.UserRegisteredQueueURL,
+		"eventBusName": cfg.AWS.EventBusName,
+	}).Info("Creating message consumer...")
 	consumer, err := factory.NewMessageConsumer(cfg)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -104,13 +124,18 @@ func main() {
 			"provider": cfg.MessagingProvider,
 		}).Fatal("Failed to create message consumer")
 	}
+	log.Info("Message consumer created successfully")
 
 	// Start the assigner. This is the main _business logic bit_ that deals with assignment of stickers
 	// to users.
+	log.Info("Initializing assignment service...")
 	assignmentService := service.NewAssigner(assignmentRepo, catalogueClient, validator.New(), producer)
+	log.Info("Assignment service initialized")
 
 	// Initialize HTTP router
+	log.Info("Setting up HTTP router...")
 	r := router.Setup(db, cfg, assignmentService)
+	log.Info("HTTP router configured")
 
 	// Register our **user registered** event handler. This responds to new users appearing
 	// in stickerlandia by assigning them a welcome sticker.
@@ -125,10 +150,13 @@ func main() {
 	// DSM checkpointing / span links / etc., before actually passing the message on to be actioned.
 	//
 	// TODO SGG: We will fix this before we merge this into main.
+	log.Info("Registering message handlers...")
 	userRegisteredHandler := handlers.NewUserRegisteredMessageHandler(assignmentService)
 	consumer.RegisterHandler(userRegisteredHandler)
+	log.Info("Message handlers registered")
 
 	// Create HTTP server
+	log.Info("Creating HTTP server...")
 	srv := &http.Server{
 		Addr:           fmt.Sprintf(":%s", cfg.Server.Port),
 		Handler:        r,
@@ -137,8 +165,13 @@ func main() {
 		IdleTimeout:    60 * time.Second,
 		MaxHeaderBytes: 1 << 20, // 1MB
 	}
+	log.WithFields(log.Fields{
+		"addr": srv.Addr,
+	}).Info("HTTP server created")
 
 	var wg sync.WaitGroup
+
+	log.Info("Starting background services...")
 
 	// Start HTTP server in a goroutine
 	wg.Add(1)
@@ -161,6 +194,8 @@ func main() {
 			log.WithFields(log.Fields{"error": err}).Error("Message consumer error")
 		}
 	}()
+
+	log.Info("Sticker Award Service fully initialized and running")
 
 	// Wait for interrupt signal to gracefully shutdown
 	quit := make(chan os.Signal, 1)

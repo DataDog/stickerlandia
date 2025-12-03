@@ -8,6 +8,7 @@ import { Duration, Tags } from "aws-cdk-lib";
 import * as apigatewayv2 from "aws-cdk-lib/aws-apigatewayv2";
 import * as integrations from "aws-cdk-lib/aws-apigatewayv2-integrations";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import { Platform } from "aws-cdk-lib/aws-ecr-assets";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import {
   ApplicationProtocolVersion,
@@ -32,6 +33,7 @@ export interface WebServiceProps {
   readonly cluster: ecs.ICluster;
   readonly image: string;
   readonly imageTag: string;
+  readonly assetPath?: string; // Path to Dockerfile directory for local builds (when imageTag === "LOCAL")
   readonly ddApiKey: ssm.IStringParameter;
   readonly port: number;
   readonly environmentVariables: { [key: string]: string };
@@ -137,10 +139,16 @@ export class WebService extends Construct {
     }
 
     // Application Container
+    const isLocalBuild = props.imageTag.toUpperCase() === "LOCAL" && props.assetPath;
+    const containerImage = isLocalBuild
+      ? ecs.ContainerImage.fromAsset(props.assetPath!, {
+          exclude: ["infra", "cdk.out", "node_modules", ".git"],
+          platform: Platform.LINUX_AMD64,
+        })
+      : ecs.ContainerImage.fromRegistry(`${props.image}:${props.imageTag}`);
+
     const applicationContainer = taskDefinition!.addContainer("application", {
-      image: ecs.ContainerImage.fromRegistry(
-        `${props.image}:${props.imageTag}`
-      ),
+      image: containerImage,
       portMappings: [
         {
           name: "application",

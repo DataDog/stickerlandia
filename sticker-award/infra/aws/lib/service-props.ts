@@ -49,6 +49,7 @@ export class KafkaMessagingProps extends Construct implements MessagingProps {
 
   public asEnvironmentVariables(): { [key: string]: string } {
     return {
+      MESSAGING_PROVIDER: "kafka",
       KAFKA_SECURITY_PROTOCOL: "SASL_SSL",
       KAFKA_GROUP_ID: "sticker-award-service",
       KAFKA_SASL_MECHANISM: "PLAIN",
@@ -78,6 +79,7 @@ export class AWSMessagingProps extends Construct implements MessagingProps {
 
   public asEnvironmentVariables(): { [key: string]: string } {
     return {
+      MESSAGING_PROVIDER: "aws",
       EVENT_BUS_NAME: this.sharedEventBus.eventBusName,
     };
   }
