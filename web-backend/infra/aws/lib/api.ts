@@ -4,8 +4,10 @@
  * Copyright 2025-Present Datadog, Inc.
  */
 
+import * as path from "path";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
+import { IDistribution } from "aws-cdk-lib/aws-cloudfront";
 import { Cluster, Secret } from "aws-cdk-lib/aws-ecs";
 import { Topic } from "aws-cdk-lib/aws-sns";
 import { Queue } from "aws-cdk-lib/aws-sqs";
@@ -30,6 +32,7 @@ export class ApiProps {
   serviceDiscoveryName: string;
   deployInPrivateSubnet?: boolean;
   cluster: Cluster;
+  cloudfrontDistribution: IDistribution;
 }
 
 export class Api extends Construct {
@@ -38,6 +41,8 @@ export class Api extends Construct {
   userRegisteredTopic: Topic;
   constructor(scope: Construct, id: string, props: ApiProps) {
     super(scope, id);
+    const deploymentHostUrl = `https://${props.cloudfrontDistribution.distributionDomainName}`;
+
     const webService = new WebService(this, "WebBackendApplication", {
       sharedProps: props.sharedProps,
       vpc: props.vpc,
@@ -47,14 +52,15 @@ export class Api extends Construct {
       cluster: props.cluster,
       image: "ghcr.io/datadog/stickerlandia/web-backend-service",
       imageTag: props.sharedProps.version,
+      assetPath: path.resolve(__dirname, "../../.."),
       ddApiKey: props.sharedProps.datadog.apiKeyParameter,
       port: 3000,
       environmentVariables: {
         NODE_ENV: "development",
-        OAUTH_ISSUER_INTERNAL: `https://d3nwzze63j01g4.cloudfront.net`,
+        OAUTH_ISSUER_INTERNAL: deploymentHostUrl,
         OAUTH_CLIENT_ID: "web-ui",
         OAUTH_CLIENT_SECRET: "stickerlandia-web-ui-secret-2025",
-        DEPLOYMENT_HOST_URL: `https://d3nwzze63j01g4.cloudfront.net`,
+        DEPLOYMENT_HOST_URL: deploymentHostUrl,
       },
       secrets: {
         DD_API_KEY: Secret.fromSsmParameter(

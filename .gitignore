@@ -8,3 +8,4 @@
 .env
 !web-frontend/.env
 .beads
+cdk.context.json

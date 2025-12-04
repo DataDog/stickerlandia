@@ -62,6 +62,13 @@ export class WebBackendStack extends cdk.Stack {
       serviceDiscoveryNamespace: sharedResources.serviceDiscoveryNamespace,
       cluster: cluster,
       deployInPrivateSubnet: true,
+      cloudfrontDistribution: sharedResources.cloudfrontDistribution,
+    });
+
+    // CDK Outputs
+    new cdk.CfnOutput(this, "ServiceApiUrl", {
+      value: `https://${sharedResources.cloudfrontDistribution.distributionDomainName}/api/app`,
+      description: "Web Backend Service API URL",
     });
   }
 }
