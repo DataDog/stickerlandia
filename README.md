@@ -63,14 +63,17 @@ Stickerlandia is fully instrumented with Datadog's observability and analysis to
 
 ## Getting Started
 
-To run Stickerlandia locally, follow these steps:
+We use [mise](https://mise.jdx.dev/getting-started.html) for tool and task management.
 
-1. Clone this repository
-2. Set up dependencies (see service-specific READMEs)
-3. Start the services using one of two Docker Compose configurations:
-   - **Production-like (static builds)**: `docker-compose up` - Uses pre-built images, faster startup
-   - **Development (hot reloading)**: `docker-compose -f docker-compose.yml -f docker-compose.dev.yml up` - Live code reloading for active development
-4. Access the application at `http://localhost:8080`
+```bash
+mise trust && mise install    # Install tools
+mise run env:setup            # Configure .env
+mise run compose:up           # Start services
+mise run compose:dev          # Start with hot reload
+mise run compose:down         # Stop services
+```
+
+Run `mise tasks` to see all available tasks. Access the app at `http://localhost:8080`.
 
 ### Default User
 

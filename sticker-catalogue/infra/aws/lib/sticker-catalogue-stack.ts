@@ -7,6 +7,10 @@
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { SharedResources } from "../../../../shared/lib/shared-constructs/lib/shared-resources";
+import {
+  DatabaseCredentials,
+  ConnectionStringFormat,
+} from "../../../../shared/lib/shared-constructs/lib/database-credentials";
 import { Api } from "./api";
 import { Cluster } from "aws-cdk-lib/aws-ecs";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
@@ -57,23 +61,19 @@ export class StickerCatalogueServiceStack extends cdk.Stack {
       false
     );
 
+    // Create formatted database credentials from the shared RDS secret
+    const dbCredentials = new DatabaseCredentials(this, "DatabaseCredentials", {
+      databaseSecretArn: sharedResources.sharedDatabaseSecretArn,
+      environment: environment,
+      serviceName: "catalogue",
+      format: ConnectionStringFormat.INDIVIDUAL_FIELDS,
+    });
+
     const serviceProps: ServiceProps = {
       cloudfrontDistribution: sharedResources.cloudfrontDistribution,
-      jdbcUrl: StringParameter.fromStringParameterName(
-        this,
-        "DatabaseHostParam",
-        `/stickerlandia/${environment}/catalogue/database-host`
-      ),
-      dbUsername: StringParameter.fromStringParameterName(
-        this,
-        "DatabaseUsernameParam",
-        `/stickerlandia/${environment}/catalogue/database-user`
-      ),
-      dbPassword: StringParameter.fromStringParameterName(
-        this,
-        "DatabasePasswordParam",
-        `/stickerlandia/${environment}/catalogue/database-password`
-      ),
+      jdbcUrl: dbCredentials.jdbcUrlParameter!,
+      dbUsername: dbCredentials.usernameParameter!,
+      dbPassword: dbCredentials.passwordParameter!,
       messagingProps: new KafkaMessagingProps(this, "MessagingProps", sharedProps),
     };
 

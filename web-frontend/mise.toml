@@ -1,0 +1,19 @@
+# web-frontend mise tasks
+
+[tasks."build:local"]
+description = "Build frontend assets"
+run = "npm run build"
+
+[tasks."build:docker-dev"]
+description = "Build dev container"
+run = """
+ARCH=${ARCH:-$(uname -m | sed 's/x86_64/amd64/')}
+docker build --platform linux/$ARCH -f Dockerfile.dev -t stickerlandia/web-frontend:dev .
+"""
+
+[tasks."build:docker-release"]
+description = "Build release container"
+run = """
+ARCH=${ARCH:-$(uname -m | sed 's/x86_64/amd64/')}
+docker build --platform linux/$ARCH -f Dockerfile -t stickerlandia/web-frontend:latest .
+"""

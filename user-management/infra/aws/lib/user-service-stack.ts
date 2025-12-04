@@ -8,6 +8,10 @@ import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
 import { SharedResources } from "../../../../shared/lib/shared-constructs/lib/shared-resources";
+import {
+  DatabaseCredentials,
+  ConnectionStringFormat,
+} from "../../../../shared/lib/shared-constructs/lib/database-credentials";
 import { Api } from "./api";
 import { Cluster } from "aws-cdk-lib/aws-ecs";
 import { BackgroundWorkers } from "./background-workers";
@@ -54,13 +58,17 @@ export class UserServiceStack extends cdk.Stack {
       ddSite
     );
 
+    // Create formatted database credentials from the shared RDS secret
+    const dbCredentials = new DatabaseCredentials(this, "DatabaseCredentials", {
+      databaseSecretArn: sharedResources.sharedDatabaseSecretArn,
+      environment: environment,
+      serviceName: "users",
+      format: ConnectionStringFormat.DOTNET,
+    });
+
     const serviceProps: ServiceProps = {
       cloudfrontDistribution: sharedResources.cloudfrontDistribution,
-      connectionString: StringParameter.fromStringParameterName(
-        this,
-        "ConnectionStringParam",
-        `/stickerlandia/${environment}/users/connection_string`
-      ),
+      connectionString: dbCredentials.connectionStringParameter!,
       messagingConfiguration: new AWSMessagingProps(
         this,
         "MessagingProps",

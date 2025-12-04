@@ -176,5 +176,6 @@
         ]
       }
     ]
-  }
+  },
+  "ssm:account=148203325623:parameterName=/stickerlandia/dev/shared/database-secret-arn:region=eu-central-1": "arn:aws:secretsmanager:eu-central-1:148203325623:secret:PersistenceSharedDBSecret6B-uBi8m9IKMfqb-HZwv2y"
 }

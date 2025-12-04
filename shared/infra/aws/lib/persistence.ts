@@ -96,5 +96,13 @@ export class Persistence extends Construct {
       description: `The database ARN for the Stickerlandia ${props.env} environment`,
       tier: cdk.aws_ssm.ParameterTier.STANDARD,
     });
+
+    // Export the secret ARN so microservices can fetch credentials
+    new StringParameter(this, "DatabaseSecretArnParam", {
+      parameterName: `/stickerlandia/${props.env}/shared/database-secret-arn`,
+      stringValue: secret.secretArn,
+      description: `The Secrets Manager ARN for the Stickerlandia ${props.env} database credentials`,
+      tier: cdk.aws_ssm.ParameterTier.STANDARD,
+    });
   }
 }
