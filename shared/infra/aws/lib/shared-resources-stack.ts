@@ -85,5 +85,18 @@ export class StickerlandiaSharedResourcesStack extends cdk.Stack {
       stringValue: eventBus.eventBusArn,
       parameterName: `/stickerlandia/${env}/shared/eb-arn`,
     });
+
+    // CDK Outputs
+    new cdk.CfnOutput(this, "BaseUrl", {
+      value: `https://${network.distribution.domainName}`,
+      description: "Base URL for Stickerlandia (CloudFront distribution)",
+      exportName: `stickerlandia-${env}-base-url`,
+    });
+
+    new cdk.CfnOutput(this, "HttpApiUrl", {
+      value: network.httpApi.apiEndpoint,
+      description: "HTTP API Gateway endpoint (internal)",
+      exportName: `stickerlandia-${env}-http-api-url`,
+    });
   }
 }

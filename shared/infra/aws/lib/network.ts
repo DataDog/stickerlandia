@@ -163,10 +163,12 @@ export class Network extends Construct {
       },
     });
 
+    const region = cdk.Stack.of(this).region;
+
     this.distribution.addBehavior(
       "/api*",
       new HttpOrigin(
-        `${this.httpApi.apiId}.execute-api.eu-west-1.amazonaws.com`,
+        `${this.httpApi.apiId}.execute-api.${region}.amazonaws.com`,
         {
           protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
         }
@@ -183,7 +185,7 @@ export class Network extends Construct {
     this.distribution.addBehavior(
       "/.well-known*",
       new HttpOrigin(
-        `${this.httpApi.apiId}.execute-api.eu-west-1.amazonaws.com`,
+        `${this.httpApi.apiId}.execute-api.${region}.amazonaws.com`,
         {
           protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
         }
@@ -200,7 +202,7 @@ export class Network extends Construct {
     this.distribution.addBehavior(
       "/auth*",
       new HttpOrigin(
-        `${this.httpApi.apiId}.execute-api.eu-west-1.amazonaws.com`,
+        `${this.httpApi.apiId}.execute-api.${region}.amazonaws.com`,
         {
           protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
         }
@@ -217,7 +219,7 @@ export class Network extends Construct {
     this.distribution.addBehavior(
       "/Auth*",
       new HttpOrigin(
-        `${this.httpApi.apiId}.execute-api.eu-west-1.amazonaws.com`,
+        `${this.httpApi.apiId}.execute-api.${region}.amazonaws.com`,
         {
           protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
         }

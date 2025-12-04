@@ -83,5 +83,11 @@ export class StickerAwardServiceStack extends cdk.Stack {
       deployInPrivateSubnet: true,
       sharedEventBus: sharedResources.sharedEventBus,
     });
+
+    // CDK Outputs
+    new cdk.CfnOutput(this, "ServiceApiUrl", {
+      value: `https://${sharedResources.cloudfrontDistribution.distributionDomainName}/api/awards/v1`,
+      description: "Sticker Award Service API URL",
+    });
   }
 }

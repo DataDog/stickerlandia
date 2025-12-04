@@ -95,5 +95,11 @@ export class UserServiceStack extends cdk.Stack {
       userRegisteredTopic: api.userRegisteredTopic,
       deployInPrivateSubnet: true,
     });
+
+    // CDK Outputs
+    new cdk.CfnOutput(this, "ServiceApiUrl", {
+      value: `https://${sharedResources.cloudfrontDistribution.distributionDomainName}/api/users/v1`,
+      description: "User Management Service API URL",
+    });
   }
 }

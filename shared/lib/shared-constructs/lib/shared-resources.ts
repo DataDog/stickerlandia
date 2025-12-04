@@ -51,6 +51,7 @@ import {
 } from "aws-cdk-lib/aws-servicediscovery";
 import { ParameterTier, StringParameter } from "aws-cdk-lib/aws-ssm";
 import { Construct } from "constructs";
+import * as cdk from "aws-cdk-lib";
 export interface SharedResourcesProps {
   environment?: string;
   networkName: string;
@@ -346,6 +347,8 @@ export class SharedResources extends Construct {
       }
     );
 
+    const region = cdk.Stack.of(this).region;
+
     const distribution = new Distribution(
       this,
       `Stickerlandia-${props.environment}`,
@@ -354,7 +357,7 @@ export class SharedResources extends Construct {
         defaultRootObject: "index.html",
         defaultBehavior: {
           origin: new HttpOrigin(
-            `${this.httpApi.apiId}.execute-api.eu-west-1.amazonaws.com`,
+            `${this.httpApi.apiId}.execute-api.${region}.amazonaws.com`,
             {
               protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
             }
@@ -372,7 +375,7 @@ export class SharedResources extends Construct {
     distribution.addBehavior(
       "/.well-known*",
       new HttpOrigin(
-        `${this.httpApi.apiId}.execute-api.eu-west-1.amazonaws.com`,
+        `${this.httpApi.apiId}.execute-api.${region}.amazonaws.com`,
         {
           protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
         }
@@ -389,7 +392,7 @@ export class SharedResources extends Construct {
     distribution.addBehavior(
       "/auth*",
       new HttpOrigin(
-        `${this.httpApi.apiId}.execute-api.eu-west-1.amazonaws.com`,
+        `${this.httpApi.apiId}.execute-api.${region}.amazonaws.com`,
         {
           protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
         }
