@@ -1,7 +1,14 @@
 # web-frontend mise tasks
 
+[tasks."install"]
+description = "Install npm dependencies"
+sources = ["package-lock.json"]
+outputs = ["node_modules/.package-lock.json"]
+run = "npm ci"
+
 [tasks."build:local"]
 description = "Build frontend assets"
+depends = ["install"]
 run = "npm run build"
 
 [tasks."build:docker-dev"]
@@ -16,4 +23,33 @@ description = "Build release container"
 run = """
 ARCH=${ARCH:-$(uname -m | sed 's/x86_64/amd64/')}
 docker build --platform linux/$ARCH -f Dockerfile -t stickerlandia/web-frontend:latest .
+"""
+
+[tasks."infra:install"]
+description = "Install CDK dependencies"
+dir = "infra/aws"
+sources = ["package-lock.json"]
+outputs = ["node_modules/.package-lock.json"]
+run = "npm ci"
+
+[tasks."aws:deploy"]
+description = "Deploy frontend assets to AWS S3"
+dir = "infra/aws"
+depends = ["infra:install", "build:local", "//shared:aws:deploy"]
+run = "npx cdk deploy --require-approval never"
+
+[tasks."aws:down"]
+description = "Destroy AWS stack"
+dir = "infra/aws"
+depends = ["infra:install"]
+run = "npx cdk destroy --force"
+
+[tasks."aws:info"]
+description = "Show AWS stack outputs"
+run = """
+echo "=== WebFrontend-$ENV ==="
+aws cloudformation describe-stacks \
+  --stack-name "WebFrontend-$ENV" \
+  --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' \
+  --output table 2>/dev/null || echo "Stack not deployed"
 """

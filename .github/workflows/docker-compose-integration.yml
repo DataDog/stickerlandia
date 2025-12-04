@@ -26,7 +26,7 @@ jobs:
       uses: jdx/mise-action@v2
 
     - name: Start services (CI mode - no monitoring)
-      run: mise run compose:up-ci
+      run: mise run compose:deploy:ci
 
     - name: Wait for services to be ready
       run: mise run test:wait
@@ -36,4 +36,4 @@ jobs:
 
     - name: Cleanup
       if: always()
-      run: docker compose down -v
+      run: mise run compose:down

@@ -148,6 +148,12 @@ export class Network extends Construct {
       websiteIndexDocument: "index.html",
     });
 
+    // Export bucket name for web-frontend deployment
+    new StringParameter(this, "WebFrontendBucketParam", {
+      parameterName: `/stickerlandia/${props.env}/shared/web-frontend-bucket`,
+      stringValue: webFrontendBucket.bucketName,
+    });
+
     const originIdentity = new OriginAccessIdentity(this, "OAI", {
       comment: `OAI for stickerlandia web frontend ${props.env}`,
     });

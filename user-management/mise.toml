@@ -25,13 +25,19 @@ sources = ["package-lock.json"]
 outputs = ["node_modules/.package-lock.json"]
 run = "npm ci"
 
-[tasks."deploy:aws"]
+[tasks."aws:deploy"]
 description = "Deploy to AWS"
 dir = "infra/aws"
-depends = ["infra:install"]
+depends = ["infra:install", "//shared:aws:deploy"]
 run = "npx cdk deploy --require-approval never"
 
-[tasks."info:aws"]
+[tasks."aws:down"]
+description = "Destroy AWS stack"
+dir = "infra/aws"
+depends = ["infra:install"]
+run = "npx cdk destroy --force"
+
+[tasks."aws:info"]
 description = "Show AWS stack outputs"
 run = """
 echo "=== UserService-$ENV ==="

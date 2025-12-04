@@ -66,11 +66,12 @@ Stickerlandia is fully instrumented with Datadog's observability and analysis to
 We use [mise](https://mise.jdx.dev/getting-started.html) for tool and task management.
 
 ```bash
-mise trust && mise install    # Install tools
-mise run env:setup            # Configure .env
-mise run compose:up           # Start services
-mise run compose:dev          # Start with hot reload
-mise run compose:down         # Stop services
+mise trust && mise install         # Install tools
+mise run env:setup                 # Configure .env
+mise run compose:deploy:local      # Start services (build locally)
+mise run compose:deploy:release    # Start services (prebuilt images)
+mise run compose:dev               # Start with hot reload
+mise run compose:down              # Stop services
 ```
 
 Run `mise tasks` to see all available tasks. Access the app at `http://localhost:8080`.

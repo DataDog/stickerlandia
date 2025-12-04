@@ -46,6 +46,11 @@ export class Persistence extends Construct {
       excludeCharacters: '"@/\\',
     });
 
+    // Use DESTROY for dev environments, RETAIN for production
+    const removalPolicy = props.env === "dev"
+      ? cdk.RemovalPolicy.DESTROY
+      : cdk.RemovalPolicy.RETAIN;
+
     var cluster = new DatabaseCluster(this, "SharedDB", {
       clusterIdentifier: `stickerlandia-${props.env}-db`,
       engine: cdk.aws_rds.DatabaseClusterEngine.auroraPostgres({
@@ -56,7 +61,8 @@ export class Persistence extends Construct {
       serverlessV2MinCapacity: 0,
       serverlessV2MaxCapacity: 1,
       securityGroups: [databaseSecurityGroup],
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      removalPolicy: removalPolicy,
+      deletionProtection: props.env !== "dev",
       defaultDatabaseName: "stickerlandia",
       writer: cdk.aws_rds.ClusterInstance.serverlessV2(
         "StickerlandiaWriterInstance"

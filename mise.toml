@@ -112,29 +112,29 @@ run = "mise run '//...:infra:install'"
 # compose: Docker Compose tasks
 # =============================================================================
 
-[tasks."compose:up"]
-description = "Start all services"
+[tasks."compose:deploy:local"]
+description = "Deploy all services locally (build from source)"
 depends = ["env:setup"]
 run = "docker compose --profile monitoring build && docker compose --profile monitoring up -d"
 
-[tasks."compose:dev"]
-description = "Start all services with hot reload"
-depends = ["env:setup"]
-run = "docker compose --profile monitoring -f docker-compose.yml -f docker-compose.dev.yml build && docker compose --profile monitoring -f docker-compose.yml -f docker-compose.dev.yml up -d"
-
-[tasks."compose:prebuilt"]
-description = "Start all services using prebuilt images"
+[tasks."compose:deploy:release"]
+description = "Deploy all services using prebuilt GHCR images"
 depends = ["env:setup"]
 run = "docker compose --profile monitoring -f docker-compose.yml -f docker-compose.prebuilt.yml up -d"
+
+[tasks."compose:deploy:ci"]
+description = "Deploy services for CI (no monitoring)"
+depends = ["env:setup"]
+run = "docker compose build && docker compose up -d"
+
+[tasks."compose:dev"]
+description = "Deploy all services with hot reload"
+depends = ["env:setup"]
+run = "docker compose --profile monitoring -f docker-compose.yml -f docker-compose.dev.yml build && docker compose --profile monitoring -f docker-compose.yml -f docker-compose.dev.yml up -d"
 
 [tasks."compose:down"]
 description = "Stop and remove all containers and volumes"
 run = "docker compose --profile monitoring down -v"
-
-[tasks."compose:up-ci"]
-description = "Start services for CI (no monitoring)"
-depends = ["env:setup"]
-run = "docker compose build && docker compose up -d"
 
 # =============================================================================
 # test: Testing tasks
@@ -151,45 +151,48 @@ depends = ["env:setup"]
 run = "./scripts/test-services.sh --max-retries 5 --retry-delay 10"
 
 # =============================================================================
-# deploy: AWS deployment tasks
+# aws: AWS tasks
 # =============================================================================
 
-[tasks."deploy:aws-release"]
-description = "Deploy to AWS using container images from GHCR"
+[tasks."aws:deploy:local"]
+description = "Deploy to AWS (build containers locally)"
+depends = ["env:setup"]
+run = """
+echo "=== Deploying Stickerlandia to AWS: $ENV (COMMIT_SHA=$COMMIT_SHA) ==="
+mise run //shared:aws:deploy
+mise run //user-management:aws:deploy
+mise run //sticker-award:aws:deploy
+mise run //web-backend:aws:deploy
+mise run //web-frontend:aws:deploy
+echo "=== Deployment complete! ==="
+"""
+
+[tasks."aws:deploy:release"]
+description = "Deploy to AWS using prebuilt GHCR images"
 depends = ["env:setup"]
 env = { COMMIT_SHA = "latest" }
 run = """
-echo "=== Deploying Stickerlandia to environment: $ENV (COMMIT_SHA=$COMMIT_SHA) ==="
-mise run //shared:deploy:aws
-mise run //user-management:deploy:aws
-mise run //sticker-award:deploy:aws
-mise run //web-backend:deploy:aws
+echo "=== Deploying Stickerlandia to AWS: $ENV (COMMIT_SHA=$COMMIT_SHA) ==="
+mise run //shared:aws:deploy
+mise run //user-management:aws:deploy
+mise run //sticker-award:aws:deploy
+mise run //web-backend:aws:deploy
+mise run //web-frontend:aws:deploy
 echo "=== Deployment complete! ==="
 """
 
-# =============================================================================
-# info: Stack information tasks
-# =============================================================================
+[tasks."aws:down"]
+description = "Destroy all AWS stacks"
+depends = ["//shared:aws:down"]
+run = "echo '=== All AWS stacks destroyed! ==="
 
-[tasks."info:aws"]
+[tasks."aws:info"]
 description = "Show AWS stack outputs for all services"
 run = """
-mise run //shared:info:aws
-mise run //user-management:info:aws
-mise run //sticker-award:info:aws
-mise run //sticker-catalogue:info:aws
-mise run //web-backend:info:aws
-"""
-
-[tasks."deploy:aws-local"]
-description = "Build containers locally and deploy to AWS"
-# Note here - building is handled by the CDK
-depends = ["env:setup"]
-run = """
-echo "=== Deploying Stickerlandia to environment: $ENV (COMMIT_SHA=$COMMIT_SHA) ==="
-mise run //shared:deploy:aws
-mise run //user-management:deploy:aws
-mise run //sticker-award:deploy:aws
-mise run //web-backend:deploy:aws
-echo "=== Deployment complete! ==="
+mise run //shared:aws:info
+mise run //user-management:aws:info
+mise run //sticker-award:aws:info
+mise run //sticker-catalogue:aws:info
+mise run //web-backend:aws:info
+mise run //web-frontend:aws:info
 """
