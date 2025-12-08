@@ -184,7 +184,11 @@ echo "=== Deployment complete! ==="
 [tasks."aws:down"]
 description = "Destroy all AWS stacks"
 depends = ["//shared:aws:down"]
-run = "echo '=== All AWS stacks destroyed! ==="
+run = """
+echo '=== Cleaning up CDK context cache ==='
+find . -name 'cdk.context.json' -type f -delete
+echo '=== All AWS stacks destroyed! ==='
+"""
 
 [tasks."aws:info"]
 description = "Show AWS stack outputs for all services"

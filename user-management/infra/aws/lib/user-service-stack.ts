@@ -64,16 +64,22 @@ export class UserServiceStack extends cdk.Stack {
       environment: environment,
       serviceName: "users",
       format: ConnectionStringFormat.DOTNET,
+      // Don't create SSM parameter references - they cause CloudFormation validation errors.
+      // Lambda functions will use CloudFormation dynamic references instead.
+      createSsmParameterReferences: false,
     });
 
     const serviceProps: ServiceProps = {
       cloudfrontDistribution: sharedResources.cloudfrontDistribution,
-      connectionString: dbCredentials.connectionStringParameter!,
+      connectionStringSecret: dbCredentials.connectionStringSecret!,
+      connectionStringParameter: dbCredentials.connectionStringParameter,
+      databaseCredentials: dbCredentials,
       messagingConfiguration: new AWSMessagingProps(
         this,
         "MessagingProps",
         sharedResources
       ),
+      serviceDependencies: [dbCredentials.credentialResource],
     };
 
     const api = new Api(this, "Api", {

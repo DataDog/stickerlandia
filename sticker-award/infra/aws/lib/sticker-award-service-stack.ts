@@ -70,12 +70,14 @@ export class StickerAwardServiceStack extends cdk.Stack {
 
     const serviceProps: ServiceProps = {
       cloudfrontDistribution: sharedResources.cloudfrontDistribution,
-      connectionString: dbCredentials.connectionStringParameter!,
+      connectionStringSecret: dbCredentials.connectionStringSecret!,
+      databaseCredentials: dbCredentials,
       messagingConfiguration: new AWSMessagingProps(
         this,
         "MessagingProps",
         sharedResources
       ),
+      serviceDependencies: [dbCredentials.credentialResource],
     };
 
     const api = new Api(this, "Api", {

@@ -80,9 +80,7 @@ export class Api extends Construct {
         DD_API_KEY: Secret.fromSsmParameter(
           props.sharedProps.datadog.apiKeyParameter
         ),
-        ConnectionStrings__database: Secret.fromSsmParameter(
-          props.serviceProps.connectionString
-        ),
+        ConnectionStrings__database: props.serviceProps.databaseCredentials.getConnectionStringEcsSecret()!,
         ...props.serviceProps.messagingConfiguration.asSecrets(),
       },
       path: "/api/users/{proxy+}",
@@ -105,6 +103,7 @@ export class Api extends Construct {
       serviceDiscoveryNamespace: props.serviceDiscoveryNamespace,
       serviceDiscoveryName: props.serviceDiscoveryName,
       deployInPrivateSubnet: props.deployInPrivateSubnet,
+      serviceDependencies: props.serviceProps.serviceDependencies,
     });
 
     this.userRegisteredTopic.grantPublish(webService.taskRole);
@@ -112,5 +111,8 @@ export class Api extends Construct {
     this.stickerClaimedDLQ.grantSendMessages(webService.taskRole);
     this.stickerClaimedQueue.grantConsumeMessages(webService.taskRole);
     this.stickerClaimedDLQ.grantConsumeMessages(webService.taskRole);
+
+    // Grant execution role permission to read the database connection string secret
+    props.serviceProps.databaseCredentials.grantRead(webService.executionRole);
   }
 }

@@ -1,17 +1,17 @@
 import { IDistribution } from "aws-cdk-lib/aws-cloudfront";
 import { Secret } from "aws-cdk-lib/aws-ecs";
 import { IStringParameter, StringParameter } from "aws-cdk-lib/aws-ssm";
-import { Construct } from "constructs";
-import { IEventBus } from "aws-cdk-lib/aws-events";
-import { SharedResources } from "../../../../shared/lib/shared-constructs/lib/shared-resources";
+import { Construct, IDependable } from "constructs";
 import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
 import { IGrantable } from "aws-cdk-lib/aws-iam";
+import { DatabaseCredentials } from "../../../../shared/lib/shared-constructs/lib/database-credentials";
+import {
+  MessagingProps,
+  AWSMessagingProps,
+} from "../../../../shared/lib/shared-constructs/lib/messaging";
 
-export interface MessagingProps {
-  asSecrets(): { [key: string]: Secret };
-  asEnvironmentVariables(): { [key: string]: string };
-  grantPermissions(grantable: IGrantable): void;
-}
+// Re-export shared messaging types for convenience
+export { MessagingProps, AWSMessagingProps };
 
 export class KafkaMessagingProps extends Construct implements MessagingProps {
   kafkaBootstrapServers: IStringParameter;
@@ -62,34 +62,9 @@ export class KafkaMessagingProps extends Construct implements MessagingProps {
   }
 }
 
-export class AWSMessagingProps extends Construct implements MessagingProps {
-  sharedEventBus: IEventBus;
-
-  constructor(scope: Construct, id: string, props: SharedResources) {
-    super(scope, id);
-
-    this.sharedEventBus = props.sharedEventBus;
-  }
-
-  public asSecrets(): { [key: string]: Secret } {
-    return {};
-  }
-
-  public asEnvironmentVariables(): { [key: string]: string } {
-    return {
-      EVENT_BUS_NAME: this.sharedEventBus.eventBusName,
-    };
-  }
-
-  public grantPermissions(grantable: IGrantable): void {
-    this.sharedEventBus.grantPutEventsTo(grantable);
-  }
-}
-
 export interface ServiceProps {
   cloudfrontDistribution: IDistribution;
-  jdbcUrl: IStringParameter;
-  dbUsername: IStringParameter;
-  dbPassword: IStringParameter;
+  databaseCredentials: DatabaseCredentials;
   messagingProps: MessagingProps;
+  serviceDependencies?: IDependable[];
 }

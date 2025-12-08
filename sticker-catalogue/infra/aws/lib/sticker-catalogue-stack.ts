@@ -71,10 +71,9 @@ export class StickerCatalogueServiceStack extends cdk.Stack {
 
     const serviceProps: ServiceProps = {
       cloudfrontDistribution: sharedResources.cloudfrontDistribution,
-      jdbcUrl: dbCredentials.jdbcUrlParameter!,
-      dbUsername: dbCredentials.usernameParameter!,
-      dbPassword: dbCredentials.passwordParameter!,
+      databaseCredentials: dbCredentials,
       messagingProps: new KafkaMessagingProps(this, "MessagingProps", sharedProps),
+      serviceDependencies: [dbCredentials.credentialResource],
     };
 
     const stickerImageBucket = new Bucket(this, "StickerImageBucket", {

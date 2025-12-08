@@ -50,13 +50,15 @@ export class BackgroundWorkers extends Construct {
     super(scope, id);
 
     if (props.useLambda) {
+      // Get connection string value from CustomResource output, resolved at deploy time
+      const connectionString = props.serviceProps.databaseCredentials.getConnectionStringForLambda();
+
       const environmentVariables = {
         POWERTOOLS_SERVICE_NAME: props.sharedProps.serviceName,
         POWERTOOLS_LOG_LEVEL:
           props.sharedProps.environment === "prod" ? "WARN" : "INFO",
         ENV: props.sharedProps.environment,
-        ConnectionStrings__database:
-          props.serviceProps.connectionString.stringValue,
+        ConnectionStrings__database: connectionString,
         Aws__UserRegisteredTopicArn: props.userRegisteredTopic.topicArn,
         Aws__StickerClaimedQueueUrl: props.stickerClaimedQueue.queueUrl,
         Aws__StickerClaimedDLQUrl: props.stickerClaimedDLQ.queueUrl,
@@ -90,6 +92,13 @@ export class BackgroundWorkers extends Construct {
         })
       );
 
+      // Add dependencies for Lambda functions to ensure SSM parameters exist before deployment
+      if (props.serviceProps.serviceDependencies) {
+        for (const dependency of props.serviceProps.serviceDependencies) {
+          stickerClaimedWorker.function.node.addDependency(dependency);
+        }
+      }
+
       const rule = new Rule(this, "StickerClaimedEventRule", {
         eventBus: props.sharedEventBus,
         ruleName: `${props.sharedProps.serviceName}-${props.sharedProps.environment}-sticker-claimed-rule`,
@@ -117,6 +126,13 @@ export class BackgroundWorkers extends Construct {
         }
       );
       props.sharedEventBus.grantPutEventsTo(outboxWorker.function);
+
+      // Add dependencies for outbox worker Lambda
+      if (props.serviceProps.serviceDependencies) {
+        for (const dependency of props.serviceProps.serviceDependencies) {
+          outboxWorker.function.node.addDependency(dependency);
+        }
+      }
 
       const outboxWorkerSchedule = new Rule(this, "OutboxWorkerSchedule", {
         description: "Trigger outbox worker every 1 minute",
@@ -161,9 +177,7 @@ export class BackgroundWorkers extends Construct {
             DD_API_KEY: Secret.fromSsmParameter(
               props.sharedProps.datadog.apiKeyParameter
             ),
-            ConnectionStrings__database: Secret.fromSsmParameter(
-              props.serviceProps.connectionString
-            ),
+            ConnectionStrings__database: props.serviceProps.databaseCredentials.getConnectionStringEcsSecret()!,
             ...props.serviceProps.messagingConfiguration.asSecrets(),
           },
           serviceDiscoveryNamespace: props.serviceDiscoveryNamespace,
@@ -173,6 +187,7 @@ export class BackgroundWorkers extends Construct {
             cpuArchitecture: CpuArchitecture.ARM64,
             operatingSystemFamily: OperatingSystemFamily.LINUX,
           },
+          serviceDependencies: props.serviceProps.serviceDependencies,
         }
       );
     }

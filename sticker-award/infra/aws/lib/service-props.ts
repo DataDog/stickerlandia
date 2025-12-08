@@ -1,17 +1,18 @@
 import { IDistribution } from "aws-cdk-lib/aws-cloudfront";
-import { IEventBus } from "aws-cdk-lib/aws-events";
 import { IStringParameter, StringParameter } from "aws-cdk-lib/aws-ssm";
-import { Construct } from "constructs";
+import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
+import { Construct, IDependable } from "constructs";
 import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
 import { Secret } from "aws-cdk-lib/aws-ecs";
-import { SharedResources } from "../../../../shared/lib/shared-constructs/lib/shared-resources";
 import { IGrantable } from "aws-cdk-lib/aws-iam";
+import { DatabaseCredentials } from "../../../../shared/lib/shared-constructs/lib/database-credentials";
+import {
+  MessagingProps,
+  AWSMessagingProps,
+} from "../../../../shared/lib/shared-constructs/lib/messaging";
 
-export interface MessagingProps {
-  asSecrets(): { [key: string]: Secret };
-  asEnvironmentVariables(): { [key: string]: string };
-  grantPermissions(grantable: IGrantable): void;
-}
+// Re-export shared messaging types for convenience
+export { MessagingProps, AWSMessagingProps };
 
 export class KafkaMessagingProps extends Construct implements MessagingProps {
   kafkaBootstrapServers: IStringParameter;
@@ -64,33 +65,12 @@ export class KafkaMessagingProps extends Construct implements MessagingProps {
   }
 }
 
-export class AWSMessagingProps extends Construct implements MessagingProps {
-  sharedEventBus: IEventBus;
-
-  constructor(scope: Construct, id: string, props: SharedResources) {
-    super(scope, id);
-
-    this.sharedEventBus = props.sharedEventBus;
-  }
-
-  public asSecrets(): { [key: string]: Secret } {
-    return {};
-  }
-
-  public asEnvironmentVariables(): { [key: string]: string } {
-    return {
-      MESSAGING_PROVIDER: "aws",
-      EVENT_BUS_NAME: this.sharedEventBus.eventBusName,
-    };
-  }
-
-  public grantPermissions(grantable: IGrantable): void {
-    this.sharedEventBus.grantPutEventsTo(grantable);
-  }
-}
-
 export interface ServiceProps {
-  connectionString: IStringParameter;
+  connectionStringSecret: ISecret;
   cloudfrontDistribution: IDistribution;
   messagingConfiguration: MessagingProps;
+  /** The database credentials construct - used for granting read permissions to ECS execution role */
+  databaseCredentials: DatabaseCredentials;
+  /** Resources that must be created before the ECS service starts */
+  serviceDependencies?: IDependable[];
 }
