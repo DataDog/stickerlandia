@@ -12,8 +12,10 @@ import {
   DatabaseCredentials,
   ConnectionStringFormat,
 } from "../../../../shared/lib/shared-constructs/lib/database-credentials";
+import { MigrationTask } from "../../../../shared/lib/shared-constructs/lib/migration-task";
 import { Api } from "./api";
-import { Cluster } from "aws-cdk-lib/aws-ecs";
+import { Cluster, Secret } from "aws-cdk-lib/aws-ecs";
+import * as path from "path";
 import { BackgroundWorkers } from "./background-workers";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
 import {
@@ -69,6 +71,33 @@ export class UserServiceStack extends cdk.Stack {
       createSsmParameterReferences: false,
     });
 
+    // Run database migrations before starting services
+    const imageTag = process.env.VERSION || "LOCAL";
+    const migrationTask = new MigrationTask(this, "MigrationTask", {
+      sharedProps: sharedProps,
+      vpc: sharedResources.vpc,
+      cluster: cluster,
+      image: "ghcr.io/datadog/stickerlandia/user-management-migration",
+      imageTag: imageTag,
+      assetPath: path.join(__dirname, "../../../"),
+      command: ["migrations/Stickerlandia.UserManagement.MigrationService.dll"],
+      environmentVariables: {
+        DEPLOYMENT_HOST_URL: `https://${sharedResources.cloudfrontDistribution.distributionDomainName}`,
+        DRIVING: "ASPNET",
+        DRIVEN: "AWS",
+        DISABLE_SSL: "true",
+      },
+      secrets: {
+        "ConnectionStrings__database": dbCredentials.getConnectionStringEcsSecret()!,
+      },
+      dependencies: [dbCredentials.credentialResource],
+      deployInPrivateSubnet: true,
+      timeout: 300,
+    });
+
+    // Grant migration task permission to read database credentials
+    dbCredentials.grantRead(migrationTask.executionRole);
+
     const serviceProps: ServiceProps = {
       cloudfrontDistribution: sharedResources.cloudfrontDistribution,
       connectionStringSecret: dbCredentials.connectionStringSecret!,
@@ -79,7 +108,8 @@ export class UserServiceStack extends cdk.Stack {
         "MessagingProps",
         sharedResources
       ),
-      serviceDependencies: [dbCredentials.credentialResource],
+      // Services depend on both DB credentials and migration completing
+      serviceDependencies: [dbCredentials.credentialResource, migrationTask.resource],
     };
 
     const api = new Api(this, "Api", {
