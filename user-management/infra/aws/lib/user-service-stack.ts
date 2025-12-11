@@ -80,6 +80,7 @@ export class UserServiceStack extends cdk.Stack {
       image: "ghcr.io/datadog/stickerlandia/user-management-migration",
       imageTag: imageTag,
       assetPath: path.join(__dirname, "../../../"),
+      entryPoint: ["dotnet"],
       command: ["migrations/Stickerlandia.UserManagement.MigrationService.dll"],
       environmentVariables: {
         DEPLOYMENT_HOST_URL: `https://${sharedResources.cloudfrontDistribution.distributionDomainName}`,
@@ -90,6 +91,8 @@ export class UserServiceStack extends cdk.Stack {
       secrets: {
         "ConnectionStrings__database": dbCredentials.getConnectionStringEcsSecret()!,
       },
+      // Use the same security group as the API service for consistent network access
+      securityGroupId: sharedResources.vpcLinkSecurityGroupId,
       dependencies: [dbCredentials.credentialResource],
       deployInPrivateSubnet: true,
       timeout: 300,

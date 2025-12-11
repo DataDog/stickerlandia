@@ -9,7 +9,6 @@ import { CustomResource, Duration, RemovalPolicy, Stack } from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as iam from "aws-cdk-lib/aws-iam";
-import * as logs from "aws-cdk-lib/aws-logs";
 import { Function as LambdaFunction, Runtime, Code } from "aws-cdk-lib/aws-lambda";
 import { Provider } from "aws-cdk-lib/custom-resources";
 import { Platform } from "aws-cdk-lib/aws-ecr-assets";
@@ -25,13 +24,19 @@ export interface MigrationTaskProps {
   readonly imageTag: string;
   /** Path to Dockerfile directory for local builds (when imageTag === "LOCAL") */
   readonly assetPath?: string;
+  /** Entry point for the container (overrides Dockerfile ENTRYPOINT) */
+  readonly entryPoint?: string[];
   /** Command to run in the container (overrides Dockerfile CMD) */
   readonly command?: string[];
   /** Environment variables for the migration container */
   readonly environmentVariables: { [key: string]: string };
   /** Secrets for the migration container */
   readonly secrets: { [key: string]: ecs.Secret };
-  /** Deploy in private subnet (default: true) */
+  /** Security group ID to use (if not provided, creates a new one) */
+  readonly securityGroupId?: string;
+  /** Subnet IDs to deploy into (if not provided, auto-selects based on deployInPrivateSubnet) */
+  readonly subnetIds?: string[];
+  /** Deploy in private subnet (default: true) - only used if subnetIds not provided */
   readonly deployInPrivateSubnet?: boolean;
   /** Timeout for task completion in seconds (default: 300) */
   readonly timeout?: number;
@@ -82,50 +87,78 @@ export class MigrationTask extends Construct implements IDependable {
       assumedBy: new iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
     });
 
-    // Task Definition
-    this.taskDefinition = new ecs.FargateTaskDefinition(this, "TaskDefinition", {
-      memoryLimitMiB: 512,
-      cpu: 256,
-      runtimePlatform: props.runtimePlatform ?? {
-        cpuArchitecture: ecs.CpuArchitecture.ARM64,
-        operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
-      },
-      executionRole: this.executionRole,
-      taskRole: this.taskRole,
-    });
+    // Task Definition - use Datadog wrapper when enabled (same pattern as WebService)
+    const runtimePlatform = props.runtimePlatform ?? {
+      cpuArchitecture: ecs.CpuArchitecture.ARM64,
+      operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
+    };
+
+    if (!props.sharedProps.enableDatadog) {
+      this.taskDefinition = new ecs.FargateTaskDefinition(this, "TaskDefinition", {
+        memoryLimitMiB: 512,
+        cpu: 256,
+        runtimePlatform,
+        executionRole: this.executionRole,
+        taskRole: this.taskRole,
+      });
+    } else {
+      this.taskDefinition = props.sharedProps.datadog.ecsFargate.fargateTaskDefinition(
+        this,
+        "TaskDefinition",
+        {
+          memoryLimitMiB: 512,
+          cpu: 256,
+          runtimePlatform,
+          executionRole: this.executionRole,
+          taskRole: this.taskRole,
+        }
+      );
+    }
 
     // Container image - support both registry and local builds
     const isLocalBuild = props.imageTag.toUpperCase() === "LOCAL" && props.assetPath;
+    const assetPlatform = runtimePlatform.cpuArchitecture === ecs.CpuArchitecture.ARM64
+      ? Platform.LINUX_ARM64
+      : Platform.LINUX_AMD64;
     const containerImage = isLocalBuild
       ? ecs.ContainerImage.fromAsset(props.assetPath!, {
           exclude: ["infra", "cdk.out", "node_modules", ".git"],
-          platform: Platform.LINUX_ARM64,
+          platform: assetPlatform,
         })
       : ecs.ContainerImage.fromRegistry(`${props.image}:${props.imageTag}`);
+
+    // Base environment variables (same pattern as WebService)
+    const baseEnvironmentVariables: { [key: string]: string } = {
+      ENV: props.sharedProps.environment,
+      DD_ENV: props.sharedProps.environment,
+      DD_SERVICE: `${props.sharedProps.serviceName}-migration`,
+      DD_VERSION: props.imageTag,
+      DD_GIT_COMMIT_SHA: props.imageTag,
+      DD_GIT_REPOSITORY_URL: "https://github.com/Datadog/stickerlandia",
+    };
 
     // Add container to task definition
     const container = this.taskDefinition.addContainer("migration", {
       image: containerImage,
       containerName: "migration",
       environment: {
-        ENV: props.sharedProps.environment,
+        ...baseEnvironmentVariables,
         ...props.environmentVariables,
       },
       secrets: props.secrets,
+      entryPoint: props.entryPoint,
       command: props.command,
-      logging: ecs.LogDrivers.awsLogs({
-        streamPrefix: "migration",
-        logRetention: logs.RetentionDays.ONE_WEEK,
-      }),
       essential: true,
     });
 
-    // Security group for the migration task
-    const securityGroup = new ec2.SecurityGroup(this, "SecurityGroup", {
-      vpc: props.vpc,
-      description: "Security group for migration task",
-      allowAllOutbound: true,
-    });
+    // Security group for the migration task - use provided or create new
+    const securityGroup = props.securityGroupId
+      ? ec2.SecurityGroup.fromSecurityGroupId(this, "SecurityGroup", props.securityGroupId)
+      : new ec2.SecurityGroup(this, "SecurityGroup", {
+          vpc: props.vpc,
+          description: "Security group for migration task",
+          allowAllOutbound: true,
+        });
 
     // Lambda function to run the ECS task and wait for completion
     const handler = new LambdaFunction(this, "Handler", {
@@ -250,10 +283,10 @@ exports.handler = async (event) => {
       onEventHandler: handler,
     });
 
-    // Determine subnets
-    const subnets = deployInPrivateSubnet
+    // Determine subnets - use provided or auto-select
+    const subnets = props.subnetIds ?? (deployInPrivateSubnet
       ? props.vpc.selectSubnets({ subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS }).subnetIds
-      : props.vpc.selectSubnets({ subnetType: ec2.SubnetType.PUBLIC }).subnetIds;
+      : props.vpc.selectSubnets({ subnetType: ec2.SubnetType.PUBLIC }).subnetIds);
 
     // Create the custom resource
     this.resource = new CustomResource(this, "Resource", {
