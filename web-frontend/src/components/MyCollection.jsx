@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { useAuth } from "../context/AuthContext";
 import Sidebar from "./Sidebar";
+import { API_BASE_URL } from "../config";
 
 function MyCollection() {
   const { user } = useAuth();
@@ -17,7 +18,7 @@ function MyCollection() {
 
         // Fetch user's sticker assignments
         const assignmentsResponse = await fetch(
-          `http://localhost:8080/api/awards/v1/assignments/${userId}`
+          `${API_BASE_URL}/api/awards/v1/assignments/${userId}`
         );
 
         if (!assignmentsResponse.ok) {
@@ -32,7 +33,7 @@ function MyCollection() {
           assignments.map(async (assignment) => {
             try {
               const metadataResponse = await fetch(
-                `http://localhost:8080/api/stickers/v1/${assignment.stickerId}`
+                `${API_BASE_URL}/api/stickers/v1/${assignment.stickerId}`
               );
 
               if (metadataResponse.ok) {
@@ -115,7 +116,7 @@ function MyCollection() {
                     </h3>
                     <div className="aspect-square w-full mb-4 flex items-center justify-center bg-gray-50 rounded-lg overflow-hidden">
                       <img
-                        src={`http://localhost:8080/api/stickers/v1/${sticker.stickerId}/image`}
+                        src={`${API_BASE_URL}/api/stickers/v1/${sticker.stickerId}/image`}
                         alt={sticker.stickerName}
                         className="w-full h-full object-cover"
                         onError={(e) => {
