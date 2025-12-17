@@ -63,18 +63,47 @@ Stickerlandia is fully instrumented with Datadog's observability and analysis to
 
 ## Getting Started
 
-We use [mise](https://mise.jdx.dev/getting-started.html) for tool and task management.
+We use [mise-en-place](https://mise.jdx.dev/getting-started.html) for tool and task management.
 
 ```bash
 mise trust && mise install         # Install tools
-mise run env:setup                 # Configure .env
-mise run compose:deploy:local      # Start services (build locally)
-mise run compose:deploy:release    # Start services (prebuilt images)
+mise run env:setup                 # Configure .env, necessary for most of the rest of the tasks!
+```
+
+You can use mise to work with Docker locally:
+
+```bash
+mise run compose:deploy:local      # Start services (build from source)
+mise run compose:deploy:release    # Start services (prebuilt GHCR images)
 mise run compose:dev               # Start with hot reload
 mise run compose:down              # Stop services
 ```
 
-Run `mise tasks` to see all available tasks. Access the app at `http://localhost:8080`.
+Or deploy to AWS in the cloud:
+
+```bash
+mise run aws:deploy:local          # Deploy to AWS (build containers locally)
+mise run aws:deploy:release        # Deploy to AWS (prebuilt GHCR images)
+mise run aws:info                  # Show AWS stack outputs
+mise run aws:down                  # Destroy all AWS stacks
+```
+
+Run `mise tasks` to see top-level tasks, or `mise tasks --all` to see service-specific tasks:
+
+```
+//sticker-award:aws:deploy            Deploy to AWS
+//sticker-award:build:docker-dev      Build dev container
+//sticker-award:build:local           Build Go binary
+//sticker-catalogue:aws:deploy        Deploy to AWS
+//sticker-catalogue:build:local       Build Java package
+//user-management:aws:deploy          Deploy to AWS
+//user-management:build:local         Build .NET solution
+...
+```
+
+Using mise's [monorepo support](https://mise.jdx.dev/tasks/toml-tasks.html#project-name), each service defines a consistent set of tasks (like `build:local`, `aws:deploy`) that roll up to the top-level orchestration tasks.
+
+Access the app at `http://localhost:8080`.
 
 ### Default User
 
