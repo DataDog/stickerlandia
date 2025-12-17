@@ -21,7 +21,7 @@ import { LambdaFunction, SqsQueue } from "aws-cdk-lib/aws-events-targets";
 import { ITopic } from "aws-cdk-lib/aws-sns";
 import { ServiceProps } from "./service-props";
 import { WorkerService } from "../../../../shared/lib/shared-constructs/lib/worker-service";
-import { IVpc } from "aws-cdk-lib/aws-ec2";
+import { IVpc, SecurityGroup, SubnetType } from "aws-cdk-lib/aws-ec2";
 import {
   CpuArchitecture,
   ICluster,
@@ -33,6 +33,7 @@ import { IPrivateDnsNamespace } from "aws-cdk-lib/aws-servicediscovery";
 export interface BackgroundWorkersProps {
   cluster: ICluster;
   vpc: IVpc;
+  vpcLinkSecurityGroupId: string;
   serviceDiscoveryNamespace: IPrivateDnsNamespace;
   serviceDiscoveryName: string;
   deployInPrivateSubnet?: boolean;
@@ -52,6 +53,18 @@ export class BackgroundWorkers extends Construct {
     if (props.useLambda) {
       // Get connection string value from CustomResource output, resolved at deploy time
       const connectionString = props.serviceProps.databaseCredentials.getConnectionStringForLambda();
+
+      // Reference the VPC link security group for Lambda functions that need database access
+      const lambdaSecurityGroup = SecurityGroup.fromSecurityGroupId(
+        this,
+        "LambdaSecurityGroup",
+        props.vpcLinkSecurityGroupId
+      );
+
+      // Lambda functions need to be in private subnets to access RDS
+      const vpcSubnets = {
+        subnetType: SubnetType.PRIVATE_WITH_EGRESS,
+      };
 
       const environmentVariables = {
         POWERTOOLS_SERVICE_NAME: props.sharedProps.serviceName,
@@ -82,6 +95,9 @@ export class BackgroundWorkers extends Construct {
           timeout: Duration.seconds(25),
           logLevel: props.sharedProps.environment === "prod" ? "WARN" : "INFO",
           onFailure: new SqsDestination(props.stickerClaimedDLQ),
+          vpc: props.vpc,
+          vpcSubnets: vpcSubnets,
+          securityGroups: [lambdaSecurityGroup],
         }
       );
 
@@ -123,6 +139,9 @@ export class BackgroundWorkers extends Construct {
           timeout: Duration.seconds(50),
           logLevel: props.sharedProps.environment === "prod" ? "WARN" : "INFO",
           onFailure: undefined,
+          vpc: props.vpc,
+          vpcSubnets: vpcSubnets,
+          securityGroups: [lambdaSecurityGroup],
         }
       );
       props.sharedEventBus.grantPutEventsTo(outboxWorker.function);

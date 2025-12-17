@@ -133,6 +133,7 @@ export class UserServiceStack extends cdk.Stack {
       serviceProps,
       sharedEventBus: sharedResources.sharedEventBus,
       vpc: sharedResources.vpc,
+      vpcLinkSecurityGroupId: sharedResources.vpcLinkSecurityGroupId,
       serviceDiscoveryName: "users.worker",
       cluster: cluster,
       useLambda: true,
