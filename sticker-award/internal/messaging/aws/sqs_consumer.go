@@ -309,8 +309,8 @@ func (c *Consumer) processMessage(message *types.Message) error {
 	// Create SQS message wrapper with CloudEvent JSON body
 	// The handler wrapper will parse this and apply all middleware
 	sqsMessage := &SQSMessage{
-		Body:       detailJSON,  // CloudEvent JSON string
-		Attributes: ddHeaders,   // Datadog headers for DSM/tracing
+		Body:       detailJSON, // CloudEvent JSON string
+		Attributes: ddHeaders,  // Datadog headers for DSM/tracing
 		Topic:      detailType,
 		RawMessage: *message,
 	}
