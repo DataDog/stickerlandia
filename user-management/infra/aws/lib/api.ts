@@ -4,6 +4,7 @@
  * Copyright 2025-Present Datadog, Inc.
  */
 
+import * as path from "path";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
 import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
@@ -61,34 +62,26 @@ export class Api extends Construct {
       cluster: props.cluster,
       image: "ghcr.io/datadog/stickerlandia/user-management-service",
       imageTag: props.sharedProps.version,
+      assetPath: path.resolve(__dirname, "../../.."),
       ddApiKey: props.sharedProps.datadog.apiKeyParameter,
       port: 8080,
       environmentVariables: {
         DEPLOYMENT_HOST_URL: `https://${props.serviceProps.cloudfrontDistribution.distributionDomainName}`,
         DRIVING: "ASPNET",
-        DRIVEN: "AGNOSTIC",
+        DRIVEN: "AWS",
         DISABLE_SSL: "true",
         LOGGING__LOGLEVEL__DEFAULT: "INFORMATION",
         LOGGING__LOGLEVEL__MICROSOFT: "INFORMATION",
         "LOGGING__LOGLEVEL__MICROSOFT.ENTITYFRAMEWORKCORE.DATABASE.COMMAND":
           "WARNING",
+        ...props.serviceProps.messagingConfiguration.asEnvironmentVariables(),
       },
       secrets: {
         DD_API_KEY: Secret.fromSsmParameter(
           props.sharedProps.datadog.apiKeyParameter
         ),
-        ConnectionStrings__database: Secret.fromSsmParameter(
-          props.serviceProps.connectionString
-        ),
-        ConnectionStrings__messaging: Secret.fromSsmParameter(
-          props.serviceProps.messagingConnectionString
-        ),
-        KAFKA_USERNAME: Secret.fromSsmParameter(
-          props.serviceProps.kafkaUsername
-        ),
-        KAFKA_PASSWORD: Secret.fromSsmParameter(
-          props.serviceProps.kafkaPassword
-        ),
+        ConnectionStrings__database: props.serviceProps.databaseCredentials.getConnectionStringEcsSecret()!,
+        ...props.serviceProps.messagingConfiguration.asSecrets(),
       },
       path: "/api/users/{proxy+}",
       additionalPathMappings: [
@@ -110,6 +103,7 @@ export class Api extends Construct {
       serviceDiscoveryNamespace: props.serviceDiscoveryNamespace,
       serviceDiscoveryName: props.serviceDiscoveryName,
       deployInPrivateSubnet: props.deployInPrivateSubnet,
+      serviceDependencies: props.serviceProps.serviceDependencies,
     });
 
     this.userRegisteredTopic.grantPublish(webService.taskRole);
@@ -117,5 +111,8 @@ export class Api extends Construct {
     this.stickerClaimedDLQ.grantSendMessages(webService.taskRole);
     this.stickerClaimedQueue.grantConsumeMessages(webService.taskRole);
     this.stickerClaimedDLQ.grantConsumeMessages(webService.taskRole);
+
+    // Grant execution role permission to read the database connection string secret
+    props.serviceProps.databaseCredentials.grantRead(webService.executionRole);
   }
 }

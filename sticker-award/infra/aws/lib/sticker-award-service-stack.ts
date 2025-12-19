@@ -7,10 +7,20 @@
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { SharedResources } from "../../../../shared/lib/shared-constructs/lib/shared-resources";
+import {
+  DatabaseCredentials,
+  ConnectionStringFormat,
+} from "../../../../shared/lib/shared-constructs/lib/database-credentials";
 import { Api } from "./api";
 import { Cluster } from "aws-cdk-lib/aws-ecs";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
 import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
+import { AWSMessagingProps, KafkaMessagingProps, ServiceProps } from "./service-props";
+
+export enum MessagingType {
+  AWS,
+  KAFKA,
+}
 
 export class StickerAwardServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -18,6 +28,7 @@ export class StickerAwardServiceStack extends cdk.Stack {
 
     const serviceName = "sticker-award";
     const environment = process.env.ENV || "dev";
+    const messagingType: MessagingType = MessagingType.AWS;
 
     const sharedResources = new SharedResources(this, "SharedResources", {
       networkName: `${serviceName}-${environment}-vpc`,
@@ -49,44 +60,24 @@ export class StickerAwardServiceStack extends cdk.Stack {
       ddSite
     );
 
-    const serviceProps = {
+    // Create formatted database credentials from the shared RDS secret
+    const dbCredentials = new DatabaseCredentials(this, "DatabaseCredentials", {
+      databaseSecretArn: sharedResources.sharedDatabaseSecretArn,
+      environment: environment,
+      serviceName: "sticker-award",
+      format: ConnectionStringFormat.POSTGRES_URL,
+    });
+
+    const serviceProps: ServiceProps = {
       cloudfrontDistribution: sharedResources.cloudfrontDistribution,
-      databaseHost: StringParameter.fromStringParameterName(
+      connectionStringSecret: dbCredentials.connectionStringSecret!,
+      databaseCredentials: dbCredentials,
+      messagingConfiguration: new AWSMessagingProps(
         this,
-        "DatabaseHostParam",
-        `/stickerlandia/${environment}/sticker-award/database-host`
+        "MessagingProps",
+        sharedResources
       ),
-      databaseName: StringParameter.fromStringParameterName(
-        this,
-        "DatabaseNameParam",
-        `/stickerlandia/${environment}/sticker-award/database-name`
-      ),
-      databasePort: process.env.DATABASE_PORT || "5432",
-      dbUsername: StringParameter.fromStringParameterName(
-        this,
-        "DatabaseUsernameParam",
-        `/stickerlandia/${environment}/sticker-award/database-user`
-      ),
-      dbPassword: StringParameter.fromStringParameterName(
-        this,
-        "DatabasePasswordParam",
-        `/stickerlandia/${environment}/sticker-award/database-password`
-      ),
-      kafkaBootstrapServers: StringParameter.fromStringParameterName(
-        this,
-        "KafkaBootstrapServersParam",
-        `/stickerlandia/${environment}/sticker-award/kafka-broker`
-      ),
-      kafkaUsername: StringParameter.fromStringParameterName(
-        this,
-        "KafkaUsernameParam",
-        `/stickerlandia/${environment}/sticker-award/kafka-username`
-      ),
-      kafkaPassword: StringParameter.fromStringParameterName(
-        this,
-        "KafkaPasswordParam",
-        `/stickerlandia/${environment}/sticker-award/kafka-password`
-      ),
+      serviceDependencies: [dbCredentials.credentialResource],
     };
 
     const api = new Api(this, "Api", {
@@ -99,7 +90,14 @@ export class StickerAwardServiceStack extends cdk.Stack {
       serviceDiscoveryName: "awards.api",
       serviceDiscoveryNamespace: sharedResources.serviceDiscoveryNamespace,
       cluster: cluster,
-      deployInPrivateSubnet: true
+      deployInPrivateSubnet: true,
+      sharedEventBus: sharedResources.sharedEventBus,
+    });
+
+    // CDK Outputs
+    new cdk.CfnOutput(this, "ServiceApiUrl", {
+      value: `https://${sharedResources.cloudfrontDistribution.distributionDomainName}/api/awards/v1`,
+      description: "Sticker Award Service API URL",
     });
   }
 }

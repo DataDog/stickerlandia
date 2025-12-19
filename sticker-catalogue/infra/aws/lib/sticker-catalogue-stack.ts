@@ -6,13 +6,22 @@
 
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
-import { DatadogECSFargate, DatadogLambda } from "datadog-cdk-constructs-v2";
 import { SharedResources } from "../../../../shared/lib/shared-constructs/lib/shared-resources";
+import {
+  DatabaseCredentials,
+  ConnectionStringFormat,
+} from "../../../../shared/lib/shared-constructs/lib/database-credentials";
 import { Api } from "./api";
 import { Cluster } from "aws-cdk-lib/aws-ecs";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
 import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
 import { Bucket } from "aws-cdk-lib/aws-s3";
+import { KafkaMessagingProps, ServiceProps } from "./service-props";
+
+export enum MessagingType {
+  AWS,
+  KAFKA,
+}
 
 export class StickerCatalogueServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -52,44 +61,19 @@ export class StickerCatalogueServiceStack extends cdk.Stack {
       false
     );
 
-    const serviceProps = {
+    // Create formatted database credentials from the shared RDS secret
+    const dbCredentials = new DatabaseCredentials(this, "DatabaseCredentials", {
+      databaseSecretArn: sharedResources.sharedDatabaseSecretArn,
+      environment: environment,
+      serviceName: "catalogue",
+      format: ConnectionStringFormat.INDIVIDUAL_FIELDS,
+    });
+
+    const serviceProps: ServiceProps = {
       cloudfrontDistribution: sharedResources.cloudfrontDistribution,
-      jdbcUrl: StringParameter.fromStringParameterName(
-        this,
-        "DatabaseHostParam",
-        `/stickerlandia/${environment}/catalogue/database-host`
-      ),
-      databasePort: process.env.DATABASE_PORT || "5432",
-      dbUsername: StringParameter.fromStringParameterName(
-        this,
-        "DatabaseUsernameParam",
-        `/stickerlandia/${environment}/catalogue/database-user`
-      ),
-      dbPassword: StringParameter.fromStringParameterName(
-        this,
-        "DatabasePasswordParam",
-        `/stickerlandia/${environment}/catalogue/database-password`
-      ),
-      kafkaBootstrapServers: StringParameter.fromStringParameterName(
-        this,
-        "KafkaBootstrapServersParam",
-        `/stickerlandia/${environment}/catalogue/kafka-broker`
-      ),
-      kafkaUsername: StringParameter.fromStringParameterName(
-        this,
-        "KafkaUsernameParam",
-        `/stickerlandia/${environment}/catalogue/kafka-username`
-      ),
-      kafkaPassword: StringParameter.fromStringParameterName(
-        this,
-        "KafkaPasswordParam",
-        `/stickerlandia/${environment}/catalogue/kafka-password`
-      ),
-      jaslConfig: StringParameter.fromStringParameterName(
-        this,
-        "KafkaJaslConfigParam",
-        `/stickerlandia/${environment}/catalogue/jasl-config`
-      ),
+      databaseCredentials: dbCredentials,
+      messagingProps: new KafkaMessagingProps(this, "MessagingProps", sharedProps),
+      serviceDependencies: [dbCredentials.credentialResource],
     };
 
     const stickerImageBucket = new Bucket(this, "StickerImageBucket", {
@@ -110,6 +94,7 @@ export class StickerCatalogueServiceStack extends cdk.Stack {
       cluster: cluster,
       stickerImagesBucket: stickerImageBucket,
       deployInPrivateSubnet: true,
+      sharedEventBus: sharedResources.sharedEventBus,
     });
   }
 }

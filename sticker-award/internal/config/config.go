@@ -6,18 +6,32 @@ package config
 
 import (
 	"fmt"
+	"net/url"
+	"os"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/viper"
 )
 
+// MessagingProvider defines the messaging transport to use
+type MessagingProvider string
+
+const (
+	MessagingProviderKafka MessagingProvider = "kafka"
+	MessagingProviderAWS   MessagingProvider = "aws"
+)
+
 // Config holds all configuration for the application
 type Config struct {
-	Server    ServerConfig    `mapstructure:"server"`
-	Database  DatabaseConfig  `mapstructure:"database"`
-	Kafka     KafkaConfig     `mapstructure:"kafka"`
-	Catalogue CatalogueConfig `mapstructure:"catalogue"`
-	Logging   LoggingConfig   `mapstructure:"logging"`
+	ServiceName       string            `mapstructure:"service_name"`
+	Server            ServerConfig      `mapstructure:"server"`
+	Database          DatabaseConfig    `mapstructure:"database"`
+	MessagingProvider MessagingProvider `mapstructure:"messaging_provider"`
+	Kafka             KafkaConfig       `mapstructure:"kafka"`
+	AWS               AWSConfig         `mapstructure:"aws"`
+	Catalogue         CatalogueConfig   `mapstructure:"catalogue"`
+	Logging           LoggingConfig     `mapstructure:"logging"`
 }
 
 // ServerConfig holds HTTP server configuration
@@ -49,6 +63,17 @@ type KafkaConfig struct {
 	ProducerBatchSize int  `mapstructure:"producer_batch_size"`
 	RequireAcks       int  `mapstructure:"require_acks"`
 	EnableIdempotent  bool `mapstructure:"enable_idempotent"`
+}
+
+// AWSConfig holds AWS messaging configuration (EventBridge + SQS)
+// Field names match CDK environment variable names for direct binding
+type AWSConfig struct {
+	Region                 string `mapstructure:"region"`
+	EventBusName           string `mapstructure:"event_bus_name"`            // EVENT_BUS_NAME from CDK
+	UserRegisteredQueueURL string `mapstructure:"user_registered_queue_url"` // USER_REGISTERED_QUEUE_URL from CDK
+	MaxConcurrency         int    `mapstructure:"max_concurrency"`
+	VisibilityTimeout      int    `mapstructure:"visibility_timeout"` // Seconds
+	WaitTimeSeconds        int    `mapstructure:"wait_time_seconds"`  // Long polling duration
 }
 
 // CatalogueConfig holds sticker catalogue service configuration
@@ -89,11 +114,66 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
+	// Override database config from DATABASE_URL if present
+	if dbURL := os.Getenv("DATABASE_URL"); dbURL != "" {
+		dbConfig, err := parseDatabaseURL(dbURL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse DATABASE_URL: %w", err)
+		}
+		config.Database = *dbConfig
+	}
+
 	return &config, nil
+}
+
+// parseDatabaseURL parses a PostgreSQL connection URL into DatabaseConfig
+// Supports format: postgres://user:password@host:port/dbname?sslmode=require
+func parseDatabaseURL(dbURL string) (*DatabaseConfig, error) {
+	u, err := url.Parse(dbURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid database URL: %w", err)
+	}
+
+	config := &DatabaseConfig{
+		Host:    u.Hostname(),
+		Port:    5432, // default
+		SSLMode: "disable",
+	}
+
+	// Parse port
+	if portStr := u.Port(); portStr != "" {
+		port, err := strconv.Atoi(portStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid port: %w", err)
+		}
+		config.Port = port
+	}
+
+	// Parse user/password
+	if u.User != nil {
+		config.User = u.User.Username()
+		if password, ok := u.User.Password(); ok {
+			config.Password = password
+		}
+	}
+
+	// Parse database name (remove leading slash)
+	config.Name = strings.TrimPrefix(u.Path, "/")
+
+	// Parse query parameters (sslmode, etc.)
+	query := u.Query()
+	if sslmode := query.Get("sslmode"); sslmode != "" {
+		config.SSLMode = sslmode
+	}
+
+	return config, nil
 }
 
 // setDefaults sets default configuration values
 func setDefaults() {
+	// Service name default
+	viper.SetDefault("service_name", "award-service")
+
 	// Server defaults
 	viper.SetDefault("server.port", "8080")
 	viper.SetDefault("server.host", "localhost")
@@ -106,6 +186,9 @@ func setDefaults() {
 	viper.SetDefault("database.name", "sticker_awards")
 	viper.SetDefault("database.ssl_mode", "disable")
 
+	// Messaging provider default (kafka for backward compatibility)
+	viper.SetDefault("messaging_provider", "kafka")
+
 	// Kafka defaults
 	viper.SetDefault("kafka.brokers", []string{"localhost:9092"})
 	viper.SetDefault("kafka.group_id", "sticker-award-service")
@@ -117,6 +200,18 @@ func setDefaults() {
 	viper.SetDefault("kafka.producer_batch_size", 16384) // 16KB
 	viper.SetDefault("kafka.require_acks", 1)            // Wait for leader acknowledgment
 	viper.SetDefault("kafka.enable_idempotent", true)
+
+	// AWS defaults
+	viper.SetDefault("aws.region", "us-east-1")
+	viper.SetDefault("aws.event_bus_name", "")
+	viper.SetDefault("aws.user_registered_queue_url", "")
+	viper.SetDefault("aws.max_concurrency", 10)
+	viper.SetDefault("aws.visibility_timeout", 30) // 30 seconds
+	viper.SetDefault("aws.wait_time_seconds", 20)  // 20 seconds long polling
+
+	// Explicit env var bindings for AWS config (CDK uses these exact names)
+	_ = viper.BindEnv("aws.event_bus_name", "EVENT_BUS_NAME")
+	_ = viper.BindEnv("aws.user_registered_queue_url", "USER_REGISTERED_QUEUE_URL")
 
 	// Catalogue service defaults
 	viper.SetDefault("catalogue.base_url", "http://localhost:8080")

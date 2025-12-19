@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router";
 import { useAuth } from "../context/AuthContext";
 import Sidebar from "./Sidebar";
+import { API_BASE_URL } from "../config";
 
 function StickerDetail() {
   const { id } = useParams();
@@ -14,7 +15,7 @@ function StickerDetail() {
       try {
         const userId = user.sub || user.email;
         const response = await fetch(
-          `http://localhost:8080/api/awards/v1/assignments/${userId}`
+          `${API_BASE_URL}/api/awards/v1/assignments/${userId}`
         );
         const data = await response.json();
         const found = (data.stickers || []).find(s => s.stickerId === id);

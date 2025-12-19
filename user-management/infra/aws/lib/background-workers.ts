@@ -21,13 +21,19 @@ import { LambdaFunction, SqsQueue } from "aws-cdk-lib/aws-events-targets";
 import { ITopic } from "aws-cdk-lib/aws-sns";
 import { ServiceProps } from "./service-props";
 import { WorkerService } from "../../../../shared/lib/shared-constructs/lib/worker-service";
-import { IVpc } from "aws-cdk-lib/aws-ec2";
-import { CpuArchitecture, ICluster, OperatingSystemFamily, Secret } from "aws-cdk-lib/aws-ecs";
+import { IVpc, SecurityGroup, SubnetType } from "aws-cdk-lib/aws-ec2";
+import {
+  CpuArchitecture,
+  ICluster,
+  OperatingSystemFamily,
+  Secret,
+} from "aws-cdk-lib/aws-ecs";
 import { IPrivateDnsNamespace } from "aws-cdk-lib/aws-servicediscovery";
 
 export interface BackgroundWorkersProps {
   cluster: ICluster;
   vpc: IVpc;
+  vpcLinkSecurityGroupId: string;
   serviceDiscoveryNamespace: IPrivateDnsNamespace;
   serviceDiscoveryName: string;
   deployInPrivateSubnet?: boolean;
@@ -45,20 +51,34 @@ export class BackgroundWorkers extends Construct {
     super(scope, id);
 
     if (props.useLambda) {
+      // Get connection string value from CustomResource output, resolved at deploy time
+      const connectionString = props.serviceProps.databaseCredentials.getConnectionStringForLambda();
+
+      // Reference the VPC link security group for Lambda functions that need database access
+      const lambdaSecurityGroup = SecurityGroup.fromSecurityGroupId(
+        this,
+        "LambdaSecurityGroup",
+        props.vpcLinkSecurityGroupId
+      );
+
+      // Lambda functions need to be in private subnets to access RDS
+      const vpcSubnets = {
+        subnetType: SubnetType.PRIVATE_WITH_EGRESS,
+      };
+
       const environmentVariables = {
         POWERTOOLS_SERVICE_NAME: props.sharedProps.serviceName,
         POWERTOOLS_LOG_LEVEL:
           props.sharedProps.environment === "prod" ? "WARN" : "INFO",
         ENV: props.sharedProps.environment,
-        ConnectionStrings__messaging: "",
-        ConnectionStrings__database:
-          props.serviceProps.connectionString.stringValue,
+        ConnectionStrings__database: connectionString,
         Aws__UserRegisteredTopicArn: props.userRegisteredTopic.topicArn,
         Aws__StickerClaimedQueueUrl: props.stickerClaimedQueue.queueUrl,
         Aws__StickerClaimedDLQUrl: props.stickerClaimedDLQ.queueUrl,
         DRIVING: "ASPNET",
         DRIVEN: "AWS",
         DISABLE_SSL: "true",
+        ...props.serviceProps.messagingConfiguration.asEnvironmentVariables(),
       };
 
       const stickerClaimedWorker = new InstrumentedLambdaFunction(
@@ -67,7 +87,7 @@ export class BackgroundWorkers extends Construct {
         {
           sharedProps: props.sharedProps,
           handler:
-            "Stickerlandia.UserManagement.Lambda::Stickerlandia.UserManagement.Lambda.Sqs_StickerClaimed_Generated::StickerClaimed",
+            "Stickerlandia.UserManagement.Lambda::Stickerlandia.UserManagement.Lambda.SqsHandler_StickerClaimed_Generated::StickerClaimed",
           buildDef: "../../src/Stickerlandia.UserManagement.Lambda/",
           functionName: "sticker-claimed-worker",
           environment: environmentVariables,
@@ -75,6 +95,9 @@ export class BackgroundWorkers extends Construct {
           timeout: Duration.seconds(25),
           logLevel: props.sharedProps.environment === "prod" ? "WARN" : "INFO",
           onFailure: new SqsDestination(props.stickerClaimedDLQ),
+          vpc: props.vpc,
+          vpcSubnets: vpcSubnets,
+          securityGroups: [lambdaSecurityGroup],
         }
       );
 
@@ -84,6 +107,13 @@ export class BackgroundWorkers extends Construct {
           reportBatchItemFailures: true,
         })
       );
+
+      // Add dependencies for Lambda functions to ensure SSM parameters exist before deployment
+      if (props.serviceProps.serviceDependencies) {
+        for (const dependency of props.serviceProps.serviceDependencies) {
+          stickerClaimedWorker.function.node.addDependency(dependency);
+        }
+      }
 
       const rule = new Rule(this, "StickerClaimedEventRule", {
         eventBus: props.sharedEventBus,
@@ -109,9 +139,19 @@ export class BackgroundWorkers extends Construct {
           timeout: Duration.seconds(50),
           logLevel: props.sharedProps.environment === "prod" ? "WARN" : "INFO",
           onFailure: undefined,
+          vpc: props.vpc,
+          vpcSubnets: vpcSubnets,
+          securityGroups: [lambdaSecurityGroup],
         }
       );
-      props.userRegisteredTopic.grantPublish(outboxWorker.function);
+      props.sharedEventBus.grantPutEventsTo(outboxWorker.function);
+
+      // Add dependencies for outbox worker Lambda
+      if (props.serviceProps.serviceDependencies) {
+        for (const dependency of props.serviceProps.serviceDependencies) {
+          outboxWorker.function.node.addDependency(dependency);
+        }
+      }
 
       const outboxWorkerSchedule = new Rule(this, "OutboxWorkerSchedule", {
         description: "Trigger outbox worker every 1 minute",
@@ -148,24 +188,16 @@ export class BackgroundWorkers extends Construct {
             DISABLE_SSL: "true",
             LOGGING__LOGLEVEL__DEFAULT: "INFORMATION",
             LOGGING__LOGLEVEL__MICROSOFT: "INFORMATION",
-            "LOGGING__LOGLEVEL__MICROSOFT.ENTITYFRAMEWORKCORE.DATABASE.COMMAND": "WARNING",
+            "LOGGING__LOGLEVEL__MICROSOFT.ENTITYFRAMEWORKCORE.DATABASE.COMMAND":
+              "WARNING",
+            ...props.serviceProps.messagingConfiguration.asEnvironmentVariables(),
           },
           secrets: {
             DD_API_KEY: Secret.fromSsmParameter(
               props.sharedProps.datadog.apiKeyParameter
             ),
-            ConnectionStrings__database: Secret.fromSsmParameter(
-              props.serviceProps.connectionString
-            ),
-            ConnectionStrings__messaging: Secret.fromSsmParameter(
-              props.serviceProps.messagingConnectionString
-            ),
-            KAFKA_USERNAME: Secret.fromSsmParameter(
-              props.serviceProps.kafkaUsername
-            ),
-            KAFKA_PASSWORD: Secret.fromSsmParameter(
-              props.serviceProps.kafkaPassword
-            ),
+            ConnectionStrings__database: props.serviceProps.databaseCredentials.getConnectionStringEcsSecret()!,
+            ...props.serviceProps.messagingConfiguration.asSecrets(),
           },
           serviceDiscoveryNamespace: props.serviceDiscoveryNamespace,
           serviceDiscoveryName: props.serviceDiscoveryName,
@@ -173,7 +205,8 @@ export class BackgroundWorkers extends Construct {
           runtimePlatform: {
             cpuArchitecture: CpuArchitecture.ARM64,
             operatingSystemFamily: OperatingSystemFamily.LINUX,
-          }
+          },
+          serviceDependencies: props.serviceProps.serviceDependencies,
         }
       );
     }

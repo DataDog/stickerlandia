@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { API_BASE_URL } from "../config";
 import HotelClassOutlinedIcon from "@mui/icons-material/HotelClassOutlined";
 import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
 import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined";
@@ -17,7 +18,7 @@ const Dashboard = () => {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:8080/api/stickers/v1/');
+        const response = await fetch(`${API_BASE_URL}/api/stickers/v1/`);
         if (response.ok) {
           const data = await response.json();
           setTotalStickers(data.stickers?.length || 0);

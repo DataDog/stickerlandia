@@ -3,33 +3,72 @@
 The Sticker Award Service manages sticker assignments to users in the Stickerlandia platform. It provides:
 
 - **Assignment API** (`/api/awards/v1/assignments`) - User sticker assignment management (CRUD operations)  
-- **Event Integration** - Publishes sticker assignment events to Kafka for downstream services
+- **Event Integration** - Publishes sticker assignment events as stickers are assigned, reacts to events elsewhere in the system (e.g., when a user is created)
 
 ## Architecture
 
-### Technology Stack
-- **Language**: Go 1.23+
-- **HTTP Framework**: Gin (high performance REST API)
-- **Database**: PostgreSQL with GORM ORM
-- **Migrations**: golang-migrate with embedded SQL files
-- **Configuration**: Viper (environment-based)
-- **Logging**: Zap (structured JSON logging)
-- **Messaging**: Kafka via segmentio/kafka-go
-- **Validation**: go-playground/validator
+### Design Principles
 
-### Domain Structure
-- **`internal/api/`** - HTTP handlers, middleware, DTOs, and routing
-- **`internal/application/service/`** - Business logic and use cases
-- **`internal/domain/`** - Core entities, repository interfaces, business rules
-- **`internal/infrastructure/`** - Database access, external APIs, messaging
-- **`internal/config/`** - Configuration management
-- **`pkg/`** - Shared utilities (logger, errors, validator)
+**Transport-Agnostic Messaging**: The service supports multiple messaging transports (Kafka, AWS EventBridge/SQS) via runtime configuration. Business handlers remain transport-agnostic by working only with CloudEvents - they never interact with Kafka or AWS-specific message formats.
 
-### Clean Architecture Layers
-- **API Layer** - HTTP handlers, middleware, request/response DTOs
-- **Application Layer** - Business workflows, external service coordination
-- **Domain Layer** - Core business entities, repository interfaces, validation rules
-- **Infrastructure Layer** - Database repositories, external clients, messaging
+**Middleware Pattern**: Message processing follows a consistent pipeline regardless of transport:
+1. Transport layer receives raw message (Kafka `ConsumerMessage` or AWS `SQSMessage`)
+2. Middleware wrapper extracts Datadog trace context and DSM checkpoints
+3. Middleware parses CloudEvent from message body
+4. Business handler receives typed `CloudEvent[T]` and executes domain logic
+
+Steps 1-3 are provider specific, step 4 is generic across providers. 
+
+**Factory Selection**: The handler factory selects the appropriate middleware implementation based on configuration (`MESSAGING_PROVIDER=kafka|aws`)
+
+```mermaid
+graph TB
+    subgraph "Message Flow"
+        A[Transport Consumer<br/>Kafka/SQS] -->|Raw Message| B[Middleware Wrapper]
+        B -->|1. Extract DSM/Trace| C[DSM Checkpoint]
+        B -->|2. Parse CloudEvent| D[Business Handler]
+        D -->|Typed CloudEvent<T>| E[Domain Logic]
+    end
+
+    subgraph "Factory Pattern"
+        F[Config: MESSAGING_PROVIDER] -->|kafka| G[Kafka Middleware]
+        F -->|aws| H[AWS Middleware]
+        G --> B
+        H --> B
+    end
+
+    subgraph "Business Layer"
+        E --> I[Repository]
+        E --> J[External APIs]
+        E --> K[Event Publisher]
+    end
+
+    style D fill:#e1f5ff
+    style E fill:#e1f5ff
+```
+
+### Key Components
+
+**Messaging Abstractions** (`internal/messaging/`)
+- `EventPublisher` - Publishes domain events (Kafka or EventBridge)
+- `MessageConsumer` - Consumes messages (Kafka consumer group or SQS)
+- `CloudEventMessageHandler[T]` - Shared interface for business handlers
+- `factory/` - Creates transport-specific consumers, producers, handlers
+
+**Middleware** (`internal/messaging/{kafka,aws}/middleware.go`)
+- Wraps business handlers with DSM tracking, tracing, CloudEvent parsing
+- Creates root traces with span links for distributed tracing
+- Injects Datadog headers for cross-service correlation
+
+**Domain** (`internal/domain/`)
+- Entities, repository interfaces, business rules
+- No dependencies on transport or infrastructure
+
+**Technology Stack**
+- Go 1.23+, Gin, PostgreSQL, GORM, Viper
+- Messaging: Kafka (sarama) or AWS SDK v2
+- Datadog: dd-trace-go for APM and DSM
+- CloudEvents 1.0 for event schema
 
 ## API Endpoints
 
@@ -127,14 +166,60 @@ The service is configured via environment variables:
 ### External Services
 - `STICKER_CATALOGUE_BASE_URL` - Catalogue service URL
 
-### Kafka Configuration
+### Messaging Configuration
+- `MESSAGING_PROVIDER` - Messaging transport (kafka or aws, default: kafka)
+
+### Kafka Configuration (when MESSAGING_PROVIDER=kafka)
 - `KAFKA_BROKERS` - Kafka broker addresses (comma-separated)
+- `KAFKA_GROUP_ID` - Consumer group ID
 - `KAFKA_PRODUCER_TIMEOUT` - Producer timeout in milliseconds (default: 5000)
 - `KAFKA_PRODUCER_RETRIES` - Number of retry attempts (default: 3)
 - `KAFKA_PRODUCER_BATCH_SIZE` - Batch size in bytes (default: 16384)
 - `KAFKA_REQUIRE_ACKS` - Acknowledgment level (default: 1)
 - `KAFKA_ENABLE_IDEMPOTENT` - Enable idempotent producer (default: true)
 
+### AWS Configuration (when MESSAGING_PROVIDER=aws)
+- `AWS_REGION` - AWS region (default: us-east-1)
+- `AWS_EVENTBRIDGE_BUS_NAME` - EventBridge bus name (required)
+- `AWS_SQS_QUEUE_URL` - SQS queue URL (required)
+- `AWS_MAX_CONCURRENCY` - Max concurrent message processors (default: 10)
+- `AWS_VISIBILITY_TIMEOUT` - SQS visibility timeout in seconds (default: 30)
+- `AWS_WAIT_TIME_SECONDS` - SQS long polling duration in seconds (default: 20)
+- AWS credentials via standard AWS SDK chain (environment variables, IAM role, etc.)
+
 ### Logging
 - `LOG_LEVEL` - Log level (debug, info, warn, error)
 - `LOG_FORMAT` - Log format (json, console)
+
+# Deployment
+
+The sticker award service can be deployed to AWS, Azure & GCP. For deployment instructions see cloud provider specific instructions below:
+
+## AWS
+
+AWS deployment uses the AWS CDK. Inside the CDK code, there is the concept of an 'integrated' (dev, prod) and 'non-integrated' environment. For developing a development instance of the sticker award service you'll first need to copy some parameters inside AWS, and then deploy using the below commands.
+
+### Parameters
+
+The service expects SSM parameters named:
+
+- /stickerlandia/<ENV>/sticker-award/database-host
+- /stickerlandia/<ENV>/sticker-award/database-name
+- /stickerlandia/<ENV>/sticker-award/database-user
+- /stickerlandia/<ENV>/sticker-award/database-password
+- /stickerlandia/<ENV>/sticker-award/kafka-broker
+- /stickerlandia/<ENV>/sticker-award/kafka-username
+- /stickerlandia/<ENV>/sticker-award/kafka-password
+
+You will need to create those before running the deploy commands below.
+
+### Deployment
+
+```sh
+export ENV= # The environment name to use, don't use 'dev' or 'prod'. Your initials is normally a good start.
+export VERSION= # The commit hash you want to use, defaults to latest
+export DD_API_KEY= # The Datadog API key for your org
+export DD_SITE = # The Datadog site to use
+cd infra/aws
+cdk deploy
+```

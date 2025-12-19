@@ -23,6 +23,7 @@ import { Alias } from "aws-cdk-lib/aws-kms";
 import { SharedProps } from "../../../../../shared/lib/shared-constructs/lib/shared-props";
 import { Effect, PolicyStatement } from "aws-cdk-lib/aws-iam";
 import { DotNetFunction } from "@aws-cdk/aws-lambda-dotnet";
+import { ISecurityGroup, IVpc, SubnetSelection } from "aws-cdk-lib/aws-ec2";
 
 export class InstrumentedLambdaFunctionProps {
   sharedProps: SharedProps;
@@ -34,6 +35,9 @@ export class InstrumentedLambdaFunctionProps {
   memorySize?: number;
   logLevel?: string;
   onFailure: IDestination | undefined;
+  vpc?: IVpc;
+  vpcSubnets?: SubnetSelection;
+  securityGroups?: ISecurityGroup[];
 }
 
 export class InstrumentedLambdaFunction extends Construct {
@@ -57,7 +61,11 @@ export class InstrumentedLambdaFunction extends Construct {
       memorySize: props.memorySize ?? 512,
       timeout: props.timeout ?? Duration.seconds(29),
       onFailure: props.onFailure,
+      vpc: props.vpc,
+      vpcSubnets: props.vpcSubnets,
+      securityGroups: props.securityGroups,
       environment: {
+        AWS_LAMBDA_EXEC_WRAPPER: "/opt/datadog_wrapper",
         POWERTOOLS_SERVICE_NAME: props.sharedProps.serviceName,
         POWERTOOLS_LOG_LEVEL:
           props.logLevel ?? props.sharedProps.environment === "prod"
@@ -71,6 +79,7 @@ export class InstrumentedLambdaFunction extends Construct {
         DD_API_KEY: props.sharedProps.datadog.apiKey,
         DD_SITE: props.sharedProps.datadog.site,
         DD_DATA_STREAMS_ENABLED: "true",
+        DD_CAPTURE_LAMBDA_PAYLOAD: "true",
         DD_APM_REPLACE_TAGS: `[
       {
         "name": "function.request.headers.Authorization",

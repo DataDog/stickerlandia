@@ -15,6 +15,8 @@ namespace Stickerlandia.UserManagement.AWS;
 
 public class AwsConfiguration
 {
+    public string EventBusName { get; set; } = string.Empty;
+    
     public string UserRegisteredTopicArn { get; set; } = string.Empty;
     
     public string StickerClaimedQueueUrl { get; set; } = string.Empty;

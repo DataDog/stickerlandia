@@ -4,6 +4,7 @@
  * Copyright 2025-Present Datadog, Inc.
  */
 
+import * as path from "path";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
 import { Cluster, Secret } from "aws-cdk-lib/aws-ecs";
@@ -12,10 +13,15 @@ import { IPrivateDnsNamespace } from "aws-cdk-lib/aws-servicediscovery";
 import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
 import { WebService } from "../../../../shared/lib/shared-constructs/lib/web-service";
 import { ServiceProps } from "./service-props";
+import { IEventBus, Rule } from "aws-cdk-lib/aws-events";
+import { Queue } from "aws-cdk-lib/aws-sqs";
+import { Duration } from "aws-cdk-lib";
+import { SqsQueue } from "aws-cdk-lib/aws-events-targets";
 
 export class ApiProps {
   sharedProps: SharedProps;
   serviceProps: ServiceProps;
+  sharedEventBus: IEventBus;
   vpc: IVpc;
   vpcLink: IVpcLink;
   vpcLinkSecurityGroupId: string;
@@ -29,6 +35,39 @@ export class ApiProps {
 export class Api extends Construct {
   constructor(scope: Construct, id: string, props: ApiProps) {
     super(scope, id);
+
+    const userRegisteredDLQ = new Queue(this, "UserRegisteredDLQ", {
+      queueName: `stickers-user-registered-dlq-${props.sharedProps.environment}`,
+      visibilityTimeout: Duration.seconds(120),
+    });
+
+    const userRegisteredQueue = new Queue(this, "UserRegisteredQueue", {
+      queueName: `stickers-user-registered-${props.sharedProps.environment}`,
+      visibilityTimeout: Duration.seconds(30),
+      deadLetterQueue: {
+        maxReceiveCount: 3,
+        queue: userRegisteredDLQ,
+      },
+    });
+
+    const rule = new Rule(this, "UserRegisteredEventRule", {
+      eventBus: props.sharedEventBus,
+      ruleName: `${props.sharedProps.serviceName}-${props.sharedProps.environment}-user-registered-rule`,
+      eventPattern: {
+        source: [`${props.sharedProps.environment}.users`],
+        detailType: ["users.userRegistered.v1"],
+      },
+    });
+    rule.addTarget(new SqsQueue(userRegisteredQueue));
+
+    const secrets: { [key: string]: Secret } = {
+      DD_API_KEY: Secret.fromSsmParameter(
+        props.sharedProps.datadog.apiKeyParameter
+      ),
+      DATABASE_URL: props.serviceProps.databaseCredentials.getConnectionStringEcsSecret()!,
+      ...props.serviceProps.messagingConfiguration.asSecrets(),
+    };
+
     const webService = new WebService(this, "StickerAwardWebService", {
       sharedProps: props.sharedProps,
       vpc: props.vpc,
@@ -38,52 +77,35 @@ export class Api extends Construct {
       cluster: props.cluster,
       image: "ghcr.io/datadog/stickerlandia/sticker-award-service",
       imageTag: props.sharedProps.version,
+      assetPath: path.resolve(__dirname, "../../.."),
       ddApiKey: props.sharedProps.datadog.apiKeyParameter,
       port: 8080,
       environmentVariables: {
         ENV: "dev",
         LOG_LEVEL: "info",
-        KAFKA_SECURITY_PROTOCOL: "SASL_SSL",
-        KAFKA_GROUP_ID: "sticker-award-service",
-        DATABASE_PORT: props.serviceProps.databasePort,
-        KAFKA_SASL_MECHANISM: "PLAIN",
         LOG_FORMAT: "json",
-        KAFKA_ENABLE_TLS: "true",
         CATALOGUE_BASE_URL: `https://${props.serviceProps.cloudfrontDistribution.distributionDomainName}`,
-        DATABASE_SSL_MODE: "require",
+        USER_REGISTERED_QUEUE_URL: userRegisteredQueue.queueUrl,
+        ...props.serviceProps.messagingConfiguration.asEnvironmentVariables(),
       },
-      secrets: {
-        DD_API_KEY: Secret.fromSsmParameter(
-          props.sharedProps.datadog.apiKeyParameter
-        ),
-        KAFKA_USERNAME: Secret.fromSsmParameter(
-          props.serviceProps.kafkaUsername
-        ),
-        DATABASE_HOST: Secret.fromSsmParameter(props.serviceProps.databaseHost),
-        KAFKA_SASL_USERNAME: Secret.fromSsmParameter(
-          props.serviceProps.kafkaUsername
-        ),
-        KAFKA_BROKERS: Secret.fromSsmParameter(
-          props.serviceProps.kafkaBootstrapServers
-        ),
-        DATABASE_NAME: Secret.fromSsmParameter(props.serviceProps.databaseName),
-        KAFKA_PASSWORD: Secret.fromSsmParameter(
-          props.serviceProps.kafkaPassword
-        ),
-        KAFKA_SASL_PASSWORD: Secret.fromSsmParameter(
-          props.serviceProps.kafkaPassword
-        ),
-        DATABASE_PASSWORD: Secret.fromSsmParameter(
-          props.serviceProps.dbPassword
-        ),
-        DATABASE_USER: Secret.fromSsmParameter(props.serviceProps.dbUsername),
-      },
+      secrets: secrets,
       path: "/api/awards/v1/{proxy+}",
       healthCheckPath: "/api/awards/v1",
       serviceDiscoveryNamespace: props.serviceDiscoveryNamespace,
       serviceDiscoveryName: props.serviceDiscoveryName,
       deployInPrivateSubnet: props.deployInPrivateSubnet,
       additionalPathMappings: [],
+      serviceDependencies: props.serviceProps.serviceDependencies,
     });
+
+    props.serviceProps.messagingConfiguration.grantPermissions(
+      webService.taskRole
+    );
+    userRegisteredQueue.grantConsumeMessages(webService.taskRole);
+
+    // Grant execution role permission to read the database connection string secret
+    // This is necessary because Secret.fromSecretNameV2() doesn't include the random suffix
+    // that Secrets Manager adds to ARNs, so CDK's automatic grants may not work correctly
+    props.serviceProps.databaseCredentials.grantRead(webService.executionRole);
   }
 }

@@ -42,7 +42,7 @@ export class SharedProps {
     enableDatadog: boolean = true
   ) {
     const environment = process.env.ENV || "dev";
-    const version = process.env.VERSION || "latest";
+    const version = process.env.COMMIT_SHA || "latest";
 
     this.datadog = {
       apiKey: ddApiKey,
@@ -61,7 +61,9 @@ export class SharedProps {
         isDatadogDependencyEnabled: true,
         site: ddSite,
         clusterName: cluster.clusterName,
-        environmentVariables: {},
+        environmentVariables: {
+          DD_APM_IGNORE_RESOURCES: "(GET|HEAD) .*/health$",
+        },
         dogstatsd: {
           isEnabled: true,
         },

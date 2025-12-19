@@ -4,10 +4,12 @@
  * Copyright 2025-Present Datadog, Inc.
  */
 
+import * as cdk from "aws-cdk-lib";
 import { Duration, Tags } from "aws-cdk-lib";
 import * as apigatewayv2 from "aws-cdk-lib/aws-apigatewayv2";
 import * as integrations from "aws-cdk-lib/aws-apigatewayv2-integrations";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import { Platform } from "aws-cdk-lib/aws-ecr-assets";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import {
   ApplicationProtocolVersion,
@@ -20,7 +22,7 @@ import {
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as servicediscovery from "aws-cdk-lib/aws-servicediscovery";
 import * as ssm from "aws-cdk-lib/aws-ssm";
-import { Construct } from "constructs";
+import { Construct, IConstruct, IDependable } from "constructs";
 import { SharedProps } from "./shared-props";
 
 export interface WebServiceProps {
@@ -32,6 +34,7 @@ export interface WebServiceProps {
   readonly cluster: ecs.ICluster;
   readonly image: string;
   readonly imageTag: string;
+  readonly assetPath?: string; // Path to Dockerfile directory for local builds (when imageTag === "LOCAL")
   readonly ddApiKey: ssm.IStringParameter;
   readonly port: number;
   readonly environmentVariables: { [key: string]: string };
@@ -44,6 +47,8 @@ export interface WebServiceProps {
   readonly additionalPathMappings: string[];
   readonly healthCheckCommand?: ecs.HealthCheck;
   readonly enableReadonlyfileSystem?: boolean;
+  /** Resources that must be created before the ECS service starts (e.g., SSM parameters from custom resources) */
+  readonly serviceDependencies?: IDependable[];
 }
 
 export class WebService extends Construct {
@@ -137,10 +142,16 @@ export class WebService extends Construct {
     }
 
     // Application Container
+    const isLocalBuild = props.imageTag.toUpperCase() === "LOCAL" && props.assetPath;
+    const containerImage = isLocalBuild
+      ? ecs.ContainerImage.fromAsset(props.assetPath!, {
+          exclude: ["infra", "cdk.out", "node_modules", ".git"],
+          platform: Platform.LINUX_AMD64,
+        })
+      : ecs.ContainerImage.fromRegistry(`${props.image}:${props.imageTag}`);
+
     const applicationContainer = taskDefinition!.addContainer("application", {
-      image: ecs.ContainerImage.fromRegistry(
-        `${props.image}:${props.imageTag}`
-      ),
+      image: containerImage,
       portMappings: [
         {
           name: "application",
@@ -192,6 +203,36 @@ export class WebService extends Construct {
         ],
       }
     );
+
+    // Add explicit CloudFormation dependencies for resources that must exist before ECS tasks start
+    // (e.g., SSM parameters created by custom resources)
+    if (props.serviceDependencies) {
+      for (const dependency of props.serviceDependencies) {
+        service.node.addDependency(dependency);
+      }
+    }
+
+    // Add dependency on cluster capacity provider associations if they exist
+    // This ensures proper deletion order: service -> associations -> cluster
+    // CDK creates CfnClusterCapacityProviderAssociations lazily during synthesis,
+    // so we use Aspects to add the dependency after all constructs are created
+    // See: https://github.com/aws/aws-cdk/issues/19275
+    cdk.Aspects.of(service).add({
+      visit: (node: IConstruct) => {
+        if (node === service) {
+          const children = props.cluster.node.findAll();
+          for (const child of children) {
+            // Use constructor name check to avoid instanceof issues with multiple module instances
+            if (child.constructor.name === 'CfnClusterCapacityProviderAssociations') {
+              // Service depends on associations (service deleted before associations)
+              node.node.addDependency(child);
+              // Associations depend on cluster (associations deleted before cluster)
+              child.node.addDependency(props.cluster);
+            }
+          }
+        }
+      }
+    });
 
     // Associate with Cloud Map
     service.associateCloudMapService({

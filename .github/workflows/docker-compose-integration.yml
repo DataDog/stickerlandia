@@ -14,23 +14,26 @@ permissions:
 jobs:
   docker-compose-integration:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
+    - name: Install mise
+      uses: jdx/mise-action@v2
+
     - name: Start services (CI mode - no monitoring)
-      run: make compose-up-ci
+      run: mise run compose:deploy:ci
 
     - name: Wait for services to be ready
-      run: make wait-for-services
+      run: mise run test:wait
 
     - name: Test all service endpoints
-      run: make test-services
-      
+      run: mise run test:services
+
     - name: Cleanup
       if: always()
-      run: docker compose down -v
+      run: mise run compose:down
