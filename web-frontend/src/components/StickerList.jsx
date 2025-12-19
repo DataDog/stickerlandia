@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { API_BASE_URL } from '../config'
 
 const StickerList = () => {
   const [stickers, setStickers] = useState([])
@@ -9,7 +10,7 @@ const StickerList = () => {
     const fetchStickers = async () => {
       try {
         setLoading(true)
-        const response = await fetch('http://localhost:8080/api/stickers/v1')
+        const response = await fetch(`${API_BASE_URL}/api/stickers/v1`)
         
         if (!response.ok) {
           throw new Error(`Failed to fetch stickers: ${response.status}`)
@@ -70,7 +71,7 @@ const StickerList = () => {
               <tr key={sticker.stickerId} className="hover:bg-gray-50">
                 <td className="px-4 py-4">
                   <img 
-                    src={`http://localhost:8080/api/stickers/v1/${sticker.stickerId}/image`}
+                    src={`${API_BASE_URL}/api/stickers/v1/${sticker.stickerId}/image`}
                     alt={sticker.stickerName}
                     className="w-12 h-12 object-cover rounded border border-gray-200"
                     onError={(e) => {

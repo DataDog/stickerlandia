@@ -1,13 +1,14 @@
 import "source-map-support/register";
 import * as cdk from "aws-cdk-lib";
 import { UserServiceStack } from "../lib/user-service-stack";
+import { getAwsAccount } from "../../../../shared/lib/shared-constructs/lib/utils";
 
 const app = new cdk.App();
 
 const userServiceStack = new UserServiceStack(app, "UserServiceStack", {
   stackName: `UserService-${process.env.ENV ?? "dev"}`,
   env: {
-    account: process.env.CDK_DEFAULT_ACCOUNT,
+    account: getAwsAccount(),
     region: process.env.CDK_DEFAULT_REGION,
   },
 });

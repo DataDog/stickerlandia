@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import AuthService from "../services/AuthService";
+import { API_BASE_URL } from "../config";
 import Sidebar from "./Sidebar";
 import HotelClassOutlinedIcon from '@mui/icons-material/HotelClassOutlined';
 
@@ -17,7 +18,7 @@ const UserProfile = () => {
         // Use sub (subject) as the unique user identifier from OIDC
         const userId = user.sub || user.email;
         const response = await fetch(
-          "http://localhost:8080/api/awards/v1/assignments/" + userId
+          `${API_BASE_URL}/api/awards/v1/assignments/${userId}`
         );
 
         if (!response.ok) {
@@ -118,7 +119,7 @@ const UserProfile = () => {
                   >
                     <td style={{ padding: "12px" }}>
                       <img
-                        src={`http://localhost:8080/api/stickers/v1/${sticker.stickerId}/image`}
+                        src={`${API_BASE_URL}/api/stickers/v1/${sticker.stickerId}/image`}
                         alt={sticker.stickerName}
                         style={{
                           width: "50px",

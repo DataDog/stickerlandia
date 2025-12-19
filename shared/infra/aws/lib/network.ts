@@ -141,11 +141,17 @@ export class Network extends Construct {
     });
 
     const webFrontendBucket = new cdk.aws_s3.Bucket(this, "WebFrontendBucket", {
-      bucketName: `stickerlandia-web-frontend-${props.env}-${props.account}`,
+      bucketName: `stickerlandia-web-frontend-${props.env}-${props.account}-${cdk.Stack.of(this).region}`,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       accessControl: cdk.aws_s3.BucketAccessControl.PRIVATE,
       autoDeleteObjects: true,
       websiteIndexDocument: "index.html",
+    });
+
+    // Export bucket name for web-frontend deployment
+    new StringParameter(this, "WebFrontendBucketParam", {
+      parameterName: `/stickerlandia/${props.env}/shared/web-frontend-bucket`,
+      stringValue: webFrontendBucket.bucketName,
     });
 
     const originIdentity = new OriginAccessIdentity(this, "OAI", {
@@ -161,12 +167,28 @@ export class Network extends Construct {
           originAccessIdentity: originIdentity,
         }),
       },
+      // SPA routing: return index.html for any unmatched routes
+      // S3 with OAI returns 403 for non-existent files, so we handle both 403 and 404
+      errorResponses: [
+        {
+          httpStatus: 403,
+          responseHttpStatus: 200,
+          responsePagePath: "/index.html",
+        },
+        {
+          httpStatus: 404,
+          responseHttpStatus: 200,
+          responsePagePath: "/index.html",
+        },
+      ],
     });
+
+    const region = cdk.Stack.of(this).region;
 
     this.distribution.addBehavior(
       "/api*",
       new HttpOrigin(
-        `${this.httpApi.apiId}.execute-api.eu-west-1.amazonaws.com`,
+        `${this.httpApi.apiId}.execute-api.${region}.amazonaws.com`,
         {
           protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
         }
@@ -183,7 +205,7 @@ export class Network extends Construct {
     this.distribution.addBehavior(
       "/.well-known*",
       new HttpOrigin(
-        `${this.httpApi.apiId}.execute-api.eu-west-1.amazonaws.com`,
+        `${this.httpApi.apiId}.execute-api.${region}.amazonaws.com`,
         {
           protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
         }
@@ -200,7 +222,7 @@ export class Network extends Construct {
     this.distribution.addBehavior(
       "/auth*",
       new HttpOrigin(
-        `${this.httpApi.apiId}.execute-api.eu-west-1.amazonaws.com`,
+        `${this.httpApi.apiId}.execute-api.${region}.amazonaws.com`,
         {
           protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
         }
@@ -217,7 +239,7 @@ export class Network extends Construct {
     this.distribution.addBehavior(
       "/Auth*",
       new HttpOrigin(
-        `${this.httpApi.apiId}.execute-api.eu-west-1.amazonaws.com`,
+        `${this.httpApi.apiId}.execute-api.${region}.amazonaws.com`,
         {
           protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
         }

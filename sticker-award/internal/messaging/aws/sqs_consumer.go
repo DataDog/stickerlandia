@@ -293,7 +293,8 @@ func (c *Consumer) processMessage(message *types.Message) error {
 
 	// Extract Datadog headers directly from JSON without full CloudEvent parsing
 	// This avoids double-parsing - the middleware will parse the full CloudEvent later
-	ddHeaders := extractDatadogHeadersFromJSON(eventBridgeEvent.Detail)
+	detailJSON := string(eventBridgeEvent.Detail)
+	ddHeaders := extractDatadogHeadersFromJSON(detailJSON)
 
 	// Find handler for this detail type (maps to topic)
 	detailType := eventBridgeEvent.DetailType
@@ -308,8 +309,8 @@ func (c *Consumer) processMessage(message *types.Message) error {
 	// Create SQS message wrapper with CloudEvent JSON body
 	// The handler wrapper will parse this and apply all middleware
 	sqsMessage := &SQSMessage{
-		Body:       eventBridgeEvent.Detail, // CloudEvent JSON string
-		Attributes: ddHeaders,               // Datadog headers for DSM/tracing
+		Body:       detailJSON,  // CloudEvent JSON string
+		Attributes: ddHeaders,   // Datadog headers for DSM/tracing
 		Topic:      detailType,
 		RawMessage: *message,
 	}
@@ -364,7 +365,7 @@ type EventBridgeEnvelope struct {
 	Time       string                 `json:"time"`
 	Region     string                 `json:"region"`
 	Resources  []string               `json:"resources"`
-	Detail     string                 `json:"detail"` // CloudEvent JSON as string
+	Detail     json.RawMessage        `json:"detail"` // CloudEvent JSON (object from EventBridge)
 	Account    string                 `json:"account"`
 	Metadata   map[string]interface{} `json:"metadata,omitempty"`
 }

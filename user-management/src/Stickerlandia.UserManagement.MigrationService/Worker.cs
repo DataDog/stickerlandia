@@ -75,22 +75,22 @@ internal sealed class Worker(
         using var seedData = s_activitySource.StartActivity("run.seedData", ActivityKind.Client);
         
         // The web-ui client is for the public web interface and uses the OAuth2.0 authorization code flow with PKCE.
-        if (await manager.FindByClientIdAsync("web-ui", cancellationToken) is null)
+        var deploymentHostUrl = Environment.GetEnvironmentVariable("DEPLOYMENT_HOST_URL") ?? "http://localhost:8080";
+        var redirectUri = new Uri($"{deploymentHostUrl}/api/app/auth/callback");
+        var postLogoutRedirectUri = new Uri($"{deploymentHostUrl}/");
+
+        var existingClient = await manager.FindByClientIdAsync("web-ui", cancellationToken);
+        if (existingClient is null)
+        {
             await manager.CreateAsync(new OpenIddictApplicationDescriptor
             {
                 ClientId = "web-ui",
                 ClientSecret = "stickerlandia-web-ui-secret-2025",
                 ClientType = OpenIddictConstants.ClientTypes.Confidential,
-                // An implicit consent type is used for the web UI, meaning users will NOT be prompted to consent to requested scoipes.
+                // An implicit consent type is used for the web UI, meaning users will NOT be prompted to consent to requested scopes.
                 ConsentType = OpenIddictConstants.ConsentTypes.Implicit,
-                PostLogoutRedirectUris =
-                {
-                    new Uri("http://localhost:3000")
-                },
-                RedirectUris =
-                {
-                    new Uri($"{Environment.GetEnvironmentVariable("DEPLOYMENT_HOST_URL") ?? "http://localhost:8080"}/api/app/auth/callback")
-                },
+                PostLogoutRedirectUris = { postLogoutRedirectUri },
+                RedirectUris = { redirectUri },
                 Permissions =
                 {
                     OpenIddictConstants.Permissions.Endpoints.Authorization,
@@ -108,6 +108,27 @@ internal sealed class Worker(
                     OpenIddictConstants.Requirements.Features.ProofKeyForCodeExchange
                 }
             }, cancellationToken);
+
+            seedData?.SetTag("oauth.web-ui.created", true);
+        }
+        else
+        {
+            // Update existing client to ensure redirect URIs match current deployment
+            var descriptor = new OpenIddictApplicationDescriptor();
+            await manager.PopulateAsync(descriptor, existingClient, cancellationToken);
+
+            // Update redirect URIs to match current deployment host
+            descriptor.RedirectUris.Clear();
+            descriptor.RedirectUris.Add(redirectUri);
+
+            descriptor.PostLogoutRedirectUris.Clear();
+            descriptor.PostLogoutRedirectUris.Add(postLogoutRedirectUri);
+
+            await manager.UpdateAsync(existingClient, descriptor, cancellationToken);
+
+            seedData?.SetTag("oauth.web-ui.updated", true);
+            seedData?.SetTag("oauth.web-ui.redirectUri", redirectUri.ToString());
+        }
 
         // As soon as Stickerlandia services need to call other services under their own identities, add them here
 

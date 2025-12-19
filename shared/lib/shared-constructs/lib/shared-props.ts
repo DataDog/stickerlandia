@@ -42,7 +42,7 @@ export class SharedProps {
     enableDatadog: boolean = true
   ) {
     const environment = process.env.ENV || "dev";
-    const version = process.env.VERSION || "latest";
+    const version = process.env.COMMIT_SHA || "latest";
 
     this.datadog = {
       apiKey: ddApiKey,

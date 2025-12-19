@@ -51,6 +51,7 @@ import {
 } from "aws-cdk-lib/aws-servicediscovery";
 import { ParameterTier, StringParameter } from "aws-cdk-lib/aws-ssm";
 import { Construct } from "constructs";
+import * as cdk from "aws-cdk-lib";
 export interface SharedResourcesProps {
   environment?: string;
   networkName: string;
@@ -66,6 +67,7 @@ export class SharedResources extends Construct {
   integrationEnvironments: string[] = ["dev", "prod"];
   cloudfrontDistribution: IDistribution;
   sharedDatabaseCluster: IDatabaseCluster;
+  sharedDatabaseSecretArn: string;
 
   constructor(scope: Construct, id: string, props: SharedResourcesProps) {
     super(scope, id);
@@ -147,6 +149,11 @@ export class SharedResources extends Construct {
       `/stickerlandia/${props.environment}/shared/database-resource-identifier`
     );
 
+    const sharedDbSecretArn = StringParameter.valueFromLookup(
+      this,
+      `/stickerlandia/${props.environment}/shared/database-secret-arn`
+    );
+
     const vpcLinkId = vpcLinkParameter.stringValue;
     const vpcLinkSecurityGroupId = vpcLinkSecurityGroupParameter.stringValue;
     const httpApiId = httpApiParameter.stringValue;
@@ -168,7 +175,8 @@ export class SharedResources extends Construct {
       !cloudfrontEndpoint ||
       !cloudfrontId ||
       !sharedEventBus ||
-      !sharedDbClusterIdentifier
+      !sharedDbClusterIdentifier ||
+      !sharedDbSecretArn
     ) {
       throw new Error("Parameters for shared resources are not set correctly.");
     }
@@ -197,6 +205,7 @@ export class SharedResources extends Construct {
         clusterResourceIdentifier: sharedDbResourceIdentifier,
       }
     );
+    this.sharedDatabaseSecretArn = sharedDbSecretArn;
     this.serviceDiscoveryNamespace =
       PrivateDnsNamespace.fromPrivateDnsNamespaceAttributes(
         this,
@@ -334,6 +343,7 @@ export class SharedResources extends Construct {
         }),
       ],
     });
+    this.sharedDatabaseSecretArn = secret.secretArn;
 
     var databaseEndpointParam = new StringParameter(
       this,
@@ -346,6 +356,16 @@ export class SharedResources extends Construct {
       }
     );
 
+    // Export the secret ARN so microservices can fetch credentials
+    new StringParameter(this, "DatabaseSecretArnParam", {
+      parameterName: `/stickerlandia/${props.environment}/shared/database-secret-arn`,
+      stringValue: secret.secretArn,
+      description: `The Secrets Manager ARN for the Stickerlandia ${props.environment} database credentials`,
+      tier: ParameterTier.STANDARD,
+    });
+
+    const region = cdk.Stack.of(this).region;
+
     const distribution = new Distribution(
       this,
       `Stickerlandia-${props.environment}`,
@@ -354,7 +374,7 @@ export class SharedResources extends Construct {
         defaultRootObject: "index.html",
         defaultBehavior: {
           origin: new HttpOrigin(
-            `${this.httpApi.apiId}.execute-api.eu-west-1.amazonaws.com`,
+            `${this.httpApi.apiId}.execute-api.${region}.amazonaws.com`,
             {
               protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
             }
@@ -372,7 +392,7 @@ export class SharedResources extends Construct {
     distribution.addBehavior(
       "/.well-known*",
       new HttpOrigin(
-        `${this.httpApi.apiId}.execute-api.eu-west-1.amazonaws.com`,
+        `${this.httpApi.apiId}.execute-api.${region}.amazonaws.com`,
         {
           protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
         }
@@ -389,7 +409,7 @@ export class SharedResources extends Construct {
     distribution.addBehavior(
       "/auth*",
       new HttpOrigin(
-        `${this.httpApi.apiId}.execute-api.eu-west-1.amazonaws.com`,
+        `${this.httpApi.apiId}.execute-api.${region}.amazonaws.com`,
         {
           protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
         }

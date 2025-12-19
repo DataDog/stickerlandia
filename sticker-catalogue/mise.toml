@@ -1,0 +1,48 @@
+# sticker-catalogue mise tasks
+
+[tasks."build:local"]
+description = "Build Java package"
+run = "./mvnw package -DskipTests"
+
+[tasks."build:docker-dev"]
+description = "Build dev container"
+run = """
+ARCH=${ARCH:-$(uname -m | sed 's/x86_64/amd64/')}
+docker build --platform linux/$ARCH -f src/main/docker/Dockerfile.dev -t stickerlandia/sticker-catalogue:dev .
+"""
+
+[tasks."build:docker-release"]
+description = "Build release container"
+run = """
+ARCH=${ARCH:-$(uname -m | sed 's/x86_64/amd64/')}
+docker build --platform linux/$ARCH -f src/main/docker/Dockerfile.jvmlocal -t stickerlandia/sticker-catalogue:latest .
+"""
+
+[tasks."infra:install"]
+description = "Install CDK dependencies"
+dir = "infra/aws"
+sources = ["package-lock.json"]
+outputs = ["node_modules/.package-lock.json"]
+run = "npm ci"
+
+[tasks."aws:deploy"]
+description = "Deploy to AWS"
+dir = "infra/aws"
+depends = ["infra:install", "//shared:aws:deploy"]
+run = "npx cdk deploy --require-approval never"
+
+[tasks."aws:down"]
+description = "Destroy AWS stack"
+dir = "infra/aws"
+depends = ["infra:install"]
+run = "npx cdk destroy --force"
+
+[tasks."aws:info"]
+description = "Show AWS stack outputs"
+run = """
+echo "=== StickerCatalogue-$ENV ==="
+aws cloudformation describe-stacks \
+  --stack-name "StickerCatalogue-$ENV" \
+  --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' \
+  --output table 2>/dev/null || echo "Stack not deployed"
+"""

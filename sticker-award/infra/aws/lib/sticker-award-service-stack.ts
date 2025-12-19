@@ -7,11 +7,15 @@
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { SharedResources } from "../../../../shared/lib/shared-constructs/lib/shared-resources";
+import {
+  DatabaseCredentials,
+  ConnectionStringFormat,
+} from "../../../../shared/lib/shared-constructs/lib/database-credentials";
 import { Api } from "./api";
 import { Cluster } from "aws-cdk-lib/aws-ecs";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
 import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
-import { KafkaMessagingProps, ServiceProps } from "./service-props";
+import { AWSMessagingProps, KafkaMessagingProps, ServiceProps } from "./service-props";
 
 export enum MessagingType {
   AWS,
@@ -56,18 +60,24 @@ export class StickerAwardServiceStack extends cdk.Stack {
       ddSite
     );
 
+    // Create formatted database credentials from the shared RDS secret
+    const dbCredentials = new DatabaseCredentials(this, "DatabaseCredentials", {
+      databaseSecretArn: sharedResources.sharedDatabaseSecretArn,
+      environment: environment,
+      serviceName: "sticker-award",
+      format: ConnectionStringFormat.POSTGRES_URL,
+    });
+
     const serviceProps: ServiceProps = {
       cloudfrontDistribution: sharedResources.cloudfrontDistribution,
-      connectionString: StringParameter.fromStringParameterName(
+      connectionStringSecret: dbCredentials.connectionStringSecret!,
+      databaseCredentials: dbCredentials,
+      messagingConfiguration: new AWSMessagingProps(
         this,
-        "ConnectionStringParam",
-        `/stickerlandia/${environment}/sticker-award/connection_string`
+        "MessagingProps",
+        sharedResources
       ),
-      messagingConfiguration: new KafkaMessagingProps(
-        this,
-        "KafkaMessagingProps",
-        sharedProps
-      ),
+      serviceDependencies: [dbCredentials.credentialResource],
     };
 
     const api = new Api(this, "Api", {
@@ -82,6 +92,12 @@ export class StickerAwardServiceStack extends cdk.Stack {
       cluster: cluster,
       deployInPrivateSubnet: true,
       sharedEventBus: sharedResources.sharedEventBus,
+    });
+
+    // CDK Outputs
+    new cdk.CfnOutput(this, "ServiceApiUrl", {
+      value: `https://${sharedResources.cloudfrontDistribution.distributionDomainName}/api/awards/v1`,
+      description: "Sticker Award Service API URL",
     });
   }
 }

@@ -4,9 +4,11 @@
  * Copyright 2025-Present Datadog, Inc.
  */
 
+import { API_BASE_URL } from '../config'
+
 class AuthService {
   constructor() {
-    this.baseUrl = '/api/app/auth'
+    this.baseUrl = `${API_BASE_URL}/api/app/auth`
   }
 
   storeToken(accessToken, expiresAt) {

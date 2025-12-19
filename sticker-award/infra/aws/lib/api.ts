@@ -4,6 +4,7 @@
  * Copyright 2025-Present Datadog, Inc.
  */
 
+import * as path from "path";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
 import { Cluster, Secret } from "aws-cdk-lib/aws-ecs";
@@ -63,7 +64,7 @@ export class Api extends Construct {
       DD_API_KEY: Secret.fromSsmParameter(
         props.sharedProps.datadog.apiKeyParameter
       ),
-      DATABASE_URL: Secret.fromSsmParameter(props.serviceProps.connectionString),
+      DATABASE_URL: props.serviceProps.databaseCredentials.getConnectionStringEcsSecret()!,
       ...props.serviceProps.messagingConfiguration.asSecrets(),
     };
 
@@ -76,6 +77,7 @@ export class Api extends Construct {
       cluster: props.cluster,
       image: "ghcr.io/datadog/stickerlandia/sticker-award-service",
       imageTag: props.sharedProps.version,
+      assetPath: path.resolve(__dirname, "../../.."),
       ddApiKey: props.sharedProps.datadog.apiKeyParameter,
       port: 8080,
       environmentVariables: {
@@ -93,11 +95,17 @@ export class Api extends Construct {
       serviceDiscoveryName: props.serviceDiscoveryName,
       deployInPrivateSubnet: props.deployInPrivateSubnet,
       additionalPathMappings: [],
+      serviceDependencies: props.serviceProps.serviceDependencies,
     });
 
     props.serviceProps.messagingConfiguration.grantPermissions(
       webService.taskRole
     );
     userRegisteredQueue.grantConsumeMessages(webService.taskRole);
+
+    // Grant execution role permission to read the database connection string secret
+    // This is necessary because Secret.fromSecretNameV2() doesn't include the random suffix
+    // that Secrets Manager adds to ARNs, so CDK's automatic grants may not work correctly
+    props.serviceProps.databaseCredentials.grantRead(webService.executionRole);
   }
 }

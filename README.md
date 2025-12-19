@@ -63,14 +63,47 @@ Stickerlandia is fully instrumented with Datadog's observability and analysis to
 
 ## Getting Started
 
-To run Stickerlandia locally, follow these steps:
+We use [mise-en-place](https://mise.jdx.dev/getting-started.html) for tool and task management.
 
-1. Clone this repository
-2. Set up dependencies (see service-specific READMEs)
-3. Start the services using one of two Docker Compose configurations:
-   - **Production-like (static builds)**: `docker-compose up` - Uses pre-built images, faster startup
-   - **Development (hot reloading)**: `docker-compose -f docker-compose.yml -f docker-compose.dev.yml up` - Live code reloading for active development
-4. Access the application at `http://localhost:8080`
+```bash
+mise trust && mise install         # Install tools
+mise run env:setup                 # Configure .env, necessary for most of the rest of the tasks!
+```
+
+You can use mise to work with Docker locally:
+
+```bash
+mise run compose:deploy:local      # Start services (build from source)
+mise run compose:deploy:release    # Start services (prebuilt GHCR images)
+mise run compose:dev               # Start with hot reload
+mise run compose:down              # Stop services
+```
+
+Or deploy to AWS in the cloud:
+
+```bash
+mise run aws:deploy:local          # Deploy to AWS (build containers locally)
+mise run aws:deploy:release        # Deploy to AWS (prebuilt GHCR images)
+mise run aws:info                  # Show AWS stack outputs
+mise run aws:down                  # Destroy all AWS stacks
+```
+
+Run `mise tasks` to see top-level tasks, or `mise tasks --all` to see service-specific tasks:
+
+```
+//sticker-award:aws:deploy            Deploy to AWS
+//sticker-award:build:docker-dev      Build dev container
+//sticker-award:build:local           Build Go binary
+//sticker-catalogue:aws:deploy        Deploy to AWS
+//sticker-catalogue:build:local       Build Java package
+//user-management:aws:deploy          Deploy to AWS
+//user-management:build:local         Build .NET solution
+...
+```
+
+Using mise's [monorepo support](https://mise.jdx.dev/tasks/toml-tasks.html#project-name), each service defines a consistent set of tasks (like `build:local`, `aws:deploy`) that roll up to the top-level orchestration tasks.
+
+Access the app at `http://localhost:8080`.
 
 ### Default User
 

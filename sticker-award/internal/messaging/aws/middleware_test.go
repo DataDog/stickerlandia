@@ -221,7 +221,7 @@ func TestEventBridgeEnvelope_Structure(t *testing.T) {
 		Time:       "2025-01-01T12:00:00Z",
 		Region:     "us-east-1",
 		Resources:  []string{"arn:aws:events:us-east-1:123:rule/test"},
-		Detail:     `{"test": "data"}`,
+		Detail:     json.RawMessage(`{"test": "data"}`),
 		Account:    "123456789",
 	}
 
@@ -239,7 +239,7 @@ func TestEventBridgeEnvelope_Structure(t *testing.T) {
 	assert.Equal(t, envelope.ID, decoded.ID)
 	assert.Equal(t, envelope.DetailType, decoded.DetailType)
 	assert.Equal(t, envelope.Source, decoded.Source)
-	assert.Equal(t, envelope.Detail, decoded.Detail)
+	assert.JSONEq(t, string(envelope.Detail), string(decoded.Detail))
 }
 
 // Mock handler for testing MessagingHandler

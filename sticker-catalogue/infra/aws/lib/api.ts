@@ -43,14 +43,14 @@ export class Api extends Construct {
       DD_API_KEY: Secret.fromSsmParameter(
         props.sharedProps.datadog.apiKeyParameter
       ),
-      QUARKUS_DATASOURCE_JDBC_URL: Secret.fromSsmParameter(
-        props.serviceProps.jdbcUrl
+      QUARKUS_DATASOURCE_JDBC_URL: Secret.fromSecretsManager(
+        props.serviceProps.databaseCredentials.jdbcUrlSecret!
       ),
-      QUARKUS_DATASOURCE_USERNAME: Secret.fromSsmParameter(
-        props.serviceProps.dbUsername
+      QUARKUS_DATASOURCE_USERNAME: Secret.fromSecretsManager(
+        props.serviceProps.databaseCredentials.usernameSecret!
       ),
-      QUARKUS_DATASOURCE_PASSWORD: Secret.fromSsmParameter(
-        props.serviceProps.dbPassword
+      QUARKUS_DATASOURCE_PASSWORD: Secret.fromSecretsManager(
+        props.serviceProps.databaseCredentials.passwordSecret!
       ),
       ...props.serviceProps.messagingProps.asSecrets(),
     };
@@ -81,9 +81,13 @@ export class Api extends Construct {
       serviceDiscoveryNamespace: props.serviceDiscoveryNamespace,
       serviceDiscoveryName: props.serviceDiscoveryName,
       deployInPrivateSubnet: props.deployInPrivateSubnet,
+      serviceDependencies: props.serviceProps.serviceDependencies,
     });
 
     props.stickerImagesBucket.grantReadWrite(webService.taskRole);
     props.serviceProps.messagingProps.grantPermissions(webService.taskRole);
+
+    // Grant execution role permission to read the database connection string secrets
+    props.serviceProps.databaseCredentials.grantRead(webService.executionRole);
   }
 }

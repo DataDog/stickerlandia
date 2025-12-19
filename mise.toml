@@ -1,0 +1,202 @@
+# mise configuration for stickerlandia
+
+experimental_monorepo_root = true
+
+[settings]
+experimental = true
+auto_install = true
+
+[tools]
+# Used by CDK infrastructure and web-frontend/web-backend
+node = "22"
+
+# Used by sticker-award
+go = "1.25"
+
+# Used by sticker-catalogue
+java = "temurin-21"
+
+# Used by sticker-catalogue
+maven = "3.9"
+
+# Used by user-management
+dotnet = "8"
+
+[env]
+_.file = { path = ".env", optional = true }
+
+ENV = "dev"
+COMMIT_SHA = "LOCAL"
+DD_API_KEY = { required = "Run 'mise run env:setup' or get your key from https://app.datadoghq.com/organization-settings/api-keys", redact = true }
+DD_SITE = { required = "Run 'mise run env:setup' or set to datadoghq.com (US) or datadoghq.eu (EU)" }
+DD_RUM_APPLICATION_ID = { required = "Run 'mise run env:setup' or get from https://app.datadoghq.com/rum/application" }
+DD_RUM_CLIENT_TOKEN = { required = "Run 'mise run env:setup' or get from https://app.datadoghq.com/rum/application", redact = true }
+
+# =============================================================================
+# env: Environment setup
+# =============================================================================
+
+[tasks."env:setup"]
+description = "Create .env file with required configuration"
+hide = true
+run = """
+if [ -f .env ]; then
+  echo ".env already exists. Delete it first if you want to regenerate."
+  exit 0
+fi
+
+echo "Creating .env file..."
+echo "Press Enter to use default values shown in brackets"
+echo ""
+
+read -p "Environment name (e.g., your initials) [dev]: " ENV
+ENV=${ENV:-dev}
+read -p "Datadog API Key: " DD_API_KEY
+read -p "Datadog Site [datadoghq.eu]: " DD_SITE
+DD_SITE=${DD_SITE:-datadoghq.eu}
+read -p "Datadog RUM Application ID [default-rum-app-id]: " DD_RUM_APPLICATION_ID
+DD_RUM_APPLICATION_ID=${DD_RUM_APPLICATION_ID:-default-rum-app-id}
+read -p "Datadog RUM Client Token [default-rum-client-token]: " DD_RUM_CLIENT_TOKEN
+DD_RUM_CLIENT_TOKEN=${DD_RUM_CLIENT_TOKEN:-default-rum-client-token}
+read -p "Commit SHA [latest]: " COMMIT_SHA
+COMMIT_SHA=${COMMIT_SHA:-latest}
+
+if [ -n "$CODESPACE_NAME" ]; then
+  DEPLOYMENT_HOST_URL="https://${CODESPACE_NAME}-8080.app.github.dev"
+else
+  DEPLOYMENT_HOST_URL="http://localhost:8080"
+fi
+
+cat > .env << EOF
+# Deployment Configuration
+ENV=$ENV
+COMMIT_SHA=$COMMIT_SHA
+DEPLOYMENT_HOST_URL=$DEPLOYMENT_HOST_URL
+
+# Datadog Configuration
+DD_API_KEY=$DD_API_KEY
+DD_SITE=$DD_SITE
+DD_RUM_APPLICATION_ID=$DD_RUM_APPLICATION_ID
+DD_RUM_CLIENT_TOKEN=$DD_RUM_CLIENT_TOKEN
+EOF
+
+echo ""
+echo ".env file created successfully!"
+"""
+
+# =============================================================================
+# build: Build tasks
+# =============================================================================
+
+[tasks."build:local"]
+description = "Build all services locally"
+run = "mise run '//...:build:local'"
+
+[tasks."build:docker-dev"]
+description = "Build all dev containers"
+run = "mise run '//...:build:docker-dev'"
+
+[tasks."build:docker-release"]
+description = "Build all release containers"
+run = "mise run '//...:build:docker-release'"
+
+# =============================================================================
+# infra: Infrastructure setup tasks
+# =============================================================================
+
+[tasks."infra:install"]
+description = "Install all CDK dependencies"
+run = "mise run '//...:infra:install'"
+
+# =============================================================================
+# compose: Docker Compose tasks
+# =============================================================================
+
+[tasks."compose:deploy:local"]
+description = "Deploy all services locally (build from source)"
+depends = ["env:setup"]
+run = "docker compose --profile monitoring build && docker compose --profile monitoring up -d"
+
+[tasks."compose:deploy:release"]
+description = "Deploy all services using prebuilt GHCR images"
+depends = ["env:setup"]
+run = "docker compose --profile monitoring -f docker-compose.yml -f docker-compose.prebuilt.yml up -d"
+
+[tasks."compose:deploy:ci"]
+description = "Deploy services for CI (no monitoring)"
+depends = ["env:setup"]
+run = "docker compose build && docker compose up -d"
+
+[tasks."compose:dev"]
+description = "Deploy all services with hot reload"
+depends = ["env:setup"]
+run = "docker compose --profile monitoring -f docker-compose.yml -f docker-compose.dev.yml build && docker compose --profile monitoring -f docker-compose.yml -f docker-compose.dev.yml up -d"
+
+[tasks."compose:down"]
+description = "Stop and remove all containers and volumes"
+run = "docker compose --profile monitoring down -v"
+
+# =============================================================================
+# test: Testing tasks
+# =============================================================================
+
+[tasks."test:wait"]
+description = "Wait for all services to be healthy"
+depends = ["env:setup"]
+run = "./scripts/wait-for-services.sh"
+
+[tasks."test:services"]
+description = "Test that all services are responding"
+depends = ["env:setup"]
+run = "./scripts/test-services.sh --max-retries 5 --retry-delay 10"
+
+# =============================================================================
+# aws: AWS tasks
+# =============================================================================
+
+[tasks."aws:deploy:local"]
+description = "Deploy to AWS (build containers locally)"
+depends = ["env:setup"]
+run = """
+echo "=== Deploying Stickerlandia to AWS: $ENV (COMMIT_SHA=$COMMIT_SHA) ==="
+mise run //shared:aws:deploy
+mise run //user-management:aws:deploy
+mise run //sticker-award:aws:deploy
+mise run //web-backend:aws:deploy
+mise run //web-frontend:aws:deploy
+echo "=== Deployment complete! ==="
+"""
+
+[tasks."aws:deploy:release"]
+description = "Deploy to AWS using prebuilt GHCR images"
+depends = ["env:setup"]
+env = { COMMIT_SHA = "latest" }
+run = """
+echo "=== Deploying Stickerlandia to AWS: $ENV (COMMIT_SHA=$COMMIT_SHA) ==="
+mise run //shared:aws:deploy
+mise run //user-management:aws:deploy
+mise run //sticker-award:aws:deploy
+mise run //web-backend:aws:deploy
+mise run //web-frontend:aws:deploy
+echo "=== Deployment complete! ==="
+"""
+
+[tasks."aws:down"]
+description = "Destroy all AWS stacks"
+depends = ["//shared:aws:down"]
+run = """
+echo '=== Cleaning up CDK context cache ==='
+find . -name 'cdk.context.json' -type f -delete
+echo '=== All AWS stacks destroyed! ==='
+"""
+
+[tasks."aws:info"]
+description = "Show AWS stack outputs for all services"
+run = """
+mise run //shared:aws:info
+mise run //user-management:aws:info
+mise run //sticker-award:aws:info
+mise run //sticker-catalogue:aws:info
+mise run //web-backend:aws:info
+mise run //web-frontend:aws:info
+"""

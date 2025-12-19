@@ -1,0 +1,45 @@
+# shared infrastructure mise tasks
+
+[tasks."lib:install"]
+description = "Install shared-constructs dependencies"
+dir = "lib/shared-constructs"
+sources = ["package-lock.json"]
+outputs = ["node_modules/.package-lock.json"]
+run = "npm ci"
+
+[tasks."infra:install"]
+description = "Install CDK dependencies"
+dir = "infra/aws"
+sources = ["package-lock.json"]
+outputs = ["node_modules/.package-lock.json"]
+run = "npm ci"
+
+[tasks."aws:deploy"]
+description = "Deploy shared infrastructure to AWS"
+dir = "infra/aws"
+depends = ["lib:install", "infra:install"]
+run = "npx cdk deploy --require-approval never"
+
+[tasks."aws:down"]
+description = "Destroy shared infrastructure on AWS"
+dir = "infra/aws"
+depends = [
+  "lib:install",
+  "infra:install",
+  "//user-management:aws:down",
+  "//sticker-award:aws:down",
+  "//sticker-catalogue:aws:down",
+  "//web-backend:aws:down",
+  "//web-frontend:aws:down",
+]
+run = "npx cdk destroy --force"
+
+[tasks."aws:info"]
+description = "Show AWS stack outputs"
+run = """
+echo "=== StickerlandiaSharedResources-$ENV ==="
+aws cloudformation describe-stacks \
+  --stack-name "StickerlandiaSharedResources-$ENV" \
+  --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' \
+  --output table 2>/dev/null || echo "Stack not deployed"
+"""

@@ -1,6 +1,7 @@
 import "source-map-support/register";
 import * as cdk from "aws-cdk-lib";
 import { StickerAwardServiceStack } from "../lib/sticker-award-service-stack";
+import { getAwsAccount } from "../../../../shared/lib/shared-constructs/lib/utils";
 
 const app = new cdk.App();
 
@@ -10,7 +11,7 @@ const stickerAwardServiceStack = new StickerAwardServiceStack(
   {
     stackName: `StickerAward-${process.env.ENV ?? "dev"}`,
     env: {
-      account: process.env.CDK_DEFAULT_ACCOUNT,
+      account: getAwsAccount(),
       region: process.env.CDK_DEFAULT_REGION,
     },
   }

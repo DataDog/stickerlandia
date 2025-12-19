@@ -1,0 +1,48 @@
+# sticker-award mise tasks
+
+[tasks."build:local"]
+description = "Build Go binary"
+run = "go build -o bin/server ./cmd/server"
+
+[tasks."build:docker-dev"]
+description = "Build dev container"
+run = """
+ARCH=${ARCH:-$(uname -m | sed 's/x86_64/amd64/')}
+docker build --platform linux/$ARCH -f Dockerfile.dev -t stickerlandia/sticker-award:dev .
+"""
+
+[tasks."build:docker-release"]
+description = "Build release container"
+run = """
+ARCH=${ARCH:-$(uname -m | sed 's/x86_64/amd64/')}
+docker build --platform linux/$ARCH -f Dockerfile -t stickerlandia/sticker-award:latest .
+"""
+
+[tasks."infra:install"]
+description = "Install CDK dependencies"
+dir = "infra/aws"
+sources = ["package-lock.json"]
+outputs = ["node_modules/.package-lock.json"]
+run = "npm ci"
+
+[tasks."aws:deploy"]
+description = "Deploy to AWS"
+dir = "infra/aws"
+depends = ["infra:install", "//shared:aws:deploy"]
+run = "npx cdk deploy --require-approval never"
+
+[tasks."aws:down"]
+description = "Destroy AWS stack"
+dir = "infra/aws"
+depends = ["infra:install"]
+run = "npx cdk destroy --force"
+
+[tasks."aws:info"]
+description = "Show AWS stack outputs"
+run = """
+echo "=== StickerAward-$ENV ==="
+aws cloudformation describe-stacks \
+  --stack-name "StickerAward-$ENV" \
+  --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' \
+  --output table 2>/dev/null || echo "Stack not deployed"
+"""
