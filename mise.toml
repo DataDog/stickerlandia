@@ -27,10 +27,10 @@ _.file = { path = ".env", optional = true }
 
 ENV = "dev"
 COMMIT_SHA = "LOCAL"
-DD_API_KEY = { required = "Run 'mise run env:setup' or get your key from https://app.datadoghq.com/organization-settings/api-keys", redact = true }
-DD_SITE = { required = "Run 'mise run env:setup' or set to datadoghq.com (US) or datadoghq.eu (EU)" }
-DD_RUM_APPLICATION_ID = { required = "Run 'mise run env:setup' or get from https://app.datadoghq.com/rum/application" }
-DD_RUM_CLIENT_TOKEN = { required = "Run 'mise run env:setup' or get from https://app.datadoghq.com/rum/application", redact = true }
+DD_API_KEY = "PLACEHOLDER_RUN_MISE_ENV_SETUP"
+DD_SITE = "datadoghq.eu"
+DD_RUM_APPLICATION_ID = "PLACEHOLDER_RUN_MISE_ENV_SETUP"
+DD_RUM_CLIENT_TOKEN = "PLACEHOLDER_RUN_MISE_ENV_SETUP"
 
 # =============================================================================
 # env: Environment setup
@@ -41,7 +41,6 @@ description = "Create .env file with required configuration"
 hide = true
 run = """
 if [ -f .env ]; then
-  echo ".env already exists. Delete it first if you want to regenerate."
   exit 0
 fi
 
