@@ -1,4 +1,4 @@
-FROM --platform=${BUILDPLATFORM} mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM --platform=${BUILDPLATFORM} mcr.microsoft.com/dotnet/sdk:10.0 AS build
 
 ARG TARGETPLATFORM
 
@@ -33,7 +33,7 @@ RUN dotnet publish src/Stickerlandia.UserManagement.Api/Stickerlandia.UserManage
 RUN dotnet publish src/Stickerlandia.UserManagement.Worker/Stickerlandia.UserManagement.Worker.csproj -o out/worker -c Release
 RUN dotnet publish src/Stickerlandia.UserManagement.MigrationService/Stickerlandia.UserManagement.MigrationService.csproj -o out/migrations -c Release
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 
 # Install curl
 RUN apt update && apt install -y curl && apt clean

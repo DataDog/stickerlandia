@@ -12,7 +12,7 @@
 #pragma warning disable CA1812
 
 using System.Security.Claims;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Stickerlandia.UserManagement.Api.Configurations;
@@ -21,8 +21,8 @@ internal sealed class RemoveSwaggerDefinitionsFilter : IDocumentFilter
 {
     public void Apply(OpenApiDocument swaggerDoc, DocumentFilterContext context)
     {
-        swaggerDoc.Components.Schemas.Remove(nameof(Claim));
-        swaggerDoc.Components.Schemas.Remove(nameof(ClaimsIdentity));
-        swaggerDoc.Components.Schemas.Remove(nameof(ClaimsPrincipal));
+        swaggerDoc!.Components!.Schemas!.Remove(nameof(Claim));
+        swaggerDoc!.Components!.Schemas!.Remove(nameof(ClaimsIdentity));
+        swaggerDoc!.Components!.Schemas!.Remove(nameof(ClaimsPrincipal));
     }
 }

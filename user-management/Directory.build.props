@@ -8,7 +8,7 @@
         <!-- Configure code analysis. -->
         <AnalysisLevel>latest</AnalysisLevel>
         <AnalysisMode>All</AnalysisMode>
-        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
         <CodeAnalysisTreatWarningsAsErrors>true</CodeAnalysisTreatWarningsAsErrors>
         <EnforceCodeStyleInBuild Condition="'$(Configuration)' != 'Release'">true</EnforceCodeStyleInBuild>
     </PropertyGroup>

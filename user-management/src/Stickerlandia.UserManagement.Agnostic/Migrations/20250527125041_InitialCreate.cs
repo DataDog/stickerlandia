@@ -4,7 +4,7 @@
  * Copyright 2025-Present Datadog, Inc.
  */
 
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 

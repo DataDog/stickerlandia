@@ -69,37 +69,37 @@ public static class AuthServiceExtensions
                 options.AddEventHandler<OpenIddictServerEvents.HandleUserInfoRequestContext>(options =>
                     options.UseInlineHandler(context =>
                     {
-                        if (context.Principal.HasScope(OpenIddictConstants.Scopes.Profile))
+                        if (context.AccessTokenPrincipal.HasScope(OpenIddictConstants.Scopes.Profile))
                         {
-                            context.Profile = context.Principal.GetClaim(OpenIddictConstants.Claims.Profile);
+                            context.Profile = context.AccessTokenPrincipal.GetClaim(OpenIddictConstants.Claims.Profile);
                             context.PreferredUsername =
-                                context.Principal.GetClaim(OpenIddictConstants.Claims.PreferredUsername);
+                                context.AccessTokenPrincipal.GetClaim(OpenIddictConstants.Claims.PreferredUsername);
 
-                            var name = context.Principal.GetClaim(OpenIddictConstants.Claims.Name);
+                            var name = context.AccessTokenPrincipal.GetClaim(OpenIddictConstants.Claims.Name);
                             if (!string.IsNullOrEmpty(name))
                             {
                                 context.Claims[OpenIddictConstants.Claims.Name] = name;
                             }
 
-                            var givenName = context.Principal.GetClaim(OpenIddictConstants.Claims.GivenName);
+                            var givenName = context.AccessTokenPrincipal.GetClaim(OpenIddictConstants.Claims.GivenName);
                             if (!string.IsNullOrEmpty(givenName))
                             {
                                 context.Claims[OpenIddictConstants.Claims.GivenName] = givenName;
                             }
 
-                            var familyName = context.Principal.GetClaim(OpenIddictConstants.Claims.FamilyName);
+                            var familyName = context.AccessTokenPrincipal.GetClaim(OpenIddictConstants.Claims.FamilyName);
                             if (!string.IsNullOrEmpty(familyName))
                             {
                                 context.Claims[OpenIddictConstants.Claims.FamilyName] = familyName;
                             }
 
-                            var signupDate = context.Principal.GetClaim("signup_date");
+                            var signupDate = context.AccessTokenPrincipal.GetClaim("signup_date");
                             if (!string.IsNullOrEmpty(signupDate))
                             {
                                 context.Claims["signup_date"] = signupDate;
                             }
 
-                            var updatedAt = context.Principal.GetClaim(OpenIddictConstants.Claims.UpdatedAt);
+                            var updatedAt = context.AccessTokenPrincipal.GetClaim(OpenIddictConstants.Claims.UpdatedAt);
                             if (!string.IsNullOrEmpty(updatedAt))
                             {
                                 context.Claims[OpenIddictConstants.Claims.UpdatedAt] = long.Parse(
@@ -108,9 +108,9 @@ public static class AuthServiceExtensions
                             }
                         }
 
-                        if (context.Principal.HasScope(OpenIddictConstants.Scopes.Email))
+                        if (context.AccessTokenPrincipal.HasScope(OpenIddictConstants.Scopes.Email))
                         {
-                            context.Email = context.Principal.GetClaim(OpenIddictConstants.Claims.Email);
+                            context.Email = context.AccessTokenPrincipal.GetClaim(OpenIddictConstants.Claims.Email);
                             context.EmailVerified = false;
                         }
 

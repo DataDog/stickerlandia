@@ -20,7 +20,7 @@ java = "temurin-21"
 maven = "3.9"
 
 # Used by user-management
-dotnet = "8"
+dotnet = "10"
 
 [env]
 _.file = { path = ".env", optional = true }
