@@ -53,7 +53,7 @@
 
 services:
   traefik:
-    image: traefik:v3.0
+    image: traefik:v3.6
     container_name: traefik
     ports:
       - "8080:80"     # App traffic
