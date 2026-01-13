@@ -270,7 +270,7 @@ services:
   user-management:
     build:
       context: ./user-management
-      dockerfile: Dockerfile
+      dockerfile: src/Stickerlandia.UserManagement.Api/Dockerfile
     container_name: user-management
     depends_on:
       user-management-db:
@@ -317,7 +317,7 @@ services:
   user-management-worker:
     build:
       context: ./user-management
-      dockerfile: Dockerfile
+      dockerfile: src/Stickerlandia.UserManagement.Worker/Dockerfile
     container_name: user-management-worker
     depends_on:
       user-management-db:
@@ -347,7 +347,7 @@ services:
   user-management-db-migrations:
     build:
       context: ./user-management
-      dockerfile: Dockerfile
+      dockerfile: src/Stickerlandia.UserManagement.MigrationService/Dockerfile
     container_name: user-management-migrations
     depends_on:
       user-management-db:

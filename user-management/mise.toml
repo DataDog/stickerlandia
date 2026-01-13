@@ -8,14 +8,18 @@ run = "dotnet build"
 description = "Build dev container"
 run = """
 ARCH=${ARCH:-$(uname -m | sed 's/x86_64/amd64/')}
-docker build --platform linux/$ARCH -f Dockerfile.dev -t stickerlandia/user-management:dev .
+docker build --platform linux/$ARCH -f src/Stickerlandia.UserManagement.Api/Dockerfile -t stickerlandia/user-management-service:dev .
+docker build --platform linux/$ARCH -f src/Stickerlandia.UserManagement.Api/Dockerfile -t stickerlandia/user-management-worker:dev .
+docker build --platform linux/$ARCH -f src/Stickerlandia.UserManagement.Api/Dockerfile -t stickerlandia/user-management-migration:dev .
 """
 
 [tasks."build:docker-release"]
 description = "Build release container"
 run = """
 ARCH=${ARCH:-$(uname -m | sed 's/x86_64/amd64/')}
-docker build --platform linux/$ARCH -f Dockerfile -t stickerlandia/user-management:latest .
+docker build --platform linux/$ARCH -f src/Stickerlandia.UserManagement.Api/Dockerfile -t stickerlandia/user-management-service:latest .
+docker build --platform linux/$ARCH -f src/Stickerlandia.UserManagement.Api/Dockerfile -t stickerlandia/user-management-worker:latest .
+docker build --platform linux/$ARCH -f src/Stickerlandia.UserManagement.Api/Dockerfile -t stickerlandia/user-management-migration:latest .
 """
 
 [tasks."infra:install"]

@@ -22,8 +22,10 @@ export interface MigrationTaskProps {
   readonly image: string;
   /** Image tag (e.g., "latest" or commit SHA) */
   readonly imageTag: string;
-  /** Path to Dockerfile directory for local builds (when imageTag === "LOCAL") */
+  /** Path to build directory for local builds (when imageTag === "LOCAL") */
   readonly assetPath?: string;
+  /** Path to Dockerfile (if not standard "Dockerfile" in assetPath) */
+  readonly dockerfile?: string;
   /** Entry point for the container (overrides Dockerfile ENTRYPOINT) */
   readonly entryPoint?: string[];
   /** Command to run in the container (overrides Dockerfile CMD) */
@@ -124,6 +126,7 @@ export class MigrationTask extends Construct implements IDependable {
       ? ecs.ContainerImage.fromAsset(props.assetPath!, {
           exclude: ["infra", "cdk.out", "node_modules", ".git"],
           platform: assetPlatform,
+          file: props.dockerfile,
         })
       : ecs.ContainerImage.fromRegistry(`${props.image}:${props.imageTag}`);
 
