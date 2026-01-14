@@ -87,10 +87,21 @@ async function initializeOIDC() {
   try {
     // Discover from internal endpoint
     console.info('Discovering OIDC metadata from:', OAUTH_ISSUER_INTERNAL)
-    issuerMetadata = await Issuer.discover(OAUTH_ISSUER_INTERNAL)
-    console.info('Discovered issuer:', issuerMetadata.issuer)
-    console.info('Token endpoint:', issuerMetadata.token_endpoint)
-    
+    const discoveredIssuer = await Issuer.discover(OAUTH_ISSUER_INTERNAL)
+    console.info('Discovered issuer:', discoveredIssuer.issuer)
+    console.info('Discovered token endpoint:', discoveredIssuer.token_endpoint)
+
+    // Override endpoints to use internal URLs for server-to-server communication
+    // The discovered metadata has external URLs (OPENIDDICT_ISSUER), but we need
+    // internal Docker network URLs for token exchange, userinfo, and JWKS calls
+    issuerMetadata = new Issuer({
+      ...discoveredIssuer.metadata,
+      token_endpoint: `${OAUTH_ISSUER_INTERNAL}/api/users/v1/connect/token`,
+      userinfo_endpoint: `${OAUTH_ISSUER_INTERNAL}/api/users/v1/connect/userinfo`,
+      jwks_uri: `${OAUTH_ISSUER_INTERNAL}/.well-known/jwks`,
+    })
+    console.info('Using internal token endpoint:', issuerMetadata.token_endpoint)
+
     client = new issuerMetadata.Client({
       client_id: OAUTH_CLIENT_ID,
       client_secret: OAUTH_CLIENT_SECRET,
