@@ -63,6 +63,7 @@ export class Api extends Construct {
       image: "ghcr.io/datadog/stickerlandia/user-management-service",
       imageTag: props.sharedProps.version,
       assetPath: path.resolve(__dirname, "../../.."),
+      dockerfile: "src/Stickerlandia.UserManagement.Api/Dockerfile",
       ddApiKey: props.sharedProps.datadog.apiKeyParameter,
       port: 8080,
       environmentVariables: {
@@ -80,7 +81,8 @@ export class Api extends Construct {
         DD_API_KEY: Secret.fromSsmParameter(
           props.sharedProps.datadog.apiKeyParameter
         ),
-        ConnectionStrings__database: props.serviceProps.databaseCredentials.getConnectionStringEcsSecret()!,
+        ConnectionStrings__database:
+          props.serviceProps.databaseCredentials.getConnectionStringEcsSecret()!,
         ...props.serviceProps.messagingConfiguration.asSecrets(),
       },
       path: "/api/users/{proxy+}",

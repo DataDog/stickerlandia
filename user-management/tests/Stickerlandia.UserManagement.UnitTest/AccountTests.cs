@@ -4,7 +4,10 @@
  * Copyright 2025-Present Datadog, Inc.
  */
 
+using System.Diagnostics.Metrics;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.Outbox;
 using Stickerlandia.UserManagement.Core.RegisterUser;
@@ -23,7 +26,7 @@ public class AccountTests
         PostgresUserAccount? capturedAccount = null;
         DomainEvent? storedEvent = null;
 
-        var userManager = A.Fake<UserManager<PostgresUserAccount>>();
+        using var userManager = CreateFakeUserManager();
         A.CallTo(() => userManager.FindByEmailAsync(A<string>.Ignored))
             .Returns(Task.FromResult<PostgresUserAccount?>(null));
         A.CallTo(() => userManager.CreateAsync(A<PostgresUserAccount>.Ignored, A<string>.Ignored))
@@ -58,7 +61,7 @@ public class AccountTests
         var userAccountUnderTest = UserAccount.From(new AccountId(testAccountId), testEmailAddress,
             "John", "Doe", 1, DateTime.UtcNow, AccountTier.Std, AccountType.User);
 
-        var userManager = A.Fake<UserManager<PostgresUserAccount>>();
+        using var userManager = CreateFakeUserManager();
         A.CallTo(() => userManager.FindByEmailAsync(A<string>.Ignored))
             .Returns(Task.FromResult<PostgresUserAccount?>(null));
         A.CallTo(() => userManager.UpdateAsync(A<PostgresUserAccount>.Ignored))
@@ -85,7 +88,7 @@ public class AccountTests
         var testEmailAddress = "test@test.com";
         var testPassword = "Password!234";
 
-        var userManager = A.Fake<UserManager<PostgresUserAccount>>();
+        using var userManager = CreateFakeUserManager();
         A.CallTo(() => userManager.FindByEmailAsync(A<string>.Ignored))
             .Returns(Task.FromResult<PostgresUserAccount?>(new PostgresUserAccount()));
 
@@ -95,5 +98,31 @@ public class AccountTests
 
         await Assert.ThrowsAsync<UserExistsException>(async () => await registerCommandHandler.Handle(
             new RegisterUserCommand { EmailAddress = testEmailAddress, Password = testPassword }, AccountType.User));
+    }
+    
+    private static UserManager<PostgresUserAccount> CreateFakeUserManager()
+    {
+        var userManager = A.Fake<UserManager<PostgresUserAccount>>(options =>
+            options.WithArgumentsForConstructor(() => new UserManager<PostgresUserAccount>(
+                A.Fake<IUserStore<PostgresUserAccount>>(),
+                A.Fake<IOptions<IdentityOptions>>(),
+                A.Fake<IPasswordHasher<PostgresUserAccount>>(),
+                new List<IUserValidator<PostgresUserAccount>>(),
+                new List<IPasswordValidator<PostgresUserAccount>>(),
+                A.Fake<ILookupNormalizer>(),
+                A.Fake<IdentityErrorDescriber>(),
+                CreateFakeServiceProvider(),
+                A.Fake<ILogger<UserManager<PostgresUserAccount>>>()
+            )));
+
+        return userManager;
+    }
+    
+    private static IServiceProvider CreateFakeServiceProvider()
+    {
+        var serviceProvider = A.Fake<IServiceProvider>();
+        A.CallTo(() => serviceProvider.GetService(typeof(IMeterFactory)))
+            .Returns(null);
+        return serviceProvider;
     }
 }

@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using OpenIddict.Validation.AspNetCore;
 using Saunter;
@@ -22,6 +23,12 @@ using Stickerlandia.UserManagement.ServiceDefaults;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
+
+if (EF.IsDesignTime)
+{
+    await builder.Build().RunAsync();
+    return;
+}
 
 var logger = Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()

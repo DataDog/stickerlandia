@@ -18,10 +18,7 @@ import { Cluster, Secret } from "aws-cdk-lib/aws-ecs";
 import * as path from "path";
 import { BackgroundWorkers } from "./background-workers";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
-import {
-  AWSMessagingProps,
-  ServiceProps,
-} from "./service-props";
+import { AWSMessagingProps, ServiceProps } from "./service-props";
 
 export class UserServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -80,8 +77,8 @@ export class UserServiceStack extends cdk.Stack {
       image: "ghcr.io/datadog/stickerlandia/user-management-migration",
       imageTag: imageTag,
       assetPath: path.join(__dirname, "../../../"),
-      entryPoint: ["dotnet"],
-      command: ["migrations/Stickerlandia.UserManagement.MigrationService.dll"],
+      dockerfile:
+        "src/Stickerlandia.UserManagement.MigrationService/Dockerfile",
       environmentVariables: {
         DEPLOYMENT_HOST_URL: `https://${sharedResources.cloudfrontDistribution.distributionDomainName}`,
         DRIVING: "ASPNET",
@@ -89,7 +86,8 @@ export class UserServiceStack extends cdk.Stack {
         DISABLE_SSL: "true",
       },
       secrets: {
-        "ConnectionStrings__database": dbCredentials.getConnectionStringEcsSecret()!,
+        ConnectionStrings__database:
+          dbCredentials.getConnectionStringEcsSecret()!,
       },
       // Use the same security group as the API service for consistent network access
       securityGroupId: sharedResources.vpcLinkSecurityGroupId,
@@ -112,7 +110,10 @@ export class UserServiceStack extends cdk.Stack {
         sharedResources
       ),
       // Services depend on both DB credentials and migration completing
-      serviceDependencies: [dbCredentials.credentialResource, migrationTask.resource],
+      serviceDependencies: [
+        dbCredentials.credentialResource,
+        migrationTask.resource,
+      ],
     };
 
     const api = new Api(this, "Api", {

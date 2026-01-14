@@ -1,4 +1,4 @@
-FROM --platform=${BUILDPLATFORM} mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM --platform=${BUILDPLATFORM} mcr.microsoft.com/dotnet/sdk:10.0 AS build
 
 ARG TARGETPLATFORM
 
@@ -7,7 +7,7 @@ WORKDIR /App
 COPY ./scripts ./scripts
 
 # Download the latest version of the tracer but don't install yet
-RUN . scripts/target.sh && curl -Lo /tmp/datadog-dotnet-apm.deb https://github.com/DataDog/dd-trace-dotnet/releases/download/v3.19.0/datadog-dotnet-apm_3.19.0_${TRACER_ARCHITECTURE}.deb
+RUN . scripts/target.sh && curl -Lo /tmp/datadog-dotnet-apm.deb https://github.com/DataDog/dd-trace-dotnet/releases/download/v3.34.0/datadog-dotnet-apm_3.34.0_${TRACER_ARCHITECTURE}.deb
 
 # Deps
 COPY src/Stickerlandia.UserManagement.Api/Stickerlandia.UserManagement.Api.csproj src/Stickerlandia.UserManagement.Api/
@@ -19,7 +19,7 @@ COPY . ./
 # Publish the application
 RUN dotnet publish src/Stickerlandia.UserManagement.Api/Stickerlandia.UserManagement.Api.csproj -o out -c Release
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 
 # Copy the tracer from build target
 COPY --from=build /tmp/datadog-dotnet-apm.deb /tmp/datadog-dotnet-apm.deb

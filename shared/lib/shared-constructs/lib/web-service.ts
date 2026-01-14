@@ -34,7 +34,8 @@ export interface WebServiceProps {
   readonly cluster: ecs.ICluster;
   readonly image: string;
   readonly imageTag: string;
-  readonly assetPath?: string; // Path to Dockerfile directory for local builds (when imageTag === "LOCAL")
+  readonly assetPath?: string; // Path to build directory for local builds (when imageTag === "LOCAL")
+  readonly dockerfile?: string; // Path to Dockerfile for local builds
   readonly ddApiKey: ssm.IStringParameter;
   readonly port: number;
   readonly environmentVariables: { [key: string]: string };
@@ -147,6 +148,7 @@ export class WebService extends Construct {
       ? ecs.ContainerImage.fromAsset(props.assetPath!, {
           exclude: ["infra", "cdk.out", "node_modules", ".git"],
           platform: Platform.LINUX_AMD64,
+          file: props.dockerfile,
         })
       : ecs.ContainerImage.fromRegistry(`${props.image}:${props.imageTag}`);
 

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <Version>1.2.0</Version>
@@ -14,15 +14,19 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="OpenIddict.Validation.AspNetCore" Version="6.3.0" />
-        <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.16" />
-        <PackageReference Include="OpenIddict.AspNetCore" Version="6.3.0" />
-        <PackageReference Include="OpenIddict.Server.AspNetCore" Version="6.3.0" />
-        <PackageReference Include="OpenIddict.EntityFrameworkCore" Version="6.3.0" />
-        <PackageReference Include="System.Linq.Async" Version="6.0.1" />
-        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Cosmos" Version="8.0.11" />
-        <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.301" />
+        <PackageReference Include="OpenIddict.Validation.AspNetCore" Version="7.2.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.1" />
+        <PackageReference Include="OpenIddict.AspNetCore" Version="7.2.0" />
+        <PackageReference Include="OpenIddict.Server.AspNetCore" Version="7.2.0" />
+        <PackageReference Include="OpenIddict.EntityFrameworkCore" Version="7.2.0" />
+        <PackageReference Include="System.Linq.Async" Version="7.0.0" />
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Cosmos" Version="10.0.1" />
+        <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.3.19" />
+        <PackageReference Update="Microsoft.CodeAnalysis.NetAnalyzers" Version="10.0.101">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
     </ItemGroup>
 
     <ItemGroup>

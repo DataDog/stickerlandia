@@ -20,10 +20,7 @@ java = "temurin-21"
 maven = "3.9"
 
 # Used by user-management
-dotnet = "8"
-
-[env]
-_.file = { path = ".env", optional = true }
+dotnet = "10"
 
 ENV = "dev"
 COMMIT_SHA = "LOCAL"
@@ -35,6 +32,9 @@ DD_RUM_CLIENT_TOKEN = "PLACEHOLDER_RUN_MISE_ENV_SETUP"
 # =============================================================================
 # env: Environment setup
 # =============================================================================
+
+[env]
+_.file = { path = ".env", optional = true }
 
 [tasks."env:setup"]
 description = "Create .env file with required configuration"

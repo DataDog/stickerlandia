@@ -12,17 +12,18 @@
 #pragma warning disable CA1812
 using System.Net;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Stickerlandia.UserManagement.Api.Configurations;
+
 /// <summary>
 /// Operation filter to add authorization responses and security requirements to Swagger operations.
 /// </summary>
 internal sealed class AuthorizeOperationFilter
     : IOperationFilter
 {
-    internal static readonly string[] item = new[] { "OAuth2" };
+    internal static readonly List<string> item = new(1){"OAuth2"};
 
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
     {
@@ -34,19 +35,18 @@ internal sealed class AuthorizeOperationFilter
 
         if (authAttributes.Count > 0)
         {
-            operation.Responses.Add(StatusCodes.Status401Unauthorized.ToString(), new OpenApiResponse { Description = nameof(HttpStatusCode.Unauthorized) });
-            operation.Responses.Add(StatusCodes.Status403Forbidden.ToString(), new OpenApiResponse { Description = nameof(HttpStatusCode.Forbidden) });
+            operation.Responses!.Add(StatusCodes.Status401Unauthorized.ToString(), new OpenApiResponse { Description = nameof(HttpStatusCode.Unauthorized) });
+            operation.Responses!.Add(StatusCodes.Status403Forbidden.ToString(), new OpenApiResponse { Description = nameof(HttpStatusCode.Forbidden) });
         }
         
         if (authAttributes.Count > 0)
         {
             operation.Security = new List<OpenApiSecurityRequirement>();
 
-            var oauth2SecurityScheme = new OpenApiSecurityScheme()
+            var oauth2SecurityScheme = new OpenApiSecuritySchemeReference("oauth2")
             {
-                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "oauth2" },
+                Reference = new OpenApiReferenceWithDescription() { Type = ReferenceType.SecurityScheme, Id = "oauth2" },
             };
-
 
             operation.Security.Add(new OpenApiSecurityRequirement()
             {

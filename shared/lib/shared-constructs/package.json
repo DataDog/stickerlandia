@@ -12,16 +12,16 @@
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "24.9.2",
-    "aws-cdk": "2.1031.1",
+    "aws-cdk": "2.1100.3",
     "jest": "^30.2.0",
-    "ts-jest": "^29.4.5",
+    "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
     "typescript": "~5.9.3"
   },
   "dependencies": {
     "@aws-cdk/aws-lambda-dotnet": "^0.0.6",
-    "aws-cdk-lib": "2.221.1",
-    "constructs": "^10.0.0",
-    "datadog-cdk-constructs-v2": "^3.2.2"
+    "aws-cdk-lib": "2.234.1",
+    "constructs": "^10.4.4",
+    "datadog-cdk-constructs-v2": "^3.6.0"
   }
 }

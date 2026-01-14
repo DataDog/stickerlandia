@@ -53,7 +53,7 @@ export class InstrumentedLambdaFunction extends Construct {
     const region = Stack.of(this).region;
 
     this.function = new DotNetFunction(this, props.functionName, {
-      runtime: Runtime.DOTNET_8,
+      runtime: Runtime.DOTNET_10,
       functionName: `${props.sharedProps.serviceName}-${props.functionName}-${props.sharedProps.environment}`,
       projectDir: props.buildDef,
       handler: props.handler,
