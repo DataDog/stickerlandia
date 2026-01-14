@@ -27,6 +27,16 @@ jobs:
         curl https://mise.run | sh
         echo "$HOME/.local/bin" >> $GITHUB_PATH
 
+    - name: Create CI .env file
+      run: |
+        echo "ENV=ci" > .env
+        echo "COMMIT_SHA=latest" >> .env
+        echo "DEPLOYMENT_HOST_URL=http://localhost:8080" >> .env
+        echo "DD_API_KEY=dummy-api-key" >> .env
+        echo "DD_SITE=datadoghq.com" >> .env
+        echo "DD_RUM_APPLICATION_ID=dummy-rum-app-id" >> .env
+        echo "DD_RUM_CLIENT_TOKEN=dummy-rum-client-token" >> .env
+
     - name: Start services (CI mode - no monitoring)
       run: mise run compose:deploy:ci
 

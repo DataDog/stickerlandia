@@ -184,4 +184,4 @@ jobs:
         run: |
           cd sticker-award/infra/aws
           npm i
-          cdk deploy
+          cdk deploy --require-approval never
