@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>Library</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+        <AWSProjectType>Lambda</AWSProjectType>
+        <!-- This property makes the build directory similar to a publish directory and helps the AWS .NET Lambda Mock Test Tool find project dependencies. -->
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+        <!-- Generate ready to run images during publishing to improvement cold starts. -->
+        <PublishReadyToRun>true</PublishReadyToRun>
+        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+        <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="Amazon.Lambda.CloudWatchEvents" Version="4.4.0" />
+        <PackageReference Include="Amazon.Lambda.Core" Version="2.8.0" />
+        <PackageReference Include="Amazon.Lambda.KafkaEvents" Version="2.1.0" />
+        <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.4" />
+        <PackageReference Include="Amazon.Lambda.Annotations" Version="1.8.0" />
+        <PackageReference Include="Amazon.Lambda.SQSEvents" Version="2.2.0" />
+        <PackageReference Include="Serilog" Version="4.3.0" />
+        <PackageReference Include="Serilog.Formatting.Compact" Version="3.0.0" />
+        <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
+    </ItemGroup>
+    <!-- 
+      The FrameworkReference is used to reduce the deployment bundle size by not having to include 
+      dependencies like Microsoft.Extensions.DependencyInjection. The Microsoft.AspNetCore.App
+      which is available in the Managed .NET Lambda runtime already includes those assemblies.
+    -->
+    <ItemGroup>
+      <ProjectReference Include="..\Stickerlandia.PrintService.Core\Stickerlandia.PrintService.Core.csproj" />
+      <ProjectReference Include="..\Stickerlandia.PrintService.ServiceDefaults\Stickerlandia.PrintService.ServiceDefaults.csproj" />
+    </ItemGroup>
+</Project>

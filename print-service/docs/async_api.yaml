@@ -1,0 +1,75 @@
+# Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+# This product includes software developed at Datadog (https://www.datadoghq.com/).
+# Copyright 2025-Present Datadog, Inc.
+
+asyncapi: 3.0.0
+info:
+  title: Users Service
+  version: 1.0.0
+defaultContentType: application/json
+channels:
+  users.userRegistered.v1:
+    address: users.userRegistered.v1
+    messages:
+      PublishUserRegisteredEventV1.message:
+        $ref: '#/components/messages/userRegisteredEvent'
+  users.stickerClaimed.v1:
+    address: users.stickerClaimed.v1
+    messages:
+      ProcessMessageAsync.message:
+        $ref: '#/components/messages/stickerClaimedEventV1'
+operations:
+  PublishUserRegisteredEventV1:
+    action: receive
+    channel:
+      $ref: '#/channels/users.userRegistered.v1'
+    summary: ''
+    messages:
+      - $ref: >-
+          #/channels/users.userRegistered.v1/messages/PublishUserRegisteredEventV1.message
+  ProcessMessageAsync:
+    action: send
+    channel:
+      $ref: '#/channels/users.stickerClaimed.v1'
+    summary: ''
+    messages:
+      - $ref: >-
+          #/channels/users.stickerClaimed.v1/messages/ProcessMessageAsync.message
+components:
+  schemas:
+    userRegisteredEvent:
+      id: userRegisteredEvent
+      allOf:
+        - $ref: '#/components/schemas/domainEvent'
+        - type: object
+          additionalProperties: false
+          properties:
+            eventName:
+              type: string
+            eventVersion:
+              type: string
+            accountId:
+              type: string
+    domainEvent:
+      id: domainEvent
+      type: object
+      x-abstract: true
+      additionalProperties: false
+    stickerClaimedEventV1:
+      id: stickerClaimedEventV1
+      type: object
+      additionalProperties: false
+      properties:
+        accountId:
+          type: string
+        stickerId:
+          type: string
+  messages:
+    userRegisteredEvent:
+      payload:
+        $ref: '#/components/schemas/userRegisteredEvent'
+      name: userRegisteredEvent
+    stickerClaimedEventV1:
+      payload:
+        $ref: '#/components/schemas/stickerClaimedEventV1'
+      name: stickerClaimedEventV1
