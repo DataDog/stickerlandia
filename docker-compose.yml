@@ -300,7 +300,7 @@ services:
       KAFKA__SCHEMAREGISTRY: "http://redpanda:8082"
       KAFKA__GROUPID: "stickerlandia-user-management"
       OPENIDDICT_ISSUER: ${DEPLOYMENT_HOST_URL}
-      # DEPLOYMENT_HOST_URL: ${DEPLOYMENT_HOST_URL}
+      DEPLOYMENT_HOST_URL: ${DEPLOYMENT_HOST_URL}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/api/users/v1/health"]
       interval: 1s
