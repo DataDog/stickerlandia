@@ -58,7 +58,7 @@ export class Persistence extends Construct {
       }),
       vpc: props.vpc,
       credentials: cdk.aws_rds.Credentials.fromSecret(secret),
-      serverlessV2MinCapacity: 0,
+      serverlessV2MinCapacity: 1,
       serverlessV2MaxCapacity: 1,
       securityGroups: [databaseSecurityGroup],
       removalPolicy: removalPolicy,
