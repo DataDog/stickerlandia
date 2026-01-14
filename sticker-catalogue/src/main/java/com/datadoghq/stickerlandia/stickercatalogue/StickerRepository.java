@@ -26,6 +26,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.hibernate.exception.ConstraintViolationException;
 
+import com.datadoghq.stickerlandia.stickercatalogue.messaging.StickerEventPublisher;
+
 /** Repository class for managing sticker operations. */
 @ApplicationScoped
 public class StickerRepository {

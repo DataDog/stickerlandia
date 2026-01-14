@@ -48,6 +48,8 @@ services:
       - QUARKUS_S3_AWS_CREDENTIALS_STATIC_PROVIDER_SECRET_ACCESS_KEY=minioadmin
       - QUARKUS_S3_PATH_STYLE_ACCESS=true
       - STICKER_IMAGES_BUCKET=sticker-images
+      # Messaging configuration - QUARKUS_PROFILE=dev enables SmallRye connectors
+      - MESSAGING_PROVIDER=kafka
       # Enable live reload and debugging
       - QUARKUS_LIVE_RELOAD_INSTRUMENTATION=true
       - QUARKUS_DEBUG_ENABLED=true

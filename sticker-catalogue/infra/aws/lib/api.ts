@@ -4,6 +4,8 @@
  * Copyright 2025-Present Datadog, Inc.
  */
 
+import * as path from "path";
+import { Duration } from "aws-cdk-lib";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
 import { Cluster, Secret } from "aws-cdk-lib/aws-ecs";
@@ -64,6 +66,8 @@ export class Api extends Construct {
       cluster: props.cluster,
       image: "ghcr.io/datadog/stickerlandia/sticker-catalogue-service",
       imageTag: props.sharedProps.version,
+      assetPath: path.resolve(__dirname, "../../.."),
+      dockerfile: "src/main/docker/Dockerfile.jvmlocal",
       ddApiKey: props.sharedProps.datadog.apiKeyParameter,
       port: 8080,
       environmentVariables: {
@@ -78,10 +82,18 @@ export class Api extends Construct {
       path: "/api/stickers/v1/{proxy+}",
       additionalPathMappings: [],
       healthCheckPath: "/api/stickers/v1",
+      healthCheckCommand: {
+        command: ["CMD", "curl", "-f", "http://localhost:8080/api/stickers/v1/"],
+        interval: Duration.seconds(30),
+        timeout: Duration.seconds(5),
+        retries: 3,
+        startPeriod: Duration.seconds(60),
+      },
       serviceDiscoveryNamespace: props.serviceDiscoveryNamespace,
       serviceDiscoveryName: props.serviceDiscoveryName,
       deployInPrivateSubnet: props.deployInPrivateSubnet,
       serviceDependencies: props.serviceProps.serviceDependencies,
+      memoryLimitMiB: 1024,
     });
 
     props.stickerImagesBucket.grantReadWrite(webService.taskRole);

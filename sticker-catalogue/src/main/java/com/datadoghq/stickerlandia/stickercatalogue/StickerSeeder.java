@@ -20,6 +20,8 @@ import java.io.InputStream;
 import java.util.List;
 import org.jboss.logging.Logger;
 
+import com.datadoghq.stickerlandia.stickercatalogue.messaging.StickerEventPublisher;
+
 @ApplicationScoped
 public class StickerSeeder {
 

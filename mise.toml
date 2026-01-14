@@ -154,6 +154,7 @@ echo "=== Deploying Stickerlandia to AWS: $ENV (COMMIT_SHA=$COMMIT_SHA) ==="
 mise run //shared:aws:deploy
 mise run //user-management:aws:deploy
 mise run //sticker-award:aws:deploy
+mise run //sticker-catalogue:aws:deploy
 mise run //web-backend:aws:deploy
 mise run //web-frontend:aws:deploy
 echo "=== Deployment complete! ==="
@@ -168,6 +169,7 @@ echo "=== Deploying Stickerlandia to AWS: $ENV (COMMIT_SHA=$COMMIT_SHA) ==="
 mise run //shared:aws:deploy
 mise run //user-management:aws:deploy
 mise run //sticker-award:aws:deploy
+mise run //sticker-catalogue:aws:deploy
 mise run //web-backend:aws:deploy
 mise run //web-frontend:aws:deploy
 echo "=== Deployment complete! ==="

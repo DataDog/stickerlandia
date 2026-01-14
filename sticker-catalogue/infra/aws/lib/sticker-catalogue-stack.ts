@@ -16,7 +16,7 @@ import { Cluster } from "aws-cdk-lib/aws-ecs";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
 import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
 import { Bucket } from "aws-cdk-lib/aws-s3";
-import { KafkaMessagingProps, ServiceProps } from "./service-props";
+import { AWSMessagingProps, ServiceProps } from "./service-props";
 
 export enum MessagingType {
   AWS,
@@ -57,8 +57,7 @@ export class StickerCatalogueServiceStack extends cdk.Stack {
       cluster,
       ddApiKey,
       ddApiKeyParam,
-      ddSite,
-      false
+      ddSite
     );
 
     // Create formatted database credentials from the shared RDS secret
@@ -72,12 +71,11 @@ export class StickerCatalogueServiceStack extends cdk.Stack {
     const serviceProps: ServiceProps = {
       cloudfrontDistribution: sharedResources.cloudfrontDistribution,
       databaseCredentials: dbCredentials,
-      messagingProps: new KafkaMessagingProps(this, "MessagingProps", sharedProps),
+      messagingProps: new AWSMessagingProps(this, "MessagingProps", sharedResources),
       serviceDependencies: [dbCredentials.credentialResource],
     };
 
     const stickerImageBucket = new Bucket(this, "StickerImageBucket", {
-      bucketName: `sticker-images-${environment}-${cdk.Stack.of(this).account}`,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
     });

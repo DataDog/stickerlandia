@@ -256,11 +256,20 @@ services:
       QUARKUS_S3_AWS_CREDENTIALS_STATIC_PROVIDER_SECRET_ACCESS_KEY: minioadmin
       QUARKUS_S3_PATH_STYLE_ACCESS: "true"
       STICKER_IMAGES_BUCKET: sticker-images
+      # Messaging configuration - use Kafka with SmallRye
+      MESSAGING_PROVIDER: kafka
+      MP_MESSAGING_OUTGOING_STICKERS_ADDED_ENABLED: "true"
+      MP_MESSAGING_OUTGOING_STICKERS_ADDED_CONNECTOR: smallrye-kafka
+      MP_MESSAGING_OUTGOING_STICKERS_UPDATED_ENABLED: "true"
+      MP_MESSAGING_OUTGOING_STICKERS_UPDATED_CONNECTOR: smallrye-kafka
+      MP_MESSAGING_OUTGOING_STICKERS_DELETED_ENABLED: "true"
+      MP_MESSAGING_OUTGOING_STICKERS_DELETED_CONNECTOR: smallrye-kafka
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 1s
-      timeout: 15s
-      retries: 60
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/stickers/v1/"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.sticker-catalogue.rule=PathPrefix(`/api/stickers`)"
