@@ -12,6 +12,15 @@ namespace Stickerlandia.PrintService.IntegrationTest.ViewModels;
 
 internal sealed record RegisterPrinterResponse
 {
-    [JsonPropertyName("success")]
-    public bool Success { get; set; }
+    [JsonPropertyName("printerId")]
+    public string PrinterId { get; set; } = string.Empty;
+
+    [JsonPropertyName("EventName")]
+    public string EventName { get; set; } = string.Empty;
+
+    [JsonPropertyName("printerName")]
+    public string PrinterName { get; set; } = string.Empty;
+
+    [JsonPropertyName("Key")]
+    public string Key { get; set; } = string.Empty;
 }

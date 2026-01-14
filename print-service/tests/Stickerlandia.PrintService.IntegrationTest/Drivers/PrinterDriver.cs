@@ -101,7 +101,8 @@ internal sealed class PrinterDriver : IDisposable
 
         if (response.IsSuccessStatusCode)
         {
-            return new RegisterPrinterResponse { Success = true };
+            var apiResponse = JsonSerializer.Deserialize<ApiResponse<RegisterPrinterResponse>>(responseBody);
+            return apiResponse?.Data;
         }
 
         _testOutputHelper.WriteLine($"Register printer failed: {responseBody}");
@@ -174,6 +175,60 @@ internal sealed class PrinterDriver : IDisposable
         var response = await _httpClient.SendAsync(request);
 
         _testOutputHelper.WriteLine($"Submit print job without auth response: {response.StatusCode}");
+        return response.StatusCode;
+    }
+
+    public async Task<(HttpStatusCode StatusCode, PollPrintJobsResponse? Response)> PollPrintJobs(
+        string apiKey,
+        int maxJobs = 10)
+    {
+        _testOutputHelper.WriteLine($"Polling for print jobs with API key");
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"api/print/v1/printer/jobs?maxJobs={maxJobs}");
+        request.Headers.Add("X-Printer-Key", apiKey);
+
+        var response = await _httpClient.SendAsync(request);
+        var responseBody = await response.Content.ReadAsStringAsync();
+
+        _testOutputHelper.WriteLine($"Poll print jobs response: {response.StatusCode}");
+
+        if (response.StatusCode == HttpStatusCode.NoContent)
+        {
+            return (response.StatusCode, new PollPrintJobsResponse { Jobs = [] });
+        }
+
+        if (response.IsSuccessStatusCode)
+        {
+            var apiResponse = JsonSerializer.Deserialize<ApiResponse<PollPrintJobsResponse>>(responseBody);
+            return (response.StatusCode, apiResponse?.Data);
+        }
+
+        _testOutputHelper.WriteLine($"Poll print jobs failed: {responseBody}");
+        return (response.StatusCode, null);
+    }
+
+    public async Task<HttpStatusCode> PollPrintJobsWithoutAuth()
+    {
+        _testOutputHelper.WriteLine("Polling for print jobs without API key");
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, "api/print/v1/printer/jobs");
+
+        var response = await _httpClient.SendAsync(request);
+
+        _testOutputHelper.WriteLine($"Poll print jobs without auth response: {response.StatusCode}");
+        return response.StatusCode;
+    }
+
+    public async Task<HttpStatusCode> PollPrintJobsWithInvalidApiKey()
+    {
+        _testOutputHelper.WriteLine("Polling for print jobs with invalid API key");
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, "api/print/v1/printer/jobs");
+        request.Headers.Add("X-Printer-Key", "invalid-api-key-12345");
+
+        var response = await _httpClient.SendAsync(request);
+
+        _testOutputHelper.WriteLine($"Poll print jobs with invalid key response: {response.StatusCode}");
         return response.StatusCode;
     }
 

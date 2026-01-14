@@ -12,7 +12,19 @@ public interface IPrinterRepository
 
     Task<Printer?> GetPrinterAsync(string eventName, string printerName);
 
+    Task<Printer?> GetPrinterByKeyAsync(string apiKey);
+
     Task<List<Printer>> GetPrintersForEventAsync(string eventName);
 
     Task<bool> PrinterExistsAsync(string eventName, string printerName);
+
+    /// <summary>
+    /// Updates the heartbeat timestamp for a printer.
+    /// </summary>
+    Task UpdateHeartbeatAsync(string printerId);
+
+    /// <summary>
+    /// Updates the printer after changes have been made.
+    /// </summary>
+    Task UpdateAsync(Printer printer);
 }

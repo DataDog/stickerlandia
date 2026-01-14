@@ -50,6 +50,7 @@ public static class ServiceExtensions
         services.AddSingleton(sp => new AmazonSimpleNotificationServiceClient());
         services.AddSingleton<IPrinterRepository, DynamoDbPrinterRepository>();
         services.AddSingleton<IPrintJobRepository, DynamoDbPrintJobRepository>();
+        services.AddSingleton<IPrinterKeyValidator, DynamoDbPrinterKeyValidator>();
         services.AddSingleton<IOutbox, AwsOutboxImplementation>();
 
         services.AddSingleton<IPrintServiceEventPublisher, EventBridgeEventPublisher>();

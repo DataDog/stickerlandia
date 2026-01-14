@@ -9,30 +9,13 @@ using System.Text.Json.Serialization;
 
 namespace Stickerlandia.PrintService.Core.PrintJobs;
 
-public record PrintJobDTO
+/// <summary>
+/// Data transfer object for print jobs returned to printer clients.
+/// </summary>
+public record PrintJobDto
 {
-    public PrintJobDTO() { }
-
-    public PrintJobDTO(PrintJob printJob)
-    {
-        ArgumentNullException.ThrowIfNull(printJob);
-
-        PrintJobId = printJob.Id.Value;
-        PrinterId = printJob.PrinterId.Value;
-        UserId = printJob.UserId;
-        StickerId = printJob.StickerId;
-        StickerUrl = printJob.StickerUrl;
-        Status = printJob.Status.ToString();
-        CreatedAt = printJob.CreatedAt;
-        ProcessedAt = printJob.ProcessedAt;
-        CompletedAt = printJob.CompletedAt;
-    }
-
     [JsonPropertyName("printJobId")]
     public string PrintJobId { get; init; } = string.Empty;
-
-    [JsonPropertyName("printerId")]
-    public string PrinterId { get; init; } = string.Empty;
 
     [JsonPropertyName("userId")]
     public string UserId { get; init; } = string.Empty;
@@ -43,15 +26,23 @@ public record PrintJobDTO
     [JsonPropertyName("stickerUrl")]
     public string StickerUrl { get; init; } = string.Empty;
 
-    [JsonPropertyName("status")]
-    public string Status { get; init; } = string.Empty;
-
     [JsonPropertyName("createdAt")]
     public DateTimeOffset CreatedAt { get; init; }
 
-    [JsonPropertyName("processedAt")]
-    public DateTimeOffset? ProcessedAt { get; init; }
+    /// <summary>
+    /// Creates a DTO from a PrintJob entity.
+    /// </summary>
+    public static PrintJobDto FromPrintJob(PrintJob printJob)
+    {
+        ArgumentNullException.ThrowIfNull(printJob);
 
-    [JsonPropertyName("completedAt")]
-    public DateTimeOffset? CompletedAt { get; init; }
+        return new PrintJobDto
+        {
+            PrintJobId = printJob.Id.Value,
+            UserId = printJob.UserId,
+            StickerId = printJob.StickerId,
+            StickerUrl = printJob.StickerUrl,
+            CreatedAt = printJob.CreatedAt
+        };
+    }
 }

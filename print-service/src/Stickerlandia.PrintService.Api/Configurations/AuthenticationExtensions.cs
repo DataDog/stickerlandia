@@ -4,6 +4,7 @@
  * Copyright 2025-Present Datadog, Inc.
  */
 
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
@@ -28,7 +29,10 @@ internal static class AuthenticationExtensions
                 {
                     ConfigureSymmetricKey(options, configuration);
                 }
-            });
+            })
+            .AddScheme<AuthenticationSchemeOptions, PrinterKeyAuthenticationHandler>(
+                PrinterKeyAuthenticationHandler.SchemeName,
+                _ => { });
 
         services.AddAuthorization();
         return services;

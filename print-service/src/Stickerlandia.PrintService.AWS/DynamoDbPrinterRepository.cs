@@ -2,6 +2,7 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2026 Datadog, Inc.
 
+using System.Globalization;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using Microsoft.Extensions.Options;
@@ -136,12 +137,131 @@ public class DynamoDbPrinterRepository(
         return MapToPrinter(response.Item);
     }
 
+    public async Task<Printer?> GetPrinterByKeyAsync(string apiKey)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(apiKey);
+
+        // Query GSI1 where GSI1PK = apiKey (the printer's API key)
+        var request = new QueryRequest
+        {
+            TableName = _tableName,
+            IndexName = "GSI1",
+            KeyConditionExpression = "GSI1PK = :key",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                [":key"] = new() { S = apiKey }
+            },
+            Limit = 1
+        };
+
+        var response = await dynamoDbClient.QueryAsync(request).ConfigureAwait(false);
+
+        if (response.Items.Count == 0)
+        {
+            return null;
+        }
+
+        return MapToPrinter(response.Items[0]);
+    }
+
+    public async Task UpdateHeartbeatAsync(string printerId)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(printerId);
+
+        // We need to find the event name from the printerId first
+        // The printerId format is "EVENTNAME-PRINTERNAME"
+        var request = new ScanRequest
+        {
+            TableName = _tableName,
+            FilterExpression = "SK = :printerId",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                [":printerId"] = new() { S = printerId }
+            }
+        };
+
+        var response = await dynamoDbClient.ScanAsync(request).ConfigureAwait(false);
+
+        if (response.Items.Count == 0)
+        {
+            return;
+        }
+
+        var item = response.Items[0];
+        var eventName = item[PartitionKey].S;
+
+        var updateRequest = new UpdateItemRequest
+        {
+            TableName = _tableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                [PartitionKey] = new() { S = eventName },
+                [SortKey] = new() { S = printerId }
+            },
+            UpdateExpression = "SET LastHeartbeat = :heartbeat",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                [":heartbeat"] = new() { S = DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture) }
+            }
+        };
+
+        await dynamoDbClient.UpdateItemAsync(updateRequest).ConfigureAwait(false);
+    }
+
+    public async Task UpdateAsync(Printer printer)
+    {
+        ArgumentNullException.ThrowIfNull(printer);
+        ArgumentNullException.ThrowIfNull(printer.Id);
+
+        var item = new Dictionary<string, AttributeValue>
+        {
+            [PartitionKey] = new() { S = printer.EventName },
+            [SortKey] = new() { S = printer.Id.Value },
+            [Gsi1PartitionKey] = new() { S = printer.Key },
+            ["EventName"] = new() { S = printer.EventName },
+            ["PrinterName"] = new() { S = printer.PrinterName },
+            ["Key"] = new() { S = printer.Key }
+        };
+
+        if (printer.LastHeartbeat.HasValue)
+        {
+            item["LastHeartbeat"] = new() { S = printer.LastHeartbeat.Value.ToString("O", CultureInfo.InvariantCulture) };
+        }
+
+        if (printer.LastJobProcessed.HasValue)
+        {
+            item["LastJobProcessed"] = new() { S = printer.LastJobProcessed.Value.ToString("O", CultureInfo.InvariantCulture) };
+        }
+
+        var request = new PutItemRequest
+        {
+            TableName = _tableName,
+            Item = item
+        };
+
+        await dynamoDbClient.PutItemAsync(request).ConfigureAwait(false);
+    }
+
     private static Printer MapToPrinter(Dictionary<string, AttributeValue> item)
     {
+        DateTimeOffset? lastHeartbeat = null;
+        if (item.TryGetValue("LastHeartbeat", out var lastHeartbeatValue))
+        {
+            lastHeartbeat = DateTimeOffset.Parse(lastHeartbeatValue.S, CultureInfo.InvariantCulture);
+        }
+
+        DateTimeOffset? lastJobProcessed = null;
+        if (item.TryGetValue("LastJobProcessed", out var lastJobProcessedValue))
+        {
+            lastJobProcessed = DateTimeOffset.Parse(lastJobProcessedValue.S, CultureInfo.InvariantCulture);
+        }
+
         return Printer.From(
-            new PrinterId(item[SortKey].S),
+            new PrinterId(item["SK"].S),
             item["EventName"].S,
             item["PrinterName"].S,
-            item["Key"].S);
+            item["Key"].S,
+            lastHeartbeat,
+            lastJobProcessed);
     }
 }

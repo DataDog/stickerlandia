@@ -165,6 +165,18 @@ v1ApiEndpoints.MapPost("/event/{eventName}/printer/{printerName}/jobs", SubmitPr
     .ProducesProblem(403)
     .ProducesProblem(404);
 
+// Printer client endpoints (API Key authentication)
+v1ApiEndpoints.MapGet("/printer/jobs", PollPrintJobsEndpoint.HandleAsync)
+    .RequireAuthorization(policyBuilder =>
+    {
+        policyBuilder.AddAuthenticationSchemes(Stickerlandia.PrintService.Api.Configurations.PrinterKeyAuthenticationHandler.SchemeName)
+            .RequireAuthenticatedUser();
+    })
+    .WithDescription("Poll for print jobs (printer client)")
+    .Produces<ApiResponse<PollPrintJobsResponse>>(200)
+    .Produces(204)
+    .ProducesProblem(401);
+
 try
 {
     await app.StartAsync();

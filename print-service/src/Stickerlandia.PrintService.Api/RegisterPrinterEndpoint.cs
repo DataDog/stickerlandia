@@ -19,8 +19,8 @@ internal static class RegisterPrinterEndpoint
         [FromServices] RegisterPrinterCommandHandler updateHandler,
         [FromBody] RegisterPrinterCommand request)
     {
-        await updateHandler.Handle(request);
-        
-        return Results.Ok(new ApiResponse<string>("OK"));
+        var response = await updateHandler.Handle(request);
+
+        return Results.Created($"/api/print/v1/event/{eventName}", new ApiResponse<RegisterPrinterResponse>(response));
     }
 }

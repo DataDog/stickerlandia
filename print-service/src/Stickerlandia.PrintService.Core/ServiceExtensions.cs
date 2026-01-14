@@ -23,6 +23,7 @@ public static class ServiceExtensions
         services.AddTransient<RegisterPrinterCommandHandler>();
         services.AddTransient<GetPrintersForEventQueryHandler>();
         services.AddTransient<SubmitPrintJobCommandHandler>();
+        services.AddTransient<GetPrintJobsForPrinterQueryHandler>();
 
         services.AddTransient<OutboxProcessor>();
 
