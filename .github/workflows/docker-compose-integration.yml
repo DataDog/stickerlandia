@@ -23,7 +23,9 @@ jobs:
       uses: docker/setup-buildx-action@v3
 
     - name: Install mise
-      uses: jdx/mise-action@v2
+      run: |
+        curl https://mise.run | sh
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
 
     - name: Start services (CI mode - no monitoring)
       run: mise run compose:deploy:ci
