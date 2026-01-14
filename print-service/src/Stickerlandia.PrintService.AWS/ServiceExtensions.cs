@@ -17,6 +17,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Stickerlandia.PrintService.Core;
 using Stickerlandia.PrintService.Core.Outbox;
+using Stickerlandia.PrintService.Core.PrintJobs;
 
 namespace Stickerlandia.PrintService.AWS;
 
@@ -48,6 +49,7 @@ public static class ServiceExtensions
         services.AddSingleton(sp => new AmazonEventBridgeClient());
         services.AddSingleton(sp => new AmazonSimpleNotificationServiceClient());
         services.AddSingleton<IPrinterRepository, DynamoDbPrinterRepository>();
+        services.AddSingleton<IPrintJobRepository, DynamoDbPrintJobRepository>();
         services.AddSingleton<IOutbox, AwsOutboxImplementation>();
 
         services.AddSingleton<IPrintServiceEventPublisher, EventBridgeEventPublisher>();

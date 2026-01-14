@@ -10,7 +10,9 @@ public interface IPrinterRepository
 
     Task<Printer?> GetPrinterByIdAsync(Guid printerId);
 
+    Task<Printer?> GetPrinterAsync(string eventName, string printerName);
+
     Task<List<Printer>> GetPrintersForEventAsync(string eventName);
-    
+
     Task<bool> PrinterExistsAsync(string eventName, string printerName);
 }

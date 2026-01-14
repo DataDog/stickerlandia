@@ -16,7 +16,7 @@ namespace Stickerlandia.PrintService.IntegrationTest;
 public sealed class PrinterTests(ITestOutputHelper testOutputHelper, TestSetupFixture testSetupFixture)
     : IDisposable
 {
-    private readonly PrinterDriver _driver = new(testOutputHelper, testSetupFixture.HttpClient, new CookieContainer());
+    private readonly PrinterDriver _driver = new(testOutputHelper, testSetupFixture.HttpClient, new CookieContainer(), testSetupFixture.OidcServer);
 
     [Fact]
     public async Task WhenAPrinterIsRegisteredItShouldBeRetrievableByEvent()
@@ -24,7 +24,7 @@ public sealed class PrinterTests(ITestOutputHelper testOutputHelper, TestSetupFi
         // Arrange
         var eventName = $"TestEvent-{Guid.NewGuid():N}";
         var printerName = $"TestPrinter-{Guid.NewGuid():N}";
-        var authToken = PrinterDriver.GetAdminToken();
+        var authToken = _driver.GetAdminToken();
 
         // Act
         var registerResult = await _driver.RegisterPrinter(authToken, eventName, printerName);
@@ -46,7 +46,7 @@ public sealed class PrinterTests(ITestOutputHelper testOutputHelper, TestSetupFi
         var eventName = $"TestEvent-{Guid.NewGuid():N}";
         var printerName1 = $"TestPrinter1-{Guid.NewGuid():N}";
         var printerName2 = $"TestPrinter2-{Guid.NewGuid():N}";
-        var authToken = PrinterDriver.GetAdminToken();
+        var authToken = _driver.GetAdminToken();
 
         // Act
         await _driver.RegisterPrinter(authToken, eventName, printerName1);
@@ -66,7 +66,7 @@ public sealed class PrinterTests(ITestOutputHelper testOutputHelper, TestSetupFi
     {
         // Arrange
         var eventName = $"EmptyEvent-{Guid.NewGuid():N}";
-        var authToken = PrinterDriver.GetAdminToken();
+        var authToken = _driver.GetAdminToken();
 
         // Act
         var printers = await _driver.GetPrintersForEvent(authToken, eventName);

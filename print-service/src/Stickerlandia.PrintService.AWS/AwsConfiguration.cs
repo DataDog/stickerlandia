@@ -16,8 +16,10 @@ namespace Stickerlandia.PrintService.AWS;
 public class AwsConfiguration
 {
     public string EventBusName { get; set; } = string.Empty;
-    
+
     public string UserRegisteredTopicArn { get; set; } = string.Empty;
 
     public string PrinterTableName { get; set; } = string.Empty;
+
+    public string PrintJobTableName { get; set; } = string.Empty;
 }

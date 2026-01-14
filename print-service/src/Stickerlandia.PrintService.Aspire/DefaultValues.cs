@@ -7,4 +7,5 @@ namespace Stickerlandia.PrintService.Aspire;
 internal static class DefaultValues
 {
     internal const string DYNAMO_DB_PRINTER_TABLE_NAME = "StickerlandiaPrinters";
+    internal const string DYNAMO_DB_PRINT_JOB_TABLE_NAME = "StickerlandiaPrintJobs";
 }

@@ -12,6 +12,9 @@ namespace Stickerlandia.PrintService.IntegrationTest.Drivers;
 
 internal static class JwtTokenGenerator
 {
+    /// <summary>
+    /// Generates a JWT token using symmetric key (HS256) - for backward compatibility.
+    /// </summary>
     public static string GenerateToken(
         string userId,
         string[] roles,
@@ -21,7 +24,30 @@ internal static class JwtTokenGenerator
     {
         var key = new SymmetricSecurityKey(Convert.FromBase64String(signingKey));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        return GenerateTokenInternal(userId, roles, credentials, issuer, audience);
+    }
 
+    /// <summary>
+    /// Generates a JWT token using RSA key (RS256) - for OIDC testing with WireMock.
+    /// </summary>
+    public static string GenerateRsaToken(
+        string userId,
+        string[] roles,
+        RsaKeyProvider keyProvider,
+        string issuer,
+        string audience = "print-service")
+    {
+        var credentials = keyProvider.GetSigningCredentials();
+        return GenerateTokenInternal(userId, roles, credentials, issuer, audience);
+    }
+
+    private static string GenerateTokenInternal(
+        string userId,
+        string[] roles,
+        SigningCredentials credentials,
+        string issuer,
+        string audience)
+    {
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, userId),

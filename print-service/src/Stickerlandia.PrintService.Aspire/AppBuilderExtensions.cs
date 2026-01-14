@@ -18,6 +18,7 @@ using Azure.Messaging.ServiceBus;
 using Confluent.Kafka;
 using Confluent.Kafka.Admin;
 using Microsoft.Extensions.DependencyInjection;
+using Stickerlandia.PrintService.Aspire.WireMock;
 
 namespace Stickerlandia.PrintService.Aspire;
 
@@ -25,21 +26,41 @@ internal static class AppBuilderExtensions
 {
     public static IDistributedApplicationBuilder WithAwsApi(
         this IDistributedApplicationBuilder builder,
-        IResourceBuilder<DynamoDBLocalResource> dynamoDbLocalResource)
+        IResourceBuilder<DynamoDBLocalResource> dynamoDbLocalResource,
+        IResourceBuilder<WireMockOidcResource>? oidcServer = null)
     {
         ArgumentNullException.ThrowIfNull(dynamoDbLocalResource, nameof(dynamoDbLocalResource));
-        
+
         // Add the API project to the distributed application builder
         var application = builder.AddProject<Projects.Stickerlandia_PrintService_Api>("api")
             .WithEnvironment("DRIVING", builder.Configuration["DRIVING"])
             .WithEnvironment("DRIVEN", builder.Configuration["DRIVEN"])
             .WithEnvironment("Aws__PrinterTableName", DefaultValues.DYNAMO_DB_PRINTER_TABLE_NAME)
+            .WithEnvironment("Aws__PrintJobTableName", DefaultValues.DYNAMO_DB_PRINT_JOB_TABLE_NAME)
             .WithEnvironment("AWS_ACCESS_KEY_ID", "dummyaccesskey")
             .WithEnvironment("AWS_SECRET_ACCESS_KEY", "dummysecret")
             .WithEnvironment("DRIVING", builder.Configuration["DRIVING"])
             .WithHttpsEndpoint(51545)
             .WithReference(dynamoDbLocalResource)
             .WaitFor(dynamoDbLocalResource);
+
+        // Configure OIDC authentication
+        // Check if authentication is pre-configured (e.g., by tests)
+        var preConfiguredAuthority = builder.Configuration["Authentication:Authority"];
+        if (!string.IsNullOrEmpty(preConfiguredAuthority))
+        {
+            // Use pre-configured authentication (from tests)
+            application
+                .WithEnvironment("Authentication__Mode", builder.Configuration["Authentication:Mode"] ?? "OidcDiscovery")
+                .WithEnvironment("Authentication__Authority", preConfiguredAuthority)
+                .WithEnvironment("Authentication__Audience", builder.Configuration["Authentication:Audience"] ?? "print-service")
+                .WithEnvironment("Authentication__RequireHttpsMetadata", builder.Configuration["Authentication:RequireHttpsMetadata"] ?? "false");
+        }
+        else if (oidcServer != null)
+        {
+            // Use WireMock server for local development
+            application.WithOidcAuthentication(oidcServer);
+        }
 
         return builder;
     }
@@ -64,6 +85,7 @@ internal static class AppBuilderExtensions
             .WithEnvironment("AWS_ACCESS_KEY_ID", "dummyaccesskey")
             .WithEnvironment("AWS_SECRET_ACCESS_KEY", "dummysecret")
             .WithEnvironment("Aws__PrinterTableName", DefaultValues.DYNAMO_DB_PRINTER_TABLE_NAME)
+            .WithEnvironment("Aws__PrintJobTableName", DefaultValues.DYNAMO_DB_PRINT_JOB_TABLE_NAME)
             .WaitFor(dynamoDbLocalResource);
 
         return builder;

@@ -9,7 +9,6 @@ using System.Text.Json;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.IdentityModel.Tokens;
 using Saunter;
 using Serilog;
 using Serilog.Formatting.Json;
@@ -17,6 +16,7 @@ using Stickerlandia.PrintService.Api;
 using Stickerlandia.PrintService.Api.Configurations;
 using Stickerlandia.PrintService.Api.Middlewares;
 using Stickerlandia.PrintService.Core;
+using Stickerlandia.PrintService.Core.PrintJobs;
 using Stickerlandia.PrintService.ServiceDefaults;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -56,32 +56,8 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddResponseCompression(options => { options.EnableForHttps = true; });
 
-// Configure JWT Bearer authentication (local validation - no external auth server required)
-var jwtIssuer = builder.Configuration["Jwt:Issuer"]
-    ?? Environment.GetEnvironmentVariable("JWT_ISSUER")
-    ?? "https://stickerlandia.local";
-var jwtAudience = builder.Configuration["Jwt:Audience"]
-    ?? Environment.GetEnvironmentVariable("JWT_AUDIENCE")
-    ?? "print-service";
-var jwtSigningKey = builder.Configuration["Jwt:SigningKey"]
-    ?? "DRjd/GnduI3Efzen9V9BvbNUfc/VKgXltV7Kbk9sMkY=";
-
-builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidIssuer = jwtIssuer,
-            ValidateAudience = true,
-            ValidAudience = jwtAudience,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Convert.FromBase64String(jwtSigningKey)),
-            ClockSkew = TimeSpan.FromMinutes(5)
-        };
-    });
-builder.Services.AddAuthorization();
+// Configure authentication (supports OIDC discovery or symmetric key modes)
+builder.Services.AddPrintServiceAuthentication(builder.Configuration);
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
@@ -139,9 +115,9 @@ app.UseCors("AllowAll");
 app.UseRouting();
 app.UseStaticFiles();
 
-// app
-//     .UseAuthentication()
-//     .UseAuthorization();
+app
+    .UseAuthentication()
+    .UseAuthorization();
 
 app.MapRazorPages();
 app.MapControllers();
@@ -155,26 +131,39 @@ v1ApiEndpoints.MapHealthChecks("/health", new HealthCheckOptions
 });
 
 v1ApiEndpoints.MapGet("/event/{eventName}", GetPrintersForEvent.HandleAsync)
-    // .RequireAuthorization(policyBuilder =>
-    // {
-    //     policyBuilder.RequireAuthenticatedUser()
-    //         .RequireRole("admin", "user");
-    // })
+    .RequireAuthorization(policyBuilder =>
+    {
+        policyBuilder.RequireAuthenticatedUser()
+            .RequireRole("admin", "user");
+    })
     .WithDescription("Get all registered printers for an event")
     .Produces<ApiResponse<PrinterDTO>>(200)
     .ProducesProblem(401)
     .ProducesProblem(403);
 
 v1ApiEndpoints.MapPost("/event/{eventName}", RegisterPrinterEndpoint.HandleAsync)
-    // .RequireAuthorization(policyBuilder =>
-    // {
-    //     policyBuilder.RequireAuthenticatedUser()
-    //         .RequireRole("admin");
-    // })
+    .RequireAuthorization(policyBuilder =>
+    {
+        policyBuilder.RequireAuthenticatedUser()
+            .RequireRole("admin");
+    })
     .WithDescription("Register a new printer for an event")
     .Produces<ApiResponse<string>>(200)
     .ProducesProblem(401)
     .ProducesProblem(403);
+
+v1ApiEndpoints.MapPost("/event/{eventName}/printer/{printerName}/jobs", SubmitPrintJobEndpoint.HandleAsync)
+    .RequireAuthorization(policyBuilder =>
+    {
+        policyBuilder.RequireAuthenticatedUser()
+            .RequireRole("admin", "user");
+    })
+    .WithDescription("Submit a print job to a printer")
+    .Produces<ApiResponse<SubmitPrintJobResponse>>(201)
+    .ProducesProblem(400)
+    .ProducesProblem(401)
+    .ProducesProblem(403)
+    .ProducesProblem(404);
 
 try
 {

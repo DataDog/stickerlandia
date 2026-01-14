@@ -26,6 +26,12 @@ public class TestSetupFixture : IDisposable
     public HttpClient HttpClient { get; init; }
     public DistributedApplication? App { get; init; }
 
+    /// <summary>
+    /// The WireMock OIDC server for generating test tokens.
+    /// Use this to generate JWT tokens that will be accepted by the API.
+    /// </summary>
+    public WireMockOidcServer? OidcServer { get; init; }
+
     private const string ApiApplicationName = "api";
 
     public TestSetupFixture()
@@ -37,7 +43,17 @@ public class TestSetupFixture : IDisposable
 
         if (!shouldTestAgainstRealResources)
         {
-            // Run all local resources with Asipre for testing
+            // Start WireMock OIDC server before Aspire so we can configure the API to use it
+            OidcServer = new WireMockOidcServer();
+
+            // Set environment variables BEFORE creating the Aspire builder
+            // These are read by Program.cs via AddEnvironmentVariables()
+            Environment.SetEnvironmentVariable("Authentication__Authority", OidcServer.BaseUrl);
+            Environment.SetEnvironmentVariable("Authentication__Mode", "OidcDiscovery");
+            Environment.SetEnvironmentVariable("Authentication__Audience", "print-service");
+            Environment.SetEnvironmentVariable("Authentication__RequireHttpsMetadata", "false");
+
+            // Run all local resources with Aspire for testing
             var builder = DistributedApplicationTestingBuilder
                 .CreateAsync<Projects.Stickerlandia_PrintService_Aspire>()
                 .GetAwaiter()
@@ -45,6 +61,12 @@ public class TestSetupFixture : IDisposable
 
             builder.Configuration["DRIVING"] = drivingAdapter;
             builder.Configuration["DRIVEN"] = drivenAdapter;
+
+            // Also set in configuration for WithAwsApi to read
+            builder.Configuration["Authentication:Mode"] = "OidcDiscovery";
+            builder.Configuration["Authentication:Authority"] = OidcServer.BaseUrl;
+            builder.Configuration["Authentication:Audience"] = "print-service";
+            builder.Configuration["Authentication:RequireHttpsMetadata"] = "false";
 
             if (drivenAdapter == "GCP")
             {
@@ -153,6 +175,14 @@ public class TestSetupFixture : IDisposable
     public void Dispose()
     {
         App?.StopAsync().GetAwaiter().GetResult();
+        OidcServer?.Dispose();
+
+        // Clean up environment variables
+        Environment.SetEnvironmentVariable("Authentication__Authority", null);
+        Environment.SetEnvironmentVariable("Authentication__Mode", null);
+        Environment.SetEnvironmentVariable("Authentication__Audience", null);
+        Environment.SetEnvironmentVariable("Authentication__RequireHttpsMetadata", null);
+
         GC.SuppressFinalize(this);
     }
 }

@@ -109,6 +109,33 @@ public class DynamoDbPrinterRepository(
         return response.IsItemSet;
     }
 
+    public async Task<Printer?> GetPrinterAsync(string eventName, string printerName)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(eventName);
+        ArgumentException.ThrowIfNullOrEmpty(printerName);
+
+        var printerId = $"{eventName.ToUpperInvariant()}-{printerName.ToUpperInvariant()}";
+
+        var request = new GetItemRequest
+        {
+            TableName = _tableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                [PartitionKey] = new() { S = eventName },
+                [SortKey] = new() { S = printerId }
+            }
+        };
+
+        var response = await dynamoDbClient.GetItemAsync(request).ConfigureAwait(false);
+
+        if (!response.IsItemSet)
+        {
+            return null;
+        }
+
+        return MapToPrinter(response.Item);
+    }
+
     private static Printer MapToPrinter(Dictionary<string, AttributeValue> item)
     {
         return Printer.From(

@@ -11,6 +11,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Stickerlandia.PrintService.Core.GetPrinters;
 using Stickerlandia.PrintService.Core.Outbox;
+using Stickerlandia.PrintService.Core.PrintJobs;
 using Stickerlandia.PrintService.Core.RegisterPrinter;
 
 namespace Stickerlandia.PrintService.Core;
@@ -21,9 +22,10 @@ public static class ServiceExtensions
     {
         services.AddTransient<RegisterPrinterCommandHandler>();
         services.AddTransient<GetPrintersForEventQueryHandler>();
-        
+        services.AddTransient<SubmitPrintJobCommandHandler>();
+
         services.AddTransient<OutboxProcessor>();
-        
+
         return services;
     }
 }

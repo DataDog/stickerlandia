@@ -18,11 +18,13 @@ internal sealed class PrinterDriver : IDisposable
 {
     private readonly ITestOutputHelper _testOutputHelper;
     private readonly HttpClient _httpClient;
+    private readonly WireMockOidcServer? _oidcServer;
 
     public PrinterDriver(ITestOutputHelper testOutputHelper, HttpClient httpClient,
-        CookieContainer cookieContainer)
+        CookieContainer cookieContainer, WireMockOidcServer? oidcServer = null)
     {
         _testOutputHelper = testOutputHelper;
+        _oidcServer = oidcServer;
 
         var httpHandler = new HttpClientHandler
         {
@@ -38,8 +40,18 @@ internal sealed class PrinterDriver : IDisposable
         };
     }
 
-    public static string GetAdminToken(string userId = "test-admin-user")
+    public string GetAdminToken(string userId = "test-admin-user")
     {
+        if (_oidcServer != null)
+        {
+            return JwtTokenGenerator.GenerateRsaToken(
+                userId,
+                ["admin"],
+                _oidcServer.KeyProvider,
+                _oidcServer.Issuer,
+                TestConstants.TestAudience);
+        }
+
         return JwtTokenGenerator.GenerateToken(
             userId,
             ["admin"],
@@ -48,8 +60,18 @@ internal sealed class PrinterDriver : IDisposable
             TestConstants.TestAudience);
     }
 
-    public static string GetUserToken(string userId = "test-user")
+    public string GetUserToken(string userId = "test-user")
     {
+        if (_oidcServer != null)
+        {
+            return JwtTokenGenerator.GenerateRsaToken(
+                userId,
+                ["user"],
+                _oidcServer.KeyProvider,
+                _oidcServer.Issuer,
+                TestConstants.TestAudience);
+        }
+
         return JwtTokenGenerator.GenerateToken(
             userId,
             ["user"],
@@ -106,6 +128,53 @@ internal sealed class PrinterDriver : IDisposable
 
         _testOutputHelper.WriteLine($"Get printers failed: {responseBody}");
         return null;
+    }
+
+    public async Task<(HttpStatusCode StatusCode, SubmitPrintJobResponse? Response)> SubmitPrintJob(
+        string authToken,
+        string eventName,
+        string printerName,
+        SubmitPrintJobRequest printJobRequest)
+    {
+        _testOutputHelper.WriteLine($"Submitting print job to printer: {printerName} for event: {eventName}");
+
+        var requestBody = JsonSerializer.Serialize(printJobRequest);
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"api/print/v1/event/{eventName}/printer/{printerName}/jobs");
+        request.Headers.Add("Authorization", $"Bearer {authToken}");
+        request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
+
+        var response = await _httpClient.SendAsync(request);
+        var responseBody = await response.Content.ReadAsStringAsync();
+
+        _testOutputHelper.WriteLine($"Submit print job response: {response.StatusCode}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            var apiResponse = JsonSerializer.Deserialize<ApiResponse<SubmitPrintJobResponse>>(responseBody);
+            return (response.StatusCode, apiResponse?.Data);
+        }
+
+        _testOutputHelper.WriteLine($"Submit print job failed: {responseBody}");
+        return (response.StatusCode, null);
+    }
+
+    public async Task<HttpStatusCode> SubmitPrintJobWithoutAuth(
+        string eventName,
+        string printerName,
+        SubmitPrintJobRequest printJobRequest)
+    {
+        _testOutputHelper.WriteLine($"Submitting print job without auth to printer: {printerName}");
+
+        var requestBody = JsonSerializer.Serialize(printJobRequest);
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"api/print/v1/event/{eventName}/printer/{printerName}/jobs");
+        request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
+
+        var response = await _httpClient.SendAsync(request);
+
+        _testOutputHelper.WriteLine($"Submit print job without auth response: {response.StatusCode}");
+        return response.StatusCode;
     }
 
     public void Dispose()

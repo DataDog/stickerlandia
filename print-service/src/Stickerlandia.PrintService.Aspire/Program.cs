@@ -9,6 +9,7 @@ using Amazon.DynamoDBv2.Model;
 using Amazon.Runtime;
 using Microsoft.Extensions.Configuration;
 using Stickerlandia.PrintService.Aspire;
+using Stickerlandia.PrintService.Aspire.WireMock;
 
 var builder = DistributedApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
@@ -17,6 +18,14 @@ DrivingAdapterSettings.OverrideTo(DrivingAdapter.AWS);
 DrivenAdapterSettings.OverrideTo(DrivenAdapters.AWS);
 
 InfrastructureResources? resources = null;
+
+// Only create WireMock OIDC server if authentication is not already configured (e.g., by tests)
+var existingAuthority = builder.Configuration["Authentication:Authority"];
+IResourceBuilder<WireMockOidcResource>? oidcServer = null;
+if (string.IsNullOrEmpty(existingAuthority))
+{
+    oidcServer = builder.AddWireMockOidcServer();
+}
 
 switch (DrivenAdapterSettings.DrivenAdapter)
 {
@@ -42,7 +51,7 @@ switch (DrivingAdapterSettings.DrivingAdapter)
     case DrivingAdapter.GCP:
         throw new NotImplementedException("GCP driven adapter is not yet implemented");
     case DrivingAdapter.AWS:
-        builder.WithAwsApi(resources.DatabaseResource);
+        builder.WithAwsApi(resources.DatabaseResource, oidcServer);
         break;
 }
 
@@ -56,7 +65,7 @@ builder.Eventing.Subscribe<ResourceReadyEvent>(resources.DatabaseResource.Resour
     var ddbClient = new AmazonDynamoDBClient(new AmazonDynamoDBConfig
         { ServiceURL = serviceUrl, DefaultAWSCredentials = credentials });
 
-    // Create the Accounts table.
+    // Create the Printers table.
     await ddbClient.CreateTableAsync(new CreateTableRequest
     {
         TableName = DefaultValues.DYNAMO_DB_PRINTER_TABLE_NAME,
@@ -88,10 +97,47 @@ builder.Eventing.Subscribe<ResourceReadyEvent>(resources.DatabaseResource.Resour
             }
         }
     }, ct);
-    
-    var tableExists = await ddbClient.DescribeTableAsync(DefaultValues.DYNAMO_DB_PRINTER_TABLE_NAME, ct);
 
-    Console.WriteLine($"Table created: {tableExists.HttpStatusCode}");
+    var printerTableExists = await ddbClient.DescribeTableAsync(DefaultValues.DYNAMO_DB_PRINTER_TABLE_NAME, ct);
+    Console.WriteLine($"Printers table created: {printerTableExists.HttpStatusCode}");
+
+    // Create the PrintJobs table.
+    await ddbClient.CreateTableAsync(new CreateTableRequest
+    {
+        TableName = DefaultValues.DYNAMO_DB_PRINT_JOB_TABLE_NAME,
+        AttributeDefinitions = new List<AttributeDefinition>
+        {
+            new() { AttributeName = "PK", AttributeType = "S" },
+            new() { AttributeName = "SK", AttributeType = "S" },
+            new() { AttributeName = "GSI1PK", AttributeType = "S" },
+            new() { AttributeName = "GSI1SK", AttributeType = "S" }
+        },
+        KeySchema = new List<KeySchemaElement>
+        {
+            new() { AttributeName = "PK", KeyType = "HASH" },
+            new() { AttributeName = "SK", KeyType = "RANGE" }
+        },
+        BillingMode = BillingMode.PAY_PER_REQUEST,
+        GlobalSecondaryIndexes = new List<GlobalSecondaryIndex>(1)
+        {
+            new()
+            {
+                IndexName = "GSI1",
+                KeySchema = new List<KeySchemaElement>
+                {
+                    new() { AttributeName = "GSI1PK", KeyType = "HASH" },
+                    new() { AttributeName = "GSI1SK", KeyType = "RANGE" }
+                },
+                Projection = new Projection
+                {
+                    ProjectionType = ProjectionType.ALL
+                }
+            }
+        }
+    }, ct);
+
+    var printJobTableExists = await ddbClient.DescribeTableAsync(DefaultValues.DYNAMO_DB_PRINT_JOB_TABLE_NAME, ct);
+    Console.WriteLine($"PrintJobs table created: {printJobTableExists.HttpStatusCode}");
 });
 
 

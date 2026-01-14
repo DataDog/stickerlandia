@@ -14,6 +14,7 @@
 using System.Net;
 using System.Text.Json;
 using Stickerlandia.PrintService.Core;
+using Stickerlandia.PrintService.Core.PrintJobs;
 using Log = Stickerlandia.PrintService.Core.Observability.Log;
 
 namespace Stickerlandia.PrintService.Api.Middlewares;
@@ -52,6 +53,16 @@ internal sealed class GlobalExceptionHandler
             Log.GenericWarning(_logger, "Tried to create a user that already exists", ex);
             await HandleExceptionAsync(context, ex);
         }
+        catch (PrinterNotFoundException ex)
+        {
+            Log.GenericWarning(_logger, "Printer not found", ex);
+            await HandleExceptionAsync(context, ex);
+        }
+        catch (InvalidPrintJobException ex)
+        {
+            Log.GenericWarning(_logger, "Invalid print job", ex);
+            await HandleExceptionAsync(context, ex);
+        }
         catch (ArgumentNullException ex)
         {
             Log.GenericWarning(_logger, "Failed to retrieve user details", ex);   
@@ -87,15 +98,17 @@ internal sealed class GlobalExceptionHandler
 
     private static int DetermineStatusCode(Exception exception) => exception switch
     {
-        PrinterExistsException or ArgumentException or FormatException or ArgumentNullException => (int)HttpStatusCode.BadRequest,
-        InvalidUserException or KeyNotFoundException or FileNotFoundException => (int)HttpStatusCode.NotFound,
+        PrinterExistsException or InvalidPrintJobException or ArgumentException or FormatException or ArgumentNullException => (int)HttpStatusCode.BadRequest,
+        InvalidUserException or PrinterNotFoundException or KeyNotFoundException or FileNotFoundException => (int)HttpStatusCode.NotFound,
         UnauthorizedAccessException => (int)HttpStatusCode.Unauthorized,
         NotImplementedException => (int)HttpStatusCode.NotImplemented,
         _ => (int)HttpStatusCode.InternalServerError
     };
-    
+
     private static string GetUserFriendlyMessage(Exception exception) => exception switch
     {
+        PrinterNotFoundException ex => ex.Message,
+        InvalidPrintJobException ex => ex.Message,
         ArgumentException or FormatException or ArgumentNullException => "Invalid input provided",
         KeyNotFoundException or FileNotFoundException => "Requested resource not found",
         UnauthorizedAccessException => "Unauthorized access",
