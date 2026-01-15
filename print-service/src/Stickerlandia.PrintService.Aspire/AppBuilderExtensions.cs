@@ -44,6 +44,10 @@ internal static class AppBuilderExtensions
             .WithReference(dynamoDbLocalResource)
             .WaitFor(dynamoDbLocalResource);
 
+        // Add the API project to the distributed application builder
+        var printClient = builder.AddProject<Projects.Stickerlandia_PrintService_Client>("client")
+            .WithHttpsEndpoint(51546);
+
         // Configure OIDC authentication
         // Check if authentication is pre-configured (e.g., by tests)
         var preConfiguredAuthority = builder.Configuration["Authentication:Authority"];

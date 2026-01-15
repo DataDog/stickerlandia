@@ -4,11 +4,16 @@
  * Copyright 2025-Present Datadog, Inc.
  */
 
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text.Json;
 using Aspire.Hosting.ApplicationModel;
+using Microsoft.IdentityModel.Tokens;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 using WireMock.Server;
+using WireMock.Types;
+using WireMock.Util;
 
 namespace Stickerlandia.PrintService.Aspire.WireMock;
 
@@ -89,6 +94,74 @@ internal sealed class WireMockOidcResource : Resource, IDisposable
                 .WithHeader("Content-Type", "application/json")
                 .WithBody(_keyProvider.GenerateJwksJson())
         );
+
+        // Dev token generation endpoint for manual testing (e.g., Postman)
+        _server.Given(
+            Request.Create()
+                .WithPath("/dev/token")
+                .UsingGet()
+        )
+        .RespondWith(
+            Response.Create()
+                .WithCallback(request =>
+                {
+                    var userId = "test-user";
+                    var rolesParam = "admin";
+
+                    if (request.Query != null)
+                    {
+                        if (request.Query.TryGetValue("userId", out var userIdValues))
+                        {
+                            userId = userIdValues.FirstOrDefault() ?? userId;
+                        }
+                        if (request.Query.TryGetValue("roles", out var rolesValues))
+                        {
+                            rolesParam = rolesValues.FirstOrDefault() ?? rolesParam;
+                        }
+                    }
+
+                    var roles = rolesParam.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                    var token = GenerateToken(userId, roles, baseUrl);
+
+                    return new global::WireMock.ResponseMessage
+                    {
+                        StatusCode = 200,
+                        Headers = new Dictionary<string, global::WireMock.Types.WireMockList<string>>
+                        {
+                            ["Content-Type"] = new global::WireMock.Types.WireMockList<string>("application/json")
+                        },
+                        BodyData = new BodyData()
+                        {
+                            DetectedBodyType = BodyType.Json,
+                            BodyAsJson = new { access_token = token, token_type = "Bearer", expires_in = 3600 }
+                        }
+                    };
+                })
+        );
+    }
+
+    private string GenerateToken(string userId, string[] roles, string issuer)
+    {
+        if (_keyProvider == null)
+        {
+            throw new InvalidOperationException("Key provider not initialized");
+        }
+
+        var claims = new List<Claim>
+        {
+            new(JwtRegisteredClaimNames.Sub, userId),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+        };
+        claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
+
+        var token = new JwtSecurityToken(
+            issuer: issuer,
+            audience: "print-service",
+            claims: claims,
+            expires: DateTime.UtcNow.AddHours(1),
+            signingCredentials: _keyProvider.GetSigningCredentials());
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
     private static string GenerateDiscoveryDocument(string baseUrl)
