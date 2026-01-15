@@ -50,6 +50,66 @@ Full API documentation is available in OpenAPI format:
 - Synchronous API: [api.yaml](./docs/api.yaml)
 - Asynchronous API: [async_api.json](./docs/async_api.json)
 
+## Environment Configuration
+
+This service uses Quarkus profiles to manage configuration across different environments. Profiles are selected via the `QUARKUS_PROFILE` environment variable.
+
+### Available Profiles
+
+| Profile | Purpose | Messaging | Activation |
+|---------|---------|-----------|------------|
+| `dev` | Local development with DevServices | Kafka  | `./mvnw quarkus:dev` (automatic) |
+| `prod` | Base production (not used directly) | None | - |
+| `prod-kafka` | Production with Kafka messaging | Kafka | `QUARKUS_PROFILE=prod-kafka` |
+| `prod-aws` | Production with AWS EventBridge | EventBridge | `QUARKUS_PROFILE=prod-aws` |
+
+### Common Environment Variables
+
+These variables must be provided in all production profiles (`prod-kafka`, `prod-aws`):
+
+| Variable | Purpose                                       | Example |
+|----------|-----------------------------------------------|---------|
+| `QUARKUS_DATASOURCE_JDBC_URL` | PostgreSQL connection URL                     | `jdbc:postgresql://db:5432/sticker_catalogue` |
+| `QUARKUS_DATASOURCE_USERNAME` | Database username                             | `sticker_user` |
+| `QUARKUS_DATASOURCE_PASSWORD` | Database password                             | `secret` |
+| `QUARKUS_S3_ENDPOINT_OVERRIDE` | (optional) S3 endpoint (for MinIO/LocalStack) | `http://minio:9000` |
+| `QUARKUS_S3_AWS_REGION` | (optional) AWS region for S3                  | `us-east-1` |
+| `STICKER_IMAGES_BUCKET` | S3 bucket for sticker images                  | `sticker-images` |
+
+### Profile: `prod-kafka`
+
+Use this profile when running with Kafka/Redpanda for messaging.
+
+**Additional Variables:**
+
+| Variable | Purpose | Example |
+|----------|---------|---------|
+| `KAFKA_BOOTSTRAP_SERVERS` | Kafka broker addresses | `redpanda:9092` |
+| `MP_MESSAGING_CONNECTOR_SMALLRYE_KAFKA_BOOTSTRAP_SERVERS` | SmallRye Kafka bootstrap servers | `redpanda:9092` |
+
+**S3 Credentials**
+
+In a real AWS environment these are automatically provided by the metadata service; they only need to be set explicitly
+when running elsewhere - e.g. in docker-compose.
+
+| Variable | Purpose |
+|----------|---------|
+| `QUARKUS_S3_AWS_CREDENTIALS_TYPE` | Set to `static` for explicit credentials |
+| `QUARKUS_S3_AWS_CREDENTIALS_STATIC_PROVIDER_ACCESS_KEY_ID` | S3 access key |
+| `QUARKUS_S3_AWS_CREDENTIALS_STATIC_PROVIDER_SECRET_ACCESS_KEY` | S3 secret key |
+| `QUARKUS_S3_PATH_STYLE_ACCESS` | Set to `true` for MinIO compatibility |
+
+### Profile: `prod-aws`
+
+Use this profile when deploying to AWS with EventBridge for messaging.
+
+**Additional Variables:**
+
+| Variable | Purpose | Example |
+|----------|---------|---------|
+| `EVENT_BUS_NAME` | EventBridge bus name | `stickerlandia-events` |
+| `AWS_REGION` | AWS region | `eu-central-1` |
+
 ## Building and Running
 
 ### Prerequisites

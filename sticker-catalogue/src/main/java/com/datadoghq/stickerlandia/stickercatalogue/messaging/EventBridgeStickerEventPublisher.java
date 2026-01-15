@@ -28,9 +28,8 @@ import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsResponse;
 
 /**
- * AWS EventBridge implementation of StickerEventPublisher.
- * Publishes sticker catalogue events to EventBridge following CloudEvents specification.
- * Only activated when MESSAGING_PROVIDER=aws.
+ * AWS EventBridge implementation of StickerEventPublisher. Publishes sticker catalogue events to
+ * EventBridge following CloudEvents specification. Only activated when MESSAGING_PROVIDER=aws.
  */
 @ApplicationScoped
 @Typed(EventBridgeStickerEventPublisher.class)
@@ -40,11 +39,9 @@ public class EventBridgeStickerEventPublisher implements StickerEventPublisher {
     private static final Logger LOG = Logger.getLogger(EventBridgeStickerEventPublisher.class);
     private static final String SOURCE = "sticker-catalogue";
 
-    @Inject
-    EventBridgeClient eventBridgeClient;
+    @Inject EventBridgeClient eventBridgeClient;
 
-    @Inject
-    ObjectMapper objectMapper;
+    @Inject ObjectMapper objectMapper;
 
     @ConfigProperty(name = "EVENT_BUS_NAME", defaultValue = "default")
     String eventBusName;
@@ -89,41 +86,44 @@ public class EventBridgeStickerEventPublisher implements StickerEventPublisher {
      * @return completion stage for async processing
      */
     private <T> CompletionStage<Void> publishEvent(String detailType, CloudEvent<T> cloudEvent) {
-        return CompletableFuture.runAsync(() -> {
-            try {
-                String detail = objectMapper.writeValueAsString(cloudEvent);
+        return CompletableFuture.runAsync(
+                () -> {
+                    try {
+                        String detail = objectMapper.writeValueAsString(cloudEvent);
 
-                PutEventsRequestEntry entry = PutEventsRequestEntry.builder()
-                        .source(SOURCE)
-                        .detailType(detailType)
-                        .detail(detail)
-                        .eventBusName(eventBusName)
-                        .build();
+                        PutEventsRequestEntry entry =
+                                PutEventsRequestEntry.builder()
+                                        .source(SOURCE)
+                                        .detailType(detailType)
+                                        .detail(detail)
+                                        .eventBusName(eventBusName)
+                                        .build();
 
-                PutEventsRequest request = PutEventsRequest.builder()
-                        .entries(entry)
-                        .build();
+                        PutEventsRequest request =
+                                PutEventsRequest.builder().entries(entry).build();
 
-                PutEventsResponse response = eventBridgeClient.putEvents(request);
+                        PutEventsResponse response = eventBridgeClient.putEvents(request);
 
-                if (response.failedEntryCount() > 0) {
-                    response.entries().stream()
-                            .filter(e -> e.errorCode() != null)
-                            .forEach(e -> LOG.errorf(
-                                    "EventBridge error: %s - %s",
-                                    e.errorCode(), e.errorMessage()));
-                    throw new RuntimeException("Failed to publish event to EventBridge");
-                }
+                        if (response.failedEntryCount() > 0) {
+                            response.entries().stream()
+                                    .filter(e -> e.errorCode() != null)
+                                    .forEach(
+                                            e ->
+                                                    LOG.errorf(
+                                                            "EventBridge error: %s - %s",
+                                                            e.errorCode(), e.errorMessage()));
+                            throw new RuntimeException("Failed to publish event to EventBridge");
+                        }
 
-                LOG.debugf(
-                        "Event published successfully to EventBridge: %s, eventId: %s",
-                        detailType, response.entries().get(0).eventId());
+                        LOG.debugf(
+                                "Event published successfully to EventBridge: %s, eventId: %s",
+                                detailType, response.entries().get(0).eventId());
 
-            } catch (JsonProcessingException e) {
-                LOG.errorf("Failed to serialize CloudEvent: %s", e.getMessage());
-                throw new RuntimeException("Failed to serialize CloudEvent", e);
-            }
-        });
+                    } catch (JsonProcessingException e) {
+                        LOG.errorf("Failed to serialize CloudEvent: %s", e.getMessage());
+                        throw new RuntimeException("Failed to serialize CloudEvent", e);
+                    }
+                });
     }
 
     /**

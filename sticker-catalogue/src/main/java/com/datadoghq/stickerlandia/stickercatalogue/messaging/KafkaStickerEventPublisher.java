@@ -22,9 +22,9 @@ import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.jboss.logging.Logger;
 
 /**
- * Kafka implementation of StickerEventPublisher using SmallRye Reactive Messaging.
- * Publishes sticker catalogue events to Kafka channels following CloudEvents specification.
- * Only activated when MESSAGING_PROVIDER=kafka.
+ * Kafka implementation of StickerEventPublisher using SmallRye Reactive Messaging. Publishes
+ * sticker catalogue events to Kafka channels following CloudEvents specification. Only activated
+ * when MESSAGING_PROVIDER=kafka.
  */
 @ApplicationScoped
 @Typed(KafkaStickerEventPublisher.class)

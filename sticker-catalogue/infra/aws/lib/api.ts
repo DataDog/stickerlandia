@@ -81,9 +81,9 @@ export class Api extends Construct {
       secrets: secrets,
       path: "/api/stickers/v1/{proxy+}",
       additionalPathMappings: [],
-      healthCheckPath: "/api/stickers/v1",
+      healthCheckPath: "/health",
       healthCheckCommand: {
-        command: ["CMD", "curl", "-f", "http://localhost:8080/api/stickers/v1/"],
+        command: ["CMD", "curl", "-f", "http://localhost:8080/health"],
         interval: Duration.seconds(30),
         timeout: Duration.seconds(5),
         retries: 3,

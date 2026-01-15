@@ -14,15 +14,14 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 /**
- * CDI producer that selects the appropriate StickerEventPublisher implementation
- * based on the MESSAGING_PROVIDER configuration property.
+ * CDI producer that selects the appropriate StickerEventPublisher implementation based on the
+ * MESSAGING_PROVIDER configuration property.
  *
- * Uses Instance for lazy lookup with @LookupIfProperty annotations on implementations.
- * Only the implementation matching the current MESSAGING_PROVIDER will be instantiated.
+ * <p>Uses Instance for lazy lookup with @LookupIfProperty annotations on implementations. Only the
+ * implementation matching the current MESSAGING_PROVIDER will be instantiated.
  *
- * Supported providers:
- * - "kafka" (default): Uses SmallRye Reactive Messaging with Kafka
- * - "aws": Uses AWS EventBridge
+ * <p>Supported providers: - "kafka" (default): Uses SmallRye Reactive Messaging with Kafka - "aws":
+ * Uses AWS EventBridge
  */
 @ApplicationScoped
 public class StickerEventPublisherProducer {
@@ -32,11 +31,9 @@ public class StickerEventPublisherProducer {
     @ConfigProperty(name = "MESSAGING_PROVIDER", defaultValue = "kafka")
     String messagingProvider;
 
-    @Inject
-    Instance<KafkaStickerEventPublisher> kafkaPublisher;
+    @Inject Instance<KafkaStickerEventPublisher> kafkaPublisher;
 
-    @Inject
-    Instance<EventBridgeStickerEventPublisher> eventBridgePublisher;
+    @Inject Instance<EventBridgeStickerEventPublisher> eventBridgePublisher;
 
     @Produces
     @ApplicationScoped
@@ -60,9 +57,11 @@ public class StickerEventPublisherProducer {
                 LOG.info("Using Kafka event publisher");
                 yield kafkaPublisher.get();
             }
-            default -> throw new IllegalArgumentException(
-                    "Unsupported MESSAGING_PROVIDER: " + messagingProvider
-                            + " (supported: kafka, aws)");
+            default ->
+                    throw new IllegalArgumentException(
+                            "Unsupported MESSAGING_PROVIDER: "
+                                    + messagingProvider
+                                    + " (supported: kafka, aws)");
         };
     }
 }

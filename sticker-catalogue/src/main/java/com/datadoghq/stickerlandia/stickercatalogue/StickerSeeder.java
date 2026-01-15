@@ -7,6 +7,7 @@
 package com.datadoghq.stickerlandia.stickercatalogue;
 
 import com.datadoghq.stickerlandia.stickercatalogue.entity.Sticker;
+import com.datadoghq.stickerlandia.stickercatalogue.messaging.StickerEventPublisher;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
@@ -19,8 +20,6 @@ import jakarta.transaction.Transactional;
 import java.io.InputStream;
 import java.util.List;
 import org.jboss.logging.Logger;
-
-import com.datadoghq.stickerlandia.stickercatalogue.messaging.StickerEventPublisher;
 
 @ApplicationScoped
 public class StickerSeeder {

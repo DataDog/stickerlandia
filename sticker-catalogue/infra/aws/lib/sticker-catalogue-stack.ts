@@ -94,5 +94,11 @@ export class StickerCatalogueServiceStack extends cdk.Stack {
       deployInPrivateSubnet: true,
       sharedEventBus: sharedResources.sharedEventBus,
     });
+
+    // CDK Outputs
+    new cdk.CfnOutput(this, "ServiceApiUrl", {
+      value: `https://${sharedResources.cloudfrontDistribution.distributionDomainName}/api/stickers/v1/`,
+      description: "Sticker Catalogue Service API URL",
+    });
   }
 }

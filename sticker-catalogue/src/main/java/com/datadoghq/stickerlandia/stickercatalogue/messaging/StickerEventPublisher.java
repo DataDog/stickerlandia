@@ -9,9 +9,9 @@ package com.datadoghq.stickerlandia.stickercatalogue.messaging;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Interface for publishing sticker catalogue events to a messaging system.
- * Implementations may use different messaging backends (Kafka, EventBridge, etc.)
- * selected at runtime via the MESSAGING_PROVIDER configuration.
+ * Interface for publishing sticker catalogue events to a messaging system. Implementations may use
+ * different messaging backends (Kafka, EventBridge, etc.) selected at runtime via the
+ * MESSAGING_PROVIDER configuration.
  */
 public interface StickerEventPublisher {
 

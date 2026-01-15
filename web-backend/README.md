@@ -61,8 +61,26 @@ sequenceDiagram
 
 ## Environment Variables
 
-- `OAUTH_ISSUER_INTERNAL` - Internal IdP URL (default: `http://user-management:8080`)
-- `OAUTH_CLIENT_ID` - OAuth client ID (default: `web-ui`)  
-- `OAUTH_CLIENT_SECRET` - OAuth client secret
-- `OAUTH_REDIRECT_URI` - OAuth callback URL
-- `SESSION_SECRET` - Session encryption secret
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `OAUTH_ISSUER_INTERNAL` | URL used for server-side OIDC operations (discovery, token exchange, JWKS, userinfo) | `http://user-management:8080` |
+| `OAUTH_CLIENT_ID` | OAuth client identifier registered with the IdP | `web-ui` |
+| `OAUTH_CLIENT_SECRET` | OAuth client secret | `stickerlandia-web-ui-secret-2025` |
+| `DEPLOYMENT_HOST_URL` | Public-facing URL used to construct OAuth redirect URIs | `http://localhost:8080` |
+| `SESSION_SECRET` | Secret for Express session encryption | `dev-session-secret-change-in-production` |
+| `CSRF_SECRET` | Secret for CSRF token protection | `dev-csrf-secret-change-in-production` |
+| `NODE_ENV` | Environment mode; controls cookie security and rate limiting | `development` |
+| `SKIP_RATE_LIMIT` | Set to `true` to bypass login rate limiting (development only) | unset |
+
+### OIDC Internal/External URL Handling
+
+The BFF needs to handle two different URL contexts for OIDC:
+
+1. **Server-side operations** (token exchange, JWKS fetch, userinfo calls) - these use `OAUTH_ISSUER_INTERNAL`
+2. **Browser redirects** (OAuth callback) - these use `DEPLOYMENT_HOST_URL`
+
+In **Docker Compose**, these differ because the backend reaches the IdP via Docker's internal DNS (`http://user-management:8080`), while browsers access everything through Traefik at `http://localhost:8080`.
+
+In **AWS**, both are set to the same CloudFront distribution URL since there's no internal Docker network - all traffic routes through CloudFront.
+
+The `OAUTH_ISSUER_INTERNAL` variable allows overriding the endpoints discovered from the IdP's `.well-known/openid-configuration`. This is necessary because the IdP advertises its external URL (from its own `OPENIDDICT_ISSUER` setting), but server-to-server calls need to use internal networking.
