@@ -10,14 +10,14 @@ COPY ./scripts ./scripts
 RUN . scripts/target.sh && curl -Lo /tmp/datadog-dotnet-apm.deb https://github.com/DataDog/dd-trace-dotnet/releases/download/v3.34.0/datadog-dotnet-apm_3.34.0_${TRACER_ARCHITECTURE}.deb
 
 # Deps
-COPY src/Stickerlandia.PrintService.Api/Stickerlandia.PrintService.Api.csproj src/Stickerlandia.PrintService.Api/
-RUN dotnet restore src/Stickerlandia.PrintService.Api/Stickerlandia.PrintService.Api.csproj
+COPY src/Stickerlandia.PrintService.Client/Stickerlandia.PrintService.Client.csproj src/Stickerlandia.PrintService.Client/
+RUN dotnet restore src/Stickerlandia.PrintService.Client/Stickerlandia.PrintService.Client.csproj
 
 # Now copy the rest of the source code
 COPY . ./
 
 # Publish the application
-RUN dotnet publish src/Stickerlandia.PrintService.Api/Stickerlandia.PrintService.Api.csproj -o out -c Release
+RUN dotnet publish src/Stickerlandia.PrintService.Client/Stickerlandia.PrintService.Client.csproj -o out -c Release
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 
@@ -54,4 +54,4 @@ LABEL com.datadoghq.tags.version=${DD_GIT_COMMIT_SHA}
 WORKDIR /App
 COPY --from=build /App/out .
 EXPOSE 8080
-ENTRYPOINT [ "dotnet", "Stickerlandia.PrintService.Api.dll" ]
+ENTRYPOINT [ "dotnet", "Stickerlandia.PrintService.Client.dll" ]

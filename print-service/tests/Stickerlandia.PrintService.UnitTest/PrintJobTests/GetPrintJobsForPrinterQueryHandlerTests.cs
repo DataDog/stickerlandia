@@ -4,23 +4,34 @@
  * Copyright 2025-Present Datadog, Inc.
  */
 
+#pragma warning disable CA1063 // Implement IDisposable correctly - test class
+
 using FakeItEasy;
 using Stickerlandia.PrintService.Core;
+using Stickerlandia.PrintService.Core.Observability;
 using Stickerlandia.PrintService.Core.PrintJobs;
 
 namespace Stickerlandia.PrintService.UnitTest.PrintJobTests;
 
-public class GetPrintJobsForPrinterQueryHandlerTests
+public class GetPrintJobsForPrinterQueryHandlerTests : IDisposable
 {
     private readonly IPrintJobRepository _printJobRepository;
     private readonly IPrinterRepository _printerRepository;
+    private readonly PrintJobInstrumentation _instrumentation;
     private readonly GetPrintJobsForPrinterQueryHandler _handler;
 
     public GetPrintJobsForPrinterQueryHandlerTests()
     {
         _printJobRepository = A.Fake<IPrintJobRepository>();
         _printerRepository = A.Fake<IPrinterRepository>();
-        _handler = new GetPrintJobsForPrinterQueryHandler(_printJobRepository, _printerRepository);
+        _instrumentation = new PrintJobInstrumentation();
+        _handler = new GetPrintJobsForPrinterQueryHandler(_printJobRepository, _printerRepository, _instrumentation);
+    }
+
+    public void Dispose()
+    {
+        _instrumentation.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     [Fact]

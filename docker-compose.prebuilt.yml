@@ -13,6 +13,10 @@ services:
     image: ghcr.io/datadog/stickerlandia/sticker-award-service:latest
     build: {}
 
+  print-service:
+    image: ghcr.io/datadog/stickerlandia/print-service:latest
+    build: {}
+
   user-management:
     image: ghcr.io/datadog/stickerlandia/user-management-service:latest
     build: {}

@@ -4,17 +4,21 @@
  * Copyright 2025-Present Datadog, Inc.
  */
 
+#pragma warning disable CA1063 // Implement IDisposable correctly - test class
+
 using Stickerlandia.PrintService.Core;
+using Stickerlandia.PrintService.Core.Observability;
 using Stickerlandia.PrintService.Core.Outbox;
 using Stickerlandia.PrintService.Core.PrintJobs;
 
 namespace Stickerlandia.PrintService.UnitTest.PrintJobTests;
 
-public class AcknowledgePrintJobCommandHandlerTests
+public class AcknowledgePrintJobCommandHandlerTests : IDisposable
 {
     private readonly IPrintJobRepository _printJobRepository;
     private readonly IPrinterRepository _printerRepository;
     private readonly IOutbox _outbox;
+    private readonly PrintJobInstrumentation _instrumentation;
     private readonly AcknowledgePrintJobCommandHandler _handler;
 
     public AcknowledgePrintJobCommandHandlerTests()
@@ -22,7 +26,14 @@ public class AcknowledgePrintJobCommandHandlerTests
         _printJobRepository = A.Fake<IPrintJobRepository>();
         _printerRepository = A.Fake<IPrinterRepository>();
         _outbox = A.Fake<IOutbox>();
-        _handler = new AcknowledgePrintJobCommandHandler(_printJobRepository, _printerRepository, _outbox);
+        _instrumentation = new PrintJobInstrumentation();
+        _handler = new AcknowledgePrintJobCommandHandler(_printJobRepository, _printerRepository, _outbox, _instrumentation);
+    }
+
+    public void Dispose()
+    {
+        _instrumentation.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     public class HandleMethod : AcknowledgePrintJobCommandHandlerTests

@@ -10,6 +10,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Stickerlandia.PrintService.Core.GetPrinters;
+using Stickerlandia.PrintService.Core.Observability;
 using Stickerlandia.PrintService.Core.Outbox;
 using Stickerlandia.PrintService.Core.PrintJobs;
 using Stickerlandia.PrintService.Core.RegisterPrinter;
@@ -20,6 +21,10 @@ public static class ServiceExtensions
 {
     public static IServiceCollection AddStickerlandiaUserManagement(this IServiceCollection services)
     {
+        // Observability
+        services.AddSingleton<PrintJobInstrumentation>();
+
+        // Command and query handlers
         services.AddTransient<RegisterPrinterCommandHandler>();
         services.AddTransient<GetPrintersForEventQueryHandler>();
         services.AddTransient<GetPrinterStatusesQueryHandler>();

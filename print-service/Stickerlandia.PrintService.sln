@@ -42,6 +42,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Utils", "Utils", "{C67CC25F
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stickerlandia.PrintService.JwtGenerator", "src\utils\Stickerlandia.PrintService.JwtGenerator\Stickerlandia.PrintService.JwtGenerator.csproj", "{EAC9011A-353C-4B67-913F-14A295F09EA2}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{444DD46E-90AC-4978-90B4-049886EFC0A8}"
+	ProjectSection(SolutionItems) = preProject
+		mise.toml = mise.toml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "infra", "infra", "{A32AEBFB-FAFF-40AE-B1AD-254303E0A9DE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

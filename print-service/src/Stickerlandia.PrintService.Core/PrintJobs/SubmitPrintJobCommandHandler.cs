@@ -3,6 +3,7 @@
 // Copyright 2025 Datadog, Inc.
 
 using System.Diagnostics;
+using Stickerlandia.PrintService.Core.Observability;
 using Stickerlandia.PrintService.Core.Outbox;
 
 namespace Stickerlandia.PrintService.Core.PrintJobs;
@@ -10,7 +11,8 @@ namespace Stickerlandia.PrintService.Core.PrintJobs;
 public class SubmitPrintJobCommandHandler(
     IOutbox outbox,
     IPrinterRepository printerRepository,
-    IPrintJobRepository printJobRepository)
+    IPrintJobRepository printJobRepository,
+    PrintJobInstrumentation instrumentation)
 {
     public async Task<SubmitPrintJobResponse> Handle(
         string eventName,
@@ -25,6 +27,8 @@ public class SubmitPrintJobCommandHandler(
         {
             throw new InvalidPrintJobException("Invalid print job command. UserId, StickerId, and a valid StickerUrl are required.");
         }
+
+        using var activity = PrintJobInstrumentation.StartSubmitJobActivity(eventName, printerName, command.StickerId);
 
         try
         {
@@ -48,15 +52,19 @@ public class SubmitPrintJobCommandHandler(
                 await outbox.StoreEventFor(domainEvent);
             }
 
-            Activity.Current?.AddTag("printjob.id", printJob.Id.Value);
-            Activity.Current?.AddTag("printjob.printer_id", printer.Id!.Value);
+            activity?.SetTag("print.job_id", printJob.Id.Value);
+            activity?.SetTag("print.printer_id", printer.Id!.Value);
+            activity?.SetStatus(ActivityStatusCode.Ok);
+
+            // Record metrics
+            instrumentation.RecordJobSubmitted(printer.Id!.Value, eventName);
 
             return new SubmitPrintJobResponse(printJob);
         }
         catch (Exception ex)
         {
-            Activity.Current?.AddTag("printjob.submission.failed", true);
-            Activity.Current?.AddTag("error.message", ex.Message);
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            activity?.SetTag("error.type", ex.GetType().Name);
 
             throw;
         }

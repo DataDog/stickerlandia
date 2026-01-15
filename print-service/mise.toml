@@ -9,7 +9,7 @@ description = "Build dev container"
 run = """
 ARCH=${ARCH:-$(uname -m | sed 's/x86_64/amd64/')}
 docker build --platform linux/$ARCH -f src/Stickerlandia.PrintService.Api/Dockerfile -t stickerlandia/print-service:dev .
-docker build --platform linux/$ARCH -f src/Stickerlandia.PrintService.Api/Dockerfile -t stickerlandia/print-service-worker:dev .
+docker build --platform linux/$ARCH -f src/Stickerlandia.PrintService.Client/Dockerfile -t stickerlandia/print-service-client:dev .
 """
 
 [tasks."build:docker-release"]
@@ -17,7 +17,7 @@ description = "Build release container"
 run = """
 ARCH=${ARCH:-$(uname -m | sed 's/x86_64/amd64/')}
 docker build --platform linux/$ARCH -f src/Stickerlandia.PrintService.Api/Dockerfile -t stickerlandia/print-service:latest .
-docker build --platform linux/$ARCH -f src/Stickerlandia.PrintService.Api/Dockerfile -t stickerlandia/print-service-worker:latest .
+docker build --platform linux/$ARCH -f src/Stickerlandia.PrintService.Client/Dockerfile -t stickerlandia/print-service-client:latest .
 """
 
 [tasks."infra:install"]

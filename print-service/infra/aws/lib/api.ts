@@ -16,6 +16,7 @@ import { IPrivateDnsNamespace } from "aws-cdk-lib/aws-servicediscovery";
 import { WebService } from "../../../../shared/lib/shared-constructs/lib/web-service";
 import { ServiceProps } from "./service-props";
 import { Duration } from "aws-cdk-lib/core";
+import { ITable } from "aws-cdk-lib/aws-dynamodb";
 
 export class ApiProps {
   sharedProps: SharedProps;
@@ -28,47 +29,32 @@ export class ApiProps {
   serviceDiscoveryName: string;
   deployInPrivateSubnet?: boolean;
   cluster: Cluster;
+  printerTable: ITable;
+  printJobTable: ITable;
 }
 
 export class Api extends Construct {
-  stickerClaimedQueue: Queue;
-  stickerClaimedDLQ: Queue;
-  userRegisteredTopic: Topic;
   constructor(scope: Construct, id: string, props: ApiProps) {
     super(scope, id);
 
-    this.userRegisteredTopic = new Topic(this, "UserRegisteredTopic", {
-      topicName: `${props.sharedProps.serviceName}-${props.sharedProps.environment}-user-registered`,
-    });
-    this.stickerClaimedDLQ = new Queue(this, "StickerClaimedDLQ", {
-      queueName: `${props.sharedProps.serviceName}-${props.sharedProps.environment}-sticker-claimed-dlq`,
-    });
-
-    //TODO: Add EventBridge rule mapping to subscribe to sticker claimed events published to the shared EventBus.
-    this.stickerClaimedQueue = new Queue(this, "StickerClaimedQueue", {
-      queueName: `${props.sharedProps.serviceName}-${props.sharedProps.environment}-sticker-claimed`,
-      deadLetterQueue: {
-        queue: this.stickerClaimedDLQ,
-        maxReceiveCount: 5, // Messages will be sent to DLQ after 5 failed attempts
-      },
-    });
-
-    const webService = new WebService(this, "UserServiceWebService", {
+    const webService = new WebService(this, "PrintServiceWebService", {
       sharedProps: props.sharedProps,
       vpc: props.vpc,
       vpcLink: props.vpcLink,
       vpcLinkSecurityGroupId: props.vpcLinkSecurityGroupId,
       httpApi: props.httpApi,
       cluster: props.cluster,
-      image: "ghcr.io/datadog/stickerlandia/user-management-service",
+      image: "ghcr.io/datadog/stickerlandia/print-service",
       imageTag: props.sharedProps.version,
       assetPath: path.resolve(__dirname, "../../.."),
       ddApiKey: props.sharedProps.datadog.apiKeyParameter,
       port: 8080,
       environmentVariables: {
         DEPLOYMENT_HOST_URL: `https://${props.serviceProps.cloudfrontDistribution.distributionDomainName}`,
-        DRIVING: "ASPNET",
+        DRIVING: "AWS",
         DRIVEN: "AWS",
+        Aws__PrinterTableName: props.printerTable.tableName,
+        Aws__PrintJobTableName: props.printJobTable.tableName,
         DISABLE_SSL: "true",
         LOGGING__LOGLEVEL__DEFAULT: "INFORMATION",
         LOGGING__LOGLEVEL__MICROSOFT: "INFORMATION",
@@ -80,20 +66,15 @@ export class Api extends Construct {
         DD_API_KEY: Secret.fromSsmParameter(
           props.sharedProps.datadog.apiKeyParameter
         ),
-        ConnectionStrings__database: props.serviceProps.databaseCredentials.getConnectionStringEcsSecret()!,
         ...props.serviceProps.messagingConfiguration.asSecrets(),
       },
-      path: "/api/users/{proxy+}",
-      additionalPathMappings: [
-        "/.well-known/{proxy+}",
-        "/auth/{proxy+}",
-        "/Auth/{proxy+}",
-      ],
-      healthCheckPath: "/api/users/v1/health",
+      path: "/api/print/{proxy+}",
+      additionalPathMappings: [],
+      healthCheckPath: "/api/print/v1/health",
       healthCheckCommand: {
         command: [
           "CMD-SHELL",
-          `curl -f http://localhost:8080/api/users/v1/health || exit 1`,
+          `curl -f http://localhost:8080/api/print/v1/health || exit 1`,
         ],
         interval: Duration.seconds(30),
         timeout: Duration.seconds(5),
@@ -106,13 +87,7 @@ export class Api extends Construct {
       serviceDependencies: props.serviceProps.serviceDependencies,
     });
 
-    this.userRegisteredTopic.grantPublish(webService.taskRole);
-    this.stickerClaimedQueue.grantSendMessages(webService.taskRole);
-    this.stickerClaimedDLQ.grantSendMessages(webService.taskRole);
-    this.stickerClaimedQueue.grantConsumeMessages(webService.taskRole);
-    this.stickerClaimedDLQ.grantConsumeMessages(webService.taskRole);
-
-    // Grant execution role permission to read the database connection string secret
-    props.serviceProps.databaseCredentials.grantRead(webService.executionRole);
+    props.printerTable.grantReadWriteData(webService.taskRole);
+    props.printJobTable.grantReadWriteData(webService.taskRole);
   }
 }
