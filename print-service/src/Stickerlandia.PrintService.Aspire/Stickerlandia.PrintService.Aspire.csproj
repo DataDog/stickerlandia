@@ -29,6 +29,7 @@
         <ProjectReference Include="..\Stickerlandia.PrintService.Client\Stickerlandia.PrintService.Client.csproj" />
         <ProjectReference Include="..\Stickerlandia.PrintService.Lambda\Stickerlandia.PrintService.Lambda.csproj" />
         <ProjectReference Include="..\Stickerlandia.PrintService.Api\Stickerlandia.PrintService.Api.csproj" />
+        <ProjectReference Include="..\Stickerlandia.PrintService.MigrationService\Stickerlandia.PrintService.MigrationService.csproj" />
         <ProjectReference Include="..\Stickerlandia.PrintService.Worker\Stickerlandia.PrintService.Worker.csproj" />
     </ItemGroup>
 

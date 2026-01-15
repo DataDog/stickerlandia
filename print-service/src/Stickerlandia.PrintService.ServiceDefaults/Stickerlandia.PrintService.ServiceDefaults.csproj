@@ -24,6 +24,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Stickerlandia.PrintService.Agnostic\Stickerlandia.PrintService.Agnostic.csproj" />
       <ProjectReference Include="..\Stickerlandia.PrintService.AWS\Stickerlandia.PrintService.AWS.csproj" />
     </ItemGroup>
 

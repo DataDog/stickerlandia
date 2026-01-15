@@ -34,6 +34,6 @@ public class Startup
             .WriteTo.Console(new JsonFormatter())
             .CreateLogger();
 
-        services.ConfigureDefaultUserManagementServices(configuration, enableDefaultUi: false);
+        services.ConfigureDefaultPrintServices(configuration, enableDefaultUi: false);
     }
 }

@@ -13,4 +13,12 @@ using Aspire.Hosting.AWS.DynamoDB;
 namespace Stickerlandia.PrintService.Aspire;
 
 internal sealed record InfrastructureResources(
-    IResourceBuilder<DynamoDBLocalResource> DatabaseResource);
+    IResourceBuilder<DynamoDBLocalResource>? DynamoDbResource = null,
+    IResourceBuilder<PostgresDatabaseResource>? PostgresResource = null,
+    IResourceBuilder<KafkaServerResource>? KafkaResource = null,
+    IResourceBuilder<ProjectResource>? MigrationResource = null)
+{
+    // Legacy property for backwards compatibility
+    public IResourceBuilder<DynamoDBLocalResource> DatabaseResource =>
+        DynamoDbResource ?? throw new InvalidOperationException("DynamoDB resource is not configured");
+}

@@ -126,6 +126,10 @@ app.MapControllers();
 var api = app.NewVersionedApi("api");
 var v1ApiEndpoints = api.MapGroup("api/print/v{version:apiVersion}")
     .HasApiVersion(1.0);
+
+const string adminRole = "ADMIN";
+const string userRole = "USER";
+
 v1ApiEndpoints.MapHealthChecks("/health", new HealthCheckOptions
 {
     ResponseWriter = WriteHealthCheckResponse
@@ -135,7 +139,7 @@ v1ApiEndpoints.MapGet("/event/{eventName}", GetPrintersForEvent.HandleAsync)
     .RequireAuthorization(policyBuilder =>
     {
         policyBuilder.RequireAuthenticatedUser()
-            .RequireRole("admin", "user");
+            .RequireRole(adminRole, userRole);
     })
     .WithDescription("Get all registered printers for an event")
     .Produces<ApiResponse<PrinterDTO>>(200)
@@ -146,7 +150,7 @@ v1ApiEndpoints.MapGet("/event/{eventName}/printers/status", GetPrinterStatusesEn
     .RequireAuthorization(policyBuilder =>
     {
         policyBuilder.RequireAuthenticatedUser()
-            .RequireRole("admin", "user");
+            .RequireRole(adminRole, userRole);
     })
     .WithDescription("Get the online/offline status of all printers for an event")
     .Produces<ApiResponse<GetPrinterStatusesResponse>>(200)
@@ -157,7 +161,7 @@ v1ApiEndpoints.MapPost("/event/{eventName}", RegisterPrinterEndpoint.HandleAsync
     .RequireAuthorization(policyBuilder =>
     {
         policyBuilder.RequireAuthenticatedUser()
-            .RequireRole("admin");
+            .RequireRole(adminRole);
     })
     .WithDescription("Register a new printer for an event")
     .Produces<ApiResponse<string>>(200)
@@ -168,7 +172,7 @@ v1ApiEndpoints.MapPost("/event/{eventName}/printer/{printerName}/jobs", SubmitPr
     .RequireAuthorization(policyBuilder =>
     {
         policyBuilder.RequireAuthenticatedUser()
-            .RequireRole("admin", "user");
+            .RequireRole(adminRole, userRole);
     })
     .WithDescription("Submit a print job to a printer")
     .Produces<ApiResponse<SubmitPrintJobResponse>>(201)

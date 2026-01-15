@@ -42,8 +42,14 @@ internal static class AuthenticationExtensions
     {
         var authority = configuration["Authentication:Authority"]
             ?? throw new InvalidOperationException("Authentication:Authority is required for OIDC mode");
-        var audience = configuration["Authentication:Audience"] ?? "print-service";
+        var audience = configuration["Authentication:Audience"] ?? "stickerlandia";
         var requireHttpsMetadata = configuration.GetValue<bool>("Authentication:RequireHttpsMetadata", true);
+
+        // Ensure authority has trailing slash to match OpenIddict's issuer format (RFC 3986)
+        if (!authority.EndsWith('/'))
+        {
+            authority += "/";
+        }
 
         options.Authority = authority;
         options.Audience = audience;
@@ -52,6 +58,7 @@ internal static class AuthenticationExtensions
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
+            ValidIssuer = authority,
             ValidateAudience = true,
             ValidAudience = audience,
             ValidateLifetime = true,
@@ -76,7 +83,7 @@ internal static class AuthenticationExtensions
             ?? "https://stickerlandia.local";
         var audience = configuration["Jwt:Audience"]
             ?? Environment.GetEnvironmentVariable("JWT_AUDIENCE")
-            ?? "print-service";
+            ?? "stickerlandia";
         var signingKey = configuration["Jwt:SigningKey"]
             ?? "DRjd/GnduI3Efzen9V9BvbNUfc/VKgXltV7Kbk9sMkY=";
 

@@ -46,7 +46,7 @@ internal sealed class PrinterDriver : IDisposable
         {
             return JwtTokenGenerator.GenerateRsaToken(
                 userId,
-                ["admin"],
+                ["ADMIN"],
                 _oidcServer.KeyProvider,
                 _oidcServer.Issuer,
                 TestConstants.TestAudience);
@@ -54,7 +54,7 @@ internal sealed class PrinterDriver : IDisposable
 
         return JwtTokenGenerator.GenerateToken(
             userId,
-            ["admin"],
+            ["ADMIN"],
             TestConstants.TestSigningKey,
             TestConstants.TestIssuer,
             TestConstants.TestAudience);

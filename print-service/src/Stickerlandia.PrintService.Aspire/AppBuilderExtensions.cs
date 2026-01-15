@@ -73,7 +73,72 @@ internal static class AppBuilderExtensions
     {
         var dynamoDb = builder.AddAWSDynamoDBLocal("dynamodb");
 
-        return new InfrastructureResources(dynamoDb);
+        return new InfrastructureResources(DynamoDbResource: dynamoDb);
+    }
+
+    public static InfrastructureResources WithAgnosticServices(this IDistributedApplicationBuilder builder)
+    {
+        var postgres = builder.AddPostgres("postgres")
+            .WithPgAdmin()
+            .AddDatabase("printservice");
+
+        var kafka = builder.AddKafka("messaging")
+            .WithLifetime(ContainerLifetime.Persistent)
+            .WithKafkaUI()
+            .WithLifetime(ContainerLifetime.Persistent);
+
+        var migrationService = builder
+            .AddProject<Projects.Stickerlandia_PrintService_MigrationService>("migration-service")
+            .WithEnvironment("ConnectionStrings__database", postgres)
+            .WithEnvironment("ConnectionStrings__messaging", kafka)
+            .WithEnvironment("DRIVING", builder.Configuration["DRIVING"])
+            .WithEnvironment("DRIVEN", builder.Configuration["DRIVEN"])
+            .WithHttpsEndpoint(51545)
+            .WaitFor(postgres);
+
+        return new InfrastructureResources(PostgresResource: postgres, KafkaResource: kafka, MigrationResource: migrationService);
+    }
+
+    public static IDistributedApplicationBuilder WithAgnosticApi(
+        this IDistributedApplicationBuilder builder,
+        IResourceBuilder<PostgresDatabaseResource> postgresResource,
+        IResourceBuilder<KafkaServerResource> kafkaResource,
+        IResourceBuilder<ProjectResource> migrationService,
+        IResourceBuilder<WireMockOidcResource>? oidcServer = null)
+    {
+        ArgumentNullException.ThrowIfNull(postgresResource, nameof(postgresResource));
+
+        // Add the API project to the distributed application builder
+        var application = builder.AddProject<Projects.Stickerlandia_PrintService_Api>("api")
+            .WithEnvironment("ConnectionStrings__database", postgresResource)
+            .WithEnvironment("ConnectionStrings__messaging", kafkaResource)
+            .WithEnvironment("DRIVING", builder.Configuration["DRIVING"])
+            .WithEnvironment("DRIVEN", builder.Configuration["DRIVEN"])
+            .WithHttpsEndpoint(51545)
+            .WithReference(postgresResource)
+            .WaitForCompletion(migrationService)
+            .WaitFor(postgresResource);
+
+        // Add the print client
+        var printClient = builder.AddProject<Projects.Stickerlandia_PrintService_Client>("client")
+            .WithHttpsEndpoint(51546);
+
+        // Configure OIDC authentication
+        var preConfiguredAuthority = builder.Configuration["Authentication:Authority"];
+        if (!string.IsNullOrEmpty(preConfiguredAuthority))
+        {
+            application
+                .WithEnvironment("Authentication__Mode", builder.Configuration["Authentication:Mode"] ?? "OidcDiscovery")
+                .WithEnvironment("Authentication__Authority", preConfiguredAuthority)
+                .WithEnvironment("Authentication__Audience", builder.Configuration["Authentication:Audience"] ?? "print-service")
+                .WithEnvironment("Authentication__RequireHttpsMetadata", builder.Configuration["Authentication:RequireHttpsMetadata"] ?? "false");
+        }
+        else if (oidcServer != null)
+        {
+            application.WithOidcAuthentication(oidcServer);
+        }
+
+        return builder;
     }
 
     public static IDistributedApplicationBuilder WithBackgroundWorker(

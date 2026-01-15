@@ -14,6 +14,7 @@ using OpenTelemetry.Trace;
 using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Json;
+using Stickerlandia.PrintService.Agnostic;
 using Stickerlandia.PrintService.AWS;
 using Stickerlandia.PrintService.Core;
 using Stickerlandia.PrintService.Core.Observability;
@@ -28,7 +29,7 @@ public static class DefaultServiceExtensions
 
         builder.Configuration.AddEnvironmentVariables();
         builder.Services.AddLogging();
-        builder.Services.ConfigureDefaultUserManagementServices(builder.Configuration, enableDefaultUi);
+        builder.Services.ConfigureDefaultPrintServices(builder.Configuration, enableDefaultUi);
 
         // Configure OpenTelemetry
         builder.ConfigureOpenTelemetry();
@@ -116,7 +117,7 @@ public static class DefaultServiceExtensions
         return builder;
     }
 
-    public static IServiceCollection ConfigureDefaultUserManagementServices(this IServiceCollection services,
+    public static IServiceCollection ConfigureDefaultPrintServices(this IServiceCollection services,
         IConfiguration configuration,
         bool enableDefaultUi)
     {
@@ -127,7 +128,8 @@ public static class DefaultServiceExtensions
             case "AZURE":
                 throw new ArgumentException("Azure driven adapter is not yet implemented");
             case "AGNOSTIC":
-                throw new ArgumentException("Agnostic driven adapter is not yet implemented");
+                services.AddAgnosticAdapters(configuration);
+                break;
             case "AWS":
                 services.AddAwsAdapters(configuration, enableDefaultUi);
                 break;
