@@ -24,7 +24,11 @@ public sealed class WireMockOidcServer : IDisposable
 
     public string BaseUrl => _server.Url!;
 
-    public string Issuer => BaseUrl;
+    /// <summary>
+    /// The issuer URL with trailing slash to match OpenIddict's format (RFC 3986).
+    /// This must match what AuthenticationExtensions expects.
+    /// </summary>
+    public string Issuer => BaseUrl.EndsWith('/') ? BaseUrl : BaseUrl + "/";
 
     public RsaKeyProvider KeyProvider => _keyProvider;
 
@@ -79,6 +83,7 @@ public sealed class WireMockOidcServer : IDisposable
 
     private string GenerateDiscoveryDocument()
     {
+        // Use Issuer (with trailing slash) for consistency with token validation
         var document = new
         {
             issuer = Issuer,

@@ -293,6 +293,8 @@ services:
     depends_on:
       redpanda:
         condition: service_healthy
+      user-management:
+        condition: service_healthy
     environment:
       # DataDog APM configuration
       DD_SERVICE: print-service
@@ -315,6 +317,7 @@ services:
       KAFKA__GROUPID: "stickerlandia-print"
       Authentication__Audience: "stickerlandia"
       Authentication__Authority: ${DEPLOYMENT_HOST_URL}
+      Authentication__MetadataAddress: "http://user-management:8080"
       Authentication__Mode: "OidcDiscovery"
       Authentication__RequireHttpsMetadata: "false"
       OPENIDDICT_ISSUER: ${DEPLOYMENT_HOST_URL}
@@ -329,6 +332,34 @@ services:
       - "traefik.http.routers.print-service.rule=PathPrefix(`/api/print`)"
       - "traefik.http.routers.print-service.priority=100"
       - "traefik.http.services.print-service.loadbalancer.server.port=8080"
+
+  print-service-db-migrations:
+    build:
+      context: ./print-service
+      dockerfile: src/Stickerlandia.PrintService.MigrationService/Dockerfile
+    container_name: print-service-migrations
+    depends_on:
+      print-service-db:
+        condition: service_healthy
+    environment:
+      # DataDog APM configuration
+      DD_SERVICE: print-service-migration-service
+      DD_ENV: development
+      DD_VERSION: ${COMMIT_SHA:-latest}
+      DD_AGENT_HOST: datadog-agent
+      DD_TRACE_OTEL_ENABLED: "true"
+      DD_LOGS_INJECTION: "true"
+      DD_RUNTIME_METRICS_ENABLED: "true"
+      ASPNETCORE_ENVIRONMENT: Development
+      DRIVING: AGNOSTIC
+      DRIVEN: AGNOSTIC
+      ConnectionStrings__messaging: "redpanda:9092"
+      ConnectionStrings__database: "Host=print-service-db;Port=5432;Database=print_service;Username=print_service_user;Password=print_service_password"
+      KAFKA__BOOTSTRAPSERVERS: "redpanda:9092"
+      KAFKA__SCHEMAREGISTRY: "http://redpanda:8082"
+      KAFKA__GROUPID: "stickerlandia-print"
+      DEPLOYMENT_HOST_URL: ${DEPLOYMENT_HOST_URL}
+    command: ["migrations/Stickerlandia.PrintService.MigrationService.dll"]
 
   user-management:
     build:
@@ -375,6 +406,9 @@ services:
       - "traefik.http.routers.user-management.priority=100"
       - "traefik.http.routers.auth.rule=PathRegexp(`(?i)^/auth`)"
       - "traefik.http.routers.auth.priority=100"
+      - "traefik.http.routers.oidc-discovery.rule=PathPrefix(`/.well-known`)"
+      - "traefik.http.routers.oidc-discovery.priority=100"
+      - "traefik.http.routers.oidc-discovery.service=user-management"
       - "traefik.http.services.user-management.loadbalancer.server.port=8080"
 
   user-management-worker:

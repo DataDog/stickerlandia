@@ -19,7 +19,7 @@ using var keyProvider = new RsaKeyProvider();
 
 JwtTokenGenerator.GenerateRsaToken(
     userId,
-    ["ADMIN"],
+    ["admin"],
     keyProvider,
     issuer,
     audience);

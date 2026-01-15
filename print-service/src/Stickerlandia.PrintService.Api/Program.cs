@@ -127,8 +127,8 @@ var api = app.NewVersionedApi("api");
 var v1ApiEndpoints = api.MapGroup("api/print/v{version:apiVersion}")
     .HasApiVersion(1.0);
 
-const string adminRole = "ADMIN";
-const string userRole = "USER";
+const string adminRole = "admin";
+const string userRole = "user";
 
 v1ApiEndpoints.MapHealthChecks("/health", new HealthCheckOptions
 {

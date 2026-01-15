@@ -106,7 +106,7 @@ internal sealed class WireMockOidcResource : Resource, IDisposable
                 .WithCallback(request =>
                 {
                     var userId = "test-user";
-                    var rolesParam = "ADMIN";
+                    var rolesParam = "admin";
 
                     if (request.Query != null)
                     {

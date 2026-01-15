@@ -6,7 +6,11 @@
 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Protocols;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
+
+#pragma warning disable CA5400
 
 namespace Stickerlandia.PrintService.Api.Configurations;
 
@@ -45,13 +49,16 @@ internal static class AuthenticationExtensions
         var audience = configuration["Authentication:Audience"] ?? "stickerlandia";
         var requireHttpsMetadata = configuration.GetValue<bool>("Authentication:RequireHttpsMetadata", true);
 
+        // MetadataAddress allows using an internal URL for OIDC discovery (e.g., Docker network)
+        // while validating against the external issuer URL in the token
+        var metadataAddress = configuration["Authentication:MetadataAddress"];
+
         // Ensure authority has trailing slash to match OpenIddict's issuer format (RFC 3986)
         if (!authority.EndsWith('/'))
         {
             authority += "/";
         }
 
-        options.Authority = authority;
         options.Audience = audience;
         options.RequireHttpsMetadata = requireHttpsMetadata;
 
@@ -66,13 +73,45 @@ internal static class AuthenticationExtensions
             ClockSkew = TimeSpan.FromMinutes(5)
         };
 
-        // For testing with WireMock over HTTP
-        if (!requireHttpsMetadata)
+        // If a separate metadata address is configured, use it for all OIDC fetching
+        // This is needed in Docker where internal URLs differ from external issuer URLs
+        if (!string.IsNullOrEmpty(metadataAddress))
         {
-            options.BackchannelHttpHandler = new HttpClientHandler
+            if (!metadataAddress.EndsWith('/'))
             {
-                ServerCertificateCustomValidationCallback = (_, _, _, _) => true
+                metadataAddress += "/";
+            }
+
+            using var httpHandler = new HttpClientHandler();
+            if (!requireHttpsMetadata)
+            {
+                httpHandler.ServerCertificateCustomValidationCallback = (_, _, _, _) => true;
+            }
+
+            using var httpClient = new HttpClient(httpHandler);
+            var internalJwksUrl = metadataAddress + ".well-known/jwks";
+
+            // Use IssuerSigningKeyResolver to dynamically fetch keys from internal URL
+            options.TokenValidationParameters.IssuerSigningKeyResolver = (token, securityToken, kid, parameters) =>
+            {
+                // Fetch JWKS from internal URL synchronously (cached by HttpClient)
+                var jwksResponse = httpClient.GetStringAsync(new Uri(internalJwksUrl)).GetAwaiter().GetResult();
+                var jwks = new JsonWebKeySet(jwksResponse);
+                return jwks.Keys;
             };
+        }
+        else
+        {
+            options.Authority = authority;
+
+            // For testing with WireMock over HTTP
+            if (!requireHttpsMetadata)
+            {
+                options.BackchannelHttpHandler = new HttpClientHandler
+                {
+                    ServerCertificateCustomValidationCallback = (_, _, _, _) => true
+                };
+            }
         }
     }
 

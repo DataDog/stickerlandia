@@ -49,21 +49,49 @@ public static class ServiceExtensions
         var kafkaUsername = configuration?["KAFKA_USERNAME"];
         var kafkaPassword = configuration?["KAFKA_PASSWORD"];
         var securityProtocol = string.IsNullOrEmpty(kafkaUsername) ? SecurityProtocol.Plaintext : SecurityProtocol.SaslSsl;
-        
-        using var adminClient = new AdminClientBuilder(new AdminClientConfig
+
+        // Retry Kafka connection with exponential backoff to handle startup timing
+        const int maxRetries = 5;
+        var retryDelay = TimeSpan.FromSeconds(2);
+        Exception? lastException = null;
+
+        for (int attempt = 1; attempt <= maxRetries; attempt++)
         {
-            BootstrapServers = configuration!.GetConnectionString("messaging"),
-            SecurityProtocol = securityProtocol,
-            SaslUsername = kafkaUsername ?? null,
-            SaslPassword = kafkaPassword ?? null,
-            SaslMechanism = SaslMechanism.Plain,
-        }).Build();
-        
-        var metadata = adminClient.GetMetadata(TimeSpan.FromSeconds(10));
-        
-        if (metadata.Brokers.Count == 0)
+            try
+            {
+                using var adminClient = new AdminClientBuilder(new AdminClientConfig
+                {
+                    BootstrapServers = configuration!.GetConnectionString("messaging"),
+                    SecurityProtocol = securityProtocol,
+                    SaslUsername = kafkaUsername ?? null,
+                    SaslPassword = kafkaPassword ?? null,
+                    SaslMechanism = SaslMechanism.Plain,
+                }).Build();
+
+                var metadata = adminClient.GetMetadata(TimeSpan.FromSeconds(10));
+
+                if (metadata.Brokers.Count > 0)
+                {
+                    break; // Successfully connected
+                }
+
+                lastException = new InvalidOperationException("No Kafka brokers available with the provided configuration.");
+            }
+            catch (KafkaException ex)
+            {
+                lastException = ex;
+            }
+
+            if (attempt < maxRetries)
+            {
+                Thread.Sleep(retryDelay);
+                retryDelay = TimeSpan.FromTicks(retryDelay.Ticks * 2); // Exponential backoff
+            }
+        }
+
+        if (lastException != null)
         {
-            throw new InvalidOperationException("No Kafka brokers available with the provided configuration.");
+            throw new InvalidOperationException($"Failed to connect to Kafka after {maxRetries} attempts.", lastException);
         }
         
         var producerConfig = new ProducerConfig

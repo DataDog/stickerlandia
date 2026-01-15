@@ -116,8 +116,10 @@ internal static class AppBuilderExtensions
             .WithEnvironment("DRIVEN", builder.Configuration["DRIVEN"])
             .WithHttpsEndpoint(51545)
             .WithReference(postgresResource)
+            .WithReference(kafkaResource)
             .WaitForCompletion(migrationService)
-            .WaitFor(postgresResource);
+            .WaitFor(postgresResource)
+            .WaitFor(kafkaResource);
 
         // Add the print client
         var printClient = builder.AddProject<Projects.Stickerlandia_PrintService_Client>("client")
