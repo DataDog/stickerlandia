@@ -2,7 +2,7 @@
 # NOTE: Source code must be mounted at /app at runtime for hot reload
 # This container only provides the .NET SDK environment and tools
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0
+FROM mcr.microsoft.com/dotnet/sdk:10.0
 
 ARG TARGETPLATFORM
 

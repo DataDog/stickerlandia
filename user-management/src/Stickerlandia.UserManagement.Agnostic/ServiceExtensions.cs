@@ -25,6 +25,12 @@ public static class ServiceExtensions
     public static IServiceCollection AddAgnosticAdapters(this IServiceCollection services, IConfiguration configuration,
         bool enableDefaultUi = true)
     {
+        if (EF.IsDesignTime)
+        {
+            services.AddPostgresAuthServices(configuration, enableDefaultUi);
+            return services;
+        }
+        
         services.AddKafkaMessaging(configuration);
         services.AddPostgresAuthServices(configuration, enableDefaultUi);
 

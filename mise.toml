@@ -20,21 +20,14 @@ java = "temurin-21"
 maven = "3.9"
 
 # Used by user-management
-dotnet = "8"
-
-[env]
-_.file = { path = ".env", optional = true }
-
-ENV = "dev"
-COMMIT_SHA = "LOCAL"
-DD_API_KEY = "PLACEHOLDER_RUN_MISE_ENV_SETUP"
-DD_SITE = "datadoghq.eu"
-DD_RUM_APPLICATION_ID = "PLACEHOLDER_RUN_MISE_ENV_SETUP"
-DD_RUM_CLIENT_TOKEN = "PLACEHOLDER_RUN_MISE_ENV_SETUP"
+dotnet = "10"
 
 # =============================================================================
 # env: Environment setup
 # =============================================================================
+
+[env]
+_.file = { path = ".env", optional = true }
 
 [tasks."env:setup"]
 description = "Create .env file with required configuration"

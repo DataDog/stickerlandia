@@ -8,11 +8,11 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Saunter;
 using Saunter.AsyncApiSchema.v2;
 using Stickerlandia.UserManagement.Azure;
-using SecuritySchemeType = Microsoft.OpenApi.Models.SecuritySchemeType;
+using SecuritySchemeType = Microsoft.OpenApi.SecuritySchemeType;
 
 namespace Stickerlandia.UserManagement.Api.Configurations;
 
