@@ -16,6 +16,7 @@ using Stickerlandia.PrintService.Api;
 using Stickerlandia.PrintService.Api.Configurations;
 using Stickerlandia.PrintService.Api.Middlewares;
 using Stickerlandia.PrintService.Core;
+using Stickerlandia.PrintService.Core.GetPrinters;
 using Stickerlandia.PrintService.Core.PrintJobs;
 using Stickerlandia.PrintService.ServiceDefaults;
 
@@ -141,6 +142,17 @@ v1ApiEndpoints.MapGet("/event/{eventName}", GetPrintersForEvent.HandleAsync)
     .ProducesProblem(401)
     .ProducesProblem(403);
 
+v1ApiEndpoints.MapGet("/event/{eventName}/printers/status", GetPrinterStatusesEndpoint.HandleAsync)
+    .RequireAuthorization(policyBuilder =>
+    {
+        policyBuilder.RequireAuthenticatedUser()
+            .RequireRole("admin", "user");
+    })
+    .WithDescription("Get the online/offline status of all printers for an event")
+    .Produces<ApiResponse<GetPrinterStatusesResponse>>(200)
+    .ProducesProblem(401)
+    .ProducesProblem(403);
+
 v1ApiEndpoints.MapPost("/event/{eventName}", RegisterPrinterEndpoint.HandleAsync)
     .RequireAuthorization(policyBuilder =>
     {
@@ -176,6 +188,19 @@ v1ApiEndpoints.MapGet("/printer/jobs", PollPrintJobsEndpoint.HandleAsync)
     .Produces<ApiResponse<PollPrintJobsResponse>>(200)
     .Produces(204)
     .ProducesProblem(401);
+
+v1ApiEndpoints.MapPost("/printer/jobs/{printJobId}/acknowledge", AcknowledgePrintJobEndpoint.HandleAsync)
+    .RequireAuthorization(policyBuilder =>
+    {
+        policyBuilder.AddAuthenticationSchemes(Stickerlandia.PrintService.Api.Configurations.PrinterKeyAuthenticationHandler.SchemeName)
+            .RequireAuthenticatedUser();
+    })
+    .WithDescription("Acknowledge a print job as completed or failed (printer client)")
+    .Produces<ApiResponse<AcknowledgePrintJobResponse>>(200)
+    .ProducesProblem(400)
+    .ProducesProblem(401)
+    .ProducesProblem(403)
+    .ProducesProblem(404);
 
 try
 {

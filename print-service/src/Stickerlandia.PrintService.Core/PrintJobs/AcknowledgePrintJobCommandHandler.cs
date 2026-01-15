@@ -1,0 +1,84 @@
+// Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+// This product includes software developed at Datadog (https://www.datadoghq.com/).
+// Copyright 2025 Datadog, Inc.
+
+using System.Diagnostics;
+using Stickerlandia.PrintService.Core.Outbox;
+
+namespace Stickerlandia.PrintService.Core.PrintJobs;
+
+/// <summary>
+/// Handler for acknowledging print job completion or failure.
+/// </summary>
+public class AcknowledgePrintJobCommandHandler(
+    IPrintJobRepository printJobRepository,
+    IPrinterRepository printerRepository,
+    IOutbox outbox)
+{
+    public async Task<AcknowledgePrintJobResponse> Handle(AcknowledgePrintJobCommand command)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        if (!command.IsValid())
+        {
+            throw new InvalidPrintJobException("Invalid acknowledgment command");
+        }
+
+        Activity.Current?.AddTag("printjob.acknowledge.job_id", command.PrintJobId);
+        Activity.Current?.AddTag("printjob.acknowledge.printer_id", command.PrinterId);
+        Activity.Current?.AddTag("printjob.acknowledge.success", command.Success);
+
+        // Load the print job
+        var printJob = await printJobRepository.GetByIdAsync(command.PrintJobId);
+
+        if (printJob is null)
+        {
+            throw new PrintJobNotFoundException($"Print job '{command.PrintJobId}' not found");
+        }
+
+        // Verify the job belongs to the printer making the request
+        if (printJob.PrinterId.Value != command.PrinterId)
+        {
+            throw new PrintJobOwnershipException($"Print job '{command.PrintJobId}' does not belong to printer '{command.PrinterId}'");
+        }
+
+        // Verify the job is in Processing status
+        if (printJob.Status != PrintJobStatus.Processing)
+        {
+            throw new PrintJobStatusException($"Print job '{command.PrintJobId}' is not in Processing status (current: {printJob.Status})");
+        }
+
+        // Update the job status
+        if (command.Success)
+        {
+            printJob.Complete();
+            await outbox.StoreEventFor(new PrintJobCompletedEvent(printJob));
+        }
+        else
+        {
+            printJob.Fail(command.FailureReason!);
+            await outbox.StoreEventFor(new PrintJobFailedEvent(printJob));
+        }
+
+        // Save the updated job
+        await printJobRepository.UpdateAsync(printJob);
+
+        // Update the printer's last job processed timestamp
+        var printer = await printerRepository.GetPrinterByKeyAsync(command.PrinterId);
+        if (printer != null)
+        {
+            printer.RecordJobProcessed();
+            await printerRepository.UpdateAsync(printer);
+        }
+
+        return new AcknowledgePrintJobResponse { Acknowledged = true };
+    }
+}
+
+/// <summary>
+/// Response from acknowledging a print job.
+/// </summary>
+public record AcknowledgePrintJobResponse
+{
+    public bool Acknowledged { get; init; }
+}
