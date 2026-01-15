@@ -188,6 +188,23 @@ services:
       timeout: 10s
       retries: 5
 
+  print-service-db:
+    image: postgres:16
+    container_name: print-service-db
+    environment:
+      POSTGRES_DB: print_service
+      POSTGRES_USER: print_service_user
+      POSTGRES_PASSWORD: print_service_password
+    ports:
+      - "5435:5432"
+    volumes:
+      - print-service-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U print_service_user -d print_service"]
+      interval: 1s
+      timeout: 10s
+      retries: 5
+
   minio:
     image: minio/minio:latest
     container_name: stickerlandia-minio
@@ -266,6 +283,52 @@ services:
       - "traefik.http.routers.sticker-catalogue.rule=PathPrefix(`/api/stickers`)"
       - "traefik.http.routers.sticker-catalogue.priority=100"
       - "traefik.http.services.sticker-catalogue.loadbalancer.server.port=8080"
+
+
+  print-service:
+    build:
+      context: ./print-service
+      dockerfile: src/Stickerlandia.PrintService.Api/Dockerfile
+    container_name: print-service
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    environment:
+      # DataDog APM configuration
+      DD_SERVICE: print-service
+      DD_ENV: development
+      DD_VERSION: ${COMMIT_SHA:-latest}
+      DD_AGENT_HOST: datadog-agent
+      DD_DATA_STREAMS_ENABLED: true
+      DD_TRACE_OTEL_ENABLED: "true"
+      DD_LOGS_INJECTION: "true"
+      DD_RUNTIME_METRICS_ENABLED: "true"
+      # Application configuration
+      ASPNETCORE_ENVIRONMENT: Development
+      DRIVING: AGNOSTIC
+      DRIVEN: AGNOSTIC
+      DISABLE_SSL: "true"
+      ConnectionStrings__messaging: "redpanda:9092"
+      ConnectionStrings__database: "Host=print-service-db;Port=5432;Database=print_service;Username=print_service_user;Password=print_service_password"
+      KAFKA__BOOTSTRAPSERVERS: "redpanda:9092"
+      KAFKA__SCHEMAREGISTRY: "http://redpanda:8082"
+      KAFKA__GROUPID: "stickerlandia-print"
+      Authentication__Audience: "stickerlandia"
+      Authentication__Authority: ${DEPLOYMENT_HOST_URL}
+      Authentication__Mode: "OidcDiscovery"
+      Authentication__RequireHttpsMetadata: "false"
+      OPENIDDICT_ISSUER: ${DEPLOYMENT_HOST_URL}
+      DEPLOYMENT_HOST_URL: ${DEPLOYMENT_HOST_URL}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/print/v1/health"]
+      interval: 1s
+      timeout: 15s
+      retries: 10
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.print-service.rule=PathPrefix(`/api/print`)"
+      - "traefik.http.routers.print-service.priority=100"
+      - "traefik.http.services.print-service.loadbalancer.server.port=8080"
 
   user-management:
     build:
@@ -522,6 +585,7 @@ services:
 volumes:
   sticker-catalogue-data:
   sticker-award-data:
+  print-service-data:
   user-management-data:
   redpanda-data:
   minio-data:
