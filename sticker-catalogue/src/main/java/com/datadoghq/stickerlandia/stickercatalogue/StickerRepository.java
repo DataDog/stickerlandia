@@ -13,6 +13,7 @@ import com.datadoghq.stickerlandia.stickercatalogue.dto.StickerDTO;
 import com.datadoghq.stickerlandia.stickercatalogue.dto.StickerImageUploadResponse;
 import com.datadoghq.stickerlandia.stickercatalogue.dto.UpdateStickerRequest;
 import com.datadoghq.stickerlandia.stickercatalogue.entity.Sticker;
+import com.datadoghq.stickerlandia.stickercatalogue.messaging.StickerEventPublisher;
 import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

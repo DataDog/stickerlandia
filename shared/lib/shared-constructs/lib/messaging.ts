@@ -34,7 +34,7 @@ export interface MessagingProps {
  * It configures the shared EventBridge event bus with consistent environment
  * variable naming:
  *
- * - MESSAGING_PROVIDER: "aws"
+ * - QUARKUS_PROFILE: "prod-aws" (activates AWS messaging profile)
  * - EVENT_BUS_NAME: the event bus name
  *
  * Services requiring additional/alternative env var names (e.g., for framework
@@ -54,7 +54,7 @@ export class AWSMessagingProps extends Construct implements MessagingProps {
 
   public asEnvironmentVariables(): { [key: string]: string } {
     return {
-      MESSAGING_PROVIDER: "aws",
+      QUARKUS_PROFILE: "prod-aws",
       EVENT_BUS_NAME: this.sharedEventBus.eventBusName,
     };
   }

@@ -48,6 +48,8 @@ export interface WebServiceProps {
   readonly additionalPathMappings: string[];
   readonly healthCheckCommand?: ecs.HealthCheck;
   readonly enableReadonlyfileSystem?: boolean;
+  /** Memory limit in MiB for the task (default: 512) */
+  readonly memoryLimitMiB?: number;
   /** Resources that must be created before the ECS service starts (e.g., SSM parameters from custom resources) */
   readonly serviceDependencies?: IDependable[];
 }
@@ -111,12 +113,14 @@ export class WebService extends Construct {
     let taskDefinition: ecs.FargateTaskDefinition | undefined = undefined;
 
     // Task Definition
+    const memoryLimitMiB = props.memoryLimitMiB ?? 512;
+
     if (!props.sharedProps.enableDatadog) {
       taskDefinition = new ecs.FargateTaskDefinition(
         this,
         `${props.sharedProps.serviceName}Definition`,
         {
-          memoryLimitMiB: 512,
+          memoryLimitMiB,
           runtimePlatform: {
             cpuArchitecture: ecs.CpuArchitecture.X86_64,
             operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
@@ -131,7 +135,7 @@ export class WebService extends Construct {
           this,
           `${props.sharedProps.serviceName}Definition`,
           {
-            memoryLimitMiB: 512,
+            memoryLimitMiB,
             runtimePlatform: {
               cpuArchitecture: ecs.CpuArchitecture.X86_64,
               operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,

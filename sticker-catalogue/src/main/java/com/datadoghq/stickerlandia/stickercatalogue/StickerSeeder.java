@@ -7,6 +7,7 @@
 package com.datadoghq.stickerlandia.stickercatalogue;
 
 import com.datadoghq.stickerlandia.stickercatalogue.entity.Sticker;
+import com.datadoghq.stickerlandia.stickercatalogue.messaging.StickerEventPublisher;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
