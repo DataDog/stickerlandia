@@ -69,13 +69,12 @@ export class UserServiceStack extends cdk.Stack {
     });
 
     // Run database migrations before starting services
-    const imageTag = process.env.VERSION || "LOCAL";
     const migrationTask = new MigrationTask(this, "MigrationTask", {
       sharedProps: sharedProps,
       vpc: sharedResources.vpc,
       cluster: cluster,
       image: "ghcr.io/datadog/stickerlandia/user-management-migration",
-      imageTag: imageTag,
+      imageTag: sharedProps.version,
       assetPath: path.join(__dirname, "../../../"),
       dockerfile:
         "src/Stickerlandia.UserManagement.MigrationService/Dockerfile",

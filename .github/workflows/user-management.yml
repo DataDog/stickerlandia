@@ -316,7 +316,7 @@ jobs:
       - name: Deploy to dev AWS
         shell: bash
         env:
-          VERSION: ${{ env.sha_short }}
+          COMMIT_SHA: ${{ env.sha_short }}
           ENV: "dev"
           DD_API_KEY: ${{secrets.DD_API_KEY}}
           DD_SITE: "datadoghq.com"
