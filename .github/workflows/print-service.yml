@@ -34,54 +34,13 @@ jobs:
           cd print-service/tests/Stickerlandia.PrintService.UnitTest
           dotnet test
 
-  # integration-test-azure:
-  #   runs-on: ubuntu-latest
-  #   needs: unit-test
-  #   strategy:
-  #     matrix:
-  #       DRIVING:
-  #         - AGNOSTIC
-  #         - AZURE
-  #     fail-fast: false
-
-  #   steps:
-  #     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-  #     - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 #4.3.1
-  #       with:
-  #         dotnet-version: "10.0.x"
-  #     - name: Install SSL Certificates
-  #       run: |
-  #         dotnet dev-certs https --trust
-  #     - name: Install Azure Functions Core Tools
-  #       run: |
-  #         curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
-  #         sudo mv microsoft.gpg /etc/apt/trusted.gpg.d/microsoft.gpg
-  #         sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-ubuntu-$(lsb_release -cs 2>/dev/null)-prod $(lsb_release -cs 2>/dev/null) main" > /etc/apt/sources.list.d/dotnetdev.list'
-  #         sudo apt-get update
-  #         sudo apt-get install azure-functions-core-tools-4
-  #         func --version
-  #     - name: .NET Restore
-  #       shell: bash
-  #       run: |
-  #         cd user-management
-  #         dotnet restore Stickerlandia.UserManagement.sln
-  #     - name: Run Integration Tests
-  #       shell: bash
-  #       env:
-  #         DRIVING: ${{ matrix.DRIVING }}
-  #         DRIVEN: AZURE
-  #       run: |
-  #         func --version
-  #         cd user-management/tests/Stickerlandia.UserManagement.IntegrationTest && dotnet test --logger:"console;verbosity=detailed"
-
-  integration-test-agnostic:
+  integration-test-aws:
     runs-on: ubuntu-latest
     needs: unit-test
     strategy:
       matrix:
         DRIVING:
-          - AGNOSTIC
-          # - AZURE
+          - AWS
       fail-fast: false
 
     steps:
@@ -92,14 +51,36 @@ jobs:
       - name: Install SSL Certificates
         run: |
           dotnet dev-certs https --trust
-      - name: Install Azure Functions Core Tools
+      - name: .NET Restore
+        shell: bash
         run: |
-          curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
-          sudo mv microsoft.gpg /etc/apt/trusted.gpg.d/microsoft.gpg
-          sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-ubuntu-$(lsb_release -cs 2>/dev/null)-prod $(lsb_release -cs 2>/dev/null) main" > /etc/apt/sources.list.d/dotnetdev.list'
-          sudo apt-get update
-          sudo apt-get install azure-functions-core-tools-4
-          func --version
+          cd print-service
+          dotnet restore Stickerlandia.PrintService.sln
+      - name: Run Integration Tests
+        shell: bash
+        env:
+          DRIVING: ${{ matrix.DRIVING }}
+          DRIVEN: AWS
+        run: |
+          cd print-service/tests/Stickerlandia.PrintService.IntegrationTest && dotnet test --logger:"console;verbosity=detailed"
+
+  integration-test-agnostic:
+    runs-on: ubuntu-latest
+    needs: unit-test
+    strategy:
+      matrix:
+        DRIVING:
+          - AGNOSTIC
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 #4.3.1
+        with:
+          dotnet-version: "10.0.x"
+      - name: Install SSL Certificates
+        run: |
+          dotnet dev-certs https --trust
       - name: .NET Restore
         shell: bash
         run: |
@@ -116,7 +97,7 @@ jobs:
   push-image:
     runs-on: ubuntu-latest
     needs: [
-      # integration-test-azure,
+      integration-test-aws,
       integration-test-agnostic
     ]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -170,7 +151,7 @@ jobs:
   push-migration-service:
     runs-on: ubuntu-latest
     needs: [
-      # integration-test-azure,
+      integration-test-aws,
       integration-test-agnostic
     ]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
