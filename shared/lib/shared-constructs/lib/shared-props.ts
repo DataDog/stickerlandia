@@ -52,7 +52,16 @@ export class SharedProps {
       site: ddSite ?? "datadoghq.com",
       lambda: new DatadogLambda(scope, "DatadogLambda", {
         apiKey: ddApiKey,
-        site: ddSite,
+        site: ddSite ?? "datadoghq.com",
+        extensionLayerVersion: 92,
+        nodeLayerVersion: 132,
+        dotnetLayerVersion: 23,
+        javaLayerVersion: 25,
+        enableColdStartTracing: true,
+        enableDatadogTracing: true,
+        env: environment,
+        service: serviceName,
+        version: version,
       }),
       ecsFargate: new DatadogECSFargate({
         // One of the following 3 apiKey params are required
@@ -61,7 +70,7 @@ export class SharedProps {
         memoryLimitMiB: 512,
         isDatadogEssential: true,
         isDatadogDependencyEnabled: true,
-        site: ddSite,
+        site: ddSite ?? "datadoghq.com",
         clusterName: cluster.clusterName,
         environmentVariables: {
           DD_APM_IGNORE_RESOURCES: "(GET|HEAD) .*/health$",
