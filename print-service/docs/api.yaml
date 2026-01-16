@@ -1,0 +1,167 @@
+# Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+# This product includes software developed at Datadog (https://www.datadoghq.com/).
+# Copyright 2025-Present Datadog, Inc.
+
+openapi: 3.0.4
+info:
+  title: User Management API
+  version: v1
+paths:
+  /api/users/v1/connect/authorize:
+    get:
+      tags:
+        - Authorization
+      responses:
+        '200':
+          description: OK
+    post:
+      tags:
+        - Authorization
+      responses:
+        '200':
+          description: OK
+  /api/users/v1/connect/logout:
+    get:
+      tags:
+        - Authorization
+      responses:
+        '200':
+          description: OK
+    post:
+      tags:
+        - Authorization
+      responses:
+        '200':
+          description: OK
+  /api/users/v1/connect/token:
+    post:
+      tags:
+        - Authorization
+      responses:
+        '200':
+          description: OK
+  '/api/users/v{version}/details':
+    get:
+      tags:
+        - api
+      description: Get the current authenticated users details
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserAccountDtoApiResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+    put:
+      tags:
+        - api
+      description: Update the user details
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserDetailsRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StringApiResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+components:
+  schemas:
+    ProblemDetails:
+      type: object
+      properties:
+        type:
+          type: string
+          nullable: true
+        title:
+          type: string
+          nullable: true
+        status:
+          type: integer
+          format: int32
+          nullable: true
+        detail:
+          type: string
+          nullable: true
+        instance:
+          type: string
+          nullable: true
+      additionalProperties: { }
+    StringApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+          nullable: true
+        data:
+          type: string
+          nullable: true
+      additionalProperties: false
+    UpdateUserDetailsRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+          nullable: true
+      additionalProperties: false
+    UserAccountDto:
+      type: object
+      properties:
+        accountId:
+          type: string
+          nullable: true
+        emailAddress:
+          type: string
+          nullable: true
+        firstName:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+          nullable: true
+        claimedStickerCount:
+          type: integer
+          format: int32
+      additionalProperties: false
+    UserAccountDtoApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+          nullable: true
+        data:
+          $ref: '#/components/schemas/UserAccountDto'
+      additionalProperties: false
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      description: OAuth 2.0
+      flows:
+        authorizationCode:
+          authorizationUrl: file:///api/users/v1/connect/authorize
+          tokenUrl: file:///api/users/v1/connect/token
+          scopes:
+            User: Read
