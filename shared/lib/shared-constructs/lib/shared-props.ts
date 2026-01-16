@@ -50,19 +50,7 @@ export class SharedProps {
       apiKey: ddApiKey,
       apiKeyParameter: ddApiKeyParam,
       site: ddSite ?? "datadoghq.com",
-      lambda: new DatadogLambda(scope, "DatadogLambda", {
-        apiKey: ddApiKey,
-        site: ddSite ?? "datadoghq.com",
-        extensionLayerVersion: 92,
-        nodeLayerVersion: 132,
-        dotnetLayerVersion: 23,
-        javaLayerVersion: 25,
-        enableColdStartTracing: true,
-        enableDatadogTracing: true,
-        env: environment,
-        service: serviceName,
-        version: version,
-      }),
+      lambda: this.generateDatadogLambdaConfigurationFor(scope, serviceName),
       ecsFargate: new DatadogECSFargate({
         // One of the following 3 apiKey params are required
         apiKey: ddApiKey,
@@ -107,5 +95,24 @@ export class SharedProps {
     this.team = domain;
     this.domain = domain;
     this.enableDatadog = enableDatadog;
+  }
+
+  public generateDatadogLambdaConfigurationFor(
+    scope: Construct,
+    serviceName: string
+  ): DatadogLambda {
+    return new DatadogLambda(scope, "DatadogLambda", {
+      apiKey: this.datadog.apiKey,
+      site: this.datadog.site ?? "datadoghq.com",
+      extensionLayerVersion: 92,
+      nodeLayerVersion: 132,
+      dotnetLayerVersion: 23,
+      javaLayerVersion: 25,
+      enableColdStartTracing: true,
+      enableDatadogTracing: true,
+      service: serviceName,
+      env: this.environment,
+      version: this.version,
+    });
   }
 }

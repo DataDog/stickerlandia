@@ -63,13 +63,10 @@ export class StickerCatalogueServiceStack extends cdk.Stack {
     // Create formatted database credentials from the shared RDS secret
     const dbCredentials = new DatabaseCredentials(this, "DatabaseCredentials", {
       databaseSecretArn: sharedResources.sharedDatabaseSecretArn,
-      environment: environment,
-      version: sharedProps.version,
-      serviceName: "catalogue",
+      sharedProps: sharedProps,
       format: ConnectionStringFormat.INDIVIDUAL_FIELDS,
       databaseName: "stickerlandia_catalogue",
       vpc: sharedResources.vpc,
-      datadog: sharedProps.datadog.lambda,
     });
 
     const serviceProps: ServiceProps = {

@@ -60,16 +60,13 @@ export class UserServiceStack extends cdk.Stack {
     // Create formatted database credentials from the shared RDS secret
     const dbCredentials = new DatabaseCredentials(this, "DatabaseCredentials", {
       databaseSecretArn: sharedResources.sharedDatabaseSecretArn,
-      environment: environment,
-      version: sharedProps.version,
-      serviceName: "users",
+      sharedProps: sharedProps,
       format: ConnectionStringFormat.DOTNET,
       databaseName: "stickerlandia_users",
       vpc: sharedResources.vpc,
       // Don't create SSM parameter references - they cause CloudFormation validation errors.
       // Lambda functions will use CloudFormation dynamic references instead.
       createSsmParameterReferences: false,
-      datadog: sharedProps.datadog.lambda,
     });
 
     // Run database migrations before starting services

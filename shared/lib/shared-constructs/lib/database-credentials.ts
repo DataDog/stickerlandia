@@ -5,12 +5,14 @@
  */
 
 import { Construct } from "constructs";
+import { PolicyStatement, Effect, IGrantable } from "aws-cdk-lib/aws-iam";
 import {
-  PolicyStatement,
-  Effect,
-  IGrantable,
-} from "aws-cdk-lib/aws-iam";
-import { CustomResource, Duration, RemovalPolicy, Stack, Tags } from "aws-cdk-lib";
+  CustomResource,
+  Duration,
+  RemovalPolicy,
+  Stack,
+  Tags,
+} from "aws-cdk-lib";
 import {
   Function as LambdaFunction,
   Runtime,
@@ -26,6 +28,7 @@ import { Secret as EcsSecret } from "aws-cdk-lib/aws-ecs";
 import { IVpc, SubnetType } from "aws-cdk-lib/aws-ec2";
 import * as path from "path";
 import { DatadogLambda } from "datadog-cdk-constructs-v2";
+import { SharedProps } from "./shared-props";
 
 export enum ConnectionStringFormat {
   /** .NET format: Host=xxx;Database=xxx;Username=xxx;Password=xxx */
@@ -39,12 +42,7 @@ export enum ConnectionStringFormat {
 export interface DatabaseCredentialsProps {
   /** The Secrets Manager secret ARN containing RDS credentials */
   databaseSecretArn: string;
-  /** The environment name (dev, prod, etc.) */
-  environment: string;
-  /** The deployed version */
-  version: string;
-  /** The service name for secret paths */
-  serviceName: string;
+  sharedProps: SharedProps;
   /** The connection string format to generate */
   format: ConnectionStringFormat;
   /** The database name to use - each service should use a unique database name */
@@ -58,8 +56,6 @@ export interface DatabaseCredentialsProps {
    * Defaults to false to avoid CloudFormation validation errors.
    */
   createSsmParameterReferences?: boolean;
-  /** Optional Datadog configuration for instrumenting the custom resource Lambda */
-  datadog?: DatadogLambda;
 }
 
 /**
@@ -101,7 +97,7 @@ export class DatabaseCredentials extends Construct {
     super(scope, id);
 
     const databaseName = props.databaseName;
-    const secretNamePrefix = `stickerlandia/${props.environment}/${props.serviceName}`;
+    const secretNamePrefix = `stickerlandia/${props.sharedProps.environment}/${props.sharedProps.serviceName}`;
     const region = Stack.of(this).region;
     const account = Stack.of(this).account;
 
@@ -121,7 +117,10 @@ export class DatabaseCredentials extends Construct {
       vpcSubnets: { subnetType: SubnetType.PRIVATE_WITH_EGRESS },
       architecture: Architecture.X86_64,
       layers: lambdaLayers.length > 0 ? lambdaLayers : undefined,
-      environment: Object.keys(lambdaEnvironment).length > 0 ? lambdaEnvironment : undefined,
+      environment:
+        Object.keys(lambdaEnvironment).length > 0
+          ? lambdaEnvironment
+          : undefined,
       code: Code.fromAsset(path.join(__dirname, "lambda/database-init"), {
         bundling: {
           image: Runtime.NODEJS_20_X.bundlingImage,
@@ -135,14 +134,23 @@ export class DatabaseCredentials extends Construct {
     });
 
     // Add Datadog tags if configured
-    if (props.datadog) {
-      props.datadog.addLambdaFunctions([handler]);
-      Tags.of(handler).add("service", `${props.serviceName}-database-init`);
-      Tags.of(handler).add("env", props.environment);
-      Tags.of(handler).add("version", props.version);
+    if (props.sharedProps.datadog) {
+      const datadogLambda =
+        props.sharedProps.generateDatadogLambdaConfigurationFor(
+          this,
+          `${props.sharedProps.serviceName}-database-init`
+        );
+
+      datadogLambda.addLambdaFunctions([handler]);
+      Tags.of(handler).add(
+        "service",
+        `${props.sharedProps.serviceName}-database-init`
+      );
+      Tags.of(handler).add("env", props.sharedProps.environment);
+      Tags.of(handler).add("version", props.sharedProps.version);
     }
 
-    const ssmBasePath = `/stickerlandia/${props.environment}/${props.serviceName}`;
+    const ssmBasePath = `/stickerlandia/${props.sharedProps.environment}/${props.sharedProps.serviceName}`;
 
     // Grant permissions to read the source secret and manage destination secrets
     handler.addToRolePolicy(
@@ -161,17 +169,18 @@ export class DatabaseCredentials extends Construct {
           "secretsmanager:DeleteSecret",
           "secretsmanager:GetSecretValue",
         ],
-        resources: [`arn:aws:secretsmanager:${region}:${account}:secret:${secretNamePrefix}/*`],
+        resources: [
+          `arn:aws:secretsmanager:${region}:${account}:secret:${secretNamePrefix}/*`,
+        ],
       })
     );
     handler.addToRolePolicy(
       new PolicyStatement({
         effect: Effect.ALLOW,
-        actions: [
-          "ssm:PutParameter",
-          "ssm:DeleteParameter",
+        actions: ["ssm:PutParameter", "ssm:DeleteParameter"],
+        resources: [
+          `arn:aws:ssm:${region}:${account}:parameter${ssmBasePath}/*`,
         ],
-        resources: [`arn:aws:ssm:${region}:${account}:parameter${ssmBasePath}/*`],
       })
     );
 
@@ -242,11 +251,12 @@ export class DatabaseCredentials extends Construct {
       );
       // Only create SSM parameter reference if explicitly requested (for Lambda)
       if (props.createSsmParameterReferences) {
-        this.connectionStringParameter = StringParameter.fromStringParameterName(
-          this,
-          "ConnectionStringParam",
-          `${ssmBasePath}/connection_string`
-        );
+        this.connectionStringParameter =
+          StringParameter.fromStringParameterName(
+            this,
+            "ConnectionStringParam",
+            `${ssmBasePath}/connection_string`
+          );
       }
     }
   }
