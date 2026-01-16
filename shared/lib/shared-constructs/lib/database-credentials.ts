@@ -134,21 +134,19 @@ export class DatabaseCredentials extends Construct {
     });
 
     // Add Datadog tags if configured
-    if (props.sharedProps.datadog) {
-      const datadogLambda =
-        props.sharedProps.generateDatadogLambdaConfigurationFor(
-          this,
-          `${props.sharedProps.serviceName}-database-init`
-        );
-
-      datadogLambda.addLambdaFunctions([handler]);
-      Tags.of(handler).add(
-        "service",
+    const datadogLambda =
+      props.sharedProps.generateDatadogLambdaConfigurationFor(
+        this,
         `${props.sharedProps.serviceName}-database-init`
       );
-      Tags.of(handler).add("env", props.sharedProps.environment);
-      Tags.of(handler).add("version", props.sharedProps.version);
-    }
+
+    datadogLambda.addLambdaFunctions([handler]);
+    Tags.of(handler).add(
+      "service",
+      `${props.sharedProps.serviceName}-database-init`
+    );
+    Tags.of(handler).add("env", props.sharedProps.environment);
+    Tags.of(handler).add("version", props.sharedProps.version);
 
     const ssmBasePath = `/stickerlandia/${props.sharedProps.environment}/${props.sharedProps.serviceName}`;
 
