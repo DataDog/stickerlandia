@@ -22,6 +22,7 @@ export class SharedProps {
   serviceName: string;
   environment: string;
   version: string;
+  commitSha: string;
   enableDatadog: boolean;
   datadog: {
     lambda: DatadogLambda;
@@ -43,6 +44,7 @@ export class SharedProps {
   ) {
     const environment = process.env.ENV || "dev";
     const version = process.env.COMMIT_SHA || "latest";
+    const commitSha = process.env.COMMIT_SHA_FULL || "";
 
     this.datadog = {
       apiKey: ddApiKey,
@@ -92,6 +94,7 @@ export class SharedProps {
     this.serviceName = serviceName;
     this.environment = environment;
     this.version = version;
+    this.commitSha = commitSha;
     this.team = domain;
     this.domain = domain;
     this.enableDatadog = enableDatadog;

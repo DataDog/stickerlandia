@@ -17,6 +17,12 @@
 # To use UBI 8, switch to `quay.io/ubi8/ubi-minimal:8.10`.
 ###
 FROM registry.access.redhat.com/ubi8/ubi-minimal:8.10
+
+ARG DD_GIT_REPOSITORY_URL
+ARG DD_GIT_COMMIT_SHA
+ENV DD_GIT_REPOSITORY_URL=${DD_GIT_REPOSITORY_URL}
+ENV DD_GIT_COMMIT_SHA=${DD_GIT_COMMIT_SHA}
+
 WORKDIR /work/
 RUN chown 1001 /work \
     && chmod "g+rwX" /work \

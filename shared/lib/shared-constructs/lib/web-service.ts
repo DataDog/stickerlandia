@@ -93,7 +93,7 @@ export class WebService extends Construct {
       DD_ENV: props.sharedProps.environment,
       DD_SERVICE: props.sharedProps.serviceName,
       DD_VERSION: props.imageTag,
-      DD_GIT_COMMIT_SHA: props.imageTag,
+      DD_GIT_COMMIT_SHA: props.sharedProps.commitSha,
       DD_GIT_REPOSITORY_URL: "https://github.com/Datadog/stickerlandia",
       DD_AGENT_HOST: "127.0.0.1",
       DD_TRACE_ROUTE_TEMPLATE_RESOURCE_NAMES_ENABLED: "true",

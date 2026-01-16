@@ -81,7 +81,6 @@ export class Api extends Construct {
       ddApiKey: props.sharedProps.datadog.apiKeyParameter,
       port: 8080,
       environmentVariables: {
-        ENV: "dev",
         LOG_LEVEL: "info",
         LOG_FORMAT: "json",
         CATALOGUE_BASE_URL: `https://${props.serviceProps.cloudfrontDistribution.distributionDomainName}`,
