@@ -54,7 +54,6 @@ export class AWSMessagingProps extends Construct implements MessagingProps {
 
   public asEnvironmentVariables(): { [key: string]: string } {
     return {
-      QUARKUS_PROFILE: "prod-aws",
       EVENT_BUS_NAME: this.sharedEventBus.eventBusName,
     };
   }

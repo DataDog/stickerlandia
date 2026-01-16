@@ -63,9 +63,10 @@ export class StickerAwardServiceStack extends cdk.Stack {
     // Create formatted database credentials from the shared RDS secret
     const dbCredentials = new DatabaseCredentials(this, "DatabaseCredentials", {
       databaseSecretArn: sharedResources.sharedDatabaseSecretArn,
-      environment: environment,
-      serviceName: "sticker-award",
+      sharedProps: sharedProps,
       format: ConnectionStringFormat.POSTGRES_URL,
+      databaseName: "stickerlandia_awards",
+      vpc: sharedResources.vpc,
     });
 
     const serviceProps: ServiceProps = {
