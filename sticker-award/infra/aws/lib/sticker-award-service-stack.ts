@@ -68,6 +68,12 @@ export class StickerAwardServiceStack extends cdk.Stack {
       format: ConnectionStringFormat.POSTGRES_URL,
       databaseName: "stickerlandia_awards",
       vpc: sharedResources.vpc,
+      datadog: {
+        apiKey: sharedProps.datadog.apiKey,
+        site: sharedProps.datadog.site,
+        service: sharedProps.serviceName,
+        version: sharedProps.version,
+      },
     });
 
     const serviceProps: ServiceProps = {

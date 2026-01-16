@@ -68,6 +68,12 @@ export class UserServiceStack extends cdk.Stack {
       // Don't create SSM parameter references - they cause CloudFormation validation errors.
       // Lambda functions will use CloudFormation dynamic references instead.
       createSsmParameterReferences: false,
+      datadog: {
+        apiKey: sharedProps.datadog.apiKey,
+        site: sharedProps.datadog.site,
+        service: sharedProps.serviceName,
+        version: sharedProps.version,
+      },
     });
 
     // Run database migrations before starting services
