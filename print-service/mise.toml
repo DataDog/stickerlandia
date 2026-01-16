@@ -27,6 +27,13 @@ sources = ["package-lock.json"]
 outputs = ["node_modules/.package-lock.json"]
 run = "npm ci"
 
+[tasks."aws:deploy:local"]
+description = "Deploy to AWS"
+dir = "infra/aws"
+depends = ["infra:install", "//shared:aws:deploy"]
+env = { COMMIT_SHA = "local" }
+run = "npx cdk deploy --require-approval never"
+
 [tasks."aws:deploy"]
 description = "Deploy to AWS"
 dir = "infra/aws"
