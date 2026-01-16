@@ -71,6 +71,7 @@ export class Api extends Construct {
       ddApiKey: props.sharedProps.datadog.apiKeyParameter,
       port: 8080,
       environmentVariables: {
+        QUARKUS_PROFILE: "prod-aws",
         QUARKUS_DATASOURCE_DB_KIND: "postgresql",
         QUARKUS_DATASOURCE_DEVSERVICES_ENABLED: "false",
         QUARKUS_DATASOURCE_JDBC_ACQUISITION_TIMEOUT: "30S",

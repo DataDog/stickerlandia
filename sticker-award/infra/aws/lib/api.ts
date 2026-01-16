@@ -83,6 +83,7 @@ export class Api extends Construct {
       environmentVariables: {
         LOG_LEVEL: "info",
         LOG_FORMAT: "json",
+        MESSAGING_PROVIDER: "aws",
         CATALOGUE_BASE_URL: `https://${props.serviceProps.cloudfrontDistribution.distributionDomainName}`,
         USER_REGISTERED_QUEUE_URL: userRegisteredQueue.queueUrl,
         ...props.serviceProps.messagingConfiguration.asEnvironmentVariables(),
