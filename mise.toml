@@ -149,11 +149,13 @@ run = "./scripts/test-services.sh --max-retries 5 --retry-delay 10"
 [tasks."aws:deploy:local"]
 description = "Deploy to AWS (build containers locally)"
 depends = ["env:setup"]
+env = { COMMIT_SHA = "local" }
 run = """
 echo "=== Deploying Stickerlandia to AWS: $ENV (COMMIT_SHA=$COMMIT_SHA) ==="
 mise run //shared:aws:deploy
 mise run //user-management:aws:deploy
 mise run //sticker-award:aws:deploy
+mise run //print-service:aws:deploy
 mise run //web-backend:aws:deploy
 mise run //web-frontend:aws:deploy
 echo "=== Deployment complete! ==="
@@ -168,6 +170,7 @@ echo "=== Deploying Stickerlandia to AWS: $ENV (COMMIT_SHA=$COMMIT_SHA) ==="
 mise run //shared:aws:deploy
 mise run //user-management:aws:deploy
 mise run //sticker-award:aws:deploy
+mise run //print-service:aws:deploy
 mise run //web-backend:aws:deploy
 mise run //web-frontend:aws:deploy
 echo "=== Deployment complete! ==="
@@ -189,6 +192,7 @@ mise run //shared:aws:info
 mise run //user-management:aws:info
 mise run //sticker-award:aws:info
 mise run //sticker-catalogue:aws:info
+mise run //print-service:aws:info
 mise run //web-backend:aws:info
 mise run //web-frontend:aws:info
 """

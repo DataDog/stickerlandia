@@ -47,6 +47,7 @@ export class Api extends Construct {
       image: "ghcr.io/datadog/stickerlandia/print-service",
       imageTag: props.sharedProps.version,
       assetPath: path.resolve(__dirname, "../../.."),
+      dockerfile: "src/Stickerlandia.PrintService.Api/Dockerfile",
       ddApiKey: props.sharedProps.datadog.apiKeyParameter,
       port: 8080,
       environmentVariables: {
@@ -60,6 +61,11 @@ export class Api extends Construct {
         LOGGING__LOGLEVEL__MICROSOFT: "INFORMATION",
         "LOGGING__LOGLEVEL__MICROSOFT.ENTITYFRAMEWORKCORE.DATABASE.COMMAND":
           "WARNING",
+        Authentication__Audience: "stickerlandia",
+        Authentication__Authority: `https://${props.serviceProps.cloudfrontDistribution.distributionDomainName}`,
+        Authentication__MetadataAddress: `https://${props.serviceProps.cloudfrontDistribution.distributionDomainName}`,
+        Authentication__Mode: "OidcDiscovery",
+        Authentication__RequireHttpsMetadata: "true",
         ...props.serviceProps.messagingConfiguration.asEnvironmentVariables(),
       },
       secrets: {

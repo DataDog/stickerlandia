@@ -284,7 +284,6 @@ services:
       - "traefik.http.routers.sticker-catalogue.priority=100"
       - "traefik.http.services.sticker-catalogue.loadbalancer.server.port=8080"
 
-
   print-service:
     build:
       context: ./print-service
