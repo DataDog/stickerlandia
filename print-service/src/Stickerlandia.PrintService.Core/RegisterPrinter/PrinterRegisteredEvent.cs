@@ -25,7 +25,7 @@ public record PrinterRegisteredEvent : DomainEvent
     }
     
     [JsonPropertyName("EventName")]
-    public override string EventName => "users.userRegistered.v1";
+    public override string EventName => "printers.registered.v1";
     
     [JsonPropertyName("eventVersion")]
     public override string EventVersion => "1.0";
