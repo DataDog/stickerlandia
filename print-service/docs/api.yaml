@@ -4,84 +4,309 @@
 
 openapi: 3.0.4
 info:
-  title: User Management API
+  title: Print Service API
+  description: API for managing printers and print jobs in the Stickerlandia platform
   version: v1
+servers:
+  - url: /api/print/v1
+    description: Print Service API v1
+tags:
+  - name: Printers
+    description: Printer registration and status management
+  - name: Print Jobs
+    description: Print job submission (for users/admins)
+  - name: Printer Client
+    description: Endpoints for printer client applications (API Key auth)
 paths:
-  /api/users/v1/connect/authorize:
+  /event/{eventName}:
     get:
       tags:
-        - Authorization
+        - Printers
+      summary: Get printers for event
+      description: Get all registered printers for an event
+      operationId: getPrintersForEvent
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: eventName
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The event name
       responses:
         '200':
-          description: OK
-    post:
-      tags:
-        - Authorization
-      responses:
-        '200':
-          description: OK
-  /api/users/v1/connect/logout:
-    get:
-      tags:
-        - Authorization
-      responses:
-        '200':
-          description: OK
-    post:
-      tags:
-        - Authorization
-      responses:
-        '200':
-          description: OK
-  /api/users/v1/connect/token:
-    post:
-      tags:
-        - Authorization
-      responses:
-        '200':
-          description: OK
-  '/api/users/v{version}/details':
-    get:
-      tags:
-        - api
-      description: Get the current authenticated users details
-      responses:
-        '200':
-          description: OK
+          description: List of printers
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserAccountDtoApiResponse'
+                $ref: '#/components/schemas/PrinterListResponse'
         '401':
           description: Unauthorized
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
-    put:
+        '403':
+          description: Forbidden
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+    post:
       tags:
-        - api
-      description: Update the user details
+        - Printers
+      summary: Register a printer
+      description: Register a new printer for an event (admin only)
+      operationId: registerPrinter
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: eventName
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The event name
       requestBody:
+        required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateUserDetailsRequest'
-        required: true
+              $ref: '#/components/schemas/RegisterPrinterRequest'
       responses:
-        '200':
-          description: OK
+        '201':
+          description: Printer registered successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StringApiResponse'
+                $ref: '#/components/schemas/RegisterPrinterResponseWrapper'
         '401':
           description: Unauthorized
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Forbidden
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /event/{eventName}/printers/status:
+    get:
+      tags:
+        - Printers
+      summary: Get printer statuses
+      description: Get the online/offline status of all printers for an event
+      operationId: getPrinterStatuses
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: eventName
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The event name
+      responses:
+        '200':
+          description: Printer statuses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrinterStatusesResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Forbidden
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /event/{eventName}/printer/{printerName}/jobs:
+    post:
+      tags:
+        - Print Jobs
+      summary: Submit a print job
+      description: Submit a new print job to a specific printer
+      operationId: submitPrintJob
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: eventName
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The event name
+        - name: printerName
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The printer name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitPrintJobRequest'
+      responses:
+        '201':
+          description: Print job submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitPrintJobResponseWrapper'
+        '400':
+          description: Bad request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Forbidden
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Printer not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /printer/jobs:
+    get:
+      tags:
+        - Printer Client
+      summary: Poll for print jobs
+      description: Poll for pending print jobs (printer client). Also updates printer heartbeat.
+      operationId: pollPrintJobs
+      security:
+        - apiKeyAuth: []
+      parameters:
+        - name: maxJobs
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+          description: Maximum number of jobs to return
+      responses:
+        '200':
+          description: Print jobs available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PollPrintJobsResponse'
+        '204':
+          description: No jobs available
+        '401':
+          description: Unauthorized - invalid or missing API key
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /printer/jobs/{printJobId}/acknowledge:
+    post:
+      tags:
+        - Printer Client
+      summary: Acknowledge a print job
+      description: Acknowledge a print job as completed or failed (printer client)
+      operationId: acknowledgePrintJob
+      security:
+        - apiKeyAuth: []
+      parameters:
+        - name: printJobId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The print job ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcknowledgePrintJobRequest'
+      responses:
+        '200':
+          description: Job acknowledged
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcknowledgePrintJobResponseWrapper'
+        '400':
+          description: Bad request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: Unauthorized - invalid or missing API key
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Forbidden - job belongs to different printer
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Print job not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Returns the health status of the service
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheckResponse'
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT Bearer token for user/admin authentication
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-Printer-Key
+      description: API key for printer client authentication
+
   schemas:
     ProblemDetails:
       type: object
@@ -102,66 +327,250 @@ components:
         instance:
           type: string
           nullable: true
-      additionalProperties: { }
-    StringApiResponse:
+      additionalProperties: {}
+
+    PrinterDTO:
+      type: object
+      properties:
+        printerId:
+          type: string
+          description: Unique identifier for the printer
+        eventName:
+          type: string
+          description: The event this printer belongs to
+        printerName:
+          type: string
+          description: The name of the printer
+      required:
+        - printerId
+        - eventName
+        - printerName
+
+    PrinterListResponse:
       type: object
       properties:
         success:
           type: boolean
         message:
           type: string
-          nullable: true
         data:
-          type: string
-          nullable: true
-      additionalProperties: false
-    UpdateUserDetailsRequest:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrinterDTO'
+
+    RegisterPrinterRequest:
       type: object
       properties:
-        firstName:
+        eventName:
           type: string
-          nullable: true
-        lastName:
+          description: The event name
+        printerName:
           type: string
-          nullable: true
-      additionalProperties: false
-    UserAccountDto:
+          description: The printer name
+      required:
+        - eventName
+        - printerName
+
+    RegisterPrinterResponse:
       type: object
       properties:
-        accountId:
+        printerId:
           type: string
-          nullable: true
-        emailAddress:
+          description: Unique identifier for the printer
+        eventName:
           type: string
-          nullable: true
-        firstName:
+          description: The event this printer belongs to
+        printerName:
           type: string
-          nullable: true
-        lastName:
+          description: The name of the printer
+        key:
           type: string
-          nullable: true
-        claimedStickerCount:
-          type: integer
-          format: int32
-      additionalProperties: false
-    UserAccountDtoApiResponse:
+          description: API key for the printer client (only shown once)
+      required:
+        - printerId
+        - eventName
+        - printerName
+        - key
+
+    RegisterPrinterResponseWrapper:
       type: object
       properties:
         success:
           type: boolean
         message:
           type: string
-          nullable: true
         data:
-          $ref: '#/components/schemas/UserAccountDto'
-      additionalProperties: false
-  securitySchemes:
-    oauth2:
-      type: oauth2
-      description: OAuth 2.0
-      flows:
-        authorizationCode:
-          authorizationUrl: file:///api/users/v1/connect/authorize
-          tokenUrl: file:///api/users/v1/connect/token
-          scopes:
-            User: Read
+          $ref: '#/components/schemas/RegisterPrinterResponse'
+
+    PrinterStatusDto:
+      type: object
+      properties:
+        printerId:
+          type: string
+          description: Unique identifier for the printer
+        printerName:
+          type: string
+          description: The name of the printer
+        status:
+          type: string
+          enum: [Online, Offline]
+          description: The online/offline status
+        lastHeartbeat:
+          type: string
+          format: date-time
+          nullable: true
+          description: Last time the printer sent a heartbeat
+        lastJobProcessed:
+          type: string
+          format: date-time
+          nullable: true
+          description: Last time the printer processed a job
+      required:
+        - printerId
+        - printerName
+        - status
+
+    PrinterStatusesResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            printers:
+              type: array
+              items:
+                $ref: '#/components/schemas/PrinterStatusDto'
+
+    SubmitPrintJobRequest:
+      type: object
+      properties:
+        userId:
+          type: string
+          description: ID of the user requesting the print
+        stickerId:
+          type: string
+          description: ID of the sticker to print
+        stickerUrl:
+          type: string
+          format: uri
+          description: URL to fetch the sticker image
+      required:
+        - userId
+        - stickerId
+        - stickerUrl
+
+    SubmitPrintJobResponse:
+      type: object
+      properties:
+        printJobId:
+          type: string
+          description: The created print job ID
+      required:
+        - printJobId
+
+    SubmitPrintJobResponseWrapper:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/SubmitPrintJobResponse'
+
+    PrintJobDto:
+      type: object
+      properties:
+        printJobId:
+          type: string
+          description: Unique identifier for the print job
+        userId:
+          type: string
+          description: ID of the user who requested the print
+        stickerId:
+          type: string
+          description: ID of the sticker to print
+        stickerUrl:
+          type: string
+          format: uri
+          description: URL to fetch the sticker image
+        createdAt:
+          type: string
+          format: date-time
+          description: When the job was created
+      required:
+        - printJobId
+        - userId
+        - stickerId
+        - stickerUrl
+        - createdAt
+
+    PollPrintJobsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            jobs:
+              type: array
+              items:
+                $ref: '#/components/schemas/PrintJobDto'
+
+    AcknowledgePrintJobRequest:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Whether the job completed successfully
+        failureReason:
+          type: string
+          nullable: true
+          description: Reason for failure (required if success is false)
+      required:
+        - success
+
+    AcknowledgePrintJobResponse:
+      type: object
+      properties:
+        acknowledged:
+          type: boolean
+          description: Whether the acknowledgment was processed
+      required:
+        - acknowledged
+
+    AcknowledgePrintJobResponseWrapper:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/AcknowledgePrintJobResponse'
+
+    HealthCheckResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [Healthy, Degraded, Unhealthy]
+        results:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              status:
+                type: string
+              description:
+                type: string
+              data:
+                type: object
+                additionalProperties: true
