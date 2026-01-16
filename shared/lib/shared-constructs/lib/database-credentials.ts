@@ -25,17 +25,7 @@ import { IStringParameter, StringParameter } from "aws-cdk-lib/aws-ssm";
 import { Secret as EcsSecret } from "aws-cdk-lib/aws-ecs";
 import { IVpc, SubnetType } from "aws-cdk-lib/aws-ec2";
 import * as path from "path";
-
-export interface DatadogConfig {
-  /** Datadog API key */
-  apiKey: string;
-  /** Datadog site (e.g., datadoghq.com) */
-  site: string;
-  /** Service name for Datadog */
-  service: string;
-  /** Version tag */
-  version: string;
-}
+import { DatadogLambda } from "datadog-cdk-constructs-v2";
 
 export enum ConnectionStringFormat {
   /** .NET format: Host=xxx;Database=xxx;Username=xxx;Password=xxx */
@@ -51,6 +41,8 @@ export interface DatabaseCredentialsProps {
   databaseSecretArn: string;
   /** The environment name (dev, prod, etc.) */
   environment: string;
+  /** The deployed version */
+  version: string;
   /** The service name for secret paths */
   serviceName: string;
   /** The connection string format to generate */
@@ -67,7 +59,7 @@ export interface DatabaseCredentialsProps {
    */
   createSsmParameterReferences?: boolean;
   /** Optional Datadog configuration for instrumenting the custom resource Lambda */
-  datadog?: DatadogConfig;
+  datadog?: DatadogLambda;
 }
 
 /**
@@ -121,37 +113,6 @@ export class DatabaseCredentials extends Construct {
     const lambdaLayers: ILayerVersion[] = [];
     const lambdaEnvironment: { [key: string]: string } = {};
 
-    // Add Datadog instrumentation if configured
-    if (props.datadog) {
-      // Datadog Extension layer for Node.js
-      lambdaLayers.push(
-        LayerVersion.fromLayerVersionArn(
-          this,
-          "DatadogExtension",
-          `arn:aws:lambda:${region}:464622532012:layer:Datadog-Extension:72`
-        )
-      );
-      // Datadog Node.js tracer layer
-      lambdaLayers.push(
-        LayerVersion.fromLayerVersionArn(
-          this,
-          "DatadogNodeLayer",
-          `arn:aws:lambda:${region}:464622532012:layer:Datadog-Node20-x:125`
-        )
-      );
-
-      Object.assign(lambdaEnvironment, {
-        DD_API_KEY: props.datadog.apiKey,
-        DD_SITE: props.datadog.site,
-        DD_SERVICE: `${props.datadog.service}-database-init`,
-        DD_ENV: props.environment,
-        DD_VERSION: props.datadog.version,
-        DD_LAMBDA_HANDLER: "index.handler",
-        DD_TRACE_ENABLED: "true",
-        DD_MERGE_XRAY_TRACES: "false",
-      });
-    }
-
     const handler = new LambdaFunction(this, "CredentialFormatterHandler", {
       runtime: Runtime.NODEJS_20_X,
       handler: props.datadog ? "/opt/nodejs/node_modules/datadog-lambda-js/handler.handler" : "index.handler",
@@ -171,13 +132,16 @@ export class DatabaseCredentials extends Construct {
           ],
         },
       }),
-    });
+    });// Add Datadog instrumentation if configured
+    if (props.datadog) {
+    }
 
     // Add Datadog tags if configured
     if (props.datadog) {
-      Tags.of(handler).add("service", `${props.datadog.service}-database-init`);
+      props.datadog.addLambdaFunctions([handler]);
+      Tags.of(handler).add("service", `${props.serviceName}-database-init`);
       Tags.of(handler).add("env", props.environment);
-      Tags.of(handler).add("version", props.datadog.version);
+      Tags.of(handler).add("version", props.version);
     }
 
     const ssmBasePath = `/stickerlandia/${props.environment}/${props.serviceName}`;
