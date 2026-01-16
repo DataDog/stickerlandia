@@ -115,7 +115,7 @@ export class DatabaseCredentials extends Construct {
 
     const handler = new LambdaFunction(this, "CredentialFormatterHandler", {
       runtime: Runtime.NODEJS_20_X,
-      handler: props.datadog ? "/opt/nodejs/node_modules/datadog-lambda-js/handler.handler" : "index.handler",
+      handler: "index.handler",
       timeout: Duration.seconds(60),
       vpc: props.vpc,
       vpcSubnets: { subnetType: SubnetType.PRIVATE_WITH_EGRESS },
@@ -132,9 +132,7 @@ export class DatabaseCredentials extends Construct {
           ],
         },
       }),
-    });// Add Datadog instrumentation if configured
-    if (props.datadog) {
-    }
+    });
 
     // Add Datadog tags if configured
     if (props.datadog) {
