@@ -63,6 +63,8 @@ export class UserServiceStack extends cdk.Stack {
       environment: environment,
       serviceName: "users",
       format: ConnectionStringFormat.DOTNET,
+      databaseName: "stickerlandia_users",
+      vpc: sharedResources.vpc,
       // Don't create SSM parameter references - they cause CloudFormation validation errors.
       // Lambda functions will use CloudFormation dynamic references instead.
       createSsmParameterReferences: false,

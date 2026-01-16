@@ -66,6 +66,8 @@ export class StickerAwardServiceStack extends cdk.Stack {
       environment: environment,
       serviceName: "sticker-award",
       format: ConnectionStringFormat.POSTGRES_URL,
+      databaseName: "stickerlandia_awards",
+      vpc: sharedResources.vpc,
     });
 
     const serviceProps: ServiceProps = {

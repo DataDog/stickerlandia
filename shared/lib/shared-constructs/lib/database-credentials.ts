@@ -20,6 +20,8 @@ import { Provider } from "aws-cdk-lib/custom-resources";
 import { ISecret, Secret } from "aws-cdk-lib/aws-secretsmanager";
 import { IStringParameter, StringParameter } from "aws-cdk-lib/aws-ssm";
 import { Secret as EcsSecret } from "aws-cdk-lib/aws-ecs";
+import { IVpc, SubnetType } from "aws-cdk-lib/aws-ec2";
+import * as path from "path";
 
 export enum ConnectionStringFormat {
   /** .NET format: Host=xxx;Database=xxx;Username=xxx;Password=xxx */
@@ -39,8 +41,10 @@ export interface DatabaseCredentialsProps {
   serviceName: string;
   /** The connection string format to generate */
   format: ConnectionStringFormat;
-  /** The database name to use (defaults to 'stickerlandia') */
-  databaseName?: string;
+  /** The database name to use - each service should use a unique database name */
+  databaseName: string;
+  /** The VPC to run the Lambda in (required to connect to RDS) */
+  vpc: IVpc;
   /**
    * Whether to create SSM parameter references for Lambda functions.
    * Set to true if using Lambda (which needs SSM params resolved at deploy time).
@@ -88,7 +92,7 @@ export class DatabaseCredentials extends Construct {
   constructor(scope: Construct, id: string, props: DatabaseCredentialsProps) {
     super(scope, id);
 
-    const databaseName = props.databaseName ?? "stickerlandia";
+    const databaseName = props.databaseName;
     const secretNamePrefix = `stickerlandia/${props.environment}/${props.serviceName}`;
     const region = Stack.of(this).region;
     const account = Stack.of(this).account;
@@ -97,144 +101,23 @@ export class DatabaseCredentials extends Construct {
     // The -?????? suffix is needed because Secrets Manager adds a random 6-character suffix to secret ARNs
     this.secretArnPattern = `arn:aws:secretsmanager:${region}:${account}:secret:${secretNamePrefix}/*`;
 
-    // Lambda function to read RDS secret and create formatted connection string secrets AND SSM parameters
+    // Lambda function to read RDS secret, create the database, and create formatted connection string secrets
     const handler = new LambdaFunction(this, "CredentialFormatterHandler", {
       runtime: Runtime.NODEJS_20_X,
       handler: "index.handler",
-      timeout: Duration.seconds(30),
-      code: Code.fromInline(`
-const { SecretsManagerClient, GetSecretValueCommand, CreateSecretCommand, UpdateSecretCommand, DeleteSecretCommand } = require("@aws-sdk/client-secrets-manager");
-const { SSMClient, PutParameterCommand, DeleteParameterCommand } = require("@aws-sdk/client-ssm");
-
-async function createOrUpdateSecret(client, secretName, secretValue, description) {
-  let arn;
-  try {
-    const result = await client.send(new UpdateSecretCommand({
-      SecretId: secretName,
-      SecretString: secretValue,
-      Description: description,
-    }));
-    arn = result.ARN;
-    console.log(\`Updated secret: \${secretName}, ARN: \${arn}\`);
-  } catch (e) {
-    if (e.name === "ResourceNotFoundException") {
-      const result = await client.send(new CreateSecretCommand({
-        Name: secretName,
-        SecretString: secretValue,
-        Description: description,
-      }));
-      arn = result.ARN;
-      console.log(\`Created secret: \${secretName}, ARN: \${arn}\`);
-    } else {
-      throw e;
-    }
-  }
-  return arn;
-}
-
-async function createOrUpdateSsmParam(client, paramName, paramValue, description) {
-  await client.send(new PutParameterCommand({
-    Name: paramName,
-    Value: paramValue,
-    Type: "String",
-    Overwrite: true,
-    Description: description,
-  }));
-  console.log(\`Created/updated SSM param: \${paramName}\`);
-}
-
-exports.handler = async (event) => {
-  console.log("Event:", JSON.stringify(event, null, 2));
-
-  const sourceSecretArn = event.ResourceProperties.SourceSecretArn;
-  const format = event.ResourceProperties.Format;
-  const databaseName = event.ResourceProperties.DatabaseName;
-  const secretNamePrefix = event.ResourceProperties.SecretNamePrefix;
-  const ssmBasePath = event.ResourceProperties.SsmBasePath;
-
-  const smClient = new SecretsManagerClient({});
-  const ssmClient = new SSMClient({});
-
-  if (event.RequestType === "Delete") {
-    // Clean up secrets
-    const secretsToDelete = format === "individual_fields"
-      ? [\`\${secretNamePrefix}/database-host\`, \`\${secretNamePrefix}/database-user\`, \`\${secretNamePrefix}/database-password\`]
-      : [\`\${secretNamePrefix}/connection-string\`];
-
-    for (const secretName of secretsToDelete) {
-      try {
-        await smClient.send(new DeleteSecretCommand({ SecretId: secretName, ForceDeleteWithoutRecovery: true }));
-      } catch (e) {
-        if (e.name !== "ResourceNotFoundException") console.warn(\`Failed to delete secret \${secretName}:\`, e);
-      }
-    }
-
-    // Clean up SSM parameters
-    const paramsToDelete = format === "individual_fields"
-      ? [\`\${ssmBasePath}/database-host\`, \`\${ssmBasePath}/database-user\`, \`\${ssmBasePath}/database-password\`]
-      : [\`\${ssmBasePath}/connection_string\`];
-
-    for (const paramName of paramsToDelete) {
-      try {
-        await ssmClient.send(new DeleteParameterCommand({ Name: paramName }));
-      } catch (e) {
-        if (e.name !== "ParameterNotFound") console.warn(\`Failed to delete param \${paramName}:\`, e);
-      }
-    }
-    return { PhysicalResourceId: event.PhysicalResourceId };
-  }
-
-  // Get the source RDS secret value
-  const secretResponse = await smClient.send(new GetSecretValueCommand({ SecretId: sourceSecretArn }));
-  const secret = JSON.parse(secretResponse.SecretString);
-
-  const host = secret.host;
-  const username = secret.username;
-  const password = secret.password;
-  const port = secret.port || 5432;
-
-  let connectionStringArn = null;
-  let connectionStringValue = null;
-
-  if (format === "dotnet") {
-    const connStr = \`Host=\${host};Database=\${databaseName};Username=\${username};Password=\${password}\`;
-    connectionStringValue = connStr;
-    const [arn] = await Promise.all([
-      createOrUpdateSecret(smClient, \`\${secretNamePrefix}/connection-string\`, connStr, \`Database connection string (auto-generated)\`),
-      createOrUpdateSsmParam(ssmClient, \`\${ssmBasePath}/connection_string\`, connStr, \`Database connection string (auto-generated)\`),
-    ]);
-    connectionStringArn = arn;
-  } else if (format === "postgres_url") {
-    const encodedPassword = encodeURIComponent(password);
-    const connStr = \`postgres://\${username}:\${encodedPassword}@\${host}:\${port}/\${databaseName}?sslmode=require\`;
-    connectionStringValue = connStr;
-    const [arn] = await Promise.all([
-      createOrUpdateSecret(smClient, \`\${secretNamePrefix}/connection-string\`, connStr, \`Database connection string (auto-generated)\`),
-      createOrUpdateSsmParam(ssmClient, \`\${ssmBasePath}/connection_string\`, connStr, \`Database connection string (auto-generated)\`),
-    ]);
-    connectionStringArn = arn;
-  } else if (format === "individual_fields") {
-    const jdbcUrl = \`jdbc:postgresql://\${host}:\${port}/\${databaseName}\`;
-    await Promise.all([
-      createOrUpdateSecret(smClient, \`\${secretNamePrefix}/database-host\`, jdbcUrl, \`JDBC URL (auto-generated)\`),
-      createOrUpdateSecret(smClient, \`\${secretNamePrefix}/database-user\`, username, \`Database username (auto-generated)\`),
-      createOrUpdateSecret(smClient, \`\${secretNamePrefix}/database-password\`, password, \`Database password (auto-generated)\`),
-      createOrUpdateSsmParam(ssmClient, \`\${ssmBasePath}/database-host\`, jdbcUrl, \`JDBC URL (auto-generated)\`),
-      createOrUpdateSsmParam(ssmClient, \`\${ssmBasePath}/database-user\`, username, \`Database username (auto-generated)\`),
-      createOrUpdateSsmParam(ssmClient, \`\${ssmBasePath}/database-password\`, password, \`Database password (auto-generated)\`),
-    ]);
-  }
-
-  return {
-    PhysicalResourceId: \`\${secretNamePrefix}-db-creds\`,
-    Data: {
-      SecretNamePrefix: secretNamePrefix,
-      ConnectionStringArn: connectionStringArn,
-      ConnectionStringValue: connectionStringValue
-    }
-  };
-};
-      `),
+      timeout: Duration.seconds(60),
+      vpc: props.vpc,
+      vpcSubnets: { subnetType: SubnetType.PRIVATE_WITH_EGRESS },
+      code: Code.fromAsset(path.join(__dirname, "lambda/database-init"), {
+        bundling: {
+          image: Runtime.NODEJS_20_X.bundlingImage,
+          command: [
+            "bash",
+            "-c",
+            "npm install --cache /tmp/.npm && cp -r . /asset-output/",
+          ],
+        },
+      }),
     });
 
     const ssmBasePath = `/stickerlandia/${props.environment}/${props.serviceName}`;

@@ -66,6 +66,8 @@ export class StickerCatalogueServiceStack extends cdk.Stack {
       environment: environment,
       serviceName: "catalogue",
       format: ConnectionStringFormat.INDIVIDUAL_FIELDS,
+      databaseName: "stickerlandia_catalogue",
+      vpc: sharedResources.vpc,
     });
 
     const serviceProps: ServiceProps = {
