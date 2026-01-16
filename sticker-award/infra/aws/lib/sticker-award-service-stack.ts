@@ -64,16 +64,12 @@ export class StickerAwardServiceStack extends cdk.Stack {
     const dbCredentials = new DatabaseCredentials(this, "DatabaseCredentials", {
       databaseSecretArn: sharedResources.sharedDatabaseSecretArn,
       environment: environment,
+      version: sharedProps.version,
       serviceName: "sticker-award",
       format: ConnectionStringFormat.POSTGRES_URL,
       databaseName: "stickerlandia_awards",
       vpc: sharedResources.vpc,
-      datadog: {
-        apiKey: sharedProps.datadog.apiKey,
-        site: sharedProps.datadog.site,
-        service: sharedProps.serviceName,
-        version: sharedProps.version,
-      },
+      datadog: sharedProps.datadog.lambda,
     });
 
     const serviceProps: ServiceProps = {

@@ -64,22 +64,22 @@ export class StickerCatalogueServiceStack extends cdk.Stack {
     const dbCredentials = new DatabaseCredentials(this, "DatabaseCredentials", {
       databaseSecretArn: sharedResources.sharedDatabaseSecretArn,
       environment: environment,
+      version: sharedProps.version,
       serviceName: "catalogue",
       format: ConnectionStringFormat.INDIVIDUAL_FIELDS,
       databaseName: "stickerlandia_catalogue",
       vpc: sharedResources.vpc,
-      datadog: {
-        apiKey: sharedProps.datadog.apiKey,
-        site: sharedProps.datadog.site,
-        service: sharedProps.serviceName,
-        version: sharedProps.version,
-      },
+      datadog: sharedProps.datadog.lambda,
     });
 
     const serviceProps: ServiceProps = {
       cloudfrontDistribution: sharedResources.cloudfrontDistribution,
       databaseCredentials: dbCredentials,
-      messagingProps: new AWSMessagingProps(this, "MessagingProps", sharedResources),
+      messagingProps: new AWSMessagingProps(
+        this,
+        "MessagingProps",
+        sharedResources
+      ),
       serviceDependencies: [dbCredentials.credentialResource],
     };
 
