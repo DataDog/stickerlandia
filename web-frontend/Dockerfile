@@ -17,6 +17,11 @@ RUN npm run build
 # Production stage
 FROM nginx:alpine
 
+ARG DD_GIT_REPOSITORY_URL
+ARG DD_GIT_COMMIT_SHA
+ENV DD_GIT_REPOSITORY_URL=${DD_GIT_REPOSITORY_URL}
+ENV DD_GIT_COMMIT_SHA=${DD_GIT_COMMIT_SHA}
+
 # Copy nginx config for SPA routing
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 

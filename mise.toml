@@ -156,6 +156,7 @@ mise run //shared:aws:deploy
 mise run //user-management:aws:deploy
 mise run //sticker-award:aws:deploy
 mise run //print-service:aws:deploy
+mise run //sticker-catalogue:aws:deploy
 mise run //web-backend:aws:deploy
 mise run //web-frontend:aws:deploy
 echo "=== Deployment complete! ==="
@@ -171,6 +172,7 @@ mise run //shared:aws:deploy
 mise run //user-management:aws:deploy
 mise run //sticker-award:aws:deploy
 mise run //print-service:aws:deploy
+mise run //sticker-catalogue:aws:deploy
 mise run //web-backend:aws:deploy
 mise run //web-frontend:aws:deploy
 echo "=== Deployment complete! ==="

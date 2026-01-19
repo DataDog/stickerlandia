@@ -250,6 +250,8 @@ services:
       minio-init:
         condition: service_completed_successfully
     environment:
+      # Quarkus profile - use prod-kafka for Kafka messaging
+      QUARKUS_PROFILE: prod-kafka
       # DataDog APM configuration
       DD_SERVICE: sticker-catalogue
       DD_ENV: development
@@ -257,15 +259,15 @@ services:
       DD_AGENT_HOST: datadog-agent
       DD_DATA_STREAMS_ENABLED: "true"
       DD_TRACE_REMOVE_INTEGRATION_SERVICE_NAMES_ENABLED: "true"
-      # Application configuration
+      # Database configuration
       QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://sticker-catalogue-db:5432/sticker_catalogue
       QUARKUS_DATASOURCE_USERNAME: sticker_user
       QUARKUS_DATASOURCE_PASSWORD: sticker_password
       QUARKUS_DATASOURCE_DB_KIND: postgresql
-      QUARKUS_DATASOURCE_DEVSERVICES_ENABLED: "false"
+      # Kafka configuration
       KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
       MP_MESSAGING_CONNECTOR_SMALLRYE_KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
-      QUARKUS_KAFKA_STREAMS_BOOTSTRAP_SERVERS: redpanda:9092
+      # S3/MinIO configuration
       QUARKUS_S3_ENDPOINT_OVERRIDE: http://minio:9000
       QUARKUS_S3_AWS_REGION: us-east-1
       QUARKUS_S3_AWS_CREDENTIALS_TYPE: static
@@ -274,10 +276,11 @@ services:
       QUARKUS_S3_PATH_STYLE_ACCESS: "true"
       STICKER_IMAGES_BUCKET: sticker-images
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 1s
-      timeout: 15s
-      retries: 60
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/stickers/v1/"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.sticker-catalogue.rule=PathPrefix(`/api/stickers`)"

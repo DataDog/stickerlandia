@@ -22,6 +22,7 @@ export class SharedProps {
   serviceName: string;
   environment: string;
   version: string;
+  commitSha: string;
   enableDatadog: boolean;
   datadog: {
     lambda: DatadogLambda;
@@ -43,6 +44,7 @@ export class SharedProps {
   ) {
     const environment = process.env.ENV || "dev";
     const version = process.env.COMMIT_SHA || "latest";
+    const commitSha = process.env.COMMIT_SHA_FULL || "";
 
     this.datadog = {
       apiKey: ddApiKey,
@@ -50,7 +52,16 @@ export class SharedProps {
       site: ddSite ?? "datadoghq.com",
       lambda: new DatadogLambda(scope, "DatadogLambda", {
         apiKey: ddApiKey,
-        site: ddSite,
+        site: ddSite ?? "datadoghq.com",
+        extensionLayerVersion: 92,
+        nodeLayerVersion: 132,
+        dotnetLayerVersion: 23,
+        javaLayerVersion: 25,
+        enableColdStartTracing: true,
+        enableDatadogTracing: true,
+        service: serviceName,
+        env: environment,
+        version: version,
       }),
       ecsFargate: new DatadogECSFargate({
         // One of the following 3 apiKey params are required
@@ -59,7 +70,7 @@ export class SharedProps {
         memoryLimitMiB: 512,
         isDatadogEssential: true,
         isDatadogDependencyEnabled: true,
-        site: ddSite,
+        site: ddSite ?? "datadoghq.com",
         clusterName: cluster.clusterName,
         environmentVariables: {
           DD_APM_IGNORE_RESOURCES: "(GET|HEAD) .*/health$",
@@ -92,8 +103,28 @@ export class SharedProps {
     this.serviceName = serviceName;
     this.environment = environment;
     this.version = version;
+    this.commitSha = commitSha;
     this.team = domain;
     this.domain = domain;
     this.enableDatadog = enableDatadog;
+  }
+
+  public generateDatadogLambdaConfigurationFor(
+    scope: Construct,
+    serviceName: string
+  ): DatadogLambda {
+    return new DatadogLambda(scope, "DatadogLambda", {
+      apiKey: this.datadog.apiKey,
+      site: this.datadog.site ?? "datadoghq.com",
+      extensionLayerVersion: 92,
+      nodeLayerVersion: 132,
+      dotnetLayerVersion: 23,
+      javaLayerVersion: 25,
+      enableColdStartTracing: true,
+      enableDatadogTracing: true,
+      service: serviceName,
+      env: this.environment,
+      version: this.version,
+    });
   }
 }
