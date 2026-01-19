@@ -146,6 +146,51 @@ To integrate with this OAuth 2.0 server, client applications should implement th
 
 The API returns standard HTTP status codes and follows the RFC 7807 Problem Details specification for error responses.
 
+## Configuration
+
+The service is configured via environment variables and connection strings:
+
+### Platform Configuration
+- `DRIVEN` - Driven adapter platform: `AZURE`, `AWS`, `AGNOSTIC`, or `GCP` (required)
+- `DRIVING` - Driving adapter platform: `AGNOSTIC`, `AZURE`, `AWS`, `GCP`, `AZURE_FUNCTIONS`, or `AWS_LAMBDA` (default: `AGNOSTIC`)
+
+### Server Configuration
+- `DEPLOYMENT_HOST_URL` - Public base URL for the service, used for OAuth redirects (default: `http://localhost:8080`)
+
+### Database Configuration
+- `ConnectionStrings__database` - PostgreSQL connection string (required)
+
+### Authentication Configuration
+- `DISABLE_SSL` - Disable SSL requirement for development (default: `false`)
+- `OPENIDDICT_ISSUER` - Explicitly set the OpenIddict issuer URI (optional)
+
+### Messaging Configuration
+- `ConnectionStrings__messaging` - Messaging infrastructure connection string (required)
+  - For Kafka: Bootstrap servers connection string
+  - For Azure Service Bus: Service Bus connection string
+  - For GCP Pub/Sub: GCP Project ID
+
+### Kafka Configuration (when DRIVEN=AGNOSTIC)
+- `KAFKA_USERNAME` - SASL username for Kafka authentication (optional)
+- `KAFKA_PASSWORD` - SASL password for Kafka authentication (optional)
+
+### AWS Configuration (when DRIVEN=AWS)
+- `ENV` - Environment name for EventBridge event source (default: `dev`)
+- `Aws__EventBusName` - AWS EventBridge event bus name (required)
+- `Aws__UserRegisteredTopicArn` - SNS topic ARN for user registered events (required)
+- `Aws__StickerClaimedQueueUrl` - SQS queue URL for sticker claimed messages (required)
+- `Aws__StickerClaimedDLQUrl` - SQS dead letter queue URL for failed messages (required)
+- AWS credentials via standard AWS SDK chain (environment variables, IAM role, etc.)
+
+### GCP Configuration (when DRIVEN=GCP)
+- `PUBSUB_PROJECT_ID` - GCP Pub/Sub project identifier (required)
+- `PUBSUB_EMULATOR_HOST` - GCP Pub/Sub emulator endpoint for local development (default: `[::1]:8432`)
+
+### Logging Configuration
+Standard .NET logging configuration via `Logging:LogLevel` in appsettings.json:
+- `Default` - Default log level (default: `Information`)
+- `Microsoft.AspNetCore` - ASP.NET Core log level (default: `Warning`)
+
 ## Building and Running
 
 ### Prerequisites
