@@ -194,3 +194,49 @@ mise run //sticker-catalogue:aws:info
 mise run //web-backend:aws:info
 mise run //web-frontend:aws:info
 """
+
+# =============================================================================
+# ui-test: UI Testing infrastructure
+# =============================================================================
+
+[tasks."ui-test:install"]
+description = "Install UI test dependencies and Playwright browsers"
+dir = "e2e"
+sources = ["package-lock.json"]
+outputs = ["node_modules/.package-lock.json"]
+run = "npm ci && npx playwright install --with-deps chromium"
+
+[tasks."ui-test:codegen"]
+description = "Record tests with Playwright codegen"
+dir = "e2e"
+depends = ["ui-test:install", "env:setup"]
+run = "npx playwright codegen ${DEPLOYMENT_HOST_URL:-http://localhost:8080}"
+
+# =============================================================================
+# compose: UI test tasks for Docker Compose deployment
+# =============================================================================
+
+[tasks."compose:ui-test"]
+description = "Run UI tests against Docker Compose deployment"
+dir = "e2e"
+depends = ["ui-test:install", "env:setup"]
+env = { BASE_URL = "http://localhost:8080" }
+run = "npx playwright test"
+
+[tasks."compose:ui-test:ui"]
+description = "Open Playwright UI mode for Docker Compose deployment"
+dir = "e2e"
+depends = ["ui-test:install", "env:setup"]
+env = { BASE_URL = "http://localhost:8080" }
+run = "npx playwright test --ui"
+
+# =============================================================================
+# aws: UI test tasks for AWS deployment
+# =============================================================================
+
+[tasks."aws:ui-test"]
+description = "Run UI tests against AWS deployment"
+dir = "e2e"
+depends = ["ui-test:install", "env:setup"]
+run = "npx playwright test"
+

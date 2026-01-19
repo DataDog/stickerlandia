@@ -1,0 +1,25 @@
+{
+  "name": "stickerlandia-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "E2E tests for Stickerlandia using Playwright",
+  "scripts": {
+    "test": "playwright test",
+    "test:smoke": "playwright test --project=smoke",
+    "test:public": "playwright test --project=public",
+    "test:auth": "playwright test --project=auth",
+    "test:authenticated": "playwright test --project=authenticated",
+    "test:api": "playwright test --project=api",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "report": "playwright show-report",
+    "codegen": "playwright codegen"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^22.10.0",
+    "dotenv": "^16.4.7",
+    "typescript": "^5.7.0"
+  }
+}
