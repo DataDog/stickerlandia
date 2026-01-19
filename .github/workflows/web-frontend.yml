@@ -2,7 +2,7 @@
 # This product includes software developed at Datadog (https://www.datadoghq.com/).
 # Copyright 2025-Present Datadog, Inc.
 
-name: Web Backend Service
+name: Web Frontend Service
 
 on:
   push:
