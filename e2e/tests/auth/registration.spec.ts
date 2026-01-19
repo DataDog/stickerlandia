@@ -4,6 +4,12 @@ import {
   generateRandomEmail,
   generateRandomPassword,
 } from '../../fixtures/post-login-validation';
+import {
+  LOGIN_SELECTORS,
+  REGISTRATION_SELECTORS,
+  waitForTokenProcessing,
+  ensureOnDashboard,
+} from '../../fixtures/selectors';
 
 test.describe('Registration Flow', () => {
   test('new user can register and access dashboard', async ({ page }) => {
@@ -29,14 +35,10 @@ test.describe('Registration Flow', () => {
       timeout: 30000,
     });
 
-    // Debug: log current URL after navigation
     console.log(`After clicking Start Collecting, URL is: ${page.url()}`);
 
     // Wait for the login page to fully render by waiting for the email input
-    // This is more reliable than networkidle/domcontentloaded
-    const loginEmailInput = page.locator(
-      'input[type="email"], input[name="email"], input[name="Email"], input[id="Email"], input[id="Input_Email"]'
-    ).first();
+    const loginEmailInput = page.locator(LOGIN_SELECTORS.emailInput).first();
     await expect(loginEmailInput).toBeVisible({ timeout: 15000 });
     console.log('Login page loaded - email input visible');
 
@@ -51,34 +53,14 @@ test.describe('Registration Flow', () => {
     console.log(`After clicking register link, URL is: ${page.url()}`);
 
     // Wait for registration form to be visible
-    // The form has: First Name, Last Name, Email, Password, Confirm Password
-    const firstNameInput = page
-      .locator(
-        'input[name="FirstName"], input[name="Input.FirstName"], input[id="FirstName"], input[id="Input_FirstName"]'
-      )
-      .first();
-    const lastNameInput = page
-      .locator(
-        'input[name="LastName"], input[name="Input.LastName"], input[id="LastName"], input[id="Input_LastName"]'
-      )
-      .first();
-    const emailInput = page
-      .locator(
-        'input[type="email"], input[name="Email"], input[name="Input.Email"], input[id="Email"], input[id="Input_Email"]'
-      )
-      .first();
-    const passwordInput = page
-      .locator(
-        'input[type="password"][name*="Password"]:not([name*="Confirm"]), input[id="Password"], input[id="Input_Password"]'
-      )
-      .first();
-    const confirmPasswordInput = page
-      .locator(
-        'input[type="password"][name*="Confirm"], input[id="ConfirmPassword"], input[id="Input_ConfirmPassword"]'
-      )
-      .first();
+    const firstNameInput = page.locator(REGISTRATION_SELECTORS.firstNameInput).first();
+    const lastNameInput = page.locator(REGISTRATION_SELECTORS.lastNameInput).first();
+    const emailInput = page.locator(REGISTRATION_SELECTORS.emailInput).first();
+    const passwordInput = page.locator(REGISTRATION_SELECTORS.passwordInput).first();
+    const confirmPasswordInput = page.locator(REGISTRATION_SELECTORS.confirmPasswordInput).first();
+    const submitButton = page.locator(REGISTRATION_SELECTORS.submitButton).first();
 
-    // Wait for form to be ready with longer timeout
+    // Wait for form to be ready
     await expect(emailInput).toBeVisible({ timeout: 20000 });
 
     // Fill in registration form
@@ -95,7 +77,6 @@ test.describe('Registration Flow', () => {
     }
 
     // Submit registration form
-    const submitButton = page.locator('button[type="submit"], input[type="submit"]').first();
     await expect(submitButton).toBeVisible({ timeout: 5000 });
     await submitButton.click();
 
@@ -112,21 +93,10 @@ test.describe('Registration Flow', () => {
       { timeout: 30000 }
     );
 
-    // If we got a token URL, wait for app to process it
-    if (page.url().includes('access_token=')) {
-      await page.waitForFunction(
-        () => !window.location.search.includes('access_token'),
-        { timeout: 15000 }
-      );
-    }
-
-    // Give the app time to process auth state
+    // Handle token URL and navigate to dashboard
+    await waitForTokenProcessing(page);
     await page.waitForTimeout(1000);
-
-    // Navigate to dashboard if not already there
-    if (!page.url().includes('/dashboard')) {
-      await page.goto('/dashboard');
-    }
+    await ensureOnDashboard(page);
 
     // Validate logged-in state using shared validation
     await validateLoggedInState(page);

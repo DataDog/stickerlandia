@@ -1,4 +1,5 @@
 import { test as base, expect, type Page } from '@playwright/test';
+import { LOGIN_SELECTORS, waitForTokenProcessing } from './selectors';
 
 // Extend the base test with custom fixtures
 export const test = base.extend<{
@@ -56,9 +57,7 @@ export async function performLogin(page: Page): Promise<void> {
   console.log(`[performLogin] Page loaded, looking for email input`);
 
   // Define the email input locator
-  const emailInput = page.locator(
-    'input[type="email"], input[name="email"], input[name="Email"], input[name="username"], input[id="Email"], input[id="Input_Email"]'
-  ).first();
+  const emailInput = page.locator(LOGIN_SELECTORS.emailInput).first();
 
   // Wait for login form with longer timeout - the server-rendered page can be slow
   try {
@@ -92,14 +91,12 @@ export async function performLogin(page: Page): Promise<void> {
   console.log(`[performLogin] Filling credentials for ${testEmail}`);
   await emailInput.fill(testEmail);
 
-  const passwordInput = page.locator(
-    'input[type="password"], input[name="password"], input[name="Password"], input[id="Password"], input[id="Input_Password"]'
-  ).first();
+  const passwordInput = page.locator(LOGIN_SELECTORS.passwordInput).first();
   await expect(passwordInput).toBeVisible({ timeout: 5000 });
   await passwordInput.fill(testPassword);
 
   // Click submit
-  const submitButton = page.locator('button[type="submit"], input[type="submit"]').first();
+  const submitButton = page.locator(LOGIN_SELECTORS.submitButton).first();
   await expect(submitButton).toBeVisible({ timeout: 5000 });
   await submitButton.click();
   console.log(`[performLogin] Clicked submit button`);
@@ -118,13 +115,10 @@ export async function performLogin(page: Page): Promise<void> {
   );
   console.log(`[performLogin] Redirected to: ${page.url()}`);
 
-  // If we got a token URL, wait for app to process it
+  // Handle token URL processing
   if (page.url().includes('access_token=')) {
     console.log(`[performLogin] Waiting for token to be processed`);
-    await page.waitForFunction(
-      () => !window.location.search.includes('access_token'),
-      { timeout: 15000 }
-    );
+    await waitForTokenProcessing(page);
     console.log(`[performLogin] Token processed, URL now: ${page.url()}`);
   }
 
