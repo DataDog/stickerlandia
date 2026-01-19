@@ -29,28 +29,26 @@ test.describe('Registration Flow', () => {
       timeout: 30000,
     });
 
-    // Wait for page to fully load
-    await page.waitForLoadState('networkidle');
-    await page.waitForLoadState('domcontentloaded');
-
     // Debug: log current URL after navigation
     console.log(`After clicking Start Collecting, URL is: ${page.url()}`);
 
-    // Look for a registration link on the login page
-    const registerLink = page.getByRole('link', { name: /register|sign up|create account/i });
+    // Wait for the login page to fully render by waiting for the email input
+    // This is more reliable than networkidle/domcontentloaded
+    const loginEmailInput = page.locator(
+      'input[type="email"], input[name="email"], input[name="Email"], input[id="Email"], input[id="Input_Email"]'
+    ).first();
+    await expect(loginEmailInput).toBeVisible({ timeout: 15000 });
+    console.log('Login page loaded - email input visible');
 
-    if (await registerLink.isVisible({ timeout: 5000 }).catch(() => false)) {
-      console.log('Found register link, clicking it');
-      await registerLink.click();
-      await page.waitForLoadState('networkidle');
-      console.log(`After clicking register link, URL is: ${page.url()}`);
-    } else {
-      // The login page should have a register link - if not found, log error
-      console.log(`Register link not found. Current URL: ${page.url()}`);
-      console.log(`Page title: ${await page.title()}`);
-      // Take a screenshot for debugging
-      throw new Error(`Could not find registration link on login page. URL: ${page.url()}`);
-    }
+    // Now look for the registration link - it should be present
+    const registerLink = page.getByRole('link', { name: /register|sign up|create account/i });
+    await expect(registerLink).toBeVisible({ timeout: 10000 });
+    console.log('Found register link, clicking it');
+    await registerLink.click();
+
+    // Wait for navigation to registration page
+    await page.waitForURL(/register/i, { timeout: 15000 });
+    console.log(`After clicking register link, URL is: ${page.url()}`);
 
     // Wait for registration form to be visible
     // The form has: First Name, Last Name, Email, Password, Confirm Password
