@@ -18,7 +18,7 @@ import {
   LayerVersion,
   Runtime,
 } from "aws-cdk-lib/aws-lambda";
-import { Duration, RemovalPolicy, Stack, Tags } from "aws-cdk-lib";
+import { DockerImage, Duration, RemovalPolicy, Stack, Tags } from "aws-cdk-lib";
 import { Alias } from "aws-cdk-lib/aws-kms";
 import { SharedProps } from "../../../../../shared/lib/shared-constructs/lib/shared-props";
 import { Effect, PolicyStatement } from "aws-cdk-lib/aws-iam";
@@ -64,6 +64,9 @@ export class InstrumentedLambdaFunction extends Construct {
       vpc: props.vpc,
       vpcSubnets: props.vpcSubnets,
       securityGroups: props.securityGroups,
+      bundling: {
+        dockerImage: DockerImage.fromRegistry("public.ecr.aws/sam/build-dotnet10"),
+      },
       environment: {
         AWS_LAMBDA_EXEC_WRAPPER: "/opt/datadog_wrapper",
         POWERTOOLS_SERVICE_NAME: props.sharedProps.serviceName,
