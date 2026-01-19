@@ -1,0 +1,32 @@
+name: E2E Tests
+
+permissions:
+  contents: read
+
+on:
+  # Manual trigger for development iteration
+  workflow_dispatch:
+
+  # Run after all service builds complete on main
+  workflow_run:
+    workflows:
+      - "Sticker Award Service"
+      - "Sticker Catalogue Service"
+      - "User Management"
+      - "Web Backend Service"
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+    # Only run if triggered manually OR if the triggering workflow succeeded
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - name: E2E Tests Placeholder
+        run: echo "TODO"
