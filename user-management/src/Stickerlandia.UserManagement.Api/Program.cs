@@ -66,14 +66,6 @@ builder.Services.AddResponseCompression(options => { options.EnableForHttps = tr
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll",
-        builder => builder
-            .AllowAnyOrigin()
-            .AllowAnyMethod()
-            .AllowAnyHeader());
-});
 
 var app = builder.Build();
 
@@ -114,8 +106,6 @@ if (app.Environment.IsDevelopment())
         options.SwaggerEndpoint(url, name);
     });
 }
-
-app.UseCors("AllowAll");
 
 app.UseRouting();
 app.UseStaticFiles();
