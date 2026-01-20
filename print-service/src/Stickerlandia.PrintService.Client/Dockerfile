@@ -51,7 +51,15 @@ ENV DD_PROFILING_ENABLED=1
 LABEL com.datadoghq.tags.service="user-service"
 LABEL com.datadoghq.tags.version=${DD_GIT_COMMIT_SHA}
 
+RUN groupadd -g 1001 appgroup && \
+    useradd -u 1001 -g appgroup -s /bin/false appuser
+
 WORKDIR /App
 COPY --from=build /App/out .
+
+RUN chown -R appuser:appgroup /App
+
+USER appuser
+
 EXPOSE 8080
 ENTRYPOINT [ "dotnet", "Stickerlandia.PrintService.Client.dll" ]

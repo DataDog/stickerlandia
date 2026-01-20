@@ -51,8 +51,8 @@ ENV DD_PROFILING_ENABLED=1
 LABEL com.datadoghq.tags.service="print-service"
 LABEL com.datadoghq.tags.version=${DD_GIT_COMMIT_SHA}
 
-RUN addgroup -g 1001 -S appgroup && \
-    adduser -u 1001 -S appuser -G appgroup
+RUN groupadd -g 1001 appgroup && \
+    useradd -u 1001 -g appgroup -s /bin/false appuser
 
 WORKDIR /App
 COPY --from=build /App/out .
