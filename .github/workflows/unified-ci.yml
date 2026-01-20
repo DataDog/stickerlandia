@@ -22,6 +22,12 @@ on:
         default: false
         type: boolean
 
+permissions:
+  contents: read
+  packages: write
+  attestations: write
+  id-token: write
+
 env:
   REGISTRY: ghcr.io
   REPOSITORY_URL: github.com/${{ github.repository }}
@@ -33,42 +39,51 @@ jobs:
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
-      user-management: ${{ steps.filter.outputs.user-management }}
-      sticker-award: ${{ steps.filter.outputs.sticker-award }}
-      sticker-catalogue: ${{ steps.filter.outputs.sticker-catalogue }}
-      web-backend: ${{ steps.filter.outputs.web-backend }}
-      web-frontend: ${{ steps.filter.outputs.web-frontend }}
-      shared: ${{ steps.filter.outputs.shared }}
-      any-service: ${{ steps.filter.outputs.user-management == 'true' || steps.filter.outputs.sticker-award == 'true' || steps.filter.outputs.sticker-catalogue == 'true' || steps.filter.outputs.web-backend == 'true' || steps.filter.outputs.web-frontend == 'true' }}
+      user-management: ${{ steps.changes.outputs.user-management }}
+      sticker-award: ${{ steps.changes.outputs.sticker-award }}
+      sticker-catalogue: ${{ steps.changes.outputs.sticker-catalogue }}
+      web-backend: ${{ steps.changes.outputs.web-backend }}
+      web-frontend: ${{ steps.changes.outputs.web-frontend }}
+      shared: ${{ steps.changes.outputs.shared }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
 
       - name: Detect changed paths
-        uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            user-management:
-              - 'user-management/**'
-            sticker-award:
-              - 'sticker-award/**'
-            sticker-catalogue:
-              - 'sticker-catalogue/**'
-            web-backend:
-              - 'web-backend/**'
-            web-frontend:
-              - 'web-frontend/**'
-            shared:
-              - 'shared/**'
-            workflows:
-              - '.github/**'
+        id: changes
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA=${{ github.event.pull_request.base.sha }}
+            HEAD_SHA=${{ github.event.pull_request.head.sha }}
+          else
+            # For push events, compare with parent commit
+            BASE_SHA=${{ github.event.before }}
+            HEAD_SHA=${{ github.sha }}
+          fi
+
+          # Get list of changed files
+          CHANGED_FILES=$(git diff --name-only $BASE_SHA $HEAD_SHA 2>/dev/null || echo "")
+
+          # Check each service directory
+          echo "user-management=$(echo "$CHANGED_FILES" | grep -q '^user-management/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "sticker-award=$(echo "$CHANGED_FILES" | grep -q '^sticker-award/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "sticker-catalogue=$(echo "$CHANGED_FILES" | grep -q '^sticker-catalogue/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "web-backend=$(echo "$CHANGED_FILES" | grep -q '^web-backend/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "web-frontend=$(echo "$CHANGED_FILES" | grep -q '^web-frontend/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "shared=$(echo "$CHANGED_FILES" | grep -q '^shared/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
 
   # ============================================================================
   # USER MANAGEMENT SERVICE (.NET)
   # ============================================================================
+  # TEMPORARY: 'true' added to force all builds - remove after testing
   user-management-build:
     needs: detect-changes
     if: |
+      true ||
       github.event.inputs.force-all == 'true' ||
       github.event_name == 'push' ||
       needs.detect-changes.outputs.user-management == 'true' ||
@@ -128,9 +143,11 @@ jobs:
   # ============================================================================
   # STICKER AWARD SERVICE (Go)
   # ============================================================================
+  # TEMPORARY: 'true' added to force all builds - remove after testing
   sticker-award-build:
     needs: detect-changes
     if: |
+      true ||
       github.event.inputs.force-all == 'true' ||
       github.event_name == 'push' ||
       needs.detect-changes.outputs.sticker-award == 'true' ||
@@ -169,9 +186,11 @@ jobs:
   # ============================================================================
   # STICKER CATALOGUE SERVICE (Java)
   # ============================================================================
+  # TEMPORARY: 'true' added to force all builds - remove after testing
   sticker-catalogue-build:
     needs: detect-changes
     if: |
+      true ||
       github.event.inputs.force-all == 'true' ||
       github.event_name == 'push' ||
       needs.detect-changes.outputs.sticker-catalogue == 'true' ||
@@ -211,9 +230,11 @@ jobs:
   # ============================================================================
   # WEB BACKEND SERVICE (Node.js)
   # ============================================================================
+  # TEMPORARY: 'true' added to force all builds - remove after testing
   web-backend-build:
     needs: detect-changes
     if: |
+      true ||
       github.event.inputs.force-all == 'true' ||
       github.event_name == 'push' ||
       needs.detect-changes.outputs.web-backend == 'true' ||
