@@ -19,6 +19,7 @@ using Stickerlandia.UserManagement.Api;
 using Stickerlandia.UserManagement.Api.Configurations;
 using Stickerlandia.UserManagement.Api.Middlewares;
 using Stickerlandia.UserManagement.Core;
+using LogMessages = Stickerlandia.UserManagement.Core.Observability.Log;
 using Stickerlandia.UserManagement.ServiceDefaults;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -48,15 +49,57 @@ builder.Services.AddProblemDetails()
 
 builder.Services.AddRateLimiter(options =>
 {
+    // Log when requests are rejected due to rate limiting
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        var requestLogger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+
+        var retryAfter = 60; // Default retry after 60 seconds
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfterTime))
+        {
+            retryAfter = (int)retryAfterTime.TotalSeconds;
+        }
+
+        context.HttpContext.Response.Headers.RetryAfter = retryAfter.ToString();
+
+        // Get client IP from X-Forwarded-For (behind LB) or RemoteIpAddress
+        var forwardedFor = context.HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+        var clientIp = !string.IsNullOrEmpty(forwardedFor)
+            ? forwardedFor.Split(',')[0].Trim()
+            : context.HttpContext.Connection.RemoteIpAddress?.ToString();
+
+        LogMessages.RateLimitExceeded(
+            requestLogger,
+            context.HttpContext.Request.Method,
+            context.HttpContext.Request.Path,
+            clientIp,
+            retryAfter,
+            context.HttpContext.Request.Headers.Host.ToString());
+
+        await context.HttpContext.Response.WriteAsync(
+            $"Too many requests. Please retry after {retryAfter} seconds.",
+            cancellationToken);
+    };
+
     options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
     {
+        // Partition by client IP for better isolation between clients
+        // Check X-Forwarded-For first (for requests behind LB/proxy), then fall back to RemoteIpAddress
+        var forwardedFor = httpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+        var clientIp = !string.IsNullOrEmpty(forwardedFor)
+            ? forwardedFor.Split(',')[0].Trim()  // Take first IP in chain (original client)
+            : httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
         return RateLimitPartition.GetFixedWindowLimiter(
-            httpContext.Request.Headers.Host.ToString(),
+            clientIp,
             partition => new FixedWindowRateLimiterOptions
             {
                 AutoReplenishment = true,
-                PermitLimit = 60,
-                QueueLimit = 0,
+                PermitLimit = 100,    
+                QueueLimit = 10,      // Allow some queuing instead of instant rejection
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 Window = TimeSpan.FromMinutes(1)
             });
     });
