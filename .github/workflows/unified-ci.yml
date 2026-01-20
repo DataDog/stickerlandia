@@ -1,0 +1,303 @@
+# Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+# This product includes software developed at Datadog (https://www.datadoghq.com/).
+# Copyright 2025-Present Datadog, Inc.
+
+name: Unified CI/CD
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: 'Deploy to AWS dev environment after build'
+        required: false
+        default: false
+        type: boolean
+      force-all:
+        description: 'Force build all services regardless of changes'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  REGISTRY: ghcr.io
+  REPOSITORY_URL: github.com/${{ github.repository }}
+
+jobs:
+  # ============================================================================
+  # CHANGE DETECTION
+  # ============================================================================
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      user-management: ${{ steps.filter.outputs.user-management }}
+      sticker-award: ${{ steps.filter.outputs.sticker-award }}
+      sticker-catalogue: ${{ steps.filter.outputs.sticker-catalogue }}
+      web-backend: ${{ steps.filter.outputs.web-backend }}
+      web-frontend: ${{ steps.filter.outputs.web-frontend }}
+      shared: ${{ steps.filter.outputs.shared }}
+      any-service: ${{ steps.filter.outputs.user-management == 'true' || steps.filter.outputs.sticker-award == 'true' || steps.filter.outputs.sticker-catalogue == 'true' || steps.filter.outputs.web-backend == 'true' || steps.filter.outputs.web-frontend == 'true' }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Detect changed paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            user-management:
+              - 'user-management/**'
+            sticker-award:
+              - 'sticker-award/**'
+            sticker-catalogue:
+              - 'sticker-catalogue/**'
+            web-backend:
+              - 'web-backend/**'
+            web-frontend:
+              - 'web-frontend/**'
+            shared:
+              - 'shared/**'
+            workflows:
+              - '.github/**'
+
+  # ============================================================================
+  # USER MANAGEMENT SERVICE (.NET)
+  # ============================================================================
+  user-management-build:
+    needs: detect-changes
+    if: |
+      github.event.inputs.force-all == 'true' ||
+      github.event_name == 'push' ||
+      needs.detect-changes.outputs.user-management == 'true' ||
+      needs.detect-changes.outputs.shared == 'true'
+    uses: ./.github/workflows/_build-dotnet.yml
+    with:
+      working-directory: user-management
+      dotnet-version: '10.0.x'
+
+  user-management-push-api:
+    needs: user-management-build
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
+    uses: ./.github/workflows/_push-images.yml
+    with:
+      image-name: user-management-service
+      context: ./user-management
+      dockerfile: ./user-management/src/Stickerlandia.UserManagement.Api/Dockerfile
+
+  user-management-push-worker:
+    needs: user-management-build
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
+    uses: ./.github/workflows/_push-images.yml
+    with:
+      image-name: user-management-worker
+      context: ./user-management
+      dockerfile: ./user-management/src/Stickerlandia.UserManagement.Worker/Dockerfile
+
+  user-management-push-migration:
+    needs: user-management-build
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
+    uses: ./.github/workflows/_push-images.yml
+    with:
+      image-name: user-management-migration
+      context: ./user-management
+      dockerfile: ./user-management/src/Stickerlandia.UserManagement.MigrationService/Dockerfile
+
+  user-management-deploy:
+    needs: [user-management-push-api, user-management-push-worker, user-management-push-migration]
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
+    uses: ./.github/workflows/_deploy-aws.yml
+    with:
+      service-name: user-management
+      infra-directory: user-management/infra/aws
+      dotnet-version: '10.0.x'
+    secrets:
+      AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+
+  # ============================================================================
+  # STICKER AWARD SERVICE (Go)
+  # ============================================================================
+  sticker-award-build:
+    needs: detect-changes
+    if: |
+      github.event.inputs.force-all == 'true' ||
+      github.event_name == 'push' ||
+      needs.detect-changes.outputs.sticker-award == 'true' ||
+      needs.detect-changes.outputs.shared == 'true'
+    uses: ./.github/workflows/_build-go.yml
+    with:
+      working-directory: sticker-award
+      go-version: '1.21'
+
+  sticker-award-push:
+    needs: sticker-award-build
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
+    uses: ./.github/workflows/_push-images.yml
+    with:
+      image-name: sticker-award-service
+      context: ./sticker-award
+      dockerfile: ./sticker-award/Dockerfile
+      go-version: '1.21'
+
+  sticker-award-deploy:
+    needs: sticker-award-push
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
+    uses: ./.github/workflows/_deploy-aws.yml
+    with:
+      service-name: sticker-award
+      infra-directory: sticker-award/infra/aws
+      go-version: '1.21'
+    secrets:
+      AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+
+  # ============================================================================
+  # STICKER CATALOGUE SERVICE (Java)
+  # ============================================================================
+  sticker-catalogue-build:
+    needs: detect-changes
+    if: |
+      github.event.inputs.force-all == 'true' ||
+      github.event_name == 'push' ||
+      needs.detect-changes.outputs.sticker-catalogue == 'true' ||
+      needs.detect-changes.outputs.shared == 'true'
+    uses: ./.github/workflows/_build-java.yml
+    with:
+      working-directory: sticker-catalogue
+      java-version: '21'
+
+  sticker-catalogue-push:
+    needs: sticker-catalogue-build
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
+    uses: ./.github/workflows/_push-images.yml
+    with:
+      image-name: sticker-catalogue-service
+      context: ./sticker-catalogue
+      dockerfile: ./sticker-catalogue/src/main/docker/Dockerfile.jvm
+      java-version: '21'
+      pre-build-command: 'cd sticker-catalogue && ./mvnw package -DskipTests'
+
+  sticker-catalogue-deploy:
+    needs: sticker-catalogue-push
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
+    uses: ./.github/workflows/_deploy-aws.yml
+    with:
+      service-name: sticker-catalogue
+      infra-directory: sticker-catalogue/infra/aws
+      java-version: '21'
+    secrets:
+      AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+
+  # ============================================================================
+  # WEB BACKEND SERVICE (Node.js)
+  # ============================================================================
+  web-backend-build:
+    needs: detect-changes
+    if: |
+      github.event.inputs.force-all == 'true' ||
+      github.event_name == 'push' ||
+      needs.detect-changes.outputs.web-backend == 'true' ||
+      needs.detect-changes.outputs.shared == 'true'
+    uses: ./.github/workflows/_build-node.yml
+    with:
+      working-directory: web-backend
+      node-version: '18'
+
+  web-backend-push:
+    needs: web-backend-build
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
+    uses: ./.github/workflows/_push-images.yml
+    with:
+      image-name: web-backend-service
+      context: ./web-backend
+      dockerfile: ./web-backend/Dockerfile
+
+  web-backend-deploy:
+    needs: web-backend-push
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
+    uses: ./.github/workflows/_deploy-aws.yml
+    with:
+      service-name: web-backend
+      infra-directory: web-backend/infra/aws
+      node-version: '18'
+    secrets:
+      AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+
+  # ============================================================================
+  # WEB FRONTEND SERVICE (React/Node.js)
+  # ============================================================================
+  web-frontend-push:
+    needs: detect-changes
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
+    uses: ./.github/workflows/_push-images.yml
+    with:
+      image-name: web-frontend
+      context: ./web-frontend
+      dockerfile: ./web-frontend/Dockerfile
+
+  web-frontend-deploy:
+    needs: web-frontend-push
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
+    uses: ./.github/workflows/_deploy-aws.yml
+    with:
+      service-name: web-frontend
+      infra-directory: web-frontend/infra/aws
+      node-version: '18'
+      pre-deploy-command: 'cd web-frontend && npm install && npm run build'
+    secrets:
+      AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+
+  # ============================================================================
+  # FAN-IN: UI/E2E TESTS (runs after all deployments complete)
+  # ============================================================================
+  ui-tests:
+    needs:
+      - user-management-deploy
+      - sticker-award-deploy
+      - sticker-catalogue-deploy
+      - web-backend-deploy
+      - web-frontend-deploy
+    # Run if:
+    # - We're on main branch push AND
+    # - All preceding jobs either succeeded or were skipped (not failed/cancelled)
+    if: |
+      always() &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
+    uses: ./.github/workflows/_ui-tests.yml
+    with:
+      environment: dev
+    secrets:
+      AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
