@@ -94,7 +94,7 @@ jobs:
       dotnet-version: '10.0.x'
 
   user-management-push-api:
-    needs: user-management-build
+    needs: [user-management-build, docker-compose-tests]
     if: |
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
@@ -105,7 +105,7 @@ jobs:
       dockerfile: ./user-management/src/Stickerlandia.UserManagement.Api/Dockerfile
 
   user-management-push-worker:
-    needs: user-management-build
+    needs: [user-management-build, docker-compose-tests]
     if: |
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
@@ -116,7 +116,7 @@ jobs:
       dockerfile: ./user-management/src/Stickerlandia.UserManagement.Worker/Dockerfile
 
   user-management-push-migration:
-    needs: user-management-build
+    needs: [user-management-build, docker-compose-tests]
     if: |
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
@@ -158,7 +158,7 @@ jobs:
       go-version: '1.21'
 
   sticker-award-push:
-    needs: sticker-award-build
+    needs: [sticker-award-build, docker-compose-tests]
     if: |
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
@@ -201,7 +201,7 @@ jobs:
       java-version: '21'
 
   sticker-catalogue-push:
-    needs: sticker-catalogue-build
+    needs: [sticker-catalogue-build, docker-compose-tests]
     if: |
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
@@ -209,9 +209,7 @@ jobs:
     with:
       image-name: sticker-catalogue-service
       context: ./sticker-catalogue
-      dockerfile: ./sticker-catalogue/src/main/docker/Dockerfile.jvm
-      java-version: '21'
-      pre-build-command: 'cd sticker-catalogue && ./mvnw package -DskipTests'
+      dockerfile: ./sticker-catalogue/src/main/docker/Dockerfile.jvmlocal
 
   sticker-catalogue-deploy:
     needs: sticker-catalogue-push
@@ -245,7 +243,7 @@ jobs:
       node-version: '18'
 
   web-backend-push:
-    needs: web-backend-build
+    needs: [web-backend-build, docker-compose-tests]
     if: |
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
@@ -272,8 +270,22 @@ jobs:
   # ============================================================================
   # WEB FRONTEND SERVICE (React/Node.js)
   # ============================================================================
-  web-frontend-push:
+  # TEMPORARY: 'true' added to force all builds - remove after testing
+  web-frontend-build:
     needs: detect-changes
+    if: |
+      true ||
+      github.event.inputs.force-all == 'true' ||
+      github.event_name == 'push' ||
+      needs.detect-changes.outputs.web-frontend == 'true' ||
+      needs.detect-changes.outputs.shared == 'true'
+    uses: ./.github/workflows/_build-node.yml
+    with:
+      working-directory: web-frontend
+      node-version: '20'
+
+  web-frontend-push:
+    needs: [web-frontend-build, docker-compose-tests]
     if: |
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
@@ -322,3 +334,140 @@ jobs:
       environment: dev
     secrets:
       AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+
+  # ============================================================================
+  # DOCKER COMPOSE E2E TESTS (runs after builds, uses GHA cache)
+  # ============================================================================
+  docker-compose-tests:
+    needs:
+      - user-management-build
+      - sticker-award-build
+      - sticker-catalogue-build
+      - web-backend-build
+      - web-frontend-build
+    # Run if all build jobs succeeded or were skipped (not failed/cancelled)
+    if: |
+      always() &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
+
+      - name: Create CI .env
+        run: |
+          cat > .env << EOF
+          ENV=ci
+          COMMIT_SHA=latest
+          DEPLOYMENT_HOST_URL=http://localhost:8080
+          DD_API_KEY=dummy
+          DD_SITE=datadoghq.com
+          DD_RUM_APPLICATION_ID=dummy
+          DD_RUM_CLIENT_TOKEN=dummy
+          EOF
+
+      - name: Build services with GHA cache
+        run: |
+          # Build each service using GHA cache (import and export)
+          docker buildx build \
+            --cache-from type=gha,scope=sticker-catalogue-service \
+            --cache-to type=gha,mode=max,scope=sticker-catalogue-service \
+            --load -t sticker-catalogue:latest \
+            -f sticker-catalogue/src/main/docker/Dockerfile.jvmlocal \
+            sticker-catalogue
+
+          docker buildx build \
+            --cache-from type=gha,scope=sticker-award-service \
+            --cache-to type=gha,mode=max,scope=sticker-award-service \
+            --load -t sticker-award:latest \
+            -f sticker-award/Dockerfile \
+            sticker-award
+
+          docker buildx build \
+            --cache-from type=gha,scope=user-management-service \
+            --cache-to type=gha,mode=max,scope=user-management-service \
+            --load -t user-management:latest \
+            -f user-management/src/Stickerlandia.UserManagement.Api/Dockerfile \
+            user-management
+
+          docker buildx build \
+            --cache-from type=gha,scope=user-management-worker \
+            --cache-to type=gha,mode=max,scope=user-management-worker \
+            --load -t user-management-worker:latest \
+            -f user-management/src/Stickerlandia.UserManagement.Worker/Dockerfile \
+            user-management
+
+          docker buildx build \
+            --cache-from type=gha,scope=user-management-migration \
+            --cache-to type=gha,mode=max,scope=user-management-migration \
+            --load -t user-management-migration:latest \
+            -f user-management/src/Stickerlandia.UserManagement.MigrationService/Dockerfile \
+            user-management
+
+          docker buildx build \
+            --cache-from type=gha,scope=web-backend-service \
+            --cache-to type=gha,mode=max,scope=web-backend-service \
+            --load -t web-backend:latest \
+            -f web-backend/Dockerfile \
+            web-backend
+
+          docker buildx build \
+            --cache-from type=gha,scope=web-frontend \
+            --cache-to type=gha,mode=max,scope=web-frontend \
+            --load -t web-frontend:latest \
+            -f web-frontend/Dockerfile \
+            web-frontend
+
+      - name: Start services
+        run: docker compose up -d
+
+      - name: Wait for services
+        run: ./scripts/wait-for-services.sh
+
+      - name: Test service endpoints
+        run: ./scripts/test-services.sh --max-retries 5 --retry-delay 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Install Playwright dependencies
+        working-directory: e2e
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: e2e
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        working-directory: e2e
+        run: npx playwright test
+        env:
+          CI: true
+          BASE_URL: http://localhost:8080
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-compose
+          path: e2e/playwright-report/
+          retention-days: 7
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-results-compose
+          path: e2e/test-results/
+          retention-days: 7
+
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v

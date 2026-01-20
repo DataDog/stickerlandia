@@ -7,13 +7,18 @@ name: UI/E2E Tests
 on:
   workflow_call:
     inputs:
+      base-url:
+        description: 'Base URL to test against. If not provided, URL is fetched from AWS CloudFormation.'
+        required: false
+        type: string
+        default: ''
       environment:
-        description: 'Environment to test against'
+        description: 'Environment to test against (only used when fetching URL from AWS)'
         required: false
         type: string
         default: 'dev'
       aws-region:
-        description: 'AWS region'
+        description: 'AWS region (only used when fetching URL from AWS)'
         required: false
         type: string
         default: 'eu-west-1'
@@ -24,8 +29,8 @@ on:
         default: '22'
     secrets:
       AWS_ROLE_ARN:
-        description: 'AWS IAM role ARN to assume'
-        required: true
+        description: 'AWS IAM role ARN to assume (required when base-url is not provided)'
+        required: false
 
 jobs:
   e2e-tests:
@@ -38,6 +43,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Configure AWS credentials
+        if: ${{ inputs.base-url == '' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
@@ -45,6 +51,7 @@ jobs:
           aws-region: ${{ inputs.aws-region }}
 
       - name: Get deployment URL from CDK stack
+        if: ${{ inputs.base-url == '' }}
         id: get-url
         run: |
           BASE_URL=$(aws cloudformation describe-stacks \
@@ -69,12 +76,12 @@ jobs:
         working-directory: e2e
         run: npx playwright install --with-deps chromium
 
-      - name: Run E2E tests against AWS
+      - name: Run E2E tests
         working-directory: e2e
         run: npx playwright test
         env:
           CI: true
-          BASE_URL: ${{ steps.get-url.outputs.BASE_URL }}
+          BASE_URL: ${{ inputs.base-url != '' && inputs.base-url || steps.get-url.outputs.BASE_URL }}
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
