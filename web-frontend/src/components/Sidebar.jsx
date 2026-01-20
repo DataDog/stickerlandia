@@ -59,10 +59,10 @@ function Sidebar() {
             </Link>
           </li>
           <li className="my-3 px-5">
-            <a className="block" href="">
+            <Link className="block" to="/print-station">
               <LocalPrintshopOutlinedIcon />
               Print Station
-            </a>
+            </Link>
           </li>
         </ul>
       </nav>
