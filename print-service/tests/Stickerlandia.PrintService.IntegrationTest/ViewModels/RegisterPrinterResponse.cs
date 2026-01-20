@@ -15,12 +15,12 @@ internal sealed record RegisterPrinterResponse
     [JsonPropertyName("printerId")]
     public string PrinterId { get; set; } = string.Empty;
 
-    [JsonPropertyName("EventName")]
+    [JsonPropertyName("eventName")]
     public string EventName { get; set; } = string.Empty;
 
     [JsonPropertyName("printerName")]
     public string PrinterName { get; set; } = string.Empty;
 
-    [JsonPropertyName("Key")]
+    [JsonPropertyName("key")]
     public string Key { get; set; } = string.Empty;
 }
