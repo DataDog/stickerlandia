@@ -237,6 +237,13 @@ run = "npx playwright test --ui"
 [tasks."aws:ui-test"]
 description = "Run UI tests against AWS deployment"
 dir = "e2e"
-depends = ["ui-test:install", "env:setup"]
-run = "npx playwright test"
+depends = ["ui-test:install"]
+run = """
+BASE_URL=$(aws cloudformation describe-stacks \
+  --stack-name "StickerlandiaSharedResources-${ENV:-dev}" \
+  --query "Stacks[0].Outputs[?OutputKey=='BaseUrl'].OutputValue" \
+  --output text)
+echo "Running tests against: $BASE_URL"
+BASE_URL=$BASE_URL npx playwright test
+"""
 

@@ -17,7 +17,7 @@ Playwright-based end-to-end tests for Stickerlandia. Can be pointed at any deplo
 # Against local Docker Compose
 mise run compose:ui-test
 
-# Against AWS (uses DEPLOYMENT_HOST_URL from .env)
+# Against AWS (fetches URL from CDK stack output)
 mise run aws:ui-test
 
 # Interactive mode
@@ -29,13 +29,7 @@ BASE_URL=https://example.com npx playwright test
 
 ## Configuration
 
-Copy `.env.example` to `.env`:
-
-```bash
-BASE_URL=http://localhost:8080
-TEST_USER_EMAIL=user@stickerlandia.com
-TEST_USER_PASSWORD=Stickerlandia2025!
-```
+Test credentials can be overridden via `TEST_USER_EMAIL` and `TEST_USER_PASSWORD` env vars.
 
 ## Structure
 
