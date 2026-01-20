@@ -15,6 +15,6 @@ public interface IMessagingWorker
     Task StartAsync();
 
     Task PollAsync(CancellationToken stoppingToken);
-    
+
     Task StopAsync(CancellationToken cancellationToken);
 }

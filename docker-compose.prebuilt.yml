@@ -17,6 +17,10 @@ services:
     image: ghcr.io/datadog/stickerlandia/print-service:latest
     build: {}
 
+  print-service-db-migrations:
+    image: ghcr.io/datadog/stickerlandia/print-service-migration:latest
+    build: {}
+
   user-management:
     image: ghcr.io/datadog/stickerlandia/user-management-service:latest
     build: {}

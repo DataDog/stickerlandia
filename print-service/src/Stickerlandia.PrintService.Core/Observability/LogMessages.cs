@@ -14,84 +14,84 @@ namespace Stickerlandia.PrintService.Core.Observability;
 
 public static partial class Log
 {
-    
+
     [LoggerMessage(
         EventId = 0,
         Level = LogLevel.Critical,
         Message = "Received message from transport: {MessageTransport}")]
     public static partial void ReceivedMessage(
         ILogger logger, string messageTransport);
-    
+
     [LoggerMessage(
         EventId = 1,
         Level = LogLevel.Error,
         Message = "Failure processing message: {ErrorMessage}")]
     public static partial void MessageProcessingException(
         ILogger logger, string? errorMessage, Exception? exception);
-    
+
     [LoggerMessage(
         EventId = 2,
         Level = LogLevel.Error,
         Message = "Invalid user exception")]
     public static partial void InvalidUser(
         ILogger logger, InvalidUserException exception);
-    
+
     [LoggerMessage(
         EventId = 3,
         Level = LogLevel.Error,
         Message = "Failure delivering message: {ErrorReason}")]
     public static partial void MessageDeliveryFailure(
         ILogger logger, string errorReason, Exception? exception);
-    
+
     [LoggerMessage(
         EventId = 4,
         Level = LogLevel.Warning,
         Message = "Message sent to DLQ: {ErrorReason}")]
     public static partial void MessageSentToDlq(
         ILogger logger, string errorReason, Exception? exception);
-    
+
     [LoggerMessage(
         EventId = 5,
         Level = LogLevel.Trace,
         Message = "Starting message processor for transport: {MessageTransport}")]
     public static partial void StartingMessageProcessor(
         ILogger logger, string messageTransport);
-    
+
     [LoggerMessage(
         EventId = 6,
         Level = LogLevel.Warning,
         Message = "Token cancelled")]
     public static partial void TokenCancelled(
         ILogger logger);
-    
+
     [LoggerMessage(
         EventId = 7,
         Level = LogLevel.Error,
         Message = "Failed to create message processor for transport: {MessageTransport}")]
     public static partial void FailureStartingWorker(
         ILogger logger, string messageTransport, Exception? exception);
-    
+
     [LoggerMessage(
         EventId = 8,
         Level = LogLevel.Error,
         Message = "Failure processing message: {ErrorMessage}")]
     public static partial void MessagePublishingError(
         ILogger logger, string? errorMessage, Exception? exception);
-    
+
     [LoggerMessage(
         EventId = 9,
         Level = LogLevel.Error,
         Message = "Unknown error")]
     public static partial void UnknownException(
         ILogger logger, Exception? exception);
-    
+
     [LoggerMessage(
         EventId = 10,
         Level = LogLevel.Error,
         Message = "{Message}")]
     public static partial void GenericWarning(
-        ILogger logger, string  message, Exception? exception);
-    
+        ILogger logger, string message, Exception? exception);
+
     [LoggerMessage(
         EventId = 5,
         Level = LogLevel.Trace,

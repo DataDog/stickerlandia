@@ -12,11 +12,11 @@ namespace Stickerlandia.PrintService.Core;
 
 public class InvalidUserException : Exception
 {
-    
+
     public InvalidUserException() : base()
     {
     }
-    
+
     public InvalidUserException(string reason)
         : base($"Invalid user: {reason}")
     {

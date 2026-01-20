@@ -26,20 +26,20 @@ public class OutboxItem
             TraceId = $"00-{currentSpan.TraceId}-{currentSpan.SpanId}-01";
         }
     }
-    
+
     public string ItemId { get; set; }
     public string EventType { get; set; } = "";
-    
+
     public string EventData { get; set; } = "";
-    
+
     public DateTime EventTime { get; set; }
 
     public bool Processed { get; set; }
 
     public bool Failed { get; set; }
-    
+
     public string? FailureReason { get; set; }
-    
+
     public string? TraceId { get; set; }
 
     public string EmailAddress { get; set; } = "";

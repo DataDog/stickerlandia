@@ -26,7 +26,7 @@ internal sealed class AzureServiceBusMessaging(string connectionString) : IMessa
         {
             ContentType = "application/json"
         };
-            
+
         await sender.SendMessageAsync(serviceBusMessage);
     }
 

@@ -17,7 +17,7 @@ public class GetPrintersForEventQueryHandler(IPrinterRepository repository)
     public async Task<List<PrinterDTO>> Handle(GetPrintersForEventQuery query)
     {
         ArgumentNullException.ThrowIfNull(query);
-        
+
         try
         {
             if (query.EventName is null)

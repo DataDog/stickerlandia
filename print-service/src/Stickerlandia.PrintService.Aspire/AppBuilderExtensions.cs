@@ -169,7 +169,7 @@ internal static class AppBuilderExtensions
         IResourceBuilder<DynamoDBLocalResource> dynamoDbLocalResource)
     {
         ArgumentNullException.ThrowIfNull(dynamoDbLocalResource, nameof(dynamoDbLocalResource));
-        
+
         var apiLambdaFunction = builder.AddAWSLambdaFunction<Projects.Stickerlandia_PrintService_Api>("UsersApi",
                 "Stickerlandia.PrintService.Api")
             .WithReference(dynamoDbLocalResource)

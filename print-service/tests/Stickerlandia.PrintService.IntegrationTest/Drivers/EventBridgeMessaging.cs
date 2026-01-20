@@ -38,9 +38,9 @@ internal sealed class EventBridgeMessaging(string environment) : IMessaging, IAs
     public ValueTask DisposeAsync()
     {
         _client.Dispose();
-        
+
         GC.SuppressFinalize(this);
-        
+
         return ValueTask.CompletedTask;
     }
 }

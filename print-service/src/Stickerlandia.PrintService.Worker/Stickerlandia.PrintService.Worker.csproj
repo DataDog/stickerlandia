@@ -18,7 +18,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Stickerlandia.PrintService.Aws\Stickerlandia.PrintService.Aws.csproj" />
+        <ProjectReference Include="..\Stickerlandia.PrintService.AWS\Stickerlandia.PrintService.AWS.csproj" />
         <ProjectReference Include="..\Stickerlandia.PrintService.Core\Stickerlandia.PrintService.Core.csproj" />
         <ProjectReference Include="..\Stickerlandia.PrintService.ServiceDefaults\Stickerlandia.PrintService.ServiceDefaults.csproj" />
     </ItemGroup>

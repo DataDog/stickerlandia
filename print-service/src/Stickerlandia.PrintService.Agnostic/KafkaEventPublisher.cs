@@ -66,12 +66,14 @@ public class KafkaEventPublisher(ProducerConfig config, ILogger<KafkaEventPublis
                 var deliveryReport = await producer.ProduceAsync(cloudEvent.Type,
                     new Message<string, string> { Key = cloudEvent.Id!, Value = Encoding.UTF8.GetString(data.Span) },
                     default);
-            
-                if (deliveryReport.Status == PersistenceStatus.PossiblyPersisted) {
+
+                if (deliveryReport.Status == PersistenceStatus.PossiblyPersisted)
+                {
                     // Handle potential timeout errors
                     throw new MessageProcessingException("Kafka message possibly persisted, but not confirmed.");
                 }
-                else if (deliveryReport.Status == PersistenceStatus.NotPersisted) {
+                else if (deliveryReport.Status == PersistenceStatus.NotPersisted)
+                {
                     // Handle message not persisted errors.
                     throw new MessageProcessingException($"Message not persisted: {deliveryReport.TopicPartitionOffset}");
                 }

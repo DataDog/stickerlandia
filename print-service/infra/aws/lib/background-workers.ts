@@ -40,9 +40,6 @@ export interface BackgroundWorkersProps {
   sharedProps: SharedProps;
   serviceProps: ServiceProps;
   sharedEventBus: IEventBus;
-  stickerClaimedQueue: IQueue;
-  stickerClaimedDLQ: IQueue;
-  userRegisteredTopic: ITopic;
   useLambda: boolean;
 }
 
@@ -51,164 +48,117 @@ export class BackgroundWorkers extends Construct {
     super(scope, id);
 
     if (props.useLambda) {
-      // Get connection string value from CustomResource output, resolved at deploy time
-      const connectionString = props.serviceProps.databaseCredentials.getConnectionStringForLambda();
+      // // Get connection string value from CustomResource output, resolved at deploy time
+      // const connectionString = props.serviceProps.databaseCredentials.getConnectionStringForLambda();
 
-      // Reference the VPC link security group for Lambda functions that need database access
-      const lambdaSecurityGroup = SecurityGroup.fromSecurityGroupId(
-        this,
-        "LambdaSecurityGroup",
-        props.vpcLinkSecurityGroupId
-      );
+      // // Reference the VPC link security group for Lambda functions that need database access
+      // const lambdaSecurityGroup = SecurityGroup.fromSecurityGroupId(
+      //   this,
+      //   "LambdaSecurityGroup",
+      //   props.vpcLinkSecurityGroupId
+      // );
 
-      // Lambda functions need to be in private subnets to access RDS
-      const vpcSubnets = {
-        subnetType: SubnetType.PRIVATE_WITH_EGRESS,
-      };
+      // // Lambda functions need to be in private subnets to access RDS
+      // const vpcSubnets = {
+      //   subnetType: SubnetType.PRIVATE_WITH_EGRESS,
+      // };
 
-      const environmentVariables = {
-        POWERTOOLS_SERVICE_NAME: props.sharedProps.serviceName,
-        POWERTOOLS_LOG_LEVEL:
-          props.sharedProps.environment === "prod" ? "WARN" : "INFO",
-        ENV: props.sharedProps.environment,
-        ConnectionStrings__database: connectionString,
-        Aws__UserRegisteredTopicArn: props.userRegisteredTopic.topicArn,
-        Aws__StickerClaimedQueueUrl: props.stickerClaimedQueue.queueUrl,
-        Aws__StickerClaimedDLQUrl: props.stickerClaimedDLQ.queueUrl,
-        DRIVING: "ASPNET",
-        DRIVEN: "AWS",
-        DISABLE_SSL: "true",
-        ...props.serviceProps.messagingConfiguration.asEnvironmentVariables(),
-      };
+      // const environmentVariables = {
+      //   POWERTOOLS_SERVICE_NAME: props.sharedProps.serviceName,
+      //   POWERTOOLS_LOG_LEVEL:
+      //     props.sharedProps.environment === "prod" ? "WARN" : "INFO",
+      //   ENV: props.sharedProps.environment,
+      //   ConnectionStrings__database: connectionString,
+      //   DRIVING: "ASPNET",
+      //   DRIVEN: "AWS",
+      //   DISABLE_SSL: "true",
+      //   ...props.serviceProps.messagingConfiguration.asEnvironmentVariables(),
+      // };
 
-      const stickerClaimedWorker = new InstrumentedLambdaFunction(
-        this,
-        "StickerClaimedWorkerFunction",
-        {
-          sharedProps: props.sharedProps,
-          handler:
-            "Stickerlandia.PrintService.Lambda::Stickerlandia.PrintService.Lambda.SqsHandler_StickerClaimed_Generated::StickerClaimed",
-          buildDef: "../../src/Stickerlandia.PrintService.Lambda/",
-          functionName: "sticker-claimed-worker",
-          environment: environmentVariables,
-          memorySize: 1024,
-          timeout: Duration.seconds(25),
-          logLevel: props.sharedProps.environment === "prod" ? "WARN" : "INFO",
-          onFailure: new SqsDestination(props.stickerClaimedDLQ),
-          vpc: props.vpc,
-          vpcSubnets: vpcSubnets,
-          securityGroups: [lambdaSecurityGroup],
-        }
-      );
+      // const outboxWorker = new InstrumentedLambdaFunction(
+      //   this,
+      //   "OutboxWorkerFunction",
+      //   {
+      //     sharedProps: props.sharedProps,
+      //     handler:
+      //       "Stickerlandia.PrintService.Lambda::Stickerlandia.PrintService.Lambda.OutboxFunctions_Worker_Generated::Worker",
+      //     buildDef: "../../src/Stickerlandia.PrintService.Lambda/",
+      //     functionName: "outbox-worker",
+      //     environment: environmentVariables,
+      //     memorySize: 1024,
+      //     timeout: Duration.seconds(50),
+      //     logLevel: props.sharedProps.environment === "prod" ? "WARN" : "INFO",
+      //     onFailure: undefined,
+      //     vpc: props.vpc,
+      //     vpcSubnets: vpcSubnets,
+      //     securityGroups: [lambdaSecurityGroup],
+      //   }
+      // );
+      // props.sharedEventBus.grantPutEventsTo(outboxWorker.function);
 
-      stickerClaimedWorker.function.addEventSource(
-        new SqsEventSource(props.stickerClaimedQueue, {
-          batchSize: 10,
-          reportBatchItemFailures: true,
-        })
-      );
+      // // Add dependencies for outbox worker Lambda
+      // if (props.serviceProps.serviceDependencies) {
+      //   for (const dependency of props.serviceProps.serviceDependencies) {
+      //     outboxWorker.function.node.addDependency(dependency);
+      //   }
+      // }
 
-      // Add dependencies for Lambda functions to ensure SSM parameters exist before deployment
-      if (props.serviceProps.serviceDependencies) {
-        for (const dependency of props.serviceProps.serviceDependencies) {
-          stickerClaimedWorker.function.node.addDependency(dependency);
-        }
-      }
+      // const outboxWorkerSchedule = new Rule(this, "OutboxWorkerSchedule", {
+      //   description: "Trigger outbox worker every 1 minute",
+      //   schedule: Schedule.rate(Duration.minutes(1)),
+      // });
 
-      const rule = new Rule(this, "StickerClaimedEventRule", {
-        eventBus: props.sharedEventBus,
-        ruleName: `${props.sharedProps.serviceName}-${props.sharedProps.environment}-sticker-claimed-rule`,
-        eventPattern: {
-          source: [`${props.sharedProps.environment}.stickers`],
-          detailType: ["users.stickerClaimed.v1"],
-        },
-      });
-      rule.addTarget(new SqsQueue(props.stickerClaimedQueue));
-
-      const outboxWorker = new InstrumentedLambdaFunction(
-        this,
-        "OutboxWorkerFunction",
-        {
-          sharedProps: props.sharedProps,
-          handler:
-            "Stickerlandia.PrintService.Lambda::Stickerlandia.PrintService.Lambda.OutboxFunctions_Worker_Generated::Worker",
-          buildDef: "../../src/Stickerlandia.PrintService.Lambda/",
-          functionName: "outbox-worker",
-          environment: environmentVariables,
-          memorySize: 1024,
-          timeout: Duration.seconds(50),
-          logLevel: props.sharedProps.environment === "prod" ? "WARN" : "INFO",
-          onFailure: undefined,
-          vpc: props.vpc,
-          vpcSubnets: vpcSubnets,
-          securityGroups: [lambdaSecurityGroup],
-        }
-      );
-      props.sharedEventBus.grantPutEventsTo(outboxWorker.function);
-
-      // Add dependencies for outbox worker Lambda
-      if (props.serviceProps.serviceDependencies) {
-        for (const dependency of props.serviceProps.serviceDependencies) {
-          outboxWorker.function.node.addDependency(dependency);
-        }
-      }
-
-      const outboxWorkerSchedule = new Rule(this, "OutboxWorkerSchedule", {
-        description: "Trigger outbox worker every 1 minute",
-        schedule: Schedule.rate(Duration.minutes(1)),
-      });
-
-      // Add the Lambda function as a target
-      outboxWorkerSchedule.addTarget(
-        new LambdaFunction(outboxWorker.function, {
-          retryAttempts: 2,
-          event: RuleTargetInput.fromObject({
-            run: true,
-          }),
-        })
-      );
+      // // Add the Lambda function as a target
+      // outboxWorkerSchedule.addTarget(
+      //   new LambdaFunction(outboxWorker.function, {
+      //     retryAttempts: 2,
+      //     event: RuleTargetInput.fromObject({
+      //       run: true,
+      //     }),
+      //   })
+      // );
     } else {
-      const workerService = new WorkerService(
-        this,
-        "UserServiceWorkerService",
-        {
-          sharedProps: props.sharedProps,
-          vpc: props.vpc,
-          cluster: props.cluster,
-          image: "ghcr.io/datadog/stickerlandia/user-management-worker",
-          imageTag: props.sharedProps.version,
-          ddApiKey: props.sharedProps.datadog.apiKeyParameter,
-          environmentVariables: {
-            POWERTOOLS_SERVICE_NAME: props.sharedProps.serviceName,
-            POWERTOOLS_LOG_LEVEL:
-              props.sharedProps.environment === "prod" ? "WARN" : "INFO",
-            ENV: props.sharedProps.environment,
-            DRIVING: "ASPNET",
-            DRIVEN: "AGNOSTIC",
-            DISABLE_SSL: "true",
-            LOGGING__LOGLEVEL__DEFAULT: "INFORMATION",
-            LOGGING__LOGLEVEL__MICROSOFT: "INFORMATION",
-            "LOGGING__LOGLEVEL__MICROSOFT.ENTITYFRAMEWORKCORE.DATABASE.COMMAND":
-              "WARNING",
-            ...props.serviceProps.messagingConfiguration.asEnvironmentVariables(),
-          },
-          secrets: {
-            DD_API_KEY: Secret.fromSsmParameter(
-              props.sharedProps.datadog.apiKeyParameter
-            ),
-            ConnectionStrings__database: props.serviceProps.databaseCredentials.getConnectionStringEcsSecret()!,
-            ...props.serviceProps.messagingConfiguration.asSecrets(),
-          },
-          serviceDiscoveryNamespace: props.serviceDiscoveryNamespace,
-          serviceDiscoveryName: props.serviceDiscoveryName,
-          deployInPrivateSubnet: props.deployInPrivateSubnet,
-          runtimePlatform: {
-            cpuArchitecture: CpuArchitecture.ARM64,
-            operatingSystemFamily: OperatingSystemFamily.LINUX,
-          },
-          serviceDependencies: props.serviceProps.serviceDependencies,
-        }
-      );
+      // const workerService = new WorkerService(
+      //   this,
+      //   "PrintServiceWorkerService",
+      //   {
+      //     sharedProps: props.sharedProps,
+      //     vpc: props.vpc,
+      //     cluster: props.cluster,
+      //     image: "ghcr.io/datadog/stickerlandia/print-service-worker",
+      //     imageTag: props.sharedProps.version,
+      //     ddApiKey: props.sharedProps.datadog.apiKeyParameter,
+      //     environmentVariables: {
+      //       POWERTOOLS_SERVICE_NAME: props.sharedProps.serviceName,
+      //       POWERTOOLS_LOG_LEVEL:
+      //         props.sharedProps.environment === "prod" ? "WARN" : "INFO",
+      //       ENV: props.sharedProps.environment,
+      //       DRIVING: "ASPNET",
+      //       DRIVEN: "AGNOSTIC",
+      //       DISABLE_SSL: "true",
+      //       LOGGING__LOGLEVEL__DEFAULT: "INFORMATION",
+      //       LOGGING__LOGLEVEL__MICROSOFT: "INFORMATION",
+      //       "LOGGING__LOGLEVEL__MICROSOFT.ENTITYFRAMEWORKCORE.DATABASE.COMMAND":
+      //         "WARNING",
+      //       ...props.serviceProps.messagingConfiguration.asEnvironmentVariables(),
+      //     },
+      //     secrets: {
+      //       DD_API_KEY: Secret.fromSsmParameter(
+      //         props.sharedProps.datadog.apiKeyParameter
+      //       ),
+      //       ConnectionStrings__database: props.serviceProps.databaseCredentials.getConnectionStringEcsSecret()!,
+      //       ...props.serviceProps.messagingConfiguration.asSecrets(),
+      //     },
+      //     serviceDiscoveryNamespace: props.serviceDiscoveryNamespace,
+      //     serviceDiscoveryName: props.serviceDiscoveryName,
+      //     deployInPrivateSubnet: props.deployInPrivateSubnet,
+      //     runtimePlatform: {
+      //       cpuArchitecture: CpuArchitecture.ARM64,
+      //       operatingSystemFamily: OperatingSystemFamily.LINUX,
+      //     },
+      //     serviceDependencies: props.serviceProps.serviceDependencies,
+      //   }
+      // );
     }
   }
 }

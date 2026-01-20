@@ -295,6 +295,8 @@ services:
     depends_on:
       redpanda:
         condition: service_healthy
+      print-service-db-migrations:
+        condition: service_completed_successfully
       user-management:
         condition: service_healthy
     environment:

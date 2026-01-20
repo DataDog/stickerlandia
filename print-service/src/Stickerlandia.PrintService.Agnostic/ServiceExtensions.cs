@@ -23,9 +23,9 @@ public static class ServiceExtensions
         IConfiguration configuration)
     {
         services.AddKafkaMessaging(configuration);
-        
+
         ArgumentNullException.ThrowIfNull(configuration);
-        
+
         services.AddDbContext<PrintServiceDbContext>(options =>
         {
             options.UseNpgsql(configuration.GetConnectionString("database"),
@@ -93,7 +93,7 @@ public static class ServiceExtensions
         {
             throw new InvalidOperationException($"Failed to connect to Kafka after {maxRetries} attempts.", lastException);
         }
-        
+
         var producerConfig = new ProducerConfig
         {
             BootstrapServers = configuration!.GetConnectionString("messaging"),

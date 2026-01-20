@@ -26,13 +26,13 @@ public class OutboxProcessor(IServiceScopeFactory serviceScope, ILogger<OutboxPr
         using var scope = serviceScope.CreateScope();
         IOutbox outbox = scope.ServiceProvider.GetRequiredService<IOutbox>();
         IPrintServiceEventPublisher eventPublisher = scope.ServiceProvider.GetRequiredService<IPrintServiceEventPublisher>();
-        
+
         using (var outboxProcessingScope = Tracer.Instance.StartActive("outbox worker"))
         {
             try
             {
                 var outboxItems = await outbox.GetUnprocessedItemsAsync();
-                    
+
                 outboxProcessingScope.Span.SetTag("outbox.items.count", outboxItems.Count);
 
                 foreach (var item in outboxItems)
@@ -50,7 +50,7 @@ public class OutboxProcessor(IServiceScopeFactory serviceScope, ILogger<OutboxPr
             }
         }
     }
-    
+
     private async Task ProcessOutboxItemAsync(IOutbox outbox, IPrintServiceEventPublisher eventPublisher, OutboxItem item)
     {
         using (var messageProcessingScope = Tracer.Instance.StartActive($"process {item.EventType}"))
@@ -84,13 +84,13 @@ public class OutboxProcessor(IServiceScopeFactory serviceScope, ILogger<OutboxPr
             catch (Exception e)
             {
                 messageProcessingScope.Span.SetException(e);
-                
+
                 LogMessages.LogFailureProcessingOutboxItem(logger, item.ItemId, e);
                 item.FailureReason = e.Message;
                 item.Failed = true;
             }
         }
-        
+
         await outbox.UpdateOutboxItem(item);
     }
 }

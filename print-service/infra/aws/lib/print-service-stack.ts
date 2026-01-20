@@ -65,6 +65,8 @@ export class PrintServiceStack extends cdk.Stack {
       serviceDependencies: [],
     };
 
+    // The data model of the Print Service supports the constraints that DynamoDB imposes on an application
+    // Using DynamoDB instead of Postgres
     const printerTable = new Table(this, "PrinterTable", {
       tableName: `Printers-${environment}`,
       partitionKey: { name: "PK", type: cdk.aws_dynamodb.AttributeType.STRING },

@@ -12,11 +12,11 @@ namespace Stickerlandia.PrintService.Agnostic.Data;
 
 public class PrintServiceDbContext(DbContextOptions<PrintServiceDbContext> options) : DbContext(options)
 {
-    public DbSet<PrinterEntity> Printers { get; set; }
+    public DbSet<PrinterEntity>? Printers { get; set; }
 
-    public DbSet<PrintJobEntity> PrintJobs { get; set; }
+    public DbSet<PrintJobEntity>? PrintJobs { get; set; }
 
-    public DbSet<OutboxItemEntity> OutboxItems { get; set; }
+    public DbSet<OutboxItemEntity>? OutboxItems { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

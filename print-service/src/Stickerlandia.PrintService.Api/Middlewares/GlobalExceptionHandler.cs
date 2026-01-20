@@ -38,7 +38,7 @@ internal sealed class GlobalExceptionHandler
     public async Task InvokeAsync(HttpContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
-        
+
         try
         {
             await _next(context);
@@ -80,12 +80,12 @@ internal sealed class GlobalExceptionHandler
         }
         catch (ArgumentNullException ex)
         {
-            Log.GenericWarning(_logger, "Failed to retrieve user details", ex);   
+            Log.GenericWarning(_logger, "Failed to retrieve user details", ex);
             await HandleExceptionAsync(context, ex);
         }
         catch (ArgumentException ex)
         {
-            Log.GenericWarning(_logger, "Failed to retrieve user details", ex);   
+            Log.GenericWarning(_logger, "Failed to retrieve user details", ex);
             await HandleExceptionAsync(context, ex);
         }
         catch (Exception ex)
@@ -98,7 +98,7 @@ internal sealed class GlobalExceptionHandler
     private static async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
         context.Response.ContentType = "application/json";
-        
+
         var response = new
         {
             Status = "Error",
@@ -107,7 +107,7 @@ internal sealed class GlobalExceptionHandler
 
         context.Response.StatusCode = DetermineStatusCode(exception);
 
-        
+
         await context.Response.WriteAsync(JsonSerializer.Serialize(response, options));
     }
 

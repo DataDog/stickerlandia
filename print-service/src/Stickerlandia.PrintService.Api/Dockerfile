@@ -48,10 +48,18 @@ ENV DD_INTEGRATIONS=/opt/datadog/integrations.json
 ENV DD_LOGS_INJECTION=true
 ENV DD_RUNTIME_METRICS_ENABLED=true
 ENV DD_PROFILING_ENABLED=1
-LABEL com.datadoghq.tags.service="user-service"
+LABEL com.datadoghq.tags.service="print-service"
 LABEL com.datadoghq.tags.version=${DD_GIT_COMMIT_SHA}
+
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -u 1001 -S appuser -G appgroup
 
 WORKDIR /App
 COPY --from=build /App/out .
+
+RUN chown -R appuser:appgroup /App
+
+USER appuser
+
 EXPOSE 8080
 ENTRYPOINT [ "dotnet", "Stickerlandia.PrintService.Api.dll" ]

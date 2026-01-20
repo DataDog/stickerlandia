@@ -38,7 +38,7 @@ internal sealed class Worker(
         catch (Exception)
         {
             throw;
-        }       
+        }
 
         hostApplicationLifetime.StopApplication();
     }
@@ -52,7 +52,7 @@ internal sealed class Worker(
     private static async Task RunMigrationAsync(PrintServiceDbContext dbContext, CancellationToken cancellationToken)
     {
         using var runMigrationActivity = s_activitySource.StartActivity("run.migration", ActivityKind.Client);
-        
+
         var strategy = dbContext.Database.CreateExecutionStrategy();
         await strategy.ExecuteAsync(async () =>
         {

@@ -12,11 +12,11 @@ namespace Stickerlandia.PrintService.Core;
 
 public class MessageProcessingException : Exception
 {
-    
+
     public MessageProcessingException() : base()
     {
     }
-    
+
     public MessageProcessingException(string reason)
         : base($"Message processing error: {reason}")
     {

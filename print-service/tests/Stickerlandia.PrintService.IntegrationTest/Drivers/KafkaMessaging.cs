@@ -24,15 +24,15 @@ internal sealed class KafkaMessaging : IMessaging, IAsyncDisposable
             BootstrapServers = connectionString,
             // Fixed properties
             SecurityProtocol = SecurityProtocol.Plaintext,
-            Acks             = Acks.All
+            Acks = Acks.All
         };
     }
     public async Task SendMessageAsync(string queueName, object message)
     {
         using var producer = new ProducerBuilder<string, string>(config).Build();
-            
+
         await producer.ProduceAsync(queueName, new Message<string, string> { Key = "", Value = JsonSerializer.Serialize(message) });
-                
+
         producer.Flush(TimeSpan.FromSeconds(10));
     }
 

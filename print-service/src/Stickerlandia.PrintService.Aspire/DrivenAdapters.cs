@@ -30,9 +30,9 @@ internal static class DrivenAdapterSettings
             {
                 return _drivenAdapter;
             }
-            
+
             var drivenAdapterSetting = Environment.GetEnvironmentVariable("DRIVEN");
-        
+
             switch (drivenAdapterSetting)
             {
                 case "AZURE":
@@ -50,7 +50,7 @@ internal static class DrivenAdapterSettings
                 default:
                     throw new ArgumentException($"Unknown host type: '{drivenAdapterSetting}'");
             }
-            
+
             return _drivenAdapter;
         }
     }

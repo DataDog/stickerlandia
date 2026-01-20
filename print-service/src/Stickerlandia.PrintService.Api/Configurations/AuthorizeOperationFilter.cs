@@ -23,7 +23,7 @@ namespace Stickerlandia.PrintService.Api.Configurations;
 internal sealed class AuthorizeOperationFilter
     : IOperationFilter
 {
-    internal static readonly List<string> item = new(1){"OAuth2"};
+    internal static readonly List<string> item = new(1) { "OAuth2" };
 
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
     {
@@ -38,7 +38,7 @@ internal sealed class AuthorizeOperationFilter
             operation.Responses!.Add(StatusCodes.Status401Unauthorized.ToString(), new OpenApiResponse { Description = nameof(HttpStatusCode.Unauthorized) });
             operation.Responses!.Add(StatusCodes.Status403Forbidden.ToString(), new OpenApiResponse { Description = nameof(HttpStatusCode.Forbidden) });
         }
-        
+
         if (authAttributes.Count > 0)
         {
             operation.Security = new List<OpenApiSecurityRequirement>();

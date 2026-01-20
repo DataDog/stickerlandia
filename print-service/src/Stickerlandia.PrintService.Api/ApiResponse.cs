@@ -33,9 +33,9 @@ internal sealed record ApiResponse<T>
     [JsonPropertyName("success")]
     public bool Success { get; set; }
 
-    [JsonPropertyName("message")] 
+    [JsonPropertyName("message")]
     public string Message { get; set; }
-    
+
     [JsonIgnore]
     public HttpStatusCode StatusCode { get; private set; }
 

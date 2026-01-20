@@ -21,7 +21,7 @@ internal static class DocumentationConfig
     public static IHostApplicationBuilder AddDocumentationEndpoints(this IHostApplicationBuilder builder)
     {
         var serviceName = "User Management API";
-        
+
         builder.Services.AddAsyncApiSchemaGeneration(options =>
         {
             options.AssemblyMarkerTypes = new[] { typeof(EventBridgeEventPublisher) };
@@ -41,7 +41,7 @@ internal static class DocumentationConfig
             // Include XML comments for Swagger
             var xmlFiles = Directory.GetFiles(AppContext.BaseDirectory, "*.xml");
             foreach (var xmlFile in xmlFiles) options.IncludeXmlComments(xmlFile);
-            
+
             // This manually removes some types from the auth-gen Swagger definitions that aren't required.
             options.DocumentFilter<RemoveSwaggerDefinitionsFilter>();
             options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
@@ -66,5 +66,5 @@ internal static class DocumentationConfig
 
         return builder;
     }
-    
+
 }

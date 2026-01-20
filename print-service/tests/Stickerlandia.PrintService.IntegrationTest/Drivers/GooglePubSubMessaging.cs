@@ -31,9 +31,9 @@ internal sealed class GooglePubSubMessaging : IMessaging, IAsyncDisposable
 
         var topicName = new TopicName(connectionString, "users.userRegistered.v1");
         var stickerClaimedTopic = new TopicName(connectionString, "users.stickerClaimed.v1");
-            
+
         var publisherApiClient = new PublisherServiceApiClientBuilder { EmulatorDetection = EmulatorDetection.EmulatorOrProduction }.Build();
-        
+
         try
         {
             publisherApiClient.CreateTopic(topicName);
@@ -43,7 +43,7 @@ internal sealed class GooglePubSubMessaging : IMessaging, IAsyncDisposable
         {
             Console.WriteLine($"Topic {topicName} already exists.");
         }
-        
+
         try
         {
             publisherApiClient.CreateTopic(stickerClaimedTopic);
@@ -53,10 +53,10 @@ internal sealed class GooglePubSubMessaging : IMessaging, IAsyncDisposable
         {
             Console.WriteLine($"Topic {stickerClaimedTopic} already exists.");
         }
-        
+
         var subscriber = new SubscriberServiceApiClientBuilder() { EmulatorDetection = EmulatorDetection.EmulatorOrProduction }.Build();
         SubscriptionName subscriptionName = SubscriptionName.FromProjectSubscription(connectionString, "users.stickerClaimed.v1");
-        
+
         try
         {
             subscriber.CreateSubscription(subscriptionName, stickerClaimedTopic, pushConfig: null, ackDeadlineSeconds: 60);
@@ -66,7 +66,7 @@ internal sealed class GooglePubSubMessaging : IMessaging, IAsyncDisposable
             // Already exists.  That's fine.
         }
 
-        _client = new PublisherClientBuilder { TopicName = stickerClaimedTopic, EmulatorDetection = EmulatorDetection.EmulatorOrProduction}.Build();
+        _client = new PublisherClientBuilder { TopicName = stickerClaimedTopic, EmulatorDetection = EmulatorDetection.EmulatorOrProduction }.Build();
     }
 
     public async Task SendMessageAsync(string queueName, object message)

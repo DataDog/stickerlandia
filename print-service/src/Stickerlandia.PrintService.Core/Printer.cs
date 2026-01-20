@@ -53,7 +53,7 @@ public class Printer
     {
         ArgumentNullException.ThrowIfNullOrEmpty(eventName);
         ArgumentNullException.ThrowIfNullOrEmpty(printerName);
-        
+
         var userAccount = new Printer
         {
             Id = new PrinterId($"{eventName.ToUpperInvariant()}-{printerName.ToUpperInvariant()}"),

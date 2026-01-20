@@ -85,7 +85,7 @@ if (resources.DynamoDbResource is not null)
         var serviceUrl = resources.DatabaseResource.Resource.GetEndpoint("http").Url;
         var credentials = new BasicAWSCredentials("dummyaccesskey", "dummysecretkey");
         var ddbClient = new AmazonDynamoDBClient(new AmazonDynamoDBConfig
-            { ServiceURL = serviceUrl, DefaultAWSCredentials = credentials });
+        { ServiceURL = serviceUrl, DefaultAWSCredentials = credentials });
 
         // Create the Printers table.
         await ddbClient.CreateTableAsync(new CreateTableRequest

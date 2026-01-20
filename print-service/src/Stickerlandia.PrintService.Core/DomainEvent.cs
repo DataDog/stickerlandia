@@ -16,9 +16,9 @@ public abstract record DomainEvent
 {
     [JsonPropertyName("EventName")]
     public abstract string EventName { get; }
-    
+
     [JsonPropertyName("eventVersion")]
     public abstract string EventVersion { get; }
-    
+
     public abstract string ToJsonString();
 }

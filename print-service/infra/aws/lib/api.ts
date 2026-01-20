@@ -50,6 +50,7 @@ export class Api extends Construct {
       dockerfile: "src/Stickerlandia.PrintService.Api/Dockerfile",
       ddApiKey: props.sharedProps.datadog.apiKeyParameter,
       port: 8080,
+      memoryLimitMiB: 512,
       environmentVariables: {
         DEPLOYMENT_HOST_URL: `https://${props.serviceProps.cloudfrontDistribution.distributionDomainName}`,
         DRIVING: "AWS",

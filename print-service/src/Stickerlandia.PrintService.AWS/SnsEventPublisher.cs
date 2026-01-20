@@ -34,7 +34,7 @@ public class SnsEventPublisher(
     public async Task PublishPrinterRegisteredEvent(PrinterRegisteredEvent printerRegisteredEvent)
     {
         ArgumentNullException.ThrowIfNull(printerRegisteredEvent, nameof(printerRegisteredEvent));
-        
+
         var cloudEvent = new CloudEvent(CloudEventsSpecVersion.V1_0)
         {
             Id = Guid.NewGuid().ToString(),

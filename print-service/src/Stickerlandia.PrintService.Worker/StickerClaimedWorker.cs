@@ -28,7 +28,7 @@ internal sealed class StickerClaimedWorker : BackgroundService
         _logger = logger;
         _messagingWorker = messagingWorker;
     }
-    
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         // Start processing
@@ -67,7 +67,7 @@ internal sealed class StickerClaimedWorker : BackgroundService
             await _messagingWorker.StopAsync(stoppingToken);
         }
     }
-    
+
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
         await _messagingWorker.StopAsync(cancellationToken);

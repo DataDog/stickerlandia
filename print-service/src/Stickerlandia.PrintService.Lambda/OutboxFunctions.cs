@@ -17,7 +17,7 @@ public class OutboxFunctions(ILogger<OutboxFunctions> logger, OutboxProcessor ou
     public async Task Worker(object evtData)
     {
         Log.StartingMessageProcessor(logger, "outbox-worker");
-        
+
         await outboxProcessor.ProcessAsync();
     }
 }
