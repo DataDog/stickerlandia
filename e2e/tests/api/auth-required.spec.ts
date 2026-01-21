@@ -53,4 +53,25 @@ test.describe('API Authentication Requirements', () => {
       expect(response.ok()).toBeTruthy();
     });
   });
+
+  test.describe('Sticker Award - Protected Endpoints', () => {
+    test('POST /api/awards/v1/assignments/{userId} requires authentication', async ({ request }) => {
+      const response = await request.post('/api/awards/v1/assignments/user-001', {
+        data: {
+          stickerId: 'sticker-001',
+        },
+      });
+      expect(response.status()).toBe(401);
+    });
+
+    test('DELETE /api/awards/v1/assignments/{userId}/{stickerId} requires authentication', async ({ request }) => {
+      const response = await request.delete('/api/awards/v1/assignments/user-001/sticker-001');
+      expect(response.status()).toBe(401);
+    });
+  });
+
+    test('GET /api/awards/v1/assignments/{userId} requires authentication', async ({ request }) => {
+      const response = await request.get('/api/awards/v1/assignments/user-001');
+      expect(response.status()).toBe(401);
+    });
 });

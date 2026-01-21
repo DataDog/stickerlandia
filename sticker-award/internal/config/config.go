@@ -32,6 +32,14 @@ type Config struct {
 	AWS               AWSConfig         `mapstructure:"aws"`
 	Catalogue         CatalogueConfig   `mapstructure:"catalogue"`
 	Logging           LoggingConfig     `mapstructure:"logging"`
+	Auth              AuthConfig        `mapstructure:"auth"`
+}
+
+// AuthConfig holds JWT authentication configuration
+type AuthConfig struct {
+	JWKSUrl   string `mapstructure:"jwks_url"`
+	Issuer    string `mapstructure:"issuer"`
+	ClockSkew int    `mapstructure:"clock_skew"`
 }
 
 // ServerConfig holds HTTP server configuration
@@ -220,6 +228,15 @@ func setDefaults() {
 	// Logging defaults
 	viper.SetDefault("logging.level", "info")
 	viper.SetDefault("logging.format", "json")
+
+	// Auth defaults
+	viper.SetDefault("auth.jwks_url", "http://user-management:8080/.well-known/jwks")
+	viper.SetDefault("auth.issuer", "http://user-management:8080")
+	viper.SetDefault("auth.clock_skew", 30)
+
+	// Explicit env var bindings for auth config
+	_ = viper.BindEnv("auth.jwks_url", "JWKS_URI")
+	_ = viper.BindEnv("auth.issuer", "OAUTH_ISSUER")
 }
 
 // ConnectionString returns the database connection string

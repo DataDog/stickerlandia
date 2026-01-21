@@ -16,7 +16,7 @@ import (
 )
 
 // Setup configures and returns the Gin router with all routes and middleware
-func Setup(db *gorm.DB, cfg *config.Config, assignmentService domainservice.Assigner) *gin.Engine {
+func Setup(db *gorm.DB, cfg *config.Config, assignmentService domainservice.Assigner, jwtValidator *middleware.JWTValidator) *gin.Engine {
 	// Set Gin mode based on environment
 	if cfg.Logging.Level == "debug" {
 		gin.SetMode(gin.DebugMode)
@@ -32,7 +32,7 @@ func Setup(db *gorm.DB, cfg *config.Config, assignmentService domainservice.Assi
 	r.Use(middleware.Recovery())
 	r.Use(middleware.CORS())
 
-	// Health check endpoint
+	// Health check endpoint (public)
 	r.GET("/health", handlers.NewHealthHandler(db).Handle)
 
 	// API v1 routes
@@ -42,6 +42,11 @@ func Setup(db *gorm.DB, cfg *config.Config, assignmentService domainservice.Assi
 		assignments := v1.Group("/assignments")
 		{
 			assignmentHandler := handlers.NewAssignmentHandler(assignmentService)
+
+			// All assignment endpoints require JWT authentication
+			if jwtValidator != nil {
+				assignments.Use(jwtValidator.JWT())
+			}
 			assignments.GET("/:userId", assignmentHandler.GetUserStickers)
 			assignments.POST("/:userId", assignmentHandler.AssignSticker)
 			assignments.DELETE("/:userId/:stickerId", assignmentHandler.RemoveSticker)
