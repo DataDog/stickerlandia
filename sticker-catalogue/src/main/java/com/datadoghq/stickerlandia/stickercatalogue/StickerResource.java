@@ -14,6 +14,7 @@ import com.datadoghq.stickerlandia.stickercatalogue.dto.StickerDTO;
 import com.datadoghq.stickerlandia.stickercatalogue.dto.StickerImageUploadResponse;
 import com.datadoghq.stickerlandia.stickercatalogue.dto.UpdateStickerRequest;
 import io.opentelemetry.api.trace.Span;
+import io.quarkus.security.Authenticated;
 import io.smallrye.common.constraint.NotNull;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -67,6 +68,7 @@ public class StickerResource {
      * @return response containing the created sticker details
      */
     @POST
+    @Authenticated
     @Produces("application/json")
     @Consumes("application/json")
     @Operation(summary = "Create a new sticker")
@@ -110,6 +112,7 @@ public class StickerResource {
      * @return response containing the updated sticker details
      */
     @PUT
+    @Authenticated
     @Path("/{stickerId}")
     @Produces("application/json")
     @Consumes("application/json")
@@ -136,6 +139,7 @@ public class StickerResource {
      * @return response indicating the deletion result
      */
     @DELETE
+    @Authenticated
     @Path("/{stickerId}")
     @Operation(summary = "Delete a sticker from the catalog")
     public Response deleteSticker(@PathParam("stickerId") String stickerId) {
@@ -200,6 +204,7 @@ public class StickerResource {
      * @return response containing the upload result
      */
     @POST
+    @Authenticated
     @Path("/{stickerId}/image")
     @Consumes("image/png")
     @Produces("application/json")

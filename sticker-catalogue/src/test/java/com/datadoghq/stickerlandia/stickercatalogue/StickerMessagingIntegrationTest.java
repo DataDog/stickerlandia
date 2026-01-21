@@ -21,6 +21,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import jakarta.inject.Inject;
@@ -103,6 +104,7 @@ class StickerMessagingIntegrationTest {
     }
 
     @Test
+    @TestSecurity(user = "testuser", roles = "user")
     void testCreateStickerPublishesKafkaEvent() {
         CreateStickerRequest request = new CreateStickerRequest();
         request.setStickerName("Test Messaging Sticker");
@@ -150,6 +152,7 @@ class StickerMessagingIntegrationTest {
     }
 
     @Test
+    @TestSecurity(user = "testuser", roles = "user")
     void testUpdateStickerPublishesKafkaEvent() {
         // First create a sticker
         createTestSticker();
@@ -193,6 +196,7 @@ class StickerMessagingIntegrationTest {
     }
 
     @Test
+    @TestSecurity(user = "testuser", roles = "user")
     void testDeleteStickerPublishesKafkaEvent() {
         // First create a sticker
         createTestSticker();
