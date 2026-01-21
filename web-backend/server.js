@@ -302,27 +302,26 @@ app.get('/api/app/auth/user', async (req, res) => {
 
 // Logout - clear session and optionally call IdP logout
 app.post('/api/app/auth/logout', (req, res) => {
-  if (req.session.tokens?.id_token && client) {
-    // Generate IdP logout URL
-    const logoutUrl = client.endSessionUrl({
-      id_token_hint: req.session.tokens.id_token,
-      post_logout_redirect_uri: 'http://localhost:3000'
-    })
-    
-    // Clear session
-    req.session.destroy((err) => {
-      if (err) console.error('Session destroy error:', err)
-    })
-    
-    // Redirect to IdP logout
-    res.redirect(logoutUrl)
-  } else {
-    // Just clear local session
-    req.session.destroy((err) => {
-      if (err) console.error('Session destroy error:', err)
-    })
-    res.json({ success: true })
-  }
+  // Capture id_token before destroying session
+  const idToken = req.session?.tokens?.id_token
+
+  // Clear session and cookie
+  req.session.destroy((err) => {
+    if (err) console.error('Session destroy error:', err)
+    res.clearCookie('connect.sid', { path: '/' })
+
+    if (idToken && client) {
+      // Generate IdP logout URL with correct deployment host
+      const logoutUrl = client.endSessionUrl({
+        id_token_hint: idToken,
+        post_logout_redirect_uri: `${DEPLOYMENT_HOST_URL.replace(/\/$/, '')}/`
+      })
+      res.redirect(logoutUrl)
+    } else {
+      // No IdP session, just redirect to home
+      res.redirect('/')
+    }
+  })
 })
 
 // Service mapping table based on docker-compose routes
