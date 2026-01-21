@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 import { BrowserRouter, Routes, Route } from "react-router";
 import App from "./App.jsx";
-import PublicDashboardPage from "./components/PublicDashboardPage.jsx";
+import StickerList from "./components/StickerList.jsx";
 import UserDashboard from "./components/UserDashboard.jsx";
 import MyCollection from "./components/MyCollection.jsx";
 import StickerDetail from "./components/StickerDetail.jsx";
@@ -22,7 +22,7 @@ createRoot(document.getElementById("root")).render(
           <Route path="dashboard" element={<UserDashboard />} />
           <Route path="collection" element={<MyCollection />} />
           <Route path="stickers/:id" element={<StickerDetail />} />
-          <Route path="public-dashboard" element={<PublicDashboardPage />} />
+          <Route path="catalogue" element={<StickerList />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

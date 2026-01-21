@@ -53,9 +53,9 @@ function Sidebar() {
             </Link>
           </li>
           <li className="my-3 px-5">
-            <Link className="block" to="/public-dashboard">
+            <Link className="block" to="/catalogue">
               <AssessmentOutlinedIcon />
-              Public Dashboard
+              Catalogue
             </Link>
           </li>
           <li className="my-3 px-5">
