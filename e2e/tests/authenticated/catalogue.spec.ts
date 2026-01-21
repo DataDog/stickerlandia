@@ -3,15 +3,13 @@ import { CataloguePage } from '../../page-objects/catalogue.page';
 import { StickerDetailPage } from '../../page-objects/collection.page';
 
 test.describe('Sticker Catalogue', () => {
+  test.use({ storageState: '.auth/user.json' });
+
   let catalogue: CataloguePage;
 
   test.beforeEach(async ({ page }) => {
     catalogue = new CataloguePage(page);
     await catalogue.goto();
-  });
-
-  test('loads without authentication', async () => {
-    await catalogue.expectToBeVisible();
   });
 
   test('displays page title and description', async ({ page }) => {
@@ -62,6 +60,8 @@ test.describe('Sticker Catalogue', () => {
 });
 
 test.describe('Catalogue Pagination', () => {
+  test.use({ storageState: '.auth/user.json' });
+
   let catalogue: CataloguePage;
 
   test.beforeEach(async ({ page }) => {
@@ -110,6 +110,8 @@ test.describe('Catalogue Pagination', () => {
 });
 
 test.describe('Sticker Detail Page', () => {
+  test.use({ storageState: '.auth/user.json' });
+
   test('displays sticker information', async ({ page }) => {
     // First get a valid sticker ID from the catalogue
     const catalogue = new CataloguePage(page);
