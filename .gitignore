@@ -2,6 +2,9 @@
 **/.cursor
 **/.claude/settings.local.json
 .cursor
+**/node_modules/*
+**/bin/*
+**/obj/*
 
 # Ignore .env, except in web-frontend, where an
 # empty copy is needed for vite-envs to work.
