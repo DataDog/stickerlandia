@@ -55,27 +55,34 @@ class AuthService {
   }
 
   async login() {
-    try {
-      const response = await fetch(`${this.baseUrl}/login`, {
-        method: 'POST',
-        credentials: 'include'
-      })
-      
-      if (response.redirected) {
-        // BFF is redirecting to IdP
-        window.location.href = response.url
-      } else if (response.ok) {
-        // If no redirect, manually redirect to the auth URL
-        const data = await response.json()
-        if (data.authUrl) {
-          window.location.href = data.authUrl
-        }
-      } else {
-        throw new Error('Login failed')
-      }
-    } catch (error) {
-      console.error('Login failed:', error)
+    const response = await fetch(`${this.baseUrl}/login`, {
+      method: 'POST',
+      credentials: 'include'
+    })
+
+    if (response.status === 429) {
+      // Rate limited
+      const data = await response.json().catch(() => ({}))
+      throw new Error(data.error || 'Too many login attempts. Please wait a moment and try again.')
     }
+
+    if (response.redirected) {
+      // BFF is redirecting to IdP
+      window.location.href = response.url
+      return
+    }
+
+    if (response.ok) {
+      // If no redirect, manually redirect to the auth URL
+      const data = await response.json()
+      if (data.authUrl) {
+        window.location.href = data.authUrl
+      }
+      return
+    }
+
+    // Other errors
+    throw new Error('Login failed. Please try again.')
   }
 
   async logout() {

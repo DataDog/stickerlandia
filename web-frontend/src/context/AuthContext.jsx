@@ -15,6 +15,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [loginError, setLoginError] = useState(null)
 
   const checkAuthStatus = async () => {
     setIsLoading(true)
@@ -64,7 +65,16 @@ export const AuthProvider = ({ children }) => {
   }
 
   const login = async () => {
-    await AuthService.login()
+    setLoginError(null)
+    try {
+      await AuthService.login()
+    } catch (error) {
+      setLoginError(error.message)
+    }
+  }
+
+  const clearLoginError = () => {
+    setLoginError(null)
   }
 
   const logout = async () => {
@@ -101,7 +111,9 @@ export const AuthProvider = ({ children }) => {
     isLoading,
     login,
     logout,
-    checkAuthStatus
+    checkAuthStatus,
+    loginError,
+    clearLoginError
   }
 
   return (
