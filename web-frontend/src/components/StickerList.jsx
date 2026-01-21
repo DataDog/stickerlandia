@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { API_BASE_URL } from '../config'
 import HeaderBar from './HeaderBar'
 import Sidebar from './Sidebar'
+import { authFetch } from '../utils/authFetch'
 
 const StickerList = () => {
   const [stickers, setStickers] = useState([])
@@ -17,10 +18,9 @@ const StickerList = () => {
     const fetchStickers = async () => {
       try {
         setLoading(true)
-        const response = await fetch(
+        const response = await authFetch(
           `${API_BASE_URL}/api/stickers/v1?page=${page}&size=${pageSize}`
         )
-
         if (!response.ok) {
           throw new Error(`Failed to fetch stickers: ${response.status}`)
         }
