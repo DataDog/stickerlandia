@@ -39,22 +39,21 @@ public class MigrationFunction(IServiceScopeFactory serviceScopeFactory)
         CancellationToken cancellationToken)
     {
         // Add seeding logic here if needed.
+        var deploymentHostUrl = Environment.GetEnvironmentVariable("DEPLOYMENT_HOST_URL") ?? "http://localhost:8080";
+        var redirectUri = new Uri($"{deploymentHostUrl}/api/app/auth/callback");
+        // Uri class normalizes http://host to http://host/, so always use trailing slash
+        var postLogoutRedirectUri = new Uri($"{deploymentHostUrl.TrimEnd('/')}/");
+
         if (await manager.FindByClientIdAsync("web-ui", cancellationToken) is null)
             await manager.CreateAsync(new OpenIddictApplicationDescriptor
             {
                 ClientId = "web-ui",
                 ClientSecret = "stickerlandia-web-ui-secret-2025",
                 ClientType = OpenIddictConstants.ClientTypes.Confidential,
-                // An implicit consent type is used for the web UI, meaning users will NOT be prompted to consent to requested scoipes.
+                // An implicit consent type is used for the web UI, meaning users will NOT be prompted to consent to requested scopes.
                 ConsentType = OpenIddictConstants.ConsentTypes.Implicit,
-                PostLogoutRedirectUris =
-                {
-                    new Uri("http://localhost:3000")
-                },
-                RedirectUris =
-                {
-                    new Uri("http://localhost:8080/api/app/auth/callback")
-                },
+                PostLogoutRedirectUris = { postLogoutRedirectUri },
+                RedirectUris = { redirectUri },
                 Permissions =
                 {
                     OpenIddictConstants.Permissions.Endpoints.Authorization,
@@ -73,7 +72,7 @@ public class MigrationFunction(IServiceScopeFactory serviceScopeFactory)
                     OpenIddictConstants.Requirements.Features.ProofKeyForCodeExchange
                 }
             }, cancellationToken);
-        
+
         // As soon as Stickerlandia services need to call other services under their own identities, add them here
     }
 }

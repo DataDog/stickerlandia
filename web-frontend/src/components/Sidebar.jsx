@@ -11,7 +11,7 @@ import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 
 function Sidebar() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, logout } = useAuth();
 
   return (
     <div className="col-span-1 border-gray-300 border-solid border-r h-screen">
@@ -81,10 +81,10 @@ function Sidebar() {
             </a>
           </li>
           <li className="my-3 px-5">
-            <a className="block" href="">
+            <button className="block w-full text-left" onClick={logout}>
               <LogoutOutlinedIcon />
               Sign Out
-            </a>
+            </button>
           </li>
         </ul>
       </nav>

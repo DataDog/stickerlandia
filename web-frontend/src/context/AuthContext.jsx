@@ -77,6 +77,24 @@ export const AuthProvider = ({ children }) => {
     checkAuthStatus()
   }, [])
 
+  // Listen for logout events from other tabs
+  useEffect(() => {
+    const handleStorageChange = (event) => {
+      // Detect logout broadcast from another tab
+      if (event.key === 'logout_event') {
+        // Clear local auth state
+        AuthService.clearStoredToken()
+        setUser(null)
+        setIsAuthenticated(false)
+      }
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+    }
+  }, [])
+
   const value = {
     user,
     isAuthenticated,

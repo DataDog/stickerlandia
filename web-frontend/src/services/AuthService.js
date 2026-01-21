@@ -34,6 +34,14 @@ class AuthService {
     sessionStorage.removeItem('auth_token')
   }
 
+  // Broadcast logout to other tabs via localStorage
+  broadcastLogout() {
+    // Set a logout event timestamp - other tabs will detect this change
+    localStorage.setItem('logout_event', Date.now().toString())
+    // Clean up immediately - the event itself is what matters, not the stored value
+    localStorage.removeItem('logout_event')
+  }
+
   isTokenValid() {
     const tokenData = this.getStoredToken()
     if (!tokenData?.access_token || !tokenData.expires_at) {
@@ -72,26 +80,32 @@ class AuthService {
 
   async logout() {
     try {
-      // Clear stored token first
+      // Clear stored token and broadcast to other tabs
       this.clearStoredToken()
-      
+      this.broadcastLogout()
+
       const response = await fetch(`${this.baseUrl}/logout`, {
         method: 'POST',
         credentials: 'include'
       })
-      
+
       if (response.redirected) {
-        // BFF is redirecting to IdP logout
+        // Server redirected (through IdP logout), navigate to final URL
         window.location.href = response.url
+      } else if (response.ok) {
+        // Local logout only, redirect to home
+        window.location.href = '/'
       } else {
-        // Local logout only, reload the page
-        window.location.reload()
+        // Logout endpoint returned an error, still redirect to home
+        console.warn('Logout response not ok:', response.status)
+        window.location.href = '/'
       }
     } catch (error) {
       console.error('Logout failed:', error)
-      // Fallback: clear token and reload the page
+      // Fallback: clear token and redirect to home
       this.clearStoredToken()
-      window.location.reload()
+      this.broadcastLogout()
+      window.location.href = '/'
     }
   }
 
