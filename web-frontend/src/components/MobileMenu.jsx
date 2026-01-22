@@ -45,7 +45,7 @@ function MobileMenu() {
       </IconButton>
 
       <Drawer anchor="left" open={isOpen} onClose={toggleDrawer(false)}>
-        <div className="w-64 h-full bg-white">
+        <div className="flex flex-col w-64 h-full bg-white">
           <div className="flex justify-between items-center p-4 border-b border-gray-300">
             <span className="text-xl font-bold">
               <span className="text-blue-500">
