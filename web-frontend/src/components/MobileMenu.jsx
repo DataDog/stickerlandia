@@ -39,8 +39,7 @@ function MobileMenu() {
         color="inherit"
         aria-label="menu"
         onClick={toggleDrawer(true)}
-        className="lg:hidden"
-        sx={{ color: "black" }}
+        className="lg:hidden text-black"
       >
         <MenuIcon />
       </IconButton>
