@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { useAuth } from "../context/AuthContext";
+import HeaderBar from "./HeaderBar";
 import Sidebar from "./Sidebar";
 import { API_BASE_URL } from "../config";
 
@@ -76,6 +77,7 @@ function MyCollection() {
 
   return (
     <div className="isolate flex flex-auto flex-col bg-[--root-bg]">
+      <HeaderBar />
       <main id="main">
         <div className="grid grid-cols-1 lg:grid-cols-5">
           <Sidebar />
