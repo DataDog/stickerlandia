@@ -38,42 +38,91 @@ All mise tasks automatically:
 
 ## GameDay Load Testing
 
-For GameDay demos, use multi-user load testing with predefined profiles:
+For GameDay demos, use multi-user load testing with predefined profiles that simulate realistic concurrent load across multiple users.
+
+### Quick Start (Full Cycle)
 
 ```bash
-# Sustained load across all services (default)
-# Includes auth, browsing, and new user registrations (3/min)
+# Run sustained load test (provisions users, runs test, cleans up)
 mise run load:gameday
 
-# Auth load (10 RPS on login/logout)
-mise run load:gameday WORKLOAD=gameday:auth
-
-# Heavy catalogue browsing (100 RPS on sticker API)
-mise run load:gameday WORKLOAD=gameday:catalogue
+# Run with a specific profile
+WORKLOAD=gameday:auth mise run load:gameday
+WORKLOAD=gameday:catalogue mise run load:gameday
 ```
+
+### GameDay Profiles
+
+| Profile | Auth | Browse | Registration | Duration |
+|---------|------|--------|--------------|----------|
+| `gameday:auth` | 10 RPS | - | - | 5m |
+| `gameday:catalogue` | - | 100 RPS | - | 5m |
+| `gameday:sustained` | 10 RPS | 50 RPS | 3/min | 10m |
 
 ### Multi-User Pool Setup
 
-GameDay profiles use a pool of 10 test users to simulate realistic concurrent load. Create the user pool file:
+GameDay profiles use a pool of test users for realistic concurrent auth testing. Create `load-tests/data/users.json`:
 
-```bash
-# The file should be at load-tests/data/users.json
-# See the template in plans/feat-gameday-load-testing-enhancements.md
+```json
+{
+  "users": [
+    {"email": "loadtest-001@loadtest.stickerlandia.com", "password": "LoadTest2026!"},
+    {"email": "loadtest-002@loadtest.stickerlandia.com", "password": "LoadTest2026!"},
+    {"email": "loadtest-003@loadtest.stickerlandia.com", "password": "LoadTest2026!"}
+  ]
+}
 ```
 
-**Important:** For auth-based GameDay profiles (`gameday:auth`, `gameday:sustained`), users must be **registered first**:
+This file is gitignored. VUs are assigned users round-robin from the pool.
+
+### Advanced Usage (Keep Services Running)
+
+For iterative testing or debugging, keep services running between test runs:
 
 ```bash
-# Register all 50 pool users (run once)
+# Start services and wait for healthy
+mise run load:start
+
+# Provision users (run once per fresh database)
 mise run load:provision-users
 
-# Then run auth-based GameDay tests
-WORKLOAD=gameday:auth mise run load:gameday
+# Run GameDay test (can repeat without reprovisioning)
+mise run load:gameday:run
+WORKLOAD=gameday:auth mise run load:gameday:run
+
+# When done, clean up
+mise run load:stop
 ```
 
-The provisioning script registers each user from `users.json` via the IdP. It's idempotent - already registered users are skipped.
+### Mise Tasks Reference
 
-**Note:** Load test traffic appears in Datadog APM as normal requests. This is intentional - it demonstrates the system under realistic load conditions.
+| Task | Description |
+|------|-------------|
+| `load:gameday` | Full cycle: start → provision → test → stop |
+| `load:gameday:run` | Run test only (assumes services running) |
+| `load:start` | Start services and wait for healthy |
+| `load:stop` | Stop services and remove volumes |
+| `load:provision-users` | Register pool users via IdP |
+
+### User Provisioning
+
+The `load:provision-users` task registers users from `users.json` via the IdP registration flow:
+
+- Runs 5 parallel registrations with 2s delay between batches
+- Idempotent: already-registered users are detected and skipped
+- Run once per fresh database before auth-based GameDay tests
+
+```bash
+# Provision users (services must be running)
+mise run load:start
+mise run load:provision-users
+```
+
+### Notes
+
+- **APM visibility**: Load test traffic appears in Datadog APM as normal requests. This is intentional for demonstrating system behavior under load.
+- **IdP capacity**: The IdP sustainably handles ~10 RPS for auth operations. Higher rates may cause failures.
+- **Registration flow**: The `gameday:sustained` profile includes 3 new user registrations per minute to simulate organic growth.
 
 ## Configuration
 

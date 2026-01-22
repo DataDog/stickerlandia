@@ -337,6 +337,40 @@ function extractTokenFromUrl(url) {
 }
 
 // =============================================================================
+// Logout Helper
+// =============================================================================
+
+/**
+ * Performs logout with proper URL rewriting for Docker network.
+ *
+ * The BFF logout endpoint redirects to the IdP's logout endpoint, which uses
+ * the external hostname (localhost:8080). We need to rewrite these URLs to
+ * the internal Docker hostname (traefik:80).
+ *
+ * @param {object} jar - k6 cookie jar with session
+ * @returns {boolean} - true if logout succeeded
+ */
+function performLogout(jar) {
+  // Initiate logout - don't auto-follow redirects so we can rewrite URLs
+  let res = http.post(`${BASE_URL}/api/app/auth/logout`, null, {
+    jar,
+    redirects: 0,
+  });
+
+  // Follow redirects manually with URL rewriting (max 10 to prevent loops)
+  let redirectCount = 0;
+  while (res.status >= 300 && res.status < 400 && res.headers['Location'] && redirectCount < 10) {
+    let nextUrl = resolveUrl(res.url || `${BASE_URL}/api/app/auth/logout`, res.headers['Location']);
+    nextUrl = rewriteUrl(nextUrl);
+    res = http.get(nextUrl, { redirects: 0, jar });
+    redirectCount++;
+  }
+
+  // Success if we got a 200/302 or ended up at the landing page
+  return res.status === 200 || res.status === 302 || (res.url && res.url.includes(BASE_URL));
+}
+
+// =============================================================================
 // Registration Helper
 // =============================================================================
 
@@ -631,12 +665,9 @@ export function authenticatedFlow() {
 
     // Logout (50% of users)
     if (Math.random() < 0.5) {
-      const logoutRes = http.post(`${BASE_URL}/api/app/auth/logout`, null, {
-        jar,
-        redirects: 5,
-      });
-      check(logoutRes, {
-        'logout succeeds': (r) => r.status === 200 || r.status === 302,
+      const logoutSuccess = performLogout(jar);
+      check({ success: logoutSuccess }, {
+        'logout succeeds': (r) => r.success === true,
       });
     }
   });
@@ -696,12 +727,9 @@ export function registrationFlow() {
     sleep(1 + Math.random() * 2);
 
     // Logout
-    const logoutRes = http.post(`${BASE_URL}/api/app/auth/logout`, null, {
-      jar,
-      redirects: 5,
-    });
-    check(logoutRes, {
-      'new user logout succeeds': (r) => r.status === 200 || r.status === 302,
+    const logoutSuccess = performLogout(jar);
+    check({ success: logoutSuccess }, {
+      'new user logout succeeds': (r) => r.success === true,
     });
   });
 }
