@@ -29,7 +29,7 @@ public class EventBridgeEventPublisher(
     AmazonEventBridgeClient client,
     IOptions<AwsConfiguration> awsConfiguration) : IPrintServiceEventPublisher
 {
-    [Channel("users.userRegistered.v1")]
+    [Channel("printers.registered.v1")]
     [PublishOperation(typeof(PrinterRegisteredEvent))]
     public async Task PublishPrinterRegisteredEvent(PrinterRegisteredEvent printerRegisteredEvent)
     {

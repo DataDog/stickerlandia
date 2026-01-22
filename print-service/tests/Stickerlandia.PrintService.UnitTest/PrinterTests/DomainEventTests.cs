@@ -54,7 +54,7 @@ public class PrinterRegisteredEventTests
         {
             var domainEvent = new PrinterRegisteredEvent();
 
-            domainEvent.EventName.Should().Be("users.userRegistered.v1");
+            domainEvent.EventName.Should().Be("printers.registered.v1");
         }
     }
 
@@ -92,7 +92,7 @@ public class PrinterRegisteredEventTests
 
             var json = domainEvent.ToJsonString();
 
-            json.Should().Contain("users.userRegistered.v1");
+            json.Should().Contain("printers.registered.v1");
         }
 
         [Fact]

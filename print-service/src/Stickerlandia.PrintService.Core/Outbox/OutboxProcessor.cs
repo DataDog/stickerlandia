@@ -59,7 +59,7 @@ public class OutboxProcessor(IServiceScopeFactory serviceScope, ILogger<OutboxPr
             {
                 switch (item.EventType)
                 {
-                    case "users.userRegistered.v1":
+                    case "printers.registered.v1":
                         var userRegisteredEvent =
                             JsonSerializer.Deserialize<PrinterRegisteredEvent>(item.EventData);
                         if (userRegisteredEvent == null)

@@ -51,8 +51,8 @@ public class OutboxProcessorTests
         {
             var items = new List<OutboxItem>
             {
-                CreateOutboxItem("users.userRegistered.v1", new PrinterRegisteredEvent { PrinterId = "TEST-1" }),
-                CreateOutboxItem("users.userRegistered.v1", new PrinterRegisteredEvent { PrinterId = "TEST-2" })
+                CreateOutboxItem("printers.registered.v1", new PrinterRegisteredEvent { PrinterId = "TEST-1" }),
+                CreateOutboxItem("printers.registered.v1", new PrinterRegisteredEvent { PrinterId = "TEST-2" })
             };
             A.CallTo(() => _outbox.GetUnprocessedItemsAsync(100))
                 .Returns(items);
@@ -69,7 +69,7 @@ public class OutboxProcessorTests
             var printerEvent = new PrinterRegisteredEvent { PrinterId = "TESTEVENT-PRINTER" };
             var items = new List<OutboxItem>
             {
-                CreateOutboxItem("users.userRegistered.v1", printerEvent)
+                CreateOutboxItem("printers.registered.v1", printerEvent)
             };
             A.CallTo(() => _outbox.GetUnprocessedItemsAsync(100))
                 .Returns(items);
@@ -114,7 +114,7 @@ public class OutboxProcessorTests
         {
             var item = new OutboxItem
             {
-                EventType = "users.userRegistered.v1",
+                EventType = "printers.registered.v1",
                 EventData = "not valid json {"
             };
             A.CallTo(() => _outbox.GetUnprocessedItemsAsync(100))
@@ -131,7 +131,7 @@ public class OutboxProcessorTests
         {
             var items = new List<OutboxItem>
             {
-                CreateOutboxItem("users.userRegistered.v1", new PrinterRegisteredEvent { PrinterId = "TEST" })
+                CreateOutboxItem("printers.registered.v1", new PrinterRegisteredEvent { PrinterId = "TEST" })
             };
             A.CallTo(() => _outbox.GetUnprocessedItemsAsync(100))
                 .Returns(items);
@@ -147,7 +147,7 @@ public class OutboxProcessorTests
         [Fact]
         public async Task WithValidEvent_MarksAsProcessed()
         {
-            var item = CreateOutboxItem("users.userRegistered.v1", new PrinterRegisteredEvent { PrinterId = "TEST" });
+            var item = CreateOutboxItem("printers.registered.v1", new PrinterRegisteredEvent { PrinterId = "TEST" });
             A.CallTo(() => _outbox.GetUnprocessedItemsAsync(100))
                 .Returns(new List<OutboxItem> { item });
 
@@ -160,7 +160,7 @@ public class OutboxProcessorTests
         [Fact]
         public async Task WithMultipleMixedItems_ProcessesEachIndependently()
         {
-            var validItem = CreateOutboxItem("users.userRegistered.v1", new PrinterRegisteredEvent { PrinterId = "VALID" });
+            var validItem = CreateOutboxItem("printers.registered.v1", new PrinterRegisteredEvent { PrinterId = "VALID" });
             var invalidItem = new OutboxItem
             {
                 EventType = "unknown.type",

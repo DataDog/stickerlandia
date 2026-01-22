@@ -6,7 +6,7 @@
   },
   "defaultContentType": "application/json",
   "channels": {
-    "users.userRegistered.v1": {
+    "printers.registered.v1": {
       "publish": {
         "operationId": "PublishUserRegisteredEventV1",
         "summary": "",

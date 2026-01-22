@@ -29,7 +29,7 @@ internal sealed class GooglePubSubMessaging : IMessaging, IAsyncDisposable
             throw new ArgumentException("Connection string must be provided for Google Pub/Sub messaging.",
                 nameof(connectionString));
 
-        var topicName = new TopicName(connectionString, "users.userRegistered.v1");
+        var topicName = new TopicName(connectionString, "printers.registered.v1");
         var stickerClaimedTopic = new TopicName(connectionString, "users.stickerClaimed.v1");
 
         var publisherApiClient = new PublisherServiceApiClientBuilder { EmulatorDetection = EmulatorDetection.EmulatorOrProduction }.Build();

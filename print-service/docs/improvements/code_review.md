@@ -335,7 +335,7 @@ public async Task UpdateAsync(Printer printer)
 **File:** `/Users/james.eastham/source/datadog/stickerlandia/print-service/src/Stickerlandia.PrintService.Core/Outbox/OutboxProcessor.cs:62`
 
 ```csharp
-case "users.userRegistered.v1":
+case "printers.registered.v1":
 ```
 
 **Issue:** Event type strings are hardcoded. This is also inconsistent with the PrintService naming.
