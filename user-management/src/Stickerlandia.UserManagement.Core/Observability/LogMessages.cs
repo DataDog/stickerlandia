@@ -98,6 +98,13 @@ public static partial class Log
         Message = "Stopping message processor for transport: {MessageTransport}")]
     public static partial void StoppingMessageProcessor(
         ILogger logger, string messageTransport);
+
+    [LoggerMessage(
+        EventId = 11,
+        Level = LogLevel.Warning,
+        Message = "Rate limit exceeded for {Method} {Path} from {RemoteIp}. Retry after {RetryAfter}s. Host: {Host}")]
+    public static partial void RateLimitExceeded(
+        ILogger logger, string method, string path, string? remoteIp, int retryAfter, string host);
 }
 
 public static class LogMessages

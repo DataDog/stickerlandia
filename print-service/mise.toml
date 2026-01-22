@@ -27,6 +27,12 @@ sources = ["package-lock.json"]
 outputs = ["node_modules/.package-lock.json"]
 run = "npm ci"
 
+[tasks."aws:deploy"]
+description = "Deploy to AWS"
+dir = "infra/aws"
+depends = ["infra:install", "//shared:aws:deploy"]
+run = "npx cdk deploy --require-approval never"
+
 [tasks."aws:deploy:local"]
 description = "Deploy to AWS"
 dir = "infra/aws"
@@ -34,11 +40,11 @@ depends = ["infra:install", "//shared:aws:deploy"]
 env = { COMMIT_SHA = "local" }
 run = "npx cdk deploy --require-approval never"
 
-[tasks."aws:deploy"]
-description = "Deploy to AWS"
-dir = "infra/aws"
-depends = ["infra:install", "//shared:aws:deploy"]
-run = "npx cdk deploy --require-approval never"
+[tasks."aws:deploy:release"]
+description = "Deploy to AWS using prebuilt GHCR images"
+depends = ["//:env:setup", "//shared:aws:deploy:release"]
+env = { DEPLOY_MODE = "release" }
+run = "mise run aws:deploy"
 
 [tasks."aws:down"]
 description = "Destroy AWS stack"

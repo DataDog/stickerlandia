@@ -56,6 +56,9 @@ Each deployment model uses appropriate components optimized for the specific pla
 | [User Management](./user-management/) | Manages user accounts, authentication, and profile information. Handles user registration, login, and JWT token issuance. | [API Docs](./user-management/docs/api.yaml) |
 | [Sticker Award](./sticker-award/) | Manages the assignment of stickers to users. Tracks which users have which stickers and handles assignment/removal based on criteria like certification completion. | [API Docs](./sticker-award/docs/api.yaml) |
 | [Sticker Catalogue](./sticker-catalogue/) | Manages the master catalog of available stickers. Handles sticker metadata, images, and provides catalog browsing functionality. | [API Docs](./sticker-catalogue/docs/api.yaml) |
+| [Web Backend](./web-backend/) | Backend for Frontend (BFF) service handling OAuth 2.1 authentication and API proxying. | [README](./web-backend/README.md) |
+| [Web Frontend](./web-frontend/) | React/Vite single-page application. | |
+| [E2E Tests](./e2e/) | Playwright-based end-to-end tests. | [README](./e2e/README.md) |
 
 ## Observability
 

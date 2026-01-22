@@ -2,6 +2,9 @@
 **/.cursor
 **/.claude/settings.local.json
 .cursor
+**/node_modules/*
+**/bin/*
+**/obj/*
 
 # Ignore .env, except in web-frontend, where an
 # empty copy is needed for vite-envs to work.
@@ -10,3 +13,11 @@
 .beads
 cdk.context.json
 cdk.out
+
+# E2E test artifacts
+e2e/node_modules/
+e2e/.auth/
+e2e/test-results/
+e2e/playwright-report/
+e2e/blob-report/
+e2e/.env

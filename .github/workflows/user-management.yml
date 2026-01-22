@@ -13,6 +13,12 @@ on:
       - "user-management/**"
       - ".github/**"
   workflow_dispatch:
+    inputs:
+      deploy:
+        description: 'Deploy to AWS dev environment after build'
+        required: false
+        default: false
+        type: boolean
 
 env:
   REGISTRY: ghcr.io
@@ -120,7 +126,9 @@ jobs:
       # integration-test-azure,
       integration-test-agnostic
     ]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
     permissions:
       contents: read
       packages: write
@@ -175,7 +183,9 @@ jobs:
       # integration-test-azure,
       integration-test-agnostic
     ]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
     permissions:
       contents: read
       packages: write
@@ -230,7 +240,9 @@ jobs:
       # integration-test-azure,
       integration-test-agnostic
     ]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
     permissions:
       contents: read
       packages: write
@@ -282,7 +294,9 @@ jobs:
   deploy-aws-dev:
     runs-on: ubuntu-latest
     needs: [push-image, push-worker-image, push-migration-service]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
     permissions:
       contents: read
       packages: write

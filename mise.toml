@@ -143,38 +143,53 @@ depends = ["env:setup"]
 run = "./scripts/test-services.sh --max-retries 5 --retry-delay 10"
 
 # =============================================================================
-# aws: AWS tasks
+# aws: AWS deployment tasks
+#
+# Deployment modes are controlled via the DEPLOY_MODE environment variable:
+#   - local:   Build containers from local Dockerfiles (DEPLOY_MODE=local)
+#   - release: Pull prebuilt images from GHCR tagged "latest" (DEPLOY_MODE=release)
+#   - (unset): Falls back to COMMIT_SHA env var, or "latest" if not set
+#
+# DEPLOY_MODE is NOT stored in .env, so it propagates naturally through
+# subprocess calls. CDK's SharedProps reads DEPLOY_MODE and sets the
+# appropriate image tag. Services can define their own aws:deploy:local
+# and aws:deploy:release tasks that set DEPLOY_MODE and delegate to aws:deploy.
+#
+# To deploy a specific tagged version from the registry (e.g., a CI-built
+# image), set COMMIT_SHA to the desired tag and run aws:deploy directly
+# without setting DEPLOY_MODE. For example:
+#   COMMIT_SHA=abc123 npx cdk deploy (from infra/aws directory)
 # =============================================================================
 
 [tasks."aws:deploy:local"]
 description = "Deploy to AWS (build containers locally)"
 depends = ["env:setup"]
-env = { COMMIT_SHA = "local" }
+env = { DEPLOY_MODE = "local" }
 run = """
-echo "=== Deploying Stickerlandia to AWS: $ENV (COMMIT_SHA=$COMMIT_SHA) ==="
-mise run //shared:aws:deploy
-mise run //user-management:aws:deploy
-mise run //sticker-award:aws:deploy
-mise run //print-service:aws:deploy
-mise run //sticker-catalogue:aws:deploy
-mise run //web-backend:aws:deploy
-mise run //web-frontend:aws:deploy
+echo "=== Deploying Stickerlandia to AWS: $ENV (DEPLOY_MODE=$DEPLOY_MODE) ==="
+mise run //shared:aws:deploy:local
+mise run //user-management:aws:deploy:local
+mise run //sticker-award:aws:deploy:local
+mise run //sticker-catalogue:aws:deploy:local
+mise run //print-service:aws:deploy:local
+mise run //web-backend:aws:deploy:local
+mise run //web-frontend:aws:deploy:local
 echo "=== Deployment complete! ==="
 """
 
 [tasks."aws:deploy:release"]
 description = "Deploy to AWS using prebuilt GHCR images"
 depends = ["env:setup"]
-env = { COMMIT_SHA = "latest" }
+env = { DEPLOY_MODE = "release" }
 run = """
-echo "=== Deploying Stickerlandia to AWS: $ENV (COMMIT_SHA=$COMMIT_SHA) ==="
-mise run //shared:aws:deploy
-mise run //user-management:aws:deploy
-mise run //sticker-award:aws:deploy
-mise run //print-service:aws:deploy
-mise run //sticker-catalogue:aws:deploy
-mise run //web-backend:aws:deploy
-mise run //web-frontend:aws:deploy
+echo "=== Deploying Stickerlandia to AWS: $ENV (DEPLOY_MODE=$DEPLOY_MODE) ==="
+mise run //shared:aws:deploy:release
+mise run //user-management:aws:deploy:release
+mise run //sticker-award:aws:deploy:release
+mise run //print-service:aws:deploy:release
+mise run //sticker-catalogue:aws:deploy:release
+mise run //web-backend:aws:deploy:release
+mise run //web-frontend:aws:deploy:release
 echo "=== Deployment complete! ==="
 """
 
@@ -198,3 +213,56 @@ mise run //print-service:aws:info
 mise run //web-backend:aws:info
 mise run //web-frontend:aws:info
 """
+
+# =============================================================================
+# ui-test: UI Testing infrastructure
+# =============================================================================
+
+[tasks."ui-test:install"]
+description = "Install UI test dependencies and Playwright browsers"
+dir = "e2e"
+sources = ["package-lock.json"]
+outputs = ["node_modules/.package-lock.json"]
+run = "npm ci && npx playwright install --with-deps chromium"
+
+[tasks."ui-test:codegen"]
+description = "Record tests with Playwright codegen"
+dir = "e2e"
+depends = ["ui-test:install", "env:setup"]
+run = "npx playwright codegen ${DEPLOYMENT_HOST_URL:-http://localhost:8080}"
+
+# =============================================================================
+# compose: UI test tasks for Docker Compose deployment
+# =============================================================================
+
+[tasks."compose:ui-test"]
+description = "Run UI tests against Docker Compose deployment"
+dir = "e2e"
+depends = ["ui-test:install", "env:setup"]
+env = { BASE_URL = "http://localhost:8080" }
+run = "npx playwright test"
+
+[tasks."compose:ui-test:ui"]
+description = "Open Playwright UI mode for Docker Compose deployment"
+dir = "e2e"
+depends = ["ui-test:install", "env:setup"]
+env = { BASE_URL = "http://localhost:8080" }
+run = "npx playwright test --ui"
+
+# =============================================================================
+# aws: UI test tasks for AWS deployment
+# =============================================================================
+
+[tasks."aws:ui-test"]
+description = "Run UI tests against AWS deployment"
+dir = "e2e"
+depends = ["ui-test:install"]
+run = """
+BASE_URL=$(aws cloudformation describe-stacks \
+  --stack-name "StickerlandiaSharedResources-${ENV:-dev}" \
+  --query "Stacks[0].Outputs[?OutputKey=='BaseUrl'].OutputValue" \
+  --output text)
+echo "Running tests against: $BASE_URL"
+BASE_URL=$BASE_URL npx playwright test
+"""
+
