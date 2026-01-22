@@ -32,7 +32,7 @@ function Landing() {
           </Link>
         </div>
 
-        <div className="landing-wrapper flex flex-row">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="landing-card">
             <span className="card-icon">
               <WorkspacePremiumOutlinedIcon />

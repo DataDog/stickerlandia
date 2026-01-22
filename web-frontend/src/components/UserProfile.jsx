@@ -57,16 +57,16 @@ const UserProfile = () => {
   }
 
   return (
-    <div className="grid grid-cols-5">
+    <div className="grid grid-cols-1 lg:grid-cols-5">
       <Sidebar />
-      <div className="col-span-4 p-8">
-        <div className="text-3xl font-bold mb-4">
+      <div className="col-span-1 lg:col-span-4 p-4 sm:p-6 lg:p-8">
+        <div className="text-2xl sm:text-3xl font-bold mb-4">
           Welcome Back, {user.given_name || user.name?.split(' ')[0] || user.email || 'User'}!
         </div>
         <div className="text-gray-600 mb-6">
           Here's what's happening with your collection.
         </div>
-        <div className="user-profile-info grid grid-cols-4 gap-4">
+        <div className="user-profile-info grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="col-span-1 landing-card items-start">
             <span className="text-gray-400 font-bold">Total Stickers</span>
             <span className="text-gray-600 font-bold text-xl">
@@ -98,7 +98,7 @@ const UserProfile = () => {
                 : '2 Months Collecting'}
             </span>
           </div>
-          <div className="col-span-2 landing-card items-start">
+          <div className="col-span-1 sm:col-span-2 landing-card items-start">
             <span className="text-gray-600 font-bold">Recent Stickers</span>
             <span className="text-gray-600 font-bold text-xl">Your latest additions</span>
             {user.roles && (
@@ -110,6 +110,7 @@ const UserProfile = () => {
             <p style={{ color: "inherit" }}>
               <strong>Session expires:</strong> {getSessionExpiry()}
             </p>
+            <div className="overflow-x-auto">
             <table style={{ width: "100%", marginTop: "12px" }}>
               <tbody>
                 {userStickers.map((sticker) => (
@@ -149,8 +150,9 @@ const UserProfile = () => {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
-          <div className="col-span-2 landing-card items-start">
+          <div className="col-span-1 sm:col-span-2 landing-card items-start">
             <span className="text-gray-600 font-bold">Available Rewards</span>
             <span className="text-gray-600 font-bold text-xl">Stickers you can claim</span>
           </div>
