@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router";
 import LocalPrintshopOutlinedIcon from "@mui/icons-material/LocalPrintshopOutlined";
-import { useAuth } from "../context/AuthContext";
+import HeaderBar from "./HeaderBar";
 import Sidebar from "./Sidebar";
 import { API_BASE_URL } from "../config";
 import AuthService from "../services/AuthService";
+import { useAuth } from "../context/AuthContext";
 
 function StickerDetail() {
   const { id } = useParams();
@@ -27,46 +28,26 @@ function StickerDetail() {
     }
 
     const controller = new AbortController();
-    const currentId = id; // Capture current ID for race condition check
 
     const fetchSticker = async () => {
       try {
         setLoading(true);
-        setError(null);
-
-        const tokenData = AuthService.getStoredToken();
-        const headers = {
-          'Content-Type': 'application/json'
-        };
-        if (tokenData?.access_token) {
-          headers['Authorization'] = `Bearer ${tokenData.access_token}`;
-        }
-
         const response = await fetch(
-          `${API_BASE_URL}/api/awards/v1/assignments/${encodeURIComponent(userId)}`,
-          {
-            headers,
-            credentials: 'include',
-            signal: controller.signal
-          }
+          `${API_BASE_URL}/api/stickers/v1/${id}`
         );
 
         if (!response.ok) {
-          throw new Error('Failed to fetch sticker collection');
+          if (response.status === 404) {
+            throw new Error("Sticker not found");
+          }
+          throw new Error(`Failed to fetch sticker: ${response.status}`);
         }
 
         const data = await response.json();
-
-        // Only update if ID hasn't changed and not aborted
-        if (!controller.signal.aborted && currentId === id) {
-          const found = (data.stickers || []).find(s => s.stickerId === id);
-          setSticker(found);
-        }
+        setSticker(data);
       } catch (err) {
-        if (err.name !== 'AbortError' && !controller.signal.aborted) {
-          console.error("Error fetching sticker:", err);
-          setError(err.message);
-        }
+        console.error("Error fetching sticker:", err);
+        setError(err.message);
       } finally {
         if (!controller.signal.aborted) {
           setLoading(false);
@@ -75,49 +56,142 @@ function StickerDetail() {
     };
 
     fetchSticker();
-    return () => controller.abort();
-  }, [user, id, authLoading]);
+  }, [id]);
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "Unknown";
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
   return (
     <div className="isolate flex flex-auto flex-col bg-[--root-bg]">
+      <HeaderBar />
       <main id="main">
-        <div className="grid grid-cols-5">
+        <div className="grid grid-cols-1 lg:grid-cols-5">
           <Sidebar />
-          <div className="col-span-4 p-8">
-            <Link to="/collection" className="text-blue-600 hover:text-blue-800 mb-4 inline-block">
-              ← Back to Collection
+          <div className="col-span-1 lg:col-span-4 p-4 sm:p-6 lg:p-8">
+            <Link
+              to="/catalogue"
+              className="text-blue-600 hover:text-blue-800 mb-4 inline-block"
+            >
+              ← Back to Catalogue
             </Link>
-            {loading ? (
-              <div className="flex justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+
+            {loading && (
+              <div className="text-center py-8">
+                <p className="text-gray-500">Loading sticker details...</p>
               </div>
-            ) : error ? (
-              <div className="text-center py-12">
-                <p className="text-red-500">{error}</p>
+            )}
+
+            {error && (
+              <div className="text-center py-8">
+                <p className="text-red-500">Error: {error}</p>
+                <Link
+                  to="/catalogue"
+                  className="text-blue-600 hover:text-blue-800 mt-4 inline-block"
+                >
+                  Return to Catalogue
+                </Link>
               </div>
-            ) : sticker ? (
-              <div className="max-w-2xl">
-                <h1 className="text-3xl font-bold mb-6">{sticker.stickerName}</h1>
-                <div className="landing-card">
-                  <img
-                    src={`${API_BASE_URL}/api/stickers/v1/${sticker.stickerId}/image`}
-                    alt={sticker.stickerName}
-                    className="w-full max-w-md mx-auto aspect-square object-contain rounded-lg mb-6"
-                  />
-                  <div className="flex justify-center">
-                    <button
-                      onClick={() => navigate('/print-station', { state: { sticker } })}
-                      className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                    >
-                      <LocalPrintshopOutlinedIcon />
-                      Print This Sticker
-                    </button>
+            )}
+
+            {!loading && !error && sticker && (
+              <div className="mt-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <div className="aspect-square w-full flex items-center justify-center bg-gray-50 rounded-lg overflow-hidden">
+                      <img
+                        src={`${API_BASE_URL}/api/stickers/v1/${sticker.stickerId}/image`}
+                        alt={sticker.stickerName}
+                        className="w-full h-full object-contain"
+                        onError={(e) => {
+                          e.target.src = "";
+                          e.target.alt = "Image not available";
+                          e.target.className =
+                            "w-full h-full flex items-center justify-center text-gray-400";
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div>
+                      <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                        {sticker.stickerName}
+                      </h1>
+                      <p className="text-sm text-gray-500">
+                        ID: {sticker.stickerId}
+                      </p>
+                    </div>
+
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                      <h2 className="text-lg font-semibold text-gray-800 mb-3">
+                        Description
+                      </h2>
+                      <p className="text-gray-600">
+                        {sticker.stickerDescription || "No description available."}
+                      </p>
+                    </div>
+
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                      <h2 className="text-lg font-semibold text-gray-800 mb-3">
+                        Availability
+                      </h2>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`inline-block w-3 h-3 rounded-full ${
+                            sticker.stickerQuantityRemaining === -1 ||
+                            sticker.stickerQuantityRemaining > 0
+                              ? "bg-green-500"
+                              : "bg-red-500"
+                          }`}
+                        ></span>
+                        <span className="text-gray-600">
+                          {sticker.stickerQuantityRemaining === -1
+                            ? "Unlimited availability"
+                            : sticker.stickerQuantityRemaining > 0
+                            ? `${sticker.stickerQuantityRemaining} remaining`
+                            : "Out of stock"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex justify-center">
+                      <button
+                        onClick={() => navigate('/print-station', { state: { sticker } })}
+                        className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                      >
+                        <LocalPrintshopOutlinedIcon />
+                        Print This Sticker
+                      </button>
+                    </div>
+
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                      <h2 className="text-lg font-semibold text-gray-800 mb-3">
+                        Details
+                      </h2>
+                      <dl className="space-y-2">
+                        <div className="flex justify-between">
+                          <dt className="text-gray-500">Created</dt>
+                          <dd className="text-gray-900">
+                            {formatDate(sticker.createdAt)}
+                          </dd>
+                        </div>
+                        <div className="flex justify-between">
+                          <dt className="text-gray-500">Last Updated</dt>
+                          <dd className="text-gray-900">
+                            {formatDate(sticker.updatedAt)}
+                          </dd>
+                        </div>
+                      </dl>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-gray-500">Sticker not found in your collection.</p>
               </div>
             )}
           </div>

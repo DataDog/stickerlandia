@@ -6,6 +6,7 @@ test.describe('Protected Routes', () => {
   const protectedRoutes = [
     { path: '/dashboard', name: 'dashboard' },
     { path: '/collection', name: 'collection' },
+    { path: '/catalogue', name: 'catalogue' },
   ];
 
   for (const route of protectedRoutes) {

@@ -77,7 +77,8 @@ internal sealed class Worker(
         // The web-ui client is for the public web interface and uses the OAuth2.0 authorization code flow with PKCE.
         var deploymentHostUrl = Environment.GetEnvironmentVariable("DEPLOYMENT_HOST_URL") ?? "http://localhost:8080";
         var redirectUri = new Uri($"{deploymentHostUrl}/api/app/auth/callback");
-        var postLogoutRedirectUri = new Uri($"{deploymentHostUrl}/");
+        // Uri class normalizes http://host to http://host/, so always use trailing slash
+        var postLogoutRedirectUri = new Uri($"{deploymentHostUrl.TrimEnd('/')}/");
 
         var existingClient = await manager.FindByClientIdAsync("web-ui", cancellationToken);
         if (existingClient is null)

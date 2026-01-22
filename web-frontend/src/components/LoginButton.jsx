@@ -1,17 +1,38 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 
 const LoginButton = () => {
-  const { login, isLoading } = useAuth()
+  const { login, isLoading, loginError, clearLoginError } = useAuth()
+  const [isLoggingIn, setIsLoggingIn] = useState(false)
+
+  const handleLogin = async () => {
+    setIsLoggingIn(true)
+    await login()
+    setIsLoggingIn(false)
+  }
 
   return (
-    <button 
-      onClick={login} 
-      disabled={isLoading}
-      className="group relative isolate inline-flex items-center justify-center overflow-hidden text-left font-medium transition duration-300 ease-[cubic-bezier(0.4,0.36,0,1)] before:duration-300 before:ease-[cubic-bezier(0.4,0.36,0,1)] before:transtion-opacity rounded-md shadow-[0_1px_theme(colors.white/0.07)_inset,0_1px_3px_theme(colors.gray.900/0.2)] before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-md before:bg-gradient-to-b before:from-white/20 before:opacity-50 hover:before:opacity-100 after:pointer-events-none after:absolute after:inset-0 after:-z-10 after:rounded-md after:bg-gradient-to-b after:from-white/10 after:from-[46%] after:to-[54%] after:mix-blend-overlay text-sm h-[1.875rem] px-3 ring-1 bg-gray-900 text-white ring-gray-900"
-    >
-      {isLoading ? 'Loading...' : 'Sign In'}
-    </button>
+    <div className="flex items-center gap-2">
+      {loginError && (
+        <span className="text-red-600 text-sm" role="alert">
+          {loginError}
+          <button
+            onClick={clearLoginError}
+            className="ml-2 text-gray-500 hover:text-gray-700"
+            aria-label="Dismiss error"
+          >
+            ×
+          </button>
+        </span>
+      )}
+      <button
+        onClick={handleLogin}
+        disabled={isLoading || isLoggingIn}
+        className="group relative isolate inline-flex items-center justify-center overflow-hidden text-left font-medium transition duration-300 ease-[cubic-bezier(0.4,0.36,0,1)] before:duration-300 before:ease-[cubic-bezier(0.4,0.36,0,1)] before:transtion-opacity rounded-md shadow-[0_1px_theme(colors.white/0.07)_inset,0_1px_3px_theme(colors.gray.900/0.2)] before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-md before:bg-gradient-to-b before:from-white/20 before:opacity-50 hover:before:opacity-100 after:pointer-events-none after:absolute after:inset-0 after:-z-10 after:rounded-md after:bg-gradient-to-b after:from-white/10 after:from-[46%] after:to-[54%] after:mix-blend-overlay text-sm h-[1.875rem] px-3 ring-1 bg-gray-900 text-white ring-gray-900 disabled:opacity-50"
+      >
+        {isLoading || isLoggingIn ? 'Loading...' : 'Sign In'}
+      </button>
+    </div>
   )
 }
 

@@ -6,6 +6,7 @@
 
 package com.datadoghq.stickerlandia.stickercatalogue;
 
+import com.datadoghq.stickerlandia.common.dto.dto.PagedResponse;
 import com.datadoghq.stickerlandia.stickercatalogue.dto.CreateStickerRequest;
 import com.datadoghq.stickerlandia.stickercatalogue.dto.CreateStickerResponse;
 import com.datadoghq.stickerlandia.stickercatalogue.dto.GetAllStickersResponse;
@@ -71,15 +72,23 @@ public class StickerRepository {
      * @return response containing paginated stickers
      */
     public GetAllStickersResponse getAllStickers(int page, int size) {
+        var query = Sticker.<Sticker>findAll(Sort.by("createdAt").descending()).page(page, size);
+
         final List<StickerDTO> stickerDtoList =
-                Sticker.<Sticker>findAll(Sort.by("createdAt").descending())
-                        .page(page, size)
-                        .stream()
-                        .map(this::convertToDto)
-                        .collect(Collectors.toList());
+                query.stream().map(this::convertToDto).collect(Collectors.toList());
+
+        long totalCount = Sticker.count();
+        int totalPages = (int) Math.ceil((double) totalCount / size);
+
+        PagedResponse<StickerDTO> pagination = new PagedResponse<>();
+        pagination.setPage(page);
+        pagination.setSize(size);
+        pagination.setTotal((int) totalCount);
+        pagination.setTotalPages(totalPages);
 
         GetAllStickersResponse response = new GetAllStickersResponse();
         response.setStickers(stickerDtoList);
+        response.setPagination(pagination);
         return response;
     }
 

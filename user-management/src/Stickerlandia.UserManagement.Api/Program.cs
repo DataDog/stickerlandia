@@ -109,6 +109,10 @@ builder.Services.AddResponseCompression(options => { options.EnableForHttps = tr
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
+builder.Services.Configure<RouteOptions>(options =>
+{
+    options.LowercaseUrls = true;
+});
 
 var app = builder.Build();
 

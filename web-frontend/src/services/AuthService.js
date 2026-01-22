@@ -34,6 +34,14 @@ class AuthService {
     sessionStorage.removeItem('auth_token')
   }
 
+  // Broadcast logout to other tabs via localStorage
+  broadcastLogout() {
+    // Set a logout event timestamp - other tabs will detect this change
+    localStorage.setItem('logout_event', Date.now().toString())
+    // Clean up immediately - the event itself is what matters, not the stored value
+    localStorage.removeItem('logout_event')
+  }
+
   isTokenValid() {
     const tokenData = this.getStoredToken()
     if (!tokenData?.access_token || !tokenData.expires_at) {
@@ -47,51 +55,64 @@ class AuthService {
   }
 
   async login() {
-    try {
-      const response = await fetch(`${this.baseUrl}/login`, {
-        method: 'POST',
-        credentials: 'include'
-      })
-      
-      if (response.redirected) {
-        // BFF is redirecting to IdP
-        window.location.href = response.url
-      } else if (response.ok) {
-        // If no redirect, manually redirect to the auth URL
-        const data = await response.json()
-        if (data.authUrl) {
-          window.location.href = data.authUrl
-        }
-      } else {
-        throw new Error('Login failed')
-      }
-    } catch (error) {
-      console.error('Login failed:', error)
+    const response = await fetch(`${this.baseUrl}/login`, {
+      method: 'POST',
+      credentials: 'include'
+    })
+
+    if (response.status === 429) {
+      // Rate limited
+      const data = await response.json().catch(() => ({}))
+      throw new Error(data.error || 'Too many login attempts. Please wait a moment and try again.')
     }
+
+    if (response.redirected) {
+      // BFF is redirecting to IdP
+      window.location.href = response.url
+      return
+    }
+
+    if (response.ok) {
+      // If no redirect, manually redirect to the auth URL
+      const data = await response.json()
+      if (data.authUrl) {
+        window.location.href = data.authUrl
+      }
+      return
+    }
+
+    // Other errors
+    throw new Error('Login failed. Please try again.')
   }
 
   async logout() {
     try {
-      // Clear stored token first
+      // Clear stored token and broadcast to other tabs
       this.clearStoredToken()
-      
+      this.broadcastLogout()
+
       const response = await fetch(`${this.baseUrl}/logout`, {
         method: 'POST',
         credentials: 'include'
       })
-      
+
       if (response.redirected) {
-        // BFF is redirecting to IdP logout
+        // Server redirected (through IdP logout), navigate to final URL
         window.location.href = response.url
+      } else if (response.ok) {
+        // Local logout only, redirect to home
+        window.location.href = '/'
       } else {
-        // Local logout only, reload the page
-        window.location.reload()
+        // Logout endpoint returned an error, still redirect to home
+        console.warn('Logout response not ok:', response.status)
+        window.location.href = '/'
       }
     } catch (error) {
       console.error('Logout failed:', error)
-      // Fallback: clear token and reload the page
+      // Fallback: clear token and redirect to home
       this.clearStoredToken()
-      window.location.reload()
+      this.broadcastLogout()
+      window.location.href = '/'
     }
   }
 
