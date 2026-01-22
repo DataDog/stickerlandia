@@ -14,7 +14,7 @@ const mainNavItems = [
   { to: "/collection", icon: MenuBookOutlinedIcon, label: "My Collection" },
   { to: "/catalogue", icon: AssessmentOutlinedIcon, label: "Catalogue" },
   { to: "/public-dashboard", icon: AssessmentOutlinedIcon, label: "Public Dashboard" },
-  { to: "", icon: LocalPrintshopOutlinedIcon, label: "Print Station", isExternal: true },
+  { to: "/print-station", icon: LocalPrintshopOutlinedIcon, label: "Print Station" },
 ];
 
 const secondaryNavItems = [
