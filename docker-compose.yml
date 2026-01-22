@@ -480,6 +480,7 @@ services:
     container_name: datadog-agent
     profiles:
       - monitoring
+      - load-test
     environment:
       # Core Datadog configuration
       - DD_API_KEY=${DD_API_KEY}

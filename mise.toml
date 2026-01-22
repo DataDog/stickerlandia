@@ -263,3 +263,55 @@ echo "Running tests against: $BASE_URL"
 BASE_URL=$BASE_URL npx playwright test
 """
 
+# =============================================================================
+# load: Load testing tasks
+# =============================================================================
+
+[tasks."load:smoke"]
+description = "Run smoke load test (2 users, 30 seconds, mixed flows)"
+run = """
+docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test up -d
+docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test run --rm load-simulator
+docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test down -v
+"""
+
+[tasks."load:smoke:public"]
+description = "Run smoke test on public endpoints only"
+run = """
+docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test up -d
+docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test run --rm -e SCENARIO=public load-simulator
+docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test down -v
+"""
+
+[tasks."load:smoke:auth"]
+description = "Run smoke test on authenticated flows only"
+run = """
+docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test up -d
+docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test run --rm -e SCENARIO=auth load-simulator
+docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test down -v
+"""
+
+[tasks."load:test"]
+description = "Run load test (ramp to 30 users over 10 minutes)"
+run = """
+docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test up -d
+docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test run --rm -e WORKLOAD=load load-simulator
+docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test down -v
+"""
+
+[tasks."load:test:auth"]
+description = "Run load test on authenticated flows only"
+run = """
+docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test up -d
+docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test run --rm -e WORKLOAD=load -e SCENARIO=auth load-simulator
+docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test down -v
+"""
+
+[tasks."load:smoke:register"]
+description = "Run smoke test on registration flow"
+run = """
+docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test up -d
+docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test run --rm -e SCENARIO=register load-simulator
+docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test down -v
+"""
+

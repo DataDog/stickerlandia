@@ -1,0 +1,40 @@
+# Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+# This product includes software developed at Datadog (https://www.datadoghq.com/).
+# Copyright 2025-Present Datadog, Inc.
+
+# Load testing service configuration
+# Usage: docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test run --rm load-simulator
+
+services:
+  # Disable rate limiting for load testing
+  web-backend:
+    environment:
+      - SKIP_RATE_LIMIT=true
+
+  load-simulator:
+    image: grafana/k6:latest
+    volumes:
+      - ./load-tests:/scripts
+    environment:
+      - TARGET_URL=http://traefik:80
+      - EXTERNAL_URL=http://localhost:8080
+      - WORKLOAD=${WORKLOAD:-smoke}
+      - SCENARIO=${SCENARIO:-mixed}
+      - TEST_EMAIL=${TEST_EMAIL:-user@stickerlandia.com}
+      - TEST_PASSWORD=${TEST_PASSWORD:-Stickerlandia2025!}
+    command: run /scripts/load-test.js
+    depends_on:
+      traefik:
+        condition: service_healthy
+      user-management:
+        condition: service_healthy
+      sticker-catalogue:
+        condition: service_healthy
+      sticker-award:
+        condition: service_healthy
+      web-backend:
+        condition: service_started
+      datadog-agent:
+        condition: service_started
+    profiles:
+      - load-test
