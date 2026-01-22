@@ -1,9 +1,8 @@
 import React from "react";
 import LoginButton from "./LoginButton";
-import LogoutButton from "./LogoutButton";
 import MobileMenu from "./MobileMenu";
 import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined';
-import { AuthProvider, useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 
 const HeaderBar = () => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -24,15 +23,7 @@ const HeaderBar = () => {
         {isAuthenticated && <div className="lg:hidden"><MobileMenu /></div>}
         <div className="logo font-bold"><span className="sparkle-logo mr-1"><AutoAwesomeOutlinedIcon/></span>Stickerlandia</div>
         <div className="ml-auto flex items-center gap-6 font-medium">
-          {!isAuthenticated ? (
-            <div>
-              <LoginButton />
-            </div>
-          ) : (
-            <div>
-              <LogoutButton />
-            </div>
-          )}
+          {!isAuthenticated && <LoginButton />}
         </div>
       </div>
     </header>
