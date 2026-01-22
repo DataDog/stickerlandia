@@ -321,3 +321,12 @@ docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile l
 docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test down -v
 """
 
+[tasks."load:gameday"]
+depends = ["env:setup"]
+description = "Run GameDay load test (gameday:auth, gameday:catalogue, or gameday:sustained)"
+run = """
+docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test up -d --wait
+docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test run --rm -e WORKLOAD=${WORKLOAD:-gameday:sustained} load-simulator
+docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test down -v
+"""
+

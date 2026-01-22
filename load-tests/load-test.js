@@ -7,6 +7,7 @@
 import http from 'k6/http';
 import { check, sleep, group } from 'k6';
 import { parseHTML } from 'k6/html';
+import { SharedArray } from 'k6/data';
 
 // =============================================================================
 // Configuration
@@ -23,6 +24,32 @@ const REG_EMAIL_DOMAIN = __ENV.REG_EMAIL_DOMAIN || 'loadtest.stickerlandia.com';
 // External URL that gets rewritten to internal Docker network URL
 // OAuth redirects use the external hostname which isn't reachable from inside Docker
 const EXTERNAL_URL = __ENV.EXTERNAL_URL || 'http://localhost:8080';
+
+// =============================================================================
+// Multi-User Pool Support (for GameDay load testing)
+// =============================================================================
+
+// Load user pool for GameDay mode - SharedArray is memory-efficient across VUs
+let users = [];
+try {
+  users = new SharedArray('users', function () {
+    return JSON.parse(open('./data/users.json')).users;
+  });
+} catch (e) {
+  // users.json doesn't exist - will use single user fallback
+}
+
+/**
+ * Get credentials for current VU (round-robin assignment).
+ * Only uses user pool for GameDay workloads; otherwise uses default TEST_EMAIL/TEST_PASSWORD.
+ */
+function getCredentialsForVU() {
+  const isGameDay = workload.startsWith('gameday:');
+  if (!isGameDay || users.length === 0) {
+    return { email: TEST_EMAIL, password: TEST_PASSWORD };
+  }
+  return users[(__VU - 1) % users.length];
+}
 
 /**
  * Rewrite external URLs to internal Docker network URLs.
@@ -79,6 +106,58 @@ const WORKLOADS = {
       { duration: '1m', target: 0 },
     ],
   },
+  // GameDay profiles - hardcoded for simplicity
+  'gameday:auth': {
+    // Heavy auth load - stress test login/logout
+    scenarios: {
+      auth_stress: {
+        executor: 'constant-arrival-rate',
+        rate: 50,
+        timeUnit: '1s',
+        duration: '5m',
+        preAllocatedVUs: 50,
+        maxVUs: 100,
+        exec: 'authenticatedFlow',
+      },
+    },
+  },
+  'gameday:catalogue': {
+    // Heavy catalogue browsing - stress test sticker-catalogue service
+    scenarios: {
+      catalogue_stress: {
+        executor: 'constant-arrival-rate',
+        rate: 100,
+        timeUnit: '1s',
+        duration: '5m',
+        preAllocatedVUs: 100,
+        maxVUs: 150,
+        exec: 'publicBrowsingFlow',
+      },
+    },
+  },
+  'gameday:sustained': {
+    // Sustained load across all services
+    scenarios: {
+      auth_flow: {
+        executor: 'constant-arrival-rate',
+        rate: 30,
+        timeUnit: '1s',
+        duration: '10m',
+        preAllocatedVUs: 30,
+        maxVUs: 50,
+        exec: 'authenticatedFlow',
+      },
+      browse_flow: {
+        executor: 'constant-arrival-rate',
+        rate: 50,
+        timeUnit: '1s',
+        duration: '10m',
+        preAllocatedVUs: 50,
+        maxVUs: 80,
+        exec: 'publicBrowsingFlow',
+      },
+    },
+  },
 };
 
 const workload = __ENV.WORKLOAD || 'smoke';
@@ -107,9 +186,13 @@ export const options = {
  * 4. Follow redirects back to app with access_token
  *
  * @param {object} jar - k6 cookie jar to maintain session
+ * @param {string} [email] - User email (defaults to VU's assigned user or TEST_EMAIL)
+ * @param {string} [password] - User password (defaults to VU's assigned user or TEST_PASSWORD)
  * @returns {object} - { success: boolean, accessToken?: string, error?: string }
  */
-function performOAuthLogin(jar) {
+function performOAuthLogin(jar, email = null, password = null) {
+  // Get credentials - use provided values, or fall back to VU assignment
+  const creds = email ? { email, password } : getCredentialsForVU();
   // Step 1: Initiate OAuth flow via BFF
   const loginRes = http.post(
     `${BASE_URL}/api/app/auth/login`,
@@ -162,8 +245,8 @@ function performOAuthLogin(jar) {
 
   // Build form data with credentials
   const formData = {
-    'Input.Email': TEST_EMAIL,
-    'Input.Password': TEST_PASSWORD,
+    'Input.Email': creds.email,
+    'Input.Password': creds.password,
   };
 
   // Add hidden fields (CSRF tokens, return URLs, etc.)
@@ -412,7 +495,7 @@ function performRegistration(jar, email, password) {
 // Scenario: Public Browsing (Unauthenticated)
 // =============================================================================
 
-function publicBrowsingFlow() {
+export function publicBrowsingFlow() {
   group('Public Browsing', () => {
     // Landing page
     const landingRes = http.get(`${BASE_URL}/`);
@@ -464,7 +547,7 @@ function publicBrowsingFlow() {
 // Scenario: Authenticated User Flow
 // =============================================================================
 
-function authenticatedFlow() {
+export function authenticatedFlow() {
   group('Authenticated Flow', () => {
     // Create a cookie jar to maintain session across requests
     const jar = http.cookieJar();

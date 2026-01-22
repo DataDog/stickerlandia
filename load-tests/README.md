@@ -32,6 +32,40 @@ All mise tasks automatically:
 |----------|-----|----------|----------|
 | `smoke` | 2 | 30s | Quick validation |
 | `load` | 10→30 | 10m | Sustained load testing |
+| `gameday:auth` | 50-100 | 5m | Heavy auth load (50 RPS) |
+| `gameday:catalogue` | 100-150 | 5m | Heavy catalogue browsing (100 RPS) |
+| `gameday:sustained` | 80-130 | 10m | Sustained load across all services |
+
+## GameDay Load Testing
+
+For GameDay demos, use multi-user load testing with predefined profiles:
+
+```bash
+# Sustained load across all services (default)
+mise run load:gameday
+
+# Heavy auth load (50 RPS on login/logout)
+mise run load:gameday WORKLOAD=gameday:auth
+
+# Heavy catalogue browsing (100 RPS on sticker API)
+mise run load:gameday WORKLOAD=gameday:catalogue
+```
+
+### Multi-User Pool Setup
+
+GameDay profiles use a pool of 50 test users to simulate realistic concurrent load. Create the user pool file:
+
+```bash
+# The file should be at load-tests/data/users.json
+# See the template in plans/feat-gameday-load-testing-enhancements.md
+```
+
+**Important:** For auth-based GameDay profiles (`gameday:auth`, `gameday:sustained`), users must be **registered first** before they can log in. You can:
+1. Run the registration flow first: `mise run load:smoke:register` (creates unique users per iteration)
+2. Manually register users via the web UI
+3. Use `gameday:catalogue` which doesn't require authentication
+
+**Note:** Load test traffic appears in Datadog APM as normal requests. This is intentional - it demonstrates the system under realistic load conditions.
 
 ## Configuration
 
