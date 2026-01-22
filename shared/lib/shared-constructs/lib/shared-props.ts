@@ -43,7 +43,15 @@ export class SharedProps {
     enableDatadog: boolean = true
   ) {
     const environment = process.env.ENV || "dev";
-    const version = process.env.COMMIT_SHA || "latest";
+    const deployMode = process.env.DEPLOY_MODE;
+    let version: string;
+    if (deployMode === "local") {
+      version = "LOCAL";
+    } else if (deployMode === "release") {
+      version = "latest";
+    } else {
+      version = process.env.COMMIT_SHA || "latest";
+    }
     const commitSha = process.env.COMMIT_SHA_FULL || "";
 
     this.datadog = {

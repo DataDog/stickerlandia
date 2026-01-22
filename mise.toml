@@ -143,14 +143,30 @@ depends = ["env:setup"]
 run = "./scripts/test-services.sh --max-retries 5 --retry-delay 10"
 
 # =============================================================================
-# aws: AWS tasks
+# aws: AWS deployment tasks
+#
+# Deployment modes are controlled via the DEPLOY_MODE environment variable:
+#   - local:   Build containers from local Dockerfiles (DEPLOY_MODE=local)
+#   - release: Pull prebuilt images from GHCR tagged "latest" (DEPLOY_MODE=release)
+#   - (unset): Falls back to COMMIT_SHA env var, or "latest" if not set
+#
+# DEPLOY_MODE is NOT stored in .env, so it propagates naturally through
+# subprocess calls. CDK's SharedProps reads DEPLOY_MODE and sets the
+# appropriate image tag. Services can define their own aws:deploy:local
+# and aws:deploy:release tasks that set DEPLOY_MODE and delegate to aws:deploy.
+#
+# To deploy a specific tagged version from the registry (e.g., a CI-built
+# image), set COMMIT_SHA to the desired tag and run aws:deploy directly
+# without setting DEPLOY_MODE. For example:
+#   COMMIT_SHA=abc123 npx cdk deploy (from infra/aws directory)
 # =============================================================================
 
 [tasks."aws:deploy:local"]
 description = "Deploy to AWS (build containers locally)"
 depends = ["env:setup"]
+env = { DEPLOY_MODE = "local" }
 run = """
-echo "=== Deploying Stickerlandia to AWS: $ENV (COMMIT_SHA=$COMMIT_SHA) ==="
+echo "=== Deploying Stickerlandia to AWS: $ENV (DEPLOY_MODE=$DEPLOY_MODE) ==="
 mise run //shared:aws:deploy
 mise run //user-management:aws:deploy
 mise run //sticker-award:aws:deploy
@@ -163,9 +179,9 @@ echo "=== Deployment complete! ==="
 [tasks."aws:deploy:release"]
 description = "Deploy to AWS using prebuilt GHCR images"
 depends = ["env:setup"]
-env = { COMMIT_SHA = "latest" }
+env = { DEPLOY_MODE = "release" }
 run = """
-echo "=== Deploying Stickerlandia to AWS: $ENV (COMMIT_SHA=$COMMIT_SHA) ==="
+echo "=== Deploying Stickerlandia to AWS: $ENV (DEPLOY_MODE=$DEPLOY_MODE) ==="
 mise run //shared:aws:deploy
 mise run //user-management:aws:deploy
 mise run //sticker-award:aws:deploy

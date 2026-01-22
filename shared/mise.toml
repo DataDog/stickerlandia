@@ -20,6 +20,18 @@ dir = "infra/aws"
 depends = ["lib:install", "infra:install"]
 run = "npx cdk deploy --require-approval never"
 
+[tasks."aws:deploy:local"]
+description = "Deploy shared infrastructure (local mode)"
+depends = ["//:env:setup"]
+env = { DEPLOY_MODE = "local" }
+run = "mise run aws:deploy"
+
+[tasks."aws:deploy:release"]
+description = "Deploy shared infrastructure (release mode)"
+depends = ["//:env:setup"]
+env = { DEPLOY_MODE = "release" }
+run = "mise run aws:deploy"
+
 [tasks."aws:down"]
 description = "Destroy shared infrastructure on AWS"
 dir = "infra/aws"
