@@ -107,16 +107,17 @@ const WORKLOADS = {
     ],
   },
   // GameDay profiles - hardcoded for simplicity
+  // Note: Auth RPS is limited by IdP capacity (~10 RPS sustainable)
   'gameday:auth': {
-    // Heavy auth load - stress test login/logout
+    // Auth load - stress test login/logout at sustainable rate
     scenarios: {
       auth_stress: {
         executor: 'constant-arrival-rate',
-        rate: 50,
+        rate: 10,
         timeUnit: '1s',
         duration: '5m',
-        preAllocatedVUs: 50,
-        maxVUs: 100,
+        preAllocatedVUs: 20,
+        maxVUs: 40,
         exec: 'authenticatedFlow',
       },
     },
@@ -140,11 +141,11 @@ const WORKLOADS = {
     scenarios: {
       auth_flow: {
         executor: 'constant-arrival-rate',
-        rate: 30,
+        rate: 10,
         timeUnit: '1s',
         duration: '10m',
-        preAllocatedVUs: 30,
-        maxVUs: 50,
+        preAllocatedVUs: 20,
+        maxVUs: 40,
         exec: 'authenticatedFlow',
       },
       browse_flow: {
@@ -155,6 +156,16 @@ const WORKLOADS = {
         preAllocatedVUs: 50,
         maxVUs: 80,
         exec: 'publicBrowsingFlow',
+      },
+      registration_flow: {
+        // 2-3 new user registrations per minute
+        executor: 'constant-arrival-rate',
+        rate: 3,
+        timeUnit: '1m',
+        duration: '10m',
+        preAllocatedVUs: 2,
+        maxVUs: 5,
+        exec: 'registrationFlow',
       },
     },
   },
@@ -635,7 +646,7 @@ export function authenticatedFlow() {
 // Scenario: Registration Flow
 // =============================================================================
 
-function registrationFlow() {
+export function registrationFlow() {
   group('Registration Flow', () => {
     const jar = http.cookieJar();
 

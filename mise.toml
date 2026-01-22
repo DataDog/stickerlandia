@@ -321,12 +321,44 @@ docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile l
 docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test down -v
 """
 
-[tasks."load:gameday"]
+[tasks."load:start"]
 depends = ["env:setup"]
-description = "Run GameDay load test (gameday:auth, gameday:catalogue, or gameday:sustained)"
+description = "Start load test services (use with load:gameday:run and load:stop)"
 run = """
 docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test up -d --wait
+"""
+
+[tasks."load:stop"]
+description = "Stop load test services and clean up volumes"
+run = """
+docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test down -v
+"""
+
+[tasks."load:provision-users"]
+depends = ["env:setup"]
+description = "Register GameDay test users (run once before auth-based GameDay tests)"
+run = """
+docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test up -d --wait
+docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test run --rm load-simulator run /scripts/provision-users.js
+echo "Users provisioned. Services still running - run 'mise run load:gameday:run' or 'mise run load:stop' when done."
+"""
+
+[tasks."load:gameday"]
+depends = ["env:setup"]
+description = "Run GameDay load test (full cycle: start, provision users, test, stop)"
+run = """
+docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test up -d --wait
+echo "Provisioning GameDay users..."
+docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test run --rm load-simulator run /scripts/provision-users.js
+echo "Running GameDay load test..."
 docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test run --rm -e WORKLOAD=${WORKLOAD:-gameday:sustained} load-simulator
 docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test down -v
+"""
+
+[tasks."load:gameday:run"]
+depends = ["env:setup"]
+description = "Run GameDay load test only (assumes services already running with provisioned users)"
+run = """
+docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test run --rm -e WORKLOAD=${WORKLOAD:-gameday:sustained} load-simulator
 """
 

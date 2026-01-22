@@ -32,9 +32,9 @@ All mise tasks automatically:
 |----------|-----|----------|----------|
 | `smoke` | 2 | 30s | Quick validation |
 | `load` | 10→30 | 10m | Sustained load testing |
-| `gameday:auth` | 50-100 | 5m | Heavy auth load (50 RPS) |
+| `gameday:auth` | 20-40 | 5m | Auth load (10 RPS) |
 | `gameday:catalogue` | 100-150 | 5m | Heavy catalogue browsing (100 RPS) |
-| `gameday:sustained` | 80-130 | 10m | Sustained load across all services |
+| `gameday:sustained` | 50-90 | 10m | Auth (10 RPS) + browsing (50 RPS) + registration (3/min) |
 
 ## GameDay Load Testing
 
@@ -42,9 +42,10 @@ For GameDay demos, use multi-user load testing with predefined profiles:
 
 ```bash
 # Sustained load across all services (default)
+# Includes auth, browsing, and new user registrations (3/min)
 mise run load:gameday
 
-# Heavy auth load (50 RPS on login/logout)
+# Auth load (10 RPS on login/logout)
 mise run load:gameday WORKLOAD=gameday:auth
 
 # Heavy catalogue browsing (100 RPS on sticker API)
@@ -53,17 +54,24 @@ mise run load:gameday WORKLOAD=gameday:catalogue
 
 ### Multi-User Pool Setup
 
-GameDay profiles use a pool of 50 test users to simulate realistic concurrent load. Create the user pool file:
+GameDay profiles use a pool of 10 test users to simulate realistic concurrent load. Create the user pool file:
 
 ```bash
 # The file should be at load-tests/data/users.json
 # See the template in plans/feat-gameday-load-testing-enhancements.md
 ```
 
-**Important:** For auth-based GameDay profiles (`gameday:auth`, `gameday:sustained`), users must be **registered first** before they can log in. You can:
-1. Run the registration flow first: `mise run load:smoke:register` (creates unique users per iteration)
-2. Manually register users via the web UI
-3. Use `gameday:catalogue` which doesn't require authentication
+**Important:** For auth-based GameDay profiles (`gameday:auth`, `gameday:sustained`), users must be **registered first**:
+
+```bash
+# Register all 50 pool users (run once)
+mise run load:provision-users
+
+# Then run auth-based GameDay tests
+WORKLOAD=gameday:auth mise run load:gameday
+```
+
+The provisioning script registers each user from `users.json` via the IdP. It's idempotent - already registered users are skipped.
 
 **Note:** Load test traffic appears in Datadog APM as normal requests. This is intentional - it demonstrates the system under realistic load conditions.
 
