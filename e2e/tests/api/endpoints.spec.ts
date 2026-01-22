@@ -29,7 +29,7 @@ test.describe('API Endpoints', () => {
     });
 
     test('supports pagination parameters', async ({ request }) => {
-      const response = await request.get('/api/stickers/v1?page=0&size=5');
+      const response = await request.get('/api/stickers/v1/?page=0&size=5');
       expect(response.ok()).toBeTruthy();
 
       const data = await response.json();
@@ -43,7 +43,7 @@ test.describe('API Endpoints', () => {
 
     test('returns individual sticker by ID', async ({ request }) => {
       // First get a valid ID
-      const listResponse = await request.get('/api/stickers/v1');
+      const listResponse = await request.get('/api/stickers/v1/');
       const listData = await listResponse.json();
       const stickerId = listData.stickers[0]?.stickerId;
 

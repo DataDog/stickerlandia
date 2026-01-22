@@ -2,8 +2,8 @@ import { test, expect } from '@playwright/test';
 
 test.describe('API Authentication Requirements', () => {
   test.describe('Sticker Catalogue - Protected Endpoints', () => {
-    test('POST /api/stickers/v1 requires authentication', async ({ request }) => {
-      const response = await request.post('/api/stickers/v1', {
+    test('POST /api/stickers/v1/ requires authentication', async ({ request }) => {
+      const response = await request.post('/api/stickers/v1/', {
         data: {
           stickerName: 'Test Sticker',
           stickerDescription: 'A test sticker',
@@ -38,8 +38,8 @@ test.describe('API Authentication Requirements', () => {
   });
 
   test.describe('Sticker Catalogue - Public Endpoints', () => {
-    test('GET /api/stickers/v1 does not require authentication', async ({ request }) => {
-      const response = await request.get('/api/stickers/v1');
+    test('GET /api/stickers/v1/ does not require authentication', async ({ request }) => {
+      const response = await request.get('/api/stickers/v1/');
       expect(response.ok()).toBeTruthy();
     });
 

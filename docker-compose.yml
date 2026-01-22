@@ -463,6 +463,13 @@ services:
       
       # External service configuration
       CATALOGUE_BASE_URL: http://sticker-catalogue:8080
+
+      # OAuth/JWT configuration
+      # OAUTH_ISSUER: The issuer claim expected in JWT tokens (matches what user-management sets)
+      # Note: OpenIddict adds trailing slash to issuer, so we must include it here
+      # OAUTH_JWKS_URL: Internal Docker network URL to fetch JWKS for token validation
+      OAUTH_ISSUER: ${DEPLOYMENT_HOST_URL}/
+      OAUTH_JWKS_URL: http://user-management:8080/.well-known/jwks
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
       interval: 1s

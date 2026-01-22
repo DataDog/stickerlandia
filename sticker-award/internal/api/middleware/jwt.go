@@ -40,7 +40,7 @@ func NewJWTValidator(cfg *config.AuthConfig) (*JWTValidator, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// Create JWKS keyfunc with background refresh
-	jwks, err := keyfunc.NewDefaultCtx(ctx, []string{cfg.JWKSUrl})
+	jwks, err := keyfunc.NewDefaultCtx(ctx, []string{cfg.JWKSUrl()})
 	if err != nil {
 		cancel()
 		return nil, err
