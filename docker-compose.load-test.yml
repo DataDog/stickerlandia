@@ -11,6 +11,10 @@ services:
     environment:
       - SKIP_RATE_LIMIT=true
 
+  user-management:
+    environment:
+      - RateLimiting__Enabled=false
+
   load-simulator:
     image: grafana/k6:latest
     volumes:
