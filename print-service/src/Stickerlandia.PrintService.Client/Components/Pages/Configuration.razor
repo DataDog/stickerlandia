@@ -1,0 +1,144 @@
+@page "/configuration"
+@rendermode InteractiveServer
+@inject IConfigurationService ConfigService
+@inject IPrintServiceApiClient ApiClient
+@inject ClientStatusService StatusService
+
+<PageTitle>Configuration - Printer Client</PageTitle>
+
+<h1>Configuration</h1>
+
+<div class="configuration-form">
+    <div class="form-group">
+        <label for="apiKey">API Key</label>
+        <input type="password" id="apiKey" @bind="_apiKey" placeholder="Enter your printer API key" />
+        @if (!string.IsNullOrEmpty(_apiKey) && _apiKey.Length > 4)
+        {
+            <span class="key-hint">Key ending in: ...@_apiKey[^4..]</span>
+        }
+    </div>
+
+    <div class="form-group">
+        <label for="backendUrl">Backend URL</label>
+        <input type="text" id="backendUrl" @bind="_backendUrl" placeholder="https://api.stickerlandia.com" />
+    </div>
+
+    <div class="form-group">
+        <label for="pollingInterval">Polling Interval (seconds)</label>
+        <input type="number" id="pollingInterval" @bind="_pollingInterval" min="1" max="60" />
+    </div>
+
+    <div class="form-group">
+        <label for="maxJobs">Max Jobs Per Poll</label>
+        <input type="number" id="maxJobs" @bind="_maxJobs" min="1" max="50" />
+    </div>
+
+    <div class="form-actions">
+        <button class="btn btn-primary" @onclick="SaveConfiguration" disabled="@_isSaving">
+            @(_isSaving ? "Saving..." : "Save Configuration")
+        </button>
+        <button class="btn btn-secondary" @onclick="TestConnection" disabled="@_isTesting">
+            @(_isTesting ? "Testing..." : "Test Connection")
+        </button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(_message))
+    {
+        <div class="message @_messageClass">@_message</div>
+    }
+</div>
+
+@code {
+    private string _apiKey = string.Empty;
+    private string _backendUrl = "https://api.stickerlandia.com";
+    private int _pollingInterval = 5;
+    private int _maxJobs = 10;
+    private bool _isSaving;
+    private bool _isTesting;
+    private string _message = string.Empty;
+    private string _messageClass = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        var current = ConfigService.Current;
+        _apiKey = current.ApiKey ?? string.Empty;
+        _backendUrl = current.BackendUrl;
+        _pollingInterval = current.PollingIntervalSeconds;
+        _maxJobs = current.MaxJobsPerPoll;
+    }
+
+    private async Task SaveConfiguration()
+    {
+        _isSaving = true;
+        _message = string.Empty;
+
+        try
+        {
+            var config = new PrinterClientConfig
+            {
+                ApiKey = _apiKey,
+                BackendUrl = _backendUrl,
+                PollingIntervalSeconds = _pollingInterval,
+                MaxJobsPerPoll = _maxJobs
+            };
+
+            await ConfigService.SaveAsync(config);
+
+            _message = "Configuration saved successfully!";
+            _messageClass = "message-success";
+        }
+        catch (Exception ex)
+        {
+            _message = $"Failed to save configuration: {ex.Message}";
+            _messageClass = "message-error";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task TestConnection()
+    {
+        _isTesting = true;
+        _message = string.Empty;
+
+        try
+        {
+            // Temporarily save config to test
+            var config = new PrinterClientConfig
+            {
+                ApiKey = _apiKey,
+                BackendUrl = _backendUrl,
+                PollingIntervalSeconds = _pollingInterval,
+                MaxJobsPerPoll = _maxJobs
+            };
+            await ConfigService.SaveAsync(config);
+
+            var result = await ApiClient.ValidateConnectionAsync();
+
+            if (result != null)
+            {
+                _message = "Connection successful! Printer is configured correctly.";
+                _messageClass = "message-success";
+                StatusService.UpdateConnectionStatus(ConnectionStatus.Connected);
+            }
+            else
+            {
+                _message = "Connection failed. Please check your API key and backend URL.";
+                _messageClass = "message-error";
+                StatusService.UpdateConnectionStatus(ConnectionStatus.AuthenticationFailed);
+            }
+        }
+        catch (Exception ex)
+        {
+            _message = $"Connection test failed: {ex.Message}";
+            _messageClass = "message-error";
+            StatusService.UpdateConnectionStatus(ConnectionStatus.Disconnected, ex.Message);
+        }
+        finally
+        {
+            _isTesting = false;
+        }
+    }
+}

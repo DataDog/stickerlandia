@@ -1,0 +1,125 @@
+@page "/"
+@rendermode InteractiveServer
+@inject ClientStatusService StatusService
+@inject ILocalStorageService LocalStorage
+@implements IDisposable
+
+<PageTitle>Dashboard - Printer Client</PageTitle>
+
+<h1>Dashboard</h1>
+
+<div class="dashboard-grid">
+    <div class="card status-card">
+        <div class="card-header">
+            <h3>Connection Status</h3>
+        </div>
+        <div class="card-body">
+            <div class="status-large @StatusService.GetStatusCssClass()">
+                <span class="status-dot-large"></span>
+                <span>@StatusService.GetStatusText()</span>
+            </div>
+            @if (!string.IsNullOrEmpty(StatusService.LastError))
+            {
+                <div class="error-message">@StatusService.LastError</div>
+            }
+        </div>
+    </div>
+
+    <div class="card stats-card">
+        <div class="card-header">
+            <h3>Statistics</h3>
+        </div>
+        <div class="card-body">
+            <div class="stat-row">
+                <span class="stat-label">Jobs Today:</span>
+                <span class="stat-value">@StatusService.JobsProcessedToday</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Total Jobs:</span>
+                <span class="stat-value">@StatusService.JobsProcessedTotal</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Last Poll:</span>
+                <span class="stat-value">
+                    @(StatusService.LastPollTime?.LocalDateTime.ToString("HH:mm:ss") ?? "Never")
+                </span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Last Poll Jobs:</span>
+                <span class="stat-value">@StatusService.LastPollJobCount</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card recent-card">
+        <div class="card-header">
+            <h3>Recent Activity</h3>
+        </div>
+        <div class="card-body">
+            @if (_recentJobs.Count == 0)
+            {
+                <p class="no-data">No recent jobs</p>
+            }
+            else
+            {
+                <ul class="activity-list">
+                    @foreach (var job in _recentJobs)
+                    {
+                        <li class="activity-item @GetJobStatusClass(job.Status)">
+                            <span class="job-id">@job.PrintJobId[..8]...</span>
+                            <span class="job-sticker">@job.StickerId</span>
+                            <span class="job-status">@job.Status</span>
+                            <span class="job-time">@job.ReceivedAt.LocalDateTime.ToString("HH:mm:ss")</span>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private IReadOnlyList<PrintJobRecord> _recentJobs = [];
+    private System.Threading.Timer? _refreshTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        StatusService.OnStatusChanged += OnStatusChanged;
+        await LoadRecentJobsAsync();
+
+        // Auto-refresh every 5 seconds
+        _refreshTimer = new System.Threading.Timer(
+            async _ => await InvokeAsync(async () =>
+            {
+                await LoadRecentJobsAsync();
+                StateHasChanged();
+            }),
+            null,
+            TimeSpan.FromSeconds(5),
+            TimeSpan.FromSeconds(5));
+    }
+
+    private async Task LoadRecentJobsAsync()
+    {
+        var allJobs = await LocalStorage.GetJobsAsync();
+        _recentJobs = allJobs.Take(5).ToList();
+    }
+
+    private void OnStatusChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private static string GetJobStatusClass(string status) => status switch
+    {
+        "Completed" => "status-completed",
+        "Failed" => "status-failed",
+        _ => "status-pending"
+    };
+
+    public void Dispose()
+    {
+        StatusService.OnStatusChanged -= OnStatusChanged;
+        _refreshTimer?.Dispose();
+    }
+}

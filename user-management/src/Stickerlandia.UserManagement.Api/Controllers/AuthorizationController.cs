@@ -151,6 +151,7 @@ public class AuthorizationController(
 
                 identity.SetScopes(request.GetScopes());
                 identity.SetResources(await scopeManager.ListResourcesAsync(identity.GetScopes()).ToListAsync());
+                identity.SetAudiences("stickerlandia");
 
                 // Automatically create a permanent authorization to avoid requiring explicit consent
                 // for future authorization or token requests containing the same scopes.
@@ -282,6 +283,7 @@ public class AuthorizationController(
                 .SetClaims(OpenIddictConstants.Claims.Role, [.. await userManager.GetRolesAsync(user)]);
 
             identity.SetDestinations(GetDestinations);
+            identity.SetAudiences("stickerlandia");
 
             // Returning a SignInResult will ask OpenIddict to issue the appropriate access/identity tokens.
             return SignIn(new ClaimsPrincipal(identity), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);

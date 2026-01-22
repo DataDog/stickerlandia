@@ -1,0 +1,226 @@
+# Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+# This product includes software developed at Datadog (https://www.datadoghq.com/).
+# Copyright 2025-Present Datadog, Inc.
+
+asyncapi: 3.0.0
+info:
+  title: Print Service
+  version: 1.0.0
+  description: Asynchronous events published by the Print Service for print job lifecycle and printer registration
+defaultContentType: application/json
+
+channels:
+  printJobs.queued.v1:
+    address: printJobs.queued.v1
+    description: Channel for print job queued events
+    messages:
+      printJobQueuedEvent:
+        $ref: '#/components/messages/printJobQueuedEvent'
+
+  printJobs.completed.v1:
+    address: printJobs.completed.v1
+    description: Channel for print job completed events
+    messages:
+      printJobCompletedEvent:
+        $ref: '#/components/messages/printJobCompletedEvent'
+
+  printJobs.failed.v1:
+    address: printJobs.failed.v1
+    description: Channel for print job failed events
+    messages:
+      printJobFailedEvent:
+        $ref: '#/components/messages/printJobFailedEvent'
+
+  printers.registered.v1:
+    address: printers.registered.v1
+    description: Channel for printer registered events
+    messages:
+      printerRegisteredEvent:
+        $ref: '#/components/messages/printerRegisteredEvent'
+
+operations:
+  publishPrintJobQueued:
+    action: send
+    channel:
+      $ref: '#/channels/printJobs.queued.v1'
+    summary: Publish event when a print job is queued
+    description: Published when a new print job is submitted and added to the queue
+    messages:
+      - $ref: '#/channels/printJobs.queued.v1/messages/printJobQueuedEvent'
+
+  publishPrintJobCompleted:
+    action: send
+    channel:
+      $ref: '#/channels/printJobs.completed.v1'
+    summary: Publish event when a print job completes successfully
+    description: Published when a printer acknowledges successful completion of a print job
+    messages:
+      - $ref: '#/channels/printJobs.completed.v1/messages/printJobCompletedEvent'
+
+  publishPrintJobFailed:
+    action: send
+    channel:
+      $ref: '#/channels/printJobs.failed.v1'
+    summary: Publish event when a print job fails
+    description: Published when a printer acknowledges a print job failure
+    messages:
+      - $ref: '#/channels/printJobs.failed.v1/messages/printJobFailedEvent'
+
+  publishPrinterRegistered:
+    action: send
+    channel:
+      $ref: '#/channels/printers.registered.v1'
+    summary: Publish event when a printer is registered
+    description: Published when a new printer is registered for an event
+    messages:
+      - $ref: '#/channels/printers.registered.v1/messages/printerRegisteredEvent'
+
+components:
+  schemas:
+    domainEvent:
+      type: object
+      description: Base schema for all domain events
+      properties:
+        EventName:
+          type: string
+          description: The name/type of the event
+        eventVersion:
+          type: string
+          description: The version of the event schema
+      required:
+        - EventName
+        - eventVersion
+
+    printJobQueuedEvent:
+      allOf:
+        - $ref: '#/components/schemas/domainEvent'
+        - type: object
+          description: Event published when a print job is submitted and queued
+          properties:
+            EventName:
+              type: string
+              const: printJobs.queued.v1
+            eventVersion:
+              type: string
+              const: '1.0'
+            printJobId:
+              type: string
+              description: Unique identifier of the print job
+            printerId:
+              type: string
+              description: Identifier of the target printer
+            userId:
+              type: string
+              description: ID of the user who requested the print
+            stickerId:
+              type: string
+              description: ID of the sticker to print
+          required:
+            - printJobId
+            - printerId
+            - userId
+            - stickerId
+
+    printJobCompletedEvent:
+      allOf:
+        - $ref: '#/components/schemas/domainEvent'
+        - type: object
+          description: Event published when a print job completes successfully
+          properties:
+            EventName:
+              type: string
+              const: printJobs.completed.v1
+            eventVersion:
+              type: string
+              const: '1.0'
+            printJobId:
+              type: string
+              description: Unique identifier of the print job
+            printerId:
+              type: string
+              description: Identifier of the printer that completed the job
+            completedAt:
+              type: string
+              format: date-time
+              description: Timestamp when the job was completed
+          required:
+            - printJobId
+            - printerId
+            - completedAt
+
+    printJobFailedEvent:
+      allOf:
+        - $ref: '#/components/schemas/domainEvent'
+        - type: object
+          description: Event published when a print job fails
+          properties:
+            EventName:
+              type: string
+              const: printJobs.failed.v1
+            eventVersion:
+              type: string
+              const: '1.0'
+            printJobId:
+              type: string
+              description: Unique identifier of the print job
+            printerId:
+              type: string
+              description: Identifier of the printer that failed to print
+            failureReason:
+              type: string
+              description: Reason for the failure
+          required:
+            - printJobId
+            - printerId
+            - failureReason
+
+    printerRegisteredEvent:
+      allOf:
+        - $ref: '#/components/schemas/domainEvent'
+        - type: object
+          description: Event published when a new printer is registered
+          properties:
+            EventName:
+              type: string
+              const: printers.registered.v1
+            eventVersion:
+              type: string
+              const: '1.0'
+            printerId:
+              type: string
+              description: Unique identifier of the registered printer
+          required:
+            - printerId
+
+  messages:
+    printJobQueuedEvent:
+      name: printJobQueuedEvent
+      title: Print Job Queued
+      summary: A print job has been submitted and queued for processing
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/printJobQueuedEvent'
+
+    printJobCompletedEvent:
+      name: printJobCompletedEvent
+      title: Print Job Completed
+      summary: A print job has been successfully completed by a printer
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/printJobCompletedEvent'
+
+    printJobFailedEvent:
+      name: printJobFailedEvent
+      title: Print Job Failed
+      summary: A print job has failed
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/printJobFailedEvent'
+
+    printerRegisteredEvent:
+      name: printerRegisteredEvent
+      title: Printer Registered
+      summary: A new printer has been registered for an event
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/printerRegisteredEvent'
