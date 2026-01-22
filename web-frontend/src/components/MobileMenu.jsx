@@ -32,12 +32,10 @@ function MobileMenu() {
         aria-label="Open navigation menu"
         aria-expanded={isOpen}
         onClick={toggleDrawer(true)}
-        className="lg:hidden"
-        sx={{ color: "black" }}
+        className="lg:hidden text-black"
       >
         <MenuIcon />
       </IconButton>
-
       <Drawer
         anchor="left"
         open={isOpen}
