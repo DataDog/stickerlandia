@@ -167,12 +167,12 @@ depends = ["env:setup"]
 env = { DEPLOY_MODE = "local" }
 run = """
 echo "=== Deploying Stickerlandia to AWS: $ENV (DEPLOY_MODE=$DEPLOY_MODE) ==="
-mise run //shared:aws:deploy
-mise run //user-management:aws:deploy
-mise run //sticker-award:aws:deploy
-mise run //sticker-catalogue:aws:deploy
-mise run //web-backend:aws:deploy
-mise run //web-frontend:aws:deploy
+mise run //shared:aws:deploy:local
+mise run //user-management:aws:deploy:local
+mise run //sticker-award:aws:deploy:local
+mise run //sticker-catalogue:aws:deploy:local
+mise run //web-backend:aws:deploy:local
+mise run //web-frontend:aws:deploy:local
 echo "=== Deployment complete! ==="
 """
 
@@ -182,12 +182,12 @@ depends = ["env:setup"]
 env = { DEPLOY_MODE = "release" }
 run = """
 echo "=== Deploying Stickerlandia to AWS: $ENV (DEPLOY_MODE=$DEPLOY_MODE) ==="
-mise run //shared:aws:deploy
-mise run //user-management:aws:deploy
-mise run //sticker-award:aws:deploy
-mise run //sticker-catalogue:aws:deploy
-mise run //web-backend:aws:deploy
-mise run //web-frontend:aws:deploy
+mise run //shared:aws:deploy:release
+mise run //user-management:aws:deploy:release
+mise run //sticker-award:aws:deploy:release
+mise run //sticker-catalogue:aws:deploy:release
+mise run //web-backend:aws:deploy:release
+mise run //web-frontend:aws:deploy:release
 echo "=== Deployment complete! ==="
 """
 
