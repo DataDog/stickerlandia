@@ -36,7 +36,7 @@ if [ -n "$CODESPACE_NAME" ]; then
     echo "Available services:"
     echo "  - Main Application: ${BASE_URL}-8080.app.github.dev"
     echo "  - Traefik Dashboard: ${BASE_URL}-8081.app.github.dev/dashboard/"
-    echo "  - Redpanda Console: ${BASE_URL}-8082.app.github.dev"
+    echo "  - Kafbat Console: ${BASE_URL}-8082.app.github.dev"
     echo "  - MinIO Console: ${BASE_URL}-9001.app.github.dev"
 else
     echo "Running locally!"
@@ -44,7 +44,7 @@ else
     echo "Available services:"
     echo "  - Main Application: http://localhost:8080"
     echo "  - Traefik Dashboard: http://localhost:8081/dashboard/"
-    echo "  - Redpanda Console: http://localhost:8082"
+    echo "  - Kafbat Console: http://localhost:8082"
     echo "  - MinIO Console: http://localhost:9001"
 fi
 

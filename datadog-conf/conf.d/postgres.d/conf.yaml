@@ -1,0 +1,22 @@
+# Recommendation is to use a custom Datadog user with readonly permissions
+# Using main user here for simplicity of automated deployment
+init_config:
+instances:
+  - dbm: true
+    host: user-management-db
+    port: 5432
+    username: datadog
+    password: datadog_password
+    dbname: user_management
+  - dbm: true
+    host: sticker-award-db
+    port: 5432
+    username: datadog
+    password: datadog_password
+    dbname: sticker_awards
+  - dbm: true
+    host: sticker-catalogue-db
+    port: 5432
+    username: datadog
+    password: datadog_password
+    dbname: sticker_catalogue

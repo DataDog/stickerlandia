@@ -1,0 +1,7 @@
+# ./datadog/conf.d/kafka_consumer.d/conf.yaml
+init_config:
+
+instances:
+  - enable_cluster_monitoring: true
+    kafka_connect_str: kafka:29092  # Use your Kafka service name from compose
+    monitor_unlisted_consumer_groups: true
