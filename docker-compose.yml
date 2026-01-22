@@ -507,6 +507,7 @@ services:
 
   datadog-agent:
     image: datadog/agent:7
+    pull_policy: always
     container_name: datadog-agent
     profiles:
       - monitoring
