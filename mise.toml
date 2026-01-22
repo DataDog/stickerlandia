@@ -268,6 +268,7 @@ BASE_URL=$BASE_URL npx playwright test
 # =============================================================================
 
 [tasks."load:smoke"]
+depends = ["env:setup"]
 description = "Run smoke load test (2 users, 30 seconds, mixed flows)"
 run = """
 docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test up -d
@@ -276,6 +277,7 @@ docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile l
 """
 
 [tasks."load:smoke:public"]
+depends = ["env:setup"]
 description = "Run smoke test on public endpoints only"
 run = """
 docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test up -d
@@ -284,6 +286,7 @@ docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile l
 """
 
 [tasks."load:smoke:auth"]
+depends = ["env:setup"]
 description = "Run smoke test on authenticated flows only"
 run = """
 docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test up -d
@@ -292,6 +295,7 @@ docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile l
 """
 
 [tasks."load:test"]
+depends = ["env:setup"]
 description = "Run load test (ramp to 30 users over 10 minutes)"
 run = """
 docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test up -d
@@ -300,6 +304,7 @@ docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile l
 """
 
 [tasks."load:test:auth"]
+depends = ["env:setup"]
 description = "Run load test on authenticated flows only"
 run = """
 docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test up -d
@@ -308,6 +313,7 @@ docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile l
 """
 
 [tasks."load:smoke:register"]
+depends = ["env:setup"]
 description = "Run smoke test on registration flow"
 run = """
 docker compose -f docker-compose.yml -f docker-compose.load-test.yml --profile load-test up -d
