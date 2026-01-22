@@ -14,7 +14,7 @@ function Sidebar() {
   const { user, isLoading, logout } = useAuth();
 
   return (
-    <div className="col-span-1 border-gray-300 border-solid border-r h-screen">
+    <div className="hidden lg:block col-span-1 border-gray-300 border-solid border-r h-screen">
       <nav className="user-nav">
         <div className="user-nav-header">
           <div className="pt-8 px-5 pb-5">
@@ -41,31 +41,31 @@ function Sidebar() {
         </div>
         <ul className="">
           <li className="my-3 px-5">
-            <Link className="block" to="/dashboard">
+            <Link className="block py-2" to="/dashboard">
               <HomeOutlinedIcon />
               User Dashboard
             </Link>
           </li>
           <li className="my-3 px-5">
-            <Link className="block" to="/collection">
+            <Link className="block py-2" to="/collection">
               <MenuBookOutlinedIcon />
               My Collection
             </Link>
           </li>
           <li className="my-3 px-5">
-            <Link className="block" to="/catalogue">
+            <Link className="block py-2" to="/catalogue">
               <AssessmentOutlinedIcon />
               Catalogue
             </Link>
           </li>
           <li className="my-3 px-5">
-            <Link className="block" to="/public-dashboard">
+            <Link className="block py-2" to="/public-dashboard">
               <AssessmentOutlinedIcon />
               Public Dashboard
             </Link>
           </li>
           <li className="my-3 px-5">
-            <a className="block" href="">
+            <a className="block py-2" href="">
               <LocalPrintshopOutlinedIcon />
               Print Station
             </a>
@@ -75,19 +75,19 @@ function Sidebar() {
       <nav className="user-nav border-gray-300 border-solid border-t">
         <ul>
           <li className="my-3 px-5">
-            <a className="block" href="">
+            <a className="block py-2" href="">
               <PersonOutlineOutlinedIcon />
               Profile
             </a>
           </li>
           <li className="my-3 px-5">
-            <a className="block" href="">
+            <a className="block py-2" href="">
               <SettingsOutlinedIcon />
               Settings
             </a>
           </li>
           <li className="my-3 px-5">
-            <button className="block w-full text-left" onClick={logout}>
+            <button className="block w-full text-left py-2" onClick={logout}>
               <LogoutOutlinedIcon />
               Sign Out
             </button>

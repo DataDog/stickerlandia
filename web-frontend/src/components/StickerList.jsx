@@ -63,10 +63,10 @@ const StickerList = () => {
   return (
     <div className="isolate flex flex-auto flex-col bg-[--root-bg]">
       <main id="main">
-        <div className="grid grid-cols-5">
+        <div className="grid grid-cols-1 lg:grid-cols-5">
           <Sidebar />
-          <div className="col-span-4 p-8">
-            <h1 className="text-3xl font-bold mb-4">Sticker Catalogue</h1>
+          <div className="col-span-1 lg:col-span-4 p-4 sm:p-6 lg:p-8">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-4">Sticker Catalogue</h1>
             <p className="text-gray-600 mb-8">
               Browse all available stickers in the collection.
             </p>
@@ -91,7 +91,7 @@ const StickerList = () => {
 
             {!loading && !error && stickers.length > 0 && (
               <>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {stickers.map((sticker) => (
                     <Link
                       key={sticker.stickerId}
