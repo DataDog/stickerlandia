@@ -20,6 +20,7 @@ import (
 	dd_logrus "github.com/DataDog/dd-trace-go/contrib/sirupsen/logrus/v2"
 	"github.com/DataDog/dd-trace-go/v2/ddtrace/tracer"
 	"github.com/DataDog/dd-trace-go/v2/profiler"
+	"github.com/datadog/stickerlandia/sticker-award/internal/api/middleware"
 	"github.com/datadog/stickerlandia/sticker-award/internal/api/router"
 	"github.com/datadog/stickerlandia/sticker-award/internal/clients/catalogue"
 	"github.com/datadog/stickerlandia/sticker-award/internal/config"
@@ -132,9 +133,21 @@ func main() {
 	assignmentService := service.NewAssigner(assignmentRepo, catalogueClient, validator.New(), producer)
 	log.Info("Assignment service initialized")
 
+	// Initialize JWT validator for authentication
+	log.WithFields(log.Fields{
+		"jwksUrl": cfg.Auth.JWKSUrl,
+		"issuer":  cfg.Auth.Issuer,
+	}).Info("Initializing JWT validator...")
+	jwtValidator, err := middleware.NewJWTValidator(&cfg.Auth)
+	if err != nil {
+		log.WithFields(log.Fields{"error": err}).Fatal("Failed to initialize JWT validator")
+	}
+	defer jwtValidator.Close()
+	log.Info("JWT validator initialized")
+
 	// Initialize HTTP router
 	log.Info("Setting up HTTP router...")
-	r := router.Setup(db, cfg, assignmentService)
+	r := router.Setup(db, cfg, assignmentService, jwtValidator)
 	log.Info("HTTP router configured")
 
 	// Register our **user registered** event handler. This responds to new users appearing

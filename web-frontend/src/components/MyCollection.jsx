@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import HeaderBar from "./HeaderBar";
 import Sidebar from "./Sidebar";
 import { API_BASE_URL } from "../config";
+import { authFetch } from "../utils/authFetch";
 
 function MyCollection() {
   const { user } = useAuth();
@@ -18,7 +19,7 @@ function MyCollection() {
         const userId = user.sub || user.email;
 
         // Fetch user's sticker assignments
-        const assignmentsResponse = await fetch(
+        const assignmentsResponse = await authFetch(
           `${API_BASE_URL}/api/awards/v1/assignments/${userId}`
         );
 
@@ -33,7 +34,7 @@ function MyCollection() {
         const enrichedStickers = await Promise.all(
           assignments.map(async (assignment) => {
             try {
-              const metadataResponse = await fetch(
+              const metadataResponse = await authFetch(
                 `${API_BASE_URL}/api/stickers/v1/${assignment.stickerId}`
               );
 

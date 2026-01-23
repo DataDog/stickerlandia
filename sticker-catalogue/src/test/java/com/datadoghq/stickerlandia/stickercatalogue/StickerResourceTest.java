@@ -13,6 +13,7 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import com.datadoghq.stickerlandia.stickercatalogue.dto.CreateStickerRequest;
 import com.datadoghq.stickerlandia.stickercatalogue.entity.Sticker;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -50,6 +51,7 @@ class StickerResourceTest {
     }
 
     @Test
+    @TestSecurity(user = "testuser", roles = "user")
     void testCreateSticker() {
         CreateStickerRequest request = new CreateStickerRequest();
         request.setStickerName("New Test Sticker");
@@ -91,6 +93,7 @@ class StickerResourceTest {
     }
 
     @Test
+    @TestSecurity(user = "testuser", roles = "user")
     void testUpdateNonExistingStickerReturns404() {
         CreateStickerRequest updateRequest = new CreateStickerRequest();
         updateRequest.setStickerName("Updated Name");
@@ -108,6 +111,7 @@ class StickerResourceTest {
     }
 
     @Test
+    @TestSecurity(user = "testuser", roles = "user")
     void testDeleteNonExistingStickerReturns404() {
         given().when()
                 .delete("/api/stickers/v1/{stickerId}", NON_EXISTING_STICKER_ID)
@@ -144,6 +148,7 @@ class StickerResourceTest {
     }
 
     @Test
+    @TestSecurity(user = "testuser", roles = "user")
     void testUploadImageForNonExistingStickerReturns404() {
         byte[] fakeImageData = "fake-png-data".getBytes();
 
