@@ -525,7 +525,7 @@ services:
       - "traefik.http.services.sticker-award.loadbalancer.server.port=8080"
 
   datadog-agent:
-    image: datadog/agent:7
+    image: datadog/agent:7.75.0
     pull_policy: always
     container_name: datadog-agent
     profiles:
