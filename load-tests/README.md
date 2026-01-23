@@ -49,6 +49,21 @@ For sustained tests with multiple concurrent users:
 
 3. Run tests: `mise run load:sustained`
 
+## Validating Telemetry in Datadog
+
+After running load tests, verify data appears in Datadog:
+
+| Product | Link | What to Check |
+|---------|------|---------------|
+| APM | [Traces](https://app.datadoghq.com/apm/traces?query=env%3Adevelopment) | Service traces for all requests |
+| Logs | [Logs](https://app.datadoghq.com/logs?query=env%3Adevelopment) | Application logs from all services |
+| RUM | [Sessions](https://app.datadoghq.com/rum/sessions) | Browser sessions (requires frontend interaction) |
+| DSM | [Data Streams](https://app.datadoghq.com/data-streams) | Kafka message flow between services |
+| DBM | [Databases](https://app.datadoghq.com/databases) | Query performance metrics |
+| Profiling | [Profiles](https://app.datadoghq.com/profiling/explorer?query=env%3Adevelopment) | CPU/memory profiles |
+
+Filter by `env:development` to see load test data.
+
 ## Configuration
 
 Override defaults with environment variables:
