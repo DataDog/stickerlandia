@@ -176,7 +176,7 @@ services:
       - "5432:5432"
     volumes:
       - sticker-catalogue-data:/var/lib/postgresql/data
-      - ./scripts/postgres-init:/docker-entrypoint-initdb.d:ro
+      - ./shared/infra/compose/postgres-init:/docker-entrypoint-initdb.d:ro
     command:
       - postgres
       - -c
@@ -200,7 +200,7 @@ services:
       - "5434:5432"
     volumes:
       - sticker-award-data:/var/lib/postgresql/data
-      - ./scripts/postgres-init:/docker-entrypoint-initdb.d:ro
+      - ./shared/infra/compose/postgres-init:/docker-entrypoint-initdb.d:ro
     command:
       - postgres
       - -c
@@ -224,7 +224,7 @@ services:
       - "5433:5432"
     volumes:
       - user-management-data:/var/lib/postgresql/data
-      - ./scripts/postgres-init:/docker-entrypoint-initdb.d:ro
+      - ./shared/infra/compose/postgres-init:/docker-entrypoint-initdb.d:ro
     command:
       - postgres
       - -c
