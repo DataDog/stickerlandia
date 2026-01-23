@@ -128,6 +128,11 @@ const WORKLOADS = {
 const workload = __ENV.WORKLOAD || 'smoke';
 const scenario = __ENV.SCENARIO || 'mixed';
 
+if (!WORKLOADS[workload]) {
+  const validWorkloads = Object.keys(WORKLOADS).join(', ');
+  throw new Error(`Unknown workload "${workload}". Valid options: ${validWorkloads}`);
+}
+
 export const options = {
   ...WORKLOADS[workload],
   thresholds: {
@@ -145,7 +150,7 @@ export const options = {
  * Performs the full OAuth 2.1 Authorization Code + PKCE flow.
  */
 function performOAuthLogin(jar, email = null, password = null) {
-  const creds = email ? { email, password } : getCredentialsForVU();
+  const creds = (email && password) ? { email, password } : getCredentialsForVU();
 
   // Step 1: Initiate OAuth flow via BFF
   const loginRes = http.post(`${BASE_URL}/api/app/auth/login`, null, { redirects: 0, jar });

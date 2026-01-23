@@ -60,6 +60,9 @@ export function resolveUrl(baseUrl, relativeUrl) {
  * Extract access_token from URL query string or fragment.
  * Handles URLs like: http://example.com/callback?access_token=xxx
  * or: http://example.com/callback#access_token=xxx
+ *
+ * NOTE: k6's goja runtime lacks native URL/URLSearchParams APIs,
+ * so we parse manually instead of using `new URL(url).searchParams`.
  */
 export function extractTokenFromUrl(url) {
   try {
