@@ -564,8 +564,11 @@ services:
       # System directories for host metrics
       - /proc/:/host/proc/:ro
       - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
-      - ./datadog-conf/conf.d/kafka_consumer.d/conf.yaml:/etc/datadog-agent/conf.d/kafka_consumer.d/conf.yaml:ro
-      - ./datadog-conf/conf.d/postgres.d/conf.yaml:/etc/datadog-agent/conf.d/postgres.d/conf.yaml:ro
+    configs:
+      - source: kafka_consumer_config
+        target: /etc/datadog-agent/conf.d/kafka_consumer.d/conf.yaml
+      - source: postgres_config
+        target: /etc/datadog-agent/conf.d/postgres.d/conf.yaml
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "agent", "health"]
@@ -583,3 +586,35 @@ volumes:
   user-management-data:
   kafka-data:
   minio-data:
+
+configs:
+  kafka_consumer_config:
+    content: |
+      init_config:
+
+      instances:
+        - enable_cluster_monitoring: true
+          kafka_connect_str: kafka:29092
+          monitor_unlisted_consumer_groups: true
+  postgres_config:
+    content: |
+      init_config:
+      instances:
+        - dbm: true
+          host: user-management-db
+          port: 5432
+          username: datadog
+          password: datadog_password
+          dbname: user_management
+        - dbm: true
+          host: sticker-award-db
+          port: 5432
+          username: datadog
+          password: datadog_password
+          dbname: sticker_awards
+        - dbm: true
+          host: sticker-catalogue-db
+          port: 5432
+          username: datadog
+          password: datadog_password
+          dbname: sticker_catalogue
