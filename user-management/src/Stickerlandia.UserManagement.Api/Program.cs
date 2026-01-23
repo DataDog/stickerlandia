@@ -47,63 +47,73 @@ builder.Services.AddProblemDetails()
     .AddEndpointsApiExplorer()
     .AddApiVersioning();
 
-builder.Services.AddRateLimiter(options =>
+// Configure rate limiting from appsettings.json (can be overridden via environment variables)
+var rateLimitOptions = builder.Configuration
+    .GetSection(RateLimitOptions.SectionName)
+    .Get<RateLimitOptions>() ?? new RateLimitOptions();
+
+if (rateLimitOptions.Enabled)
 {
-    // Log when requests are rejected due to rate limiting
-    options.OnRejected = async (context, cancellationToken) =>
+    builder.Services.AddRateLimiter(options =>
     {
-        var requestLogger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-
-        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
-
-        var retryAfter = 60; // Default retry after 60 seconds
-        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfterTime))
+        // Log when requests are rejected due to rate limiting
+        options.OnRejected = async (context, cancellationToken) =>
         {
-            retryAfter = (int)retryAfterTime.TotalSeconds;
-        }
+            var requestLogger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
 
-        context.HttpContext.Response.Headers.RetryAfter = retryAfter.ToString();
+            context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
 
-        // Get client IP from X-Forwarded-For (behind LB) or RemoteIpAddress
-        var forwardedFor = context.HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-        var clientIp = !string.IsNullOrEmpty(forwardedFor)
-            ? forwardedFor.Split(',')[0].Trim()
-            : context.HttpContext.Connection.RemoteIpAddress?.ToString();
-
-        LogMessages.RateLimitExceeded(
-            requestLogger,
-            context.HttpContext.Request.Method,
-            context.HttpContext.Request.Path,
-            clientIp,
-            retryAfter,
-            context.HttpContext.Request.Headers.Host.ToString());
-
-        await context.HttpContext.Response.WriteAsync(
-            $"Too many requests. Please retry after {retryAfter} seconds.",
-            cancellationToken);
-    };
-
-    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
-    {
-        // Partition by client IP for better isolation between clients
-        // Check X-Forwarded-For first (for requests behind LB/proxy), then fall back to RemoteIpAddress
-        var forwardedFor = httpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-        var clientIp = !string.IsNullOrEmpty(forwardedFor)
-            ? forwardedFor.Split(',')[0].Trim()  // Take first IP in chain (original client)
-            : httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-
-        return RateLimitPartition.GetFixedWindowLimiter(
-            clientIp,
-            partition => new FixedWindowRateLimiterOptions
+            // Get retry-after from the rate limiter metadata if available
+            int? retryAfter = null;
+            if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfterTime))
             {
-                AutoReplenishment = true,
-                PermitLimit = 100,    
-                QueueLimit = 10,      // Allow some queuing instead of instant rejection
-                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                Window = TimeSpan.FromMinutes(1)
-            });
+                retryAfter = (int)retryAfterTime.TotalSeconds;
+                context.HttpContext.Response.Headers.RetryAfter = retryAfter.Value.ToString();
+            }
+
+            // Get client IP from X-Forwarded-For (behind LB) or RemoteIpAddress
+            var forwardedFor = context.HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+            var clientIp = !string.IsNullOrEmpty(forwardedFor)
+                ? forwardedFor.Split(',')[0].Trim()
+                : context.HttpContext.Connection.RemoteIpAddress?.ToString();
+
+            LogMessages.RateLimitExceeded(
+                requestLogger,
+                context.HttpContext.Request.Method,
+                context.HttpContext.Request.Path,
+                clientIp,
+                retryAfter,
+                context.HttpContext.Request.Headers.Host.ToString());
+
+            var message = retryAfter.HasValue
+                ? $"Too many requests. Please retry after {retryAfter} seconds."
+                : "Too many requests. Please try again later.";
+
+            await context.HttpContext.Response.WriteAsync(message, cancellationToken);
+        };
+
+        options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+        {
+            // Partition by client IP for better isolation between clients
+            // Check X-Forwarded-For first (for requests behind LB/proxy), then fall back to RemoteIpAddress
+            var forwardedFor = httpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+            var clientIp = !string.IsNullOrEmpty(forwardedFor)
+                ? forwardedFor.Split(',')[0].Trim()  // Take first IP in chain (original client)
+                : httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+            return RateLimitPartition.GetFixedWindowLimiter(
+                clientIp,
+                partition => new FixedWindowRateLimiterOptions
+                {
+                    AutoReplenishment = true,
+                    PermitLimit = rateLimitOptions.PermitLimit,
+                    QueueLimit = rateLimitOptions.QueueLimit,
+                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                    Window = TimeSpan.FromSeconds(rateLimitOptions.WindowSeconds)
+                });
+        });
     });
-});
+}
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddResponseCompression(options => { options.EnableForHttps = true; });
 
@@ -136,7 +146,10 @@ if (!string.IsNullOrWhiteSpace(publicBaseUrl))
     });
 }
 
-app.UseRateLimiter();
+if (rateLimitOptions.Enabled)
+{
+    app.UseRateLimiter();
+}
 app.UseMiddleware<GlobalExceptionHandler>();
 
 // Enable Swagger UI
