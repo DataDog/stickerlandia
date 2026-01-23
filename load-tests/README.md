@@ -36,6 +36,17 @@ All mise tasks automatically:
 | `gameday:catalogue` | 100-150 | 5m | Heavy catalogue browsing (100 RPS) |
 | `gameday:sustained` | 50-90 | 10m | Auth (10 RPS) + browsing (50 RPS) + registration (3/min) |
 
+## Datadog Product Features
+
+When running the load test, there are several Datadog products that will be populated with data providing the environment is correctly configured:
+
+- APM
+- Logs
+- RUM
+- Data Streams Monitoring
+- Database Monitoring
+- Profiling
+
 ## GameDay Load Testing
 
 For GameDay demos, use multi-user load testing with predefined profiles that simulate realistic concurrent load across multiple users.
