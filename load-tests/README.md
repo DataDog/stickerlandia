@@ -40,12 +40,12 @@ All mise tasks automatically:
 
 When running the load test, there are several Datadog products that will be populated with data providing the environment is correctly configured:
 
-- APM
-- Logs
-- RUM
-- Data Streams Monitoring
-- Database Monitoring
-- Profiling
+- [APM](https://app.datadoghq.com/apm/traces?query=env%3Adevelopment)
+- [Logs](https://app.datadoghq.com/logs?query=env%3Adevelopment)
+- [RUM](https://app.datadoghq.com/rum)
+- [Data Streams Monitoring](https://app.datadoghq.com/data-streams)
+- [Database Monitoring](https://app.datadoghq.com/databases)
+- [Profiling](https://app.datadoghq.com/profiling/explorer?query=env%3Adevelopment)
 
 ## GameDay Load Testing
 
