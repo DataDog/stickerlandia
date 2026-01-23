@@ -104,6 +104,27 @@ services:
       timeout: 10s
       retries: 10
       start_period: 30s
+    volumes:
+      - kafka-data:/tmp/kraft-combined-logs
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.6.0
+    container_name: schema-registry
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8085:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kafka:29092
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/subjects"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
 
   kafbat-ui:
     container_name: kafbat-ui
@@ -112,13 +133,11 @@ services:
       - 8082:8080
     depends_on:
       - kafka
+      - schema-registry
     environment:
       KAFKA_CLUSTERS_0_NAME: kafka
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
-      # other properties, omitted
-      SPRING_CONFIG_ADDITIONAL-LOCATION: /config.yml
-    volumes:
-      - /tmp/config.yml:/config.yml
+      KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8081
 
   kafka-init:
     image: confluentinc/cp-kafka:6.1.1
