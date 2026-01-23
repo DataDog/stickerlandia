@@ -38,6 +38,9 @@ func Setup(db *gorm.DB, cfg *config.Config, assignmentService domainservice.Assi
 	// API v1 routes
 	v1 := r.Group("/api/awards/v1")
 	{
+		// Health check endpoint under API v1 (public, accessible via traefik)
+		v1.GET("/health", handlers.NewHealthHandler(db).Handle)
+
 		// Assignment routes
 		assignments := v1.Group("/assignments")
 		{

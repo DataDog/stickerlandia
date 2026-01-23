@@ -19,7 +19,7 @@ const StickerList = () => {
       try {
         setLoading(true)
         const response = await authFetch(
-          `${API_BASE_URL}/api/stickers/v1?page=${page}&size=${pageSize}`
+          `${API_BASE_URL}/api/stickers/v1/?page=${page}&size=${pageSize}`
         )
         if (!response.ok) {
           throw new Error(`Failed to fetch stickers: ${response.status}`)

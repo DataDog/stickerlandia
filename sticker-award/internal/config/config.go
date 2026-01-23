@@ -47,7 +47,8 @@ func (a *AuthConfig) JWKSUrl() string {
 	if a.JwksUrl != "" {
 		return a.JwksUrl
 	}
-	return a.Issuer + "/.well-known/jwks"
+	// Normalize issuer (strip trailing slash) before appending path to avoid double slashes
+	return strings.TrimSuffix(a.Issuer, "/") + "/.well-known/jwks"
 }
 
 // ServerConfig holds HTTP server configuration

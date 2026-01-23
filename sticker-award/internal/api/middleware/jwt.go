@@ -39,12 +39,21 @@ func NewJWTValidator(cfg *config.AuthConfig) (*JWTValidator, error) {
 	// Create context with cancel for cleanup
 	ctx, cancel := context.WithCancel(context.Background())
 
+	jwksUrl := cfg.JWKSUrl()
+	log.WithFields(log.Fields{
+		"issuer":  cfg.Issuer,
+		"jwksUrl": jwksUrl,
+	}).Info("Initializing JWT validator")
+
 	// Create JWKS keyfunc with background refresh
-	jwks, err := keyfunc.NewDefaultCtx(ctx, []string{cfg.JWKSUrl()})
+	jwks, err := keyfunc.NewDefaultCtx(ctx, []string{jwksUrl})
 	if err != nil {
 		cancel()
+		log.WithError(err).WithField("jwksUrl", jwksUrl).Error("Failed to fetch JWKS")
 		return nil, err
 	}
+
+	log.Info("JWT validator initialized successfully")
 
 	return &JWTValidator{
 		jwks:       jwks,
@@ -85,7 +94,10 @@ func (v *JWTValidator) JWT() gin.HandlerFunc {
 		)
 
 		if err != nil {
-			log.WithContext(c.Request.Context()).WithError(err).Debug("Token validation failed")
+			log.WithContext(c.Request.Context()).WithFields(log.Fields{
+				"error":          err.Error(),
+				"expectedIssuer": v.issuer,
+			}).Warn("Token validation failed")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error": "invalid token",
 			})
