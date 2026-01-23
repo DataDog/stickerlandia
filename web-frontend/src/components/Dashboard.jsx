@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { API_BASE_URL } from "../config";
+import { authFetch } from "../utils/authFetch";
 import HotelClassOutlinedIcon from "@mui/icons-material/HotelClassOutlined";
 import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
 import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined";
@@ -18,7 +19,7 @@ const Dashboard = () => {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${API_BASE_URL}/api/stickers/v1/`);
+        const response = await authFetch(`${API_BASE_URL}/api/stickers/v1/`);
         if (response.ok) {
           const data = await response.json();
           setTotalStickers(data.stickers?.length || 0);
@@ -35,11 +36,11 @@ const Dashboard = () => {
 
   return (
     <>
-      <div className="text-3xl font-bold mb-4">Public Dashboard</div>
+      <div className="text-2xl sm:text-3xl font-bold mb-4">Public Dashboard</div>
       <div className="text-gray-600 mb-6">
         Live statistics and trends from the Stickerlandia community.
       </div>
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="col-span-1 landing-card items-start">
           <span className="text-gray-400 font-bold">Total Stickers</span>
           <span className="text-gray-600 font-bold text-xl">
@@ -70,7 +71,7 @@ const Dashboard = () => {
             <CalendarMonthOutlinedIcon /> DASH 2025 upcoming
           </span>
         </div>
-        <div className="col-span-2 landing-card items-start">
+        <div className="col-span-1 sm:col-span-2 landing-card items-start">
           <span className="text-gray-600 font-bold">Rarity Distribution</span>
           <span className="text-gray-600 font-bold text-xl">
             Breakdown of stickers by rarity level
@@ -106,7 +107,7 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-        <div className="col-span-2 landing-card">
+        <div className="col-span-1 sm:col-span-2 landing-card">
           <span className="text-gray-600 font-bold">Recent Activity</span>
           <span className="text-gray-600 font-bold text-xl">
             Latest sticker collections and events
@@ -124,7 +125,7 @@ const Dashboard = () => {
             <div className="text-sm">3 hours ago</div>
           </div>
         </div>
-        <div className="col-span-4 landing-card items-start">
+        <div className="col-span-1 sm:col-span-2 lg:col-span-4 landing-card items-start">
           <span className="text-gray-600 font-bold">Most Collected Stickers</span>
           <span className="text-gray-600 font-bold text-sm">Top Stickers in the Community</span>
           <span className="text-green-500">

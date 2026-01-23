@@ -54,11 +54,12 @@ echo -e "Compose file: $COMPOSE_FILE"
 echo ""
 
 # Test configuration: URL, expected HTTP code, service name, description
+# Note: Use health/public endpoints only - protected endpoints require authentication
 declare -a TESTS=(
     "http://localhost:8081/dashboard/,200,traefik,Traefik Dashboard"
     "http://localhost:8082,200,kafbat-ui,Kafbat UI Dashboard"
-    "http://localhost:8080/api/stickers/v1/sticker-001,200,sticker-catalogue,Sticker Catalogue API"
-    "http://localhost:8080/api/awards/v1/assignments/user-001,200,sticker-award,Sticker Award API"
+    "http://localhost:8080/api/stickers/v1/,200,sticker-catalogue,Sticker Catalogue API"
+    "http://localhost:8080/api/awards/v1/health,200,sticker-award,Sticker Award Health"
     "http://localhost:8080/api/users/v1/health,200,user-management,User Management Health"
 )
 

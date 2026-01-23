@@ -9,10 +9,11 @@ function PublicDashboardPage() {
 
   return isAuthenticated ? (
     <div className="isolate flex flex-auto flex-col bg-[--root-bg]">
+      <HeaderBar />
       <main id="main">
-        <div className="grid grid-cols-5">
+        <div className="grid grid-cols-1 lg:grid-cols-5">
           <Sidebar />
-          <div className="col-span-4 p-8">
+          <div className="col-span-1 lg:col-span-4 p-4 sm:p-6 lg:p-8">
             <Dashboard />
           </div>
         </div>
