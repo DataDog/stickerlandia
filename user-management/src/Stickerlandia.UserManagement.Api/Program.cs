@@ -63,13 +63,13 @@ if (rateLimitOptions.Enabled)
 
             context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
 
-            var retryAfter = rateLimitOptions.WindowSeconds;
+            // Get retry-after from the rate limiter metadata if available
+            int? retryAfter = null;
             if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfterTime))
             {
                 retryAfter = (int)retryAfterTime.TotalSeconds;
+                context.HttpContext.Response.Headers.RetryAfter = retryAfter.Value.ToString();
             }
-
-            context.HttpContext.Response.Headers.RetryAfter = retryAfter.ToString();
 
             // Get client IP from X-Forwarded-For (behind LB) or RemoteIpAddress
             var forwardedFor = context.HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
@@ -85,9 +85,11 @@ if (rateLimitOptions.Enabled)
                 retryAfter,
                 context.HttpContext.Request.Headers.Host.ToString());
 
-            await context.HttpContext.Response.WriteAsync(
-                $"Too many requests. Please retry after {retryAfter} seconds.",
-                cancellationToken);
+            var message = retryAfter.HasValue
+                ? $"Too many requests. Please retry after {retryAfter} seconds."
+                : "Too many requests. Please try again later.";
+
+            await context.HttpContext.Response.WriteAsync(message, cancellationToken);
         };
 
         options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>

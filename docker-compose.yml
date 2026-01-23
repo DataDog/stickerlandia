@@ -297,6 +297,8 @@ services:
       DRIVING: AGNOSTIC
       DRIVEN: AGNOSTIC
       DISABLE_SSL: "true"
+      # Rate limiting disabled by default in development
+      RateLimiting__Enabled: "false"
       ConnectionStrings__messaging: "redpanda:9092"
       ConnectionStrings__database: "Host=user-management-db;Port=5432;Database=user_management;Username=user_mgmt_user;Password=user_mgmt_password"
       KAFKA__BOOTSTRAPSERVERS: "redpanda:9092"
@@ -391,6 +393,8 @@ services:
       DD_AGENT_HOST: datadog-agent
       # Application configuration
       NODE_ENV: development
+      # Rate limiting disabled by default in development
+      SKIP_RATE_LIMIT: "true"
       OAUTH_ISSUER_INTERNAL: http://user-management:8080
       OAUTH_CLIENT_ID: web-ui
       OAUTH_CLIENT_SECRET: stickerlandia-web-ui-secret-2025
@@ -474,6 +478,33 @@ services:
       - "traefik.http.routers.sticker-award.rule=PathPrefix(`/api/awards`)"
       - "traefik.http.routers.sticker-award.priority=100"
       - "traefik.http.services.sticker-award.loadbalancer.server.port=8080"
+
+  # Load testing service - runs k6 load tests against the stack
+  load-simulator:
+    image: grafana/k6:latest
+    volumes:
+      - ./load-tests:/scripts
+    environment:
+      - TARGET_URL=http://traefik:80
+      - DEPLOYMENT_HOST_URL=${DEPLOYMENT_HOST_URL:-http://localhost:8080}
+      - WORKLOAD=${WORKLOAD:-smoke}
+      - SCENARIO=${SCENARIO:-mixed}
+      - TEST_EMAIL=${TEST_EMAIL:-user@stickerlandia.com}
+      - TEST_PASSWORD=${TEST_PASSWORD:-Stickerlandia2025!}
+    command: run /scripts/load-test.js
+    depends_on:
+      traefik:
+        condition: service_healthy
+      user-management:
+        condition: service_healthy
+      sticker-catalogue:
+        condition: service_healthy
+      sticker-award:
+        condition: service_healthy
+      web-backend:
+        condition: service_started
+    profiles:
+      - load-test
 
   datadog-agent:
     image: datadog/agent:7

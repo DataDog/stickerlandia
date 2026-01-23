@@ -5,8 +5,8 @@
  */
 
 /**
- * Provision GameDay test users by registering them via the IdP.
- * Run this once before running auth-based GameDay load tests.
+ * Provision test users by registering them via the IdP.
+ * Run this once before running multi-user auth-based load tests.
  *
  * Usage: mise run load:provision-users
  */
@@ -15,13 +15,16 @@ import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { parseHTML } from 'k6/html';
 import { SharedArray } from 'k6/data';
+import {
+  BASE_URL,
+  rewriteUrl,
+  resolveUrl,
+  MAX_REDIRECTS,
+} from './helpers.js';
 
 // =============================================================================
 // Configuration
 // =============================================================================
-
-const BASE_URL = __ENV.TARGET_URL || 'http://traefik:80';
-const EXTERNAL_URL = __ENV.EXTERNAL_URL || 'http://localhost:8080';
 
 // Load user pool
 const users = new SharedArray('users', function () {
@@ -33,8 +36,8 @@ export const options = {
   scenarios: {
     register_users: {
       executor: 'per-vu-iterations',
-      vus: 5,                              // 5 parallel registrations
-      iterations: Math.ceil(users.length / 5), // Each VU handles ~10 users
+      vus: 5,
+      iterations: Math.ceil(users.length / 5),
       maxDuration: '10m',
     },
   },
@@ -44,39 +47,6 @@ export const options = {
 };
 
 // =============================================================================
-// URL Helpers (same as load-test.js)
-// =============================================================================
-
-function rewriteUrl(url) {
-  if (url && url.startsWith(EXTERNAL_URL)) {
-    return url.replace(EXTERNAL_URL, BASE_URL);
-  }
-  return url;
-}
-
-function getUrlOrigin(url) {
-  const match = url.match(/^(https?:\/\/[^\/]+)/);
-  return match ? match[1] : '';
-}
-
-function getUrlDirectory(url) {
-  const origin = getUrlOrigin(url);
-  const path = url.slice(origin.length);
-  const lastSlash = path.lastIndexOf('/');
-  return origin + (lastSlash >= 0 ? path.slice(0, lastSlash + 1) : '/');
-}
-
-function resolveUrl(baseUrl, relativeUrl) {
-  if (relativeUrl.startsWith('http')) {
-    return relativeUrl;
-  }
-  if (relativeUrl.startsWith('/')) {
-    return getUrlOrigin(baseUrl) + relativeUrl;
-  }
-  return getUrlDirectory(baseUrl) + relativeUrl;
-}
-
-// =============================================================================
 // Registration Flow
 // =============================================================================
 
@@ -84,11 +54,7 @@ function registerUser(email, password) {
   const jar = http.cookieJar();
 
   // Step 1: Initiate OAuth flow
-  const loginRes = http.post(
-    `${BASE_URL}/api/app/auth/login`,
-    null,
-    { redirects: 0, jar }
-  );
+  const loginRes = http.post(`${BASE_URL}/api/app/auth/login`, null, { redirects: 0, jar });
 
   if (loginRes.status !== 302) {
     return { success: false, error: `OAuth initiation failed: ${loginRes.status}` };
@@ -104,10 +70,12 @@ function registerUser(email, password) {
   currentUrl = rewriteUrl(currentUrl);
   let res = http.get(currentUrl, { redirects: 0, jar });
 
-  while (res.status >= 300 && res.status < 400 && res.headers['Location']) {
+  let redirectCount = 0;
+  while (res.status >= 300 && res.status < 400 && res.headers['Location'] && redirectCount < MAX_REDIRECTS) {
     let nextUrl = resolveUrl(res.url, res.headers['Location']);
     nextUrl = rewriteUrl(nextUrl);
     res = http.get(nextUrl, { redirects: 0, jar });
+    redirectCount++;
   }
 
   // Step 3: Find Register link
@@ -133,10 +101,13 @@ function registerUser(email, password) {
 
   // Navigate to registration page
   res = http.get(registerHref, { redirects: 0, jar });
-  while (res.status >= 300 && res.status < 400 && res.headers['Location']) {
+
+  redirectCount = 0;
+  while (res.status >= 300 && res.status < 400 && res.headers['Location'] && redirectCount < MAX_REDIRECTS) {
     let nextUrl = resolveUrl(res.url, res.headers['Location']);
     nextUrl = rewriteUrl(nextUrl);
     res = http.get(nextUrl, { redirects: 0, jar });
+    redirectCount++;
   }
 
   // Step 4: Parse and submit registration form
@@ -151,7 +122,7 @@ function registerUser(email, password) {
   formAction = resolveUrl(res.url, formAction);
 
   const formData = {
-    'Input.FirstName': 'GameDay',
+    'Input.FirstName': 'Load',
     'Input.LastName': 'Tester',
     'Input.Email': email,
     'Input.Password': password,
@@ -173,10 +144,12 @@ function registerUser(email, password) {
   formAction = rewriteUrl(formAction);
   let submitRes = http.post(formAction, formData, { redirects: 0, jar });
 
-  while (submitRes.status >= 300 && submitRes.status < 400 && submitRes.headers['Location']) {
+  redirectCount = 0;
+  while (submitRes.status >= 300 && submitRes.status < 400 && submitRes.headers['Location'] && redirectCount < MAX_REDIRECTS) {
     let nextUrl = resolveUrl(submitRes.url, submitRes.headers['Location']);
     nextUrl = rewriteUrl(nextUrl);
     submitRes = http.get(nextUrl, { redirects: 0, jar });
+    redirectCount++;
   }
 
   // Check for success
@@ -184,7 +157,7 @@ function registerUser(email, password) {
     return { success: true };
   }
 
-  // Check for "already exists" error (which is actually fine)
+  // Check for "already exists" error (which is acceptable)
   if (submitRes.body && submitRes.body.includes('already')) {
     return { success: true, alreadyExists: true };
   }
@@ -198,7 +171,6 @@ function registerUser(email, password) {
 
 export default function () {
   // Calculate which user this VU/iteration should register
-  // With 5 VUs and 10 iterations each: VU1 gets users 0,5,10,15... VU2 gets 1,6,11,16... etc.
   const numVUs = 5;
   const userIndex = (__VU - 1) + (__ITER * numVUs);
 
