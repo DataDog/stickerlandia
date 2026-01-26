@@ -1,0 +1,100 @@
+# Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+# This product includes software developed at Datadog (https://www.datadoghq.com/).
+# Copyright 2025-Present Datadog, Inc.
+
+name: UI/E2E Tests
+
+on:
+  workflow_call:
+    inputs:
+      base-url:
+        description: 'Base URL to test against. If not provided, URL is fetched from AWS CloudFormation.'
+        required: false
+        type: string
+        default: ''
+      environment:
+        description: 'Environment to test against (only used when fetching URL from AWS)'
+        required: false
+        type: string
+        default: 'dev'
+      aws-region:
+        description: 'AWS region (only used when fetching URL from AWS)'
+        required: false
+        type: string
+        default: 'eu-west-1'
+      node-version:
+        description: 'Node.js version for test runner'
+        required: false
+        type: string
+        default: '22'
+    secrets:
+      AWS_ROLE_ARN:
+        description: 'AWS IAM role ARN to assume (required when base-url is not provided)'
+        required: false
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # Required for AWS OIDC authentication
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        if: ${{ inputs.base-url == '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: GitHub_E2E_Tests
+          aws-region: ${{ inputs.aws-region }}
+
+      - name: Get deployment URL from CDK stack
+        if: ${{ inputs.base-url == '' }}
+        id: get-url
+        run: |
+          BASE_URL=$(aws cloudformation describe-stacks \
+            --stack-name "StickerlandiaSharedResources-${{ inputs.environment }}" \
+            --query "Stacks[0].Outputs[?OutputKey=='BaseUrl'].OutputValue" \
+            --output text)
+          echo "BASE_URL=${BASE_URL}" >> $GITHUB_OUTPUT
+          echo "Deployment URL: ${BASE_URL}"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: 'npm'
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Install Playwright dependencies
+        working-directory: e2e
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: e2e
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        working-directory: e2e
+        run: npx playwright test
+        env:
+          CI: true
+          BASE_URL: ${{ inputs.base-url != '' && inputs.base-url || steps.get-url.outputs.BASE_URL }}
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 7
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-results
+          path: e2e/test-results/
+          retention-days: 7

@@ -1,0 +1,473 @@
+# Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+# This product includes software developed at Datadog (https://www.datadoghq.com/).
+# Copyright 2025-Present Datadog, Inc.
+
+name: Unified CI/CD
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: 'Deploy to AWS dev environment after build'
+        required: false
+        default: false
+        type: boolean
+      force-all:
+        description: 'Force build all services regardless of changes'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  packages: write
+  attestations: write
+  id-token: write
+
+env:
+  REGISTRY: ghcr.io
+  REPOSITORY_URL: github.com/${{ github.repository }}
+
+jobs:
+  # ============================================================================
+  # CHANGE DETECTION
+  # ============================================================================
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      user-management: ${{ steps.changes.outputs.user-management }}
+      sticker-award: ${{ steps.changes.outputs.sticker-award }}
+      sticker-catalogue: ${{ steps.changes.outputs.sticker-catalogue }}
+      web-backend: ${{ steps.changes.outputs.web-backend }}
+      web-frontend: ${{ steps.changes.outputs.web-frontend }}
+      shared: ${{ steps.changes.outputs.shared }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed paths
+        id: changes
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA=${{ github.event.pull_request.base.sha }}
+            HEAD_SHA=${{ github.event.pull_request.head.sha }}
+          else
+            # For push events, compare with parent commit
+            BASE_SHA=${{ github.event.before }}
+            HEAD_SHA=${{ github.sha }}
+          fi
+
+          # Get list of changed files
+          CHANGED_FILES=$(git diff --name-only $BASE_SHA $HEAD_SHA 2>/dev/null || echo "")
+
+          # Check each service directory
+          echo "user-management=$(echo "$CHANGED_FILES" | grep -q '^user-management/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "sticker-award=$(echo "$CHANGED_FILES" | grep -q '^sticker-award/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "sticker-catalogue=$(echo "$CHANGED_FILES" | grep -q '^sticker-catalogue/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "web-backend=$(echo "$CHANGED_FILES" | grep -q '^web-backend/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "web-frontend=$(echo "$CHANGED_FILES" | grep -q '^web-frontend/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "shared=$(echo "$CHANGED_FILES" | grep -q '^shared/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+  # ============================================================================
+  # USER MANAGEMENT SERVICE (.NET)
+  # ============================================================================
+  # TEMPORARY: 'true' added to force all builds - remove after testing
+  user-management-build:
+    needs: detect-changes
+    if: |
+      true ||
+      github.event.inputs.force-all == 'true' ||
+      github.event_name == 'push' ||
+      needs.detect-changes.outputs.user-management == 'true' ||
+      needs.detect-changes.outputs.shared == 'true'
+    uses: ./.github/workflows/_build-dotnet.yml
+    with:
+      working-directory: user-management
+      dotnet-version: '10.0.x'
+
+  user-management-push-api:
+    needs: [user-management-build, docker-compose-tests]
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
+    uses: ./.github/workflows/_push-images.yml
+    with:
+      image-name: user-management-service
+      context: ./user-management
+      dockerfile: ./user-management/src/Stickerlandia.UserManagement.Api/Dockerfile
+
+  user-management-push-worker:
+    needs: [user-management-build, docker-compose-tests]
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
+    uses: ./.github/workflows/_push-images.yml
+    with:
+      image-name: user-management-worker
+      context: ./user-management
+      dockerfile: ./user-management/src/Stickerlandia.UserManagement.Worker/Dockerfile
+
+  user-management-push-migration:
+    needs: [user-management-build, docker-compose-tests]
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
+    uses: ./.github/workflows/_push-images.yml
+    with:
+      image-name: user-management-migration
+      context: ./user-management
+      dockerfile: ./user-management/src/Stickerlandia.UserManagement.MigrationService/Dockerfile
+
+  user-management-deploy:
+    needs: [user-management-push-api, user-management-push-worker, user-management-push-migration]
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
+    uses: ./.github/workflows/_deploy-aws.yml
+    with:
+      service-name: user-management
+      infra-directory: user-management/infra/aws
+      dotnet-version: '10.0.x'
+    secrets:
+      AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+
+  # ============================================================================
+  # STICKER AWARD SERVICE (Go)
+  # ============================================================================
+  # TEMPORARY: 'true' added to force all builds - remove after testing
+  sticker-award-build:
+    needs: detect-changes
+    if: |
+      true ||
+      github.event.inputs.force-all == 'true' ||
+      github.event_name == 'push' ||
+      needs.detect-changes.outputs.sticker-award == 'true' ||
+      needs.detect-changes.outputs.shared == 'true'
+    uses: ./.github/workflows/_build-go.yml
+    with:
+      working-directory: sticker-award
+      go-version: '1.21'
+
+  sticker-award-push:
+    needs: [sticker-award-build, docker-compose-tests]
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
+    uses: ./.github/workflows/_push-images.yml
+    with:
+      image-name: sticker-award-service
+      context: ./sticker-award
+      dockerfile: ./sticker-award/Dockerfile
+      go-version: '1.21'
+
+  sticker-award-deploy:
+    needs: sticker-award-push
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
+    uses: ./.github/workflows/_deploy-aws.yml
+    with:
+      service-name: sticker-award
+      infra-directory: sticker-award/infra/aws
+      go-version: '1.21'
+    secrets:
+      AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+
+  # ============================================================================
+  # STICKER CATALOGUE SERVICE (Java)
+  # ============================================================================
+  # TEMPORARY: 'true' added to force all builds - remove after testing
+  sticker-catalogue-build:
+    needs: detect-changes
+    if: |
+      true ||
+      github.event.inputs.force-all == 'true' ||
+      github.event_name == 'push' ||
+      needs.detect-changes.outputs.sticker-catalogue == 'true' ||
+      needs.detect-changes.outputs.shared == 'true'
+    uses: ./.github/workflows/_build-java.yml
+    with:
+      working-directory: sticker-catalogue
+      java-version: '21'
+
+  sticker-catalogue-push:
+    needs: [sticker-catalogue-build, docker-compose-tests]
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
+    uses: ./.github/workflows/_push-images.yml
+    with:
+      image-name: sticker-catalogue-service
+      context: ./sticker-catalogue
+      dockerfile: ./sticker-catalogue/src/main/docker/Dockerfile.jvmlocal
+
+  sticker-catalogue-deploy:
+    needs: sticker-catalogue-push
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
+    uses: ./.github/workflows/_deploy-aws.yml
+    with:
+      service-name: sticker-catalogue
+      infra-directory: sticker-catalogue/infra/aws
+      java-version: '21'
+    secrets:
+      AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+
+  # ============================================================================
+  # WEB BACKEND SERVICE (Node.js)
+  # ============================================================================
+  # TEMPORARY: 'true' added to force all builds - remove after testing
+  web-backend-build:
+    needs: detect-changes
+    if: |
+      true ||
+      github.event.inputs.force-all == 'true' ||
+      github.event_name == 'push' ||
+      needs.detect-changes.outputs.web-backend == 'true' ||
+      needs.detect-changes.outputs.shared == 'true'
+    uses: ./.github/workflows/_build-node.yml
+    with:
+      working-directory: web-backend
+      node-version: '18'
+
+  web-backend-push:
+    needs: [web-backend-build, docker-compose-tests]
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
+    uses: ./.github/workflows/_push-images.yml
+    with:
+      image-name: web-backend-service
+      context: ./web-backend
+      dockerfile: ./web-backend/Dockerfile
+
+  web-backend-deploy:
+    needs: web-backend-push
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
+    uses: ./.github/workflows/_deploy-aws.yml
+    with:
+      service-name: web-backend
+      infra-directory: web-backend/infra/aws
+      node-version: '18'
+    secrets:
+      AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+
+  # ============================================================================
+  # WEB FRONTEND SERVICE (React/Node.js)
+  # ============================================================================
+  # TEMPORARY: 'true' added to force all builds - remove after testing
+  web-frontend-build:
+    needs: detect-changes
+    if: |
+      true ||
+      github.event.inputs.force-all == 'true' ||
+      github.event_name == 'push' ||
+      needs.detect-changes.outputs.web-frontend == 'true' ||
+      needs.detect-changes.outputs.shared == 'true'
+    uses: ./.github/workflows/_build-node.yml
+    with:
+      working-directory: web-frontend
+      node-version: '20'
+
+  web-frontend-push:
+    needs: [web-frontend-build, docker-compose-tests]
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
+    uses: ./.github/workflows/_push-images.yml
+    with:
+      image-name: web-frontend
+      context: ./web-frontend
+      dockerfile: ./web-frontend/Dockerfile
+
+  web-frontend-deploy:
+    needs: web-frontend-push
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
+    uses: ./.github/workflows/_deploy-aws.yml
+    with:
+      service-name: web-frontend
+      infra-directory: web-frontend/infra/aws
+      node-version: '18'
+      pre-deploy-command: 'cd web-frontend && npm install && npm run build'
+    secrets:
+      AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+
+  # ============================================================================
+  # FAN-IN: UI/E2E TESTS (runs after all deployments complete)
+  # ============================================================================
+  ui-tests:
+    needs:
+      - user-management-deploy
+      - sticker-award-deploy
+      - sticker-catalogue-deploy
+      - web-backend-deploy
+      - web-frontend-deploy
+    # Run if:
+    # - We're on main branch push AND
+    # - All preceding jobs either succeeded or were skipped (not failed/cancelled)
+    if: |
+      always() &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
+    uses: ./.github/workflows/_ui-tests.yml
+    with:
+      environment: dev
+    secrets:
+      AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+
+  # ============================================================================
+  # DOCKER COMPOSE E2E TESTS (runs after builds, uses GHA cache)
+  # ============================================================================
+  docker-compose-tests:
+    needs:
+      - user-management-build
+      - sticker-award-build
+      - sticker-catalogue-build
+      - web-backend-build
+      - web-frontend-build
+    # Run if all build jobs succeeded or were skipped (not failed/cancelled)
+    if: |
+      always() &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
+
+      - name: Create CI .env
+        run: |
+          cat > .env << EOF
+          ENV=ci
+          COMMIT_SHA=latest
+          DEPLOYMENT_HOST_URL=http://localhost:8080
+          DD_API_KEY=dummy
+          DD_SITE=datadoghq.com
+          DD_RUM_APPLICATION_ID=dummy
+          DD_RUM_CLIENT_TOKEN=dummy
+          EOF
+
+      - name: Build services with GHA cache
+        run: |
+          # Build each service using GHA cache (import and export)
+          docker buildx build \
+            --cache-from type=gha,scope=sticker-catalogue-service \
+            --cache-to type=gha,mode=max,scope=sticker-catalogue-service \
+            --load -t sticker-catalogue:latest \
+            -f sticker-catalogue/src/main/docker/Dockerfile.jvmlocal \
+            sticker-catalogue
+
+          docker buildx build \
+            --cache-from type=gha,scope=sticker-award-service \
+            --cache-to type=gha,mode=max,scope=sticker-award-service \
+            --load -t sticker-award:latest \
+            -f sticker-award/Dockerfile \
+            sticker-award
+
+          docker buildx build \
+            --cache-from type=gha,scope=user-management-service \
+            --cache-to type=gha,mode=max,scope=user-management-service \
+            --load -t user-management:latest \
+            -f user-management/src/Stickerlandia.UserManagement.Api/Dockerfile \
+            user-management
+
+          docker buildx build \
+            --cache-from type=gha,scope=user-management-worker \
+            --cache-to type=gha,mode=max,scope=user-management-worker \
+            --load -t user-management-worker:latest \
+            -f user-management/src/Stickerlandia.UserManagement.Worker/Dockerfile \
+            user-management
+
+          docker buildx build \
+            --cache-from type=gha,scope=user-management-migration \
+            --cache-to type=gha,mode=max,scope=user-management-migration \
+            --load -t user-management-migration:latest \
+            -f user-management/src/Stickerlandia.UserManagement.MigrationService/Dockerfile \
+            user-management
+
+          docker buildx build \
+            --cache-from type=gha,scope=web-backend-service \
+            --cache-to type=gha,mode=max,scope=web-backend-service \
+            --load -t web-backend:latest \
+            -f web-backend/Dockerfile \
+            web-backend
+
+          docker buildx build \
+            --cache-from type=gha,scope=web-frontend \
+            --cache-to type=gha,mode=max,scope=web-frontend \
+            --load -t web-frontend:latest \
+            -f web-frontend/Dockerfile \
+            web-frontend
+
+      - name: Start services
+        run: docker compose up -d
+
+      - name: Wait for services
+        run: ./scripts/wait-for-services.sh
+
+      - name: Test service endpoints
+        run: ./scripts/test-services.sh --max-retries 5 --retry-delay 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Install Playwright dependencies
+        working-directory: e2e
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: e2e
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        working-directory: e2e
+        run: npx playwright test
+        env:
+          CI: true
+          BASE_URL: http://localhost:8080
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-compose
+          path: e2e/playwright-report/
+          retention-days: 7
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-results-compose
+          path: e2e/test-results/
+          retention-days: 7
+
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v

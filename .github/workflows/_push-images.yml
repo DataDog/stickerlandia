@@ -1,0 +1,117 @@
+# Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+# This product includes software developed at Datadog (https://www.datadoghq.com/).
+# Copyright 2025-Present Datadog, Inc.
+
+name: Push Docker Images
+
+on:
+  workflow_call:
+    inputs:
+      image-name:
+        description: 'Docker image name (without registry prefix)'
+        required: true
+        type: string
+      context:
+        description: 'Docker build context path'
+        required: true
+        type: string
+      dockerfile:
+        description: 'Path to Dockerfile'
+        required: true
+        type: string
+      platforms:
+        description: 'Target platforms for Docker build'
+        required: false
+        type: string
+        default: 'linux/amd64,linux/arm64'
+      pre-build-command:
+        description: 'Command to run before Docker build (e.g., mvnw package)'
+        required: false
+        type: string
+        default: ''
+      java-version:
+        description: 'Java version (only needed if pre-build uses Java)'
+        required: false
+        type: string
+        default: ''
+      go-version:
+        description: 'Go version (only needed if pre-build uses Go)'
+        required: false
+        type: string
+        default: ''
+
+env:
+  REGISTRY: ghcr.io
+  REPOSITORY_URL: github.com/${{ github.repository }}
+
+jobs:
+  push-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Java
+        if: ${{ inputs.java-version != '' }}
+        uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4.2.1
+        with:
+          java-version: ${{ inputs.java-version }}
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Set up Go
+        if: ${{ inputs.go-version != '' }}
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
+        with:
+          go-version: ${{ inputs.go-version }}
+
+      - name: Get Commit Info
+        id: get_sha
+        run: |
+          echo "COMMIT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          echo "COMMIT_SHA_FULL=$(git rev-parse HEAD)" >> $GITHUB_ENV
+
+      - name: Run pre-build command
+        if: ${{ inputs.pre-build-command != '' }}
+        run: ${{ inputs.pre-build-command }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/stickerlandia/${{ inputs.image-name }}
+          tags: |
+            latest
+            ${{ env.COMMIT_SHA }}
+
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
+        with:
+          context: ${{ inputs.context }}
+          file: ${{ inputs.dockerfile }}
+          platforms: ${{ inputs.platforms }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ inputs.image-name }}
+          cache-to: type=gha,mode=max,scope=${{ inputs.image-name }}
+          build-args: |
+            GIT_COMMIT_SHA=${{ env.COMMIT_SHA_FULL }}
+            GIT_REPOSITORY_URL=${{ env.REPOSITORY_URL }}
+            DD_GIT_REPOSITORY_URL=${{ env.REPOSITORY_URL }}
+            DD_GIT_COMMIT_SHA=${{ env.COMMIT_SHA_FULL }}

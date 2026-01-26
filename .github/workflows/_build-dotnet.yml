@@ -1,0 +1,88 @@
+# Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+# This product includes software developed at Datadog (https://www.datadoghq.com/).
+# Copyright 2025-Present Datadog, Inc.
+
+name: Build .NET
+
+on:
+  workflow_call:
+    inputs:
+      dotnet-version:
+        description: '.NET version to use'
+        required: false
+        type: string
+        default: '10.0.x'
+      working-directory:
+        description: 'Working directory for the service'
+        required: true
+        type: string
+      solution-file:
+        description: 'Solution file name'
+        required: false
+        type: string
+        default: '*.sln'
+      run-integration-tests:
+        description: 'Whether to run integration tests'
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  unit-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
+        with:
+          dotnet-version: ${{ inputs.dotnet-version }}
+
+      - name: Run Unit Tests
+        shell: bash
+        run: |
+          cd ${{ inputs.working-directory }}/tests/Stickerlandia.UserManagement.UnitTest
+          dotnet test
+
+  integration-test:
+    runs-on: ubuntu-latest
+    needs: unit-test
+    if: ${{ inputs.run-integration-tests }}
+    strategy:
+      matrix:
+        DRIVING:
+          - AGNOSTIC
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
+        with:
+          dotnet-version: ${{ inputs.dotnet-version }}
+
+      - name: Install SSL Certificates
+        run: dotnet dev-certs https --trust
+
+      - name: Install Azure Functions Core Tools
+        run: |
+          curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
+          sudo mv microsoft.gpg /etc/apt/trusted.gpg.d/microsoft.gpg
+          sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-ubuntu-$(lsb_release -cs 2>/dev/null)-prod $(lsb_release -cs 2>/dev/null) main" > /etc/apt/sources.list.d/dotnetdev.list'
+          sudo apt-get update
+          sudo apt-get install azure-functions-core-tools-4
+          func --version
+
+      - name: .NET Restore
+        shell: bash
+        run: |
+          cd ${{ inputs.working-directory }}
+          dotnet restore Stickerlandia.UserManagement.sln
+
+      - name: Run Integration Tests
+        shell: bash
+        env:
+          DRIVING: ${{ matrix.DRIVING }}
+          DRIVEN: AGNOSTIC
+        run: |
+          cd ${{ inputs.working-directory }}/tests/Stickerlandia.UserManagement.IntegrationTest
+          dotnet test --logger:"console;verbosity=detailed"
