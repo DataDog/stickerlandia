@@ -64,6 +64,7 @@ export class KafkaMessagingProps extends Construct implements MessagingProps {
 
 export interface ServiceProps {
   cloudfrontDistribution: IDistribution;
+  cloudfrontEndpoint: string;
   databaseCredentials: DatabaseCredentials;
   messagingProps: MessagingProps;
   serviceDependencies?: IDependable[];
