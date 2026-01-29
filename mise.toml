@@ -267,98 +267,12 @@ BASE_URL=$BASE_URL npx playwright test
 # load: Load testing tasks
 # =============================================================================
 
-[tasks."load:smoke"]
+[tasks."compose:load-test:smoke"]
 depends = ["env:setup"]
 description = "Run smoke load test (2 users, 30 seconds, mixed flows)"
 run = """
 docker compose --profile load-test up -d
 docker compose --profile load-test run --rm load-simulator
 docker compose --profile load-test down -v
-"""
-
-[tasks."load:smoke:public"]
-depends = ["env:setup"]
-description = "Run smoke test on public endpoints only"
-run = """
-docker compose --profile load-test up -d
-docker compose --profile load-test run --rm -e SCENARIO=public load-simulator
-docker compose --profile load-test down -v
-"""
-
-[tasks."load:smoke:auth"]
-depends = ["env:setup"]
-description = "Run smoke test on authenticated flows only"
-run = """
-docker compose --profile load-test up -d
-docker compose --profile load-test run --rm -e SCENARIO=auth load-simulator
-docker compose --profile load-test down -v
-"""
-
-[tasks."load:test"]
-depends = ["env:setup"]
-description = "Run load test (ramp to 30 users over 10 minutes)"
-run = """
-docker compose --profile load-test up -d
-docker compose --profile load-test run --rm -e WORKLOAD=load load-simulator
-docker compose --profile load-test down -v
-"""
-
-[tasks."load:test:auth"]
-depends = ["env:setup"]
-description = "Run load test on authenticated flows only"
-run = """
-docker compose --profile load-test up -d
-docker compose --profile load-test run --rm -e WORKLOAD=load -e SCENARIO=auth load-simulator
-docker compose --profile load-test down -v
-"""
-
-[tasks."load:smoke:register"]
-depends = ["env:setup"]
-description = "Run smoke test on registration flow"
-run = """
-docker compose --profile load-test up -d
-docker compose --profile load-test run --rm -e SCENARIO=register load-simulator
-docker compose --profile load-test down -v
-"""
-
-[tasks."load:start"]
-depends = ["env:setup"]
-description = "Start load test services (use with load:sustained:run and load:stop)"
-run = """
-docker compose --profile load-test up -d --wait
-"""
-
-[tasks."load:stop"]
-description = "Stop load test services and clean up volumes"
-run = """
-docker compose --profile load-test down -v
-"""
-
-[tasks."load:provision-users"]
-depends = ["env:setup"]
-description = "Register test users from pool (run once before multi-user auth tests)"
-run = """
-docker compose --profile load-test up -d --wait
-docker compose --profile load-test run --rm load-simulator run /scripts/provision-users.js
-echo "Users provisioned. Services still running - run 'mise run load:sustained:run' or 'mise run load:stop' when done."
-"""
-
-[tasks."load:sustained"]
-depends = ["env:setup"]
-description = "Run sustained load test (full cycle: start, provision users, test, stop)"
-run = """
-docker compose --profile load-test up -d --wait
-echo "Provisioning test users..."
-docker compose --profile load-test run --rm load-simulator run /scripts/provision-users.js
-echo "Running sustained load test..."
-docker compose --profile load-test run --rm -e WORKLOAD=${WORKLOAD:-sustained} load-simulator
-docker compose --profile load-test down -v
-"""
-
-[tasks."load:sustained:run"]
-depends = ["env:setup"]
-description = "Run sustained load test only (assumes services already running with provisioned users)"
-run = """
-docker compose --profile load-test run --rm -e WORKLOAD=${WORKLOAD:-sustained} load-simulator
 """
 
