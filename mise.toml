@@ -264,7 +264,7 @@ BASE_URL=$BASE_URL npx playwright test
 """
 
 # =============================================================================
-# load: Load testing tasks
+# load: Load testing
 # =============================================================================
 
 [tasks."compose:load-test:smoke"]
