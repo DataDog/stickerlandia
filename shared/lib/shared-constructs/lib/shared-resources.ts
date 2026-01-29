@@ -53,6 +53,7 @@ import { ParameterTier, StringParameter } from "aws-cdk-lib/aws-ssm";
 import { Construct } from "constructs";
 import * as cdk from "aws-cdk-lib";
 import { CnameRecord, PublicHostedZone } from "aws-cdk-lib/aws-route53";
+import { Certificate } from "aws-cdk-lib/aws-certificatemanager";
 export interface SharedResourcesProps {
   environment?: string;
   networkName: string;
@@ -231,9 +232,12 @@ export class SharedResources extends Construct {
 
   createSharedResourcesForEnvironment(props: SharedResourcesProps) {
     const hostedZoneId = process.env.HOSTED_ZONE_ID;
+    const certificateArn = process.env.CERTIFICATE_ARN;
 
-    if (hostedZoneId === undefined) {
-      throw new Error("HOSTED_ZONE_ID environment variable must be set.");
+    if (hostedZoneId === undefined || certificateArn === undefined) {
+      throw new Error(
+        "HOSTED_ZONE_ID and CERTIFICATE_ARN environment variables must be set.",
+      );
     }
 
     this.vpc = new Vpc(this, "Vpc", {
@@ -375,10 +379,18 @@ export class SharedResources extends Construct {
 
     const region = cdk.Stack.of(this).region;
 
+    const certificate = Certificate.fromCertificateArn(
+      this,
+      "Certificate",
+      certificateArn,
+    );
+
     const distribution = new Distribution(
       this,
       `Stickerlandia-${props.environment}`,
       {
+        certificate: certificate,
+        domainNames: [`${props.environment}.stickerlandia.dev`],
         minimumProtocolVersion: SecurityPolicyProtocol.TLS_V1_2_2021,
         defaultRootObject: "index.html",
         defaultBehavior: {

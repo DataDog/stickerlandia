@@ -159,6 +159,7 @@ jobs:
           ENV: "dev"
           DD_API_KEY: ${{secrets.DD_API_KEY}}
           CERTIFICATE_ARN: ${{secrets.CERTIFICATE_ARN}}
+          HOSTED_ZONE_ID: ${{secrets.HOSTED_ZONE_ID}}
           DD_SITE: "datadoghq.com"
         run: |
           cd web-backend/infra/aws
