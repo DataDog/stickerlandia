@@ -342,6 +342,10 @@ services:
       DD_TRACE_OTEL_ENABLED: "true"
       DD_LOGS_INJECTION: "true"
       DD_RUNTIME_METRICS_ENABLED: "true"
+      # The .NET profiler does not support ARM64, this won't work if running on Apple Silicon Macs
+      DD_PROFILING_ENABLED: "true"
+      # Required for Datadog .NET Continuous Profiler (x64 only)
+      LD_PRELOAD: /opt/datadog/linux-x64/Datadog.Linux.ApiWrapper.x64.so
       # Application configuration
       ASPNETCORE_ENVIRONMENT: Development
       DRIVING: AGNOSTIC
@@ -387,6 +391,10 @@ services:
       DD_TRACE_OTEL_ENABLED: "true"
       DD_LOGS_INJECTION: "true"
       DD_RUNTIME_METRICS_ENABLED: "true"
+      # The .NET profiler does not support ARM64, this won't work if running on Apple Silicon Macs
+      DD_PROFILING_ENABLED: "true"
+      # Required for Datadog .NET Continuous Profiler (x64 only)
+      LD_PRELOAD: /opt/datadog/linux-x64/Datadog.Linux.ApiWrapper.x64.so
       ASPNETCORE_ENVIRONMENT: Development
       DRIVING: AGNOSTIC
       DRIVEN: AGNOSTIC
@@ -414,6 +422,10 @@ services:
       DD_TRACE_OTEL_ENABLED: "true"
       DD_LOGS_INJECTION: "true"
       DD_RUNTIME_METRICS_ENABLED: "true"
+      # The .NET profiler does not support ARM64, this won't work if running on Apple Silicon Macs
+      DD_PROFILING_ENABLED: "true"
+      # Required for Datadog .NET Continuous Profiler (x64 only)
+      LD_PRELOAD: /opt/datadog/linux-x64/Datadog.Linux.ApiWrapper.x64.so
       ASPNETCORE_ENVIRONMENT: Development
       DRIVING: AGNOSTIC
       DRIVEN: AGNOSTIC
@@ -549,6 +561,9 @@ services:
       - DD_APM_ENABLED=true
       - DD_APM_NON_LOCAL_TRAFFIC=true
       - DD_APM_RECEIVER_PORT=8126
+
+      # Profiling enabled
+      - DD_PROFILING_ENABLED=true
       
       # Log collection configuration
       - DD_LOGS_ENABLED=true

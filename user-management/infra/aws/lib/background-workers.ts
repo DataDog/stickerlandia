@@ -67,6 +67,11 @@ export class BackgroundWorkers extends Construct {
       };
 
       const environmentVariables = {
+        DD_TRACE_OTEL_ENABLED: "true",
+        DD_LOGS_INJECTION: "true",
+        DD_RUNTIME_METRICS_ENABLED: "true",
+        DD_PROFILING_ENABLED: "true",
+        LD_PRELOAD: "/opt/datadog/linux-x64/Datadog.Linux.ApiWrapper.x64.so",
         POWERTOOLS_SERVICE_NAME: props.sharedProps.serviceName,
         POWERTOOLS_LOG_LEVEL:
           props.sharedProps.environment === "prod" ? "WARN" : "INFO",
@@ -179,6 +184,13 @@ export class BackgroundWorkers extends Construct {
           imageTag: props.sharedProps.version,
           ddApiKey: props.sharedProps.datadog.apiKeyParameter,
           environmentVariables: {
+            DD_TRACE_OTEL_ENABLED: "true",
+            DD_LOGS_INJECTION: "true",
+            DD_RUNTIME_METRICS_ENABLED: "true",
+            DD_PROFILING_ENABLED: "true",
+            // Required for Datadog .NET Continuous Profiler
+            LD_PRELOAD:
+              "/opt/datadog/linux-x64/Datadog.Linux.ApiWrapper.x64.so",
             POWERTOOLS_SERVICE_NAME: props.sharedProps.serviceName,
             POWERTOOLS_LOG_LEVEL:
               props.sharedProps.environment === "prod" ? "WARN" : "INFO",
@@ -194,20 +206,22 @@ export class BackgroundWorkers extends Construct {
           },
           secrets: {
             DD_API_KEY: Secret.fromSsmParameter(
-              props.sharedProps.datadog.apiKeyParameter
+              props.sharedProps.datadog.apiKeyParameter,
             ),
-            ConnectionStrings__database: props.serviceProps.databaseCredentials.getConnectionStringEcsSecret()!,
+            ConnectionStrings__database:
+              props.serviceProps.databaseCredentials.getConnectionStringEcsSecret()!,
             ...props.serviceProps.messagingConfiguration.asSecrets(),
           },
           serviceDiscoveryNamespace: props.serviceDiscoveryNamespace,
           serviceDiscoveryName: props.serviceDiscoveryName,
           deployInPrivateSubnet: props.deployInPrivateSubnet,
+          // .NET profiler only works in x86.
           runtimePlatform: {
-            cpuArchitecture: CpuArchitecture.ARM64,
+            cpuArchitecture: CpuArchitecture.X86_64,
             operatingSystemFamily: OperatingSystemFamily.LINUX,
           },
           serviceDependencies: props.serviceProps.serviceDependencies,
-        }
+        },
       );
     }
   }

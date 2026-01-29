@@ -57,7 +57,7 @@ export class InstrumentedLambdaFunction extends Construct {
       functionName: `${props.sharedProps.serviceName}-${props.functionName}-${props.sharedProps.environment}`,
       projectDir: props.buildDef,
       handler: props.handler,
-      architecture: Architecture.ARM_64,
+      architecture: Architecture.X86_64,
       memorySize: props.memorySize ?? 512,
       timeout: props.timeout ?? Duration.seconds(29),
       onFailure: props.onFailure,
@@ -65,13 +65,15 @@ export class InstrumentedLambdaFunction extends Construct {
       vpcSubnets: props.vpcSubnets,
       securityGroups: props.securityGroups,
       bundling: {
-        dockerImage: DockerImage.fromRegistry("public.ecr.aws/sam/build-dotnet10"),
+        dockerImage: DockerImage.fromRegistry(
+          "public.ecr.aws/sam/build-dotnet10",
+        ),
       },
       environment: {
         AWS_LAMBDA_EXEC_WRAPPER: "/opt/datadog_wrapper",
         POWERTOOLS_SERVICE_NAME: props.sharedProps.serviceName,
         POWERTOOLS_LOG_LEVEL:
-          props.logLevel ?? props.sharedProps.environment === "prod"
+          (props.logLevel ?? props.sharedProps.environment === "prod")
             ? "WARN"
             : "INFO",
         ENV: props.sharedProps.environment,
@@ -101,12 +103,12 @@ export class InstrumentedLambdaFunction extends Construct {
         LayerVersion.fromLayerVersionArn(
           this,
           "DatadogLayer",
-          `arn:aws:lambda:${region}:464622532012:layer:Datadog-Extension-ARM:80`
+          `arn:aws:lambda:${region}:464622532012:layer:Datadog-Extension:92`,
         ),
         LayerVersion.fromLayerVersionArn(
           this,
           "DDTraceLayer",
-          `arn:aws:lambda:${region}:464622532012:layer:dd-trace-dotnet-ARM:20`
+          `arn:aws:lambda:${region}:464622532012:layer:dd-trace-dotnet:23`,
         ),
       ],
     });
