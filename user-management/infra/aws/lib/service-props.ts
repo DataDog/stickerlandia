@@ -85,6 +85,7 @@ export class AWSMessagingProps extends AWSMessagingPropsBase {
 
 export interface ServiceProps {
   cloudfrontDistribution: IDistribution;
+  cloudfrontEndpoint: string;
   /** Secrets Manager secret for ECS (no CloudFormation upfront validation) */
   connectionStringSecret: ISecret;
   /** SSM Parameter for Lambda (resolved at deploy time after CustomResource runs) */
