@@ -52,6 +52,7 @@ import {
 import { ParameterTier, StringParameter } from "aws-cdk-lib/aws-ssm";
 import { Construct } from "constructs";
 import * as cdk from "aws-cdk-lib";
+import { CnameRecord, PublicHostedZone } from "aws-cdk-lib/aws-route53";
 export interface SharedResourcesProps {
   environment?: string;
   networkName: string;
@@ -229,6 +230,12 @@ export class SharedResources extends Construct {
   }
 
   createSharedResourcesForEnvironment(props: SharedResourcesProps) {
+    const hostedZoneId = process.env.HOSTED_ZONE_ID;
+
+    if (hostedZoneId === undefined) {
+      throw new Error("HOSTED_ZONE_ID environment variable must be set.");
+    }
+
     this.vpc = new Vpc(this, "Vpc", {
       vpcName: props.networkName,
       maxAzs: 2,
@@ -424,6 +431,22 @@ export class SharedResources extends Construct {
         allowedMethods: AllowedMethods.ALLOW_ALL,
       },
     );
+
+    const hostedZone = PublicHostedZone.fromPublicHostedZoneAttributes(
+      this,
+      "StickerlandiaHostedZone",
+      {
+        hostedZoneId: hostedZoneId,
+        zoneName: "stickerlandia.dev",
+      },
+    );
+
+    const cNameRecord = new CnameRecord(this, "CnameRecord", {
+      zone: hostedZone,
+      domainName: distribution.domainName,
+      recordName: props.environment,
+      ttl: cdk.Duration.minutes(5),
+    });
 
     this.cloudfrontDistribution = distribution;
     this.cloudfrontEndpoint = distribution.distributionDomainName;
