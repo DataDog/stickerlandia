@@ -65,6 +65,7 @@ export class SharedResources extends Construct {
   httpApi: IHttpApi;
   serviceDiscoveryNamespace: IPrivateDnsNamespace;
   integrationEnvironments: string[] = ["dev", "prod"];
+  cloudfrontEndpoint: string;
   cloudfrontDistribution: IDistribution;
   sharedDatabaseCluster: IDatabaseCluster;
   sharedDatabaseSecretArn: string;
@@ -84,74 +85,74 @@ export class SharedResources extends Construct {
     const vpcLinkParameter = StringParameter.fromStringParameterName(
       this,
       "VpcLinkParameter",
-      `/stickerlandia/${props.environment}/shared/vpc-link-id`
+      `/stickerlandia/${props.environment}/shared/vpc-link-id`,
     );
     const vpcLinkSecurityGroupParameter =
       StringParameter.fromStringParameterName(
         this,
         "VpcLinkSecurityGroupParameter",
-        `/stickerlandia/${props.environment}/shared/vpc-link-sg-id`
+        `/stickerlandia/${props.environment}/shared/vpc-link-sg-id`,
       );
     const httpApiParameter = StringParameter.fromStringParameterName(
       this,
       "HttpApiParameter",
-      `/stickerlandia/${props.environment}/shared/api-id`
+      `/stickerlandia/${props.environment}/shared/api-id`,
     );
     const serviceDiscoveryNamespaceIdParameter =
       StringParameter.fromStringParameterName(
         this,
         "ServiceDiscoveryNamespaceIdParameter",
-        `/stickerlandia/${props.environment}/shared/namespace-id`
+        `/stickerlandia/${props.environment}/shared/namespace-id`,
       );
     const serviceDiscoveryNamespaceNameParameter =
       StringParameter.fromStringParameterName(
         this,
         "ServiceDiscoveryNamespaceNameParameter",
-        `/stickerlandia/${props.environment}/shared/namespace-name`
+        `/stickerlandia/${props.environment}/shared/namespace-name`,
       );
     const serviceDiscoveryNamespaceArnParameter =
       StringParameter.fromStringParameterName(
         this,
         "ServiceDiscoveryNamespaceArnParameter",
-        `/stickerlandia/${props.environment}/shared/namespace-arn`
+        `/stickerlandia/${props.environment}/shared/namespace-arn`,
       );
     const cloudfrontEndpoint = StringParameter.valueFromLookup(
       this,
-      `/stickerlandia/${props.environment}/shared/cloudfront-endpoint`
+      `/stickerlandia/${props.environment}/shared/cloudfront-endpoint`,
     );
     const cloudfrontId = StringParameter.valueFromLookup(
       this,
-      `/stickerlandia/${props.environment}/shared/cloudfront-id`
+      `/stickerlandia/${props.environment}/shared/cloudfront-id`,
     );
 
     const vpcId = StringParameter.valueFromLookup(
       this,
-      `/stickerlandia/${props.environment}/shared/vpc-id`
+      `/stickerlandia/${props.environment}/shared/vpc-id`,
     );
 
     const sharedEventBus = StringParameter.valueFromLookup(
       this,
-      `/stickerlandia/${props.environment}/shared/eb-name`
+      `/stickerlandia/${props.environment}/shared/eb-name`,
     );
 
     const sharedDbClusterIdentifier = StringParameter.valueFromLookup(
       this,
-      `/stickerlandia/${props.environment}/shared/database-identifier`
+      `/stickerlandia/${props.environment}/shared/database-identifier`,
     );
 
     const sharedDbClusterEndpoint = StringParameter.valueFromLookup(
       this,
-      `/stickerlandia/${props.environment}/shared/database-endpoint`
+      `/stickerlandia/${props.environment}/shared/database-endpoint`,
     );
 
     const sharedDbResourceIdentifier = StringParameter.valueFromLookup(
       this,
-      `/stickerlandia/${props.environment}/shared/database-resource-identifier`
+      `/stickerlandia/${props.environment}/shared/database-resource-identifier`,
     );
 
     const sharedDbSecretArn = StringParameter.valueFromLookup(
       this,
-      `/stickerlandia/${props.environment}/shared/database-secret-arn`
+      `/stickerlandia/${props.environment}/shared/database-secret-arn`,
     );
 
     const vpcLinkId = vpcLinkParameter.stringValue;
@@ -194,7 +195,7 @@ export class SharedResources extends Construct {
     this.sharedEventBus = EventBus.fromEventBusName(
       this,
       "SharedEventBus",
-      sharedEventBus
+      sharedEventBus,
     );
     this.sharedDatabaseCluster = DatabaseCluster.fromDatabaseClusterAttributes(
       this,
@@ -203,7 +204,7 @@ export class SharedResources extends Construct {
         clusterIdentifier: sharedDbClusterIdentifier,
         clusterEndpointAddress: sharedDbClusterEndpoint,
         clusterResourceIdentifier: sharedDbResourceIdentifier,
-      }
+      },
     );
     this.sharedDatabaseSecretArn = sharedDbSecretArn;
     this.serviceDiscoveryNamespace =
@@ -214,7 +215,7 @@ export class SharedResources extends Construct {
           namespaceId: serviceDiscoveryNamespaceId,
           namespaceName: serviceDiscoveryNamespaceName,
           namespaceArn: serviceDiscoveryNamespaceArn,
-        }
+        },
       );
     this.cloudfrontDistribution = Distribution.fromDistributionAttributes(
       this,
@@ -222,8 +223,9 @@ export class SharedResources extends Construct {
       {
         distributionId: cloudfrontId,
         domainName: cloudfrontEndpoint,
-      }
+      },
     );
+    this.cloudfrontEndpoint = cloudfrontEndpoint;
   }
 
   createSharedResourcesForEnvironment(props: SharedResourcesProps) {
@@ -258,16 +260,16 @@ export class SharedResources extends Construct {
         allowAllOutbound: true,
         description: "No inbound / all outbound",
         securityGroupName: "noInboundAllOutboundSecurityGroup",
-      }
+      },
     );
     noInboundAllOutboundSecurityGroup.addIngressRule(
       noInboundAllOutboundSecurityGroup,
       Port.tcp(8080),
-      "allow self"
+      "allow self",
     );
     noInboundAllOutboundSecurityGroup.addIngressRule(
       Peer.ipv4(this.vpc.vpcCidrBlock),
-      Port.tcp(8080)
+      Port.tcp(8080),
     );
 
     this.vpcLinkSecurityGroupId =
@@ -297,7 +299,7 @@ export class SharedResources extends Construct {
       {
         name: `${props.environment}.users.local`,
         vpc: this.vpc,
-      }
+      },
     );
 
     this.sharedEventBus = new EventBus(this, "SharedEventBus", {
@@ -316,12 +318,12 @@ export class SharedResources extends Construct {
         vpc: this.vpc,
         description: "Security group for Stickerlandia database",
         allowAllOutbound: true,
-      }
+      },
     );
     databaseSecurityGroup.addIngressRule(
       Peer.ipv4(this.vpc.vpcCidrBlock),
       Port.tcp(5432),
-      "Allow Postgres access from within the VPC"
+      "Allow Postgres access from within the VPC",
     );
 
     this.sharedDatabaseCluster = new DatabaseCluster(this, "SharedDB", {
@@ -353,7 +355,7 @@ export class SharedResources extends Construct {
         stringValue: this.sharedDatabaseCluster.clusterEndpoint.hostname,
         description: `The database endpoint for the Stickerlandia ${props.environment} environment`,
         tier: ParameterTier.STANDARD,
-      }
+      },
     );
 
     // Export the secret ARN so microservices can fetch credentials
@@ -377,7 +379,7 @@ export class SharedResources extends Construct {
             `${this.httpApi.apiId}.execute-api.${region}.amazonaws.com`,
             {
               protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
-            }
+            },
           ),
           cachePolicy: CachePolicy.CACHING_DISABLED,
           originRequestPolicy:
@@ -386,7 +388,7 @@ export class SharedResources extends Construct {
             ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS,
           allowedMethods: AllowedMethods.ALLOW_ALL,
         },
-      }
+      },
     );
 
     distribution.addBehavior(
@@ -395,7 +397,7 @@ export class SharedResources extends Construct {
         `${this.httpApi.apiId}.execute-api.${region}.amazonaws.com`,
         {
           protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
-        }
+        },
       ),
       {
         cachePolicy: CachePolicy.CACHING_DISABLED,
@@ -403,7 +405,7 @@ export class SharedResources extends Construct {
         responseHeadersPolicy:
           ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS,
         allowedMethods: AllowedMethods.ALLOW_ALL,
-      }
+      },
     );
 
     distribution.addBehavior(
@@ -412,7 +414,7 @@ export class SharedResources extends Construct {
         `${this.httpApi.apiId}.execute-api.${region}.amazonaws.com`,
         {
           protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
-        }
+        },
       ),
       {
         cachePolicy: CachePolicy.CACHING_DISABLED,
@@ -420,9 +422,10 @@ export class SharedResources extends Construct {
         responseHeadersPolicy:
           ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS,
         allowedMethods: AllowedMethods.ALLOW_ALL,
-      }
+      },
     );
 
     this.cloudfrontDistribution = distribution;
+    this.cloudfrontEndpoint = distribution.distributionDomainName;
   }
 }
