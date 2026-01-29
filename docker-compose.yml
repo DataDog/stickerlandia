@@ -355,10 +355,11 @@ services:
       DD_ENV: development
       DD_VERSION: ${COMMIT_SHA:-latest}
       DD_AGENT_HOST: datadog-agent
-      DD_DATA_STREAMS_ENABLED: true
+      DD_DATA_STREAMS_ENABLED: "true"
       DD_TRACE_OTEL_ENABLED: "true"
       DD_LOGS_INJECTION: "true"
       DD_RUNTIME_METRICS_ENABLED: "true"
+      DD_PROFILING_ENABLED: "true"
       # Application configuration
       ASPNETCORE_ENVIRONMENT: Development
       DRIVING: AGNOSTIC
