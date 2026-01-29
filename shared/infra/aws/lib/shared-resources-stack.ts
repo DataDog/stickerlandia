@@ -11,35 +11,49 @@ import { PrivateDnsNamespace } from "aws-cdk-lib/aws-servicediscovery";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
 import { EventBus } from "aws-cdk-lib/aws-events";
 import { Persistence } from "./persistence";
-import { get } from "axios";
-// import * as sqs from 'aws-cdk-lib/aws-sqs';
+import { Certificate } from "aws-cdk-lib/aws-certificatemanager";
+import { CnameRecord, PublicHostedZone } from "aws-cdk-lib/aws-route53";
 
 export class StickerlandiaSharedResourcesStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
     const env = process.env.ENV || "dev";
-    const certificateArn = process.env.CERTIFICATE_ARN || undefined;
-    const certificate = certificateArn
-      ? cdk.aws_certificatemanager.Certificate.fromCertificateArn(
-          this,
-          "Certificate",
-          certificateArn,
-        )
-      : undefined;
+    const certificateArn = process.env.CERTIFICATE_ARN!;
+    const hostedZoneId = process.env.HOSTED_ZONE_ID!;
+
+    const hostedZone = PublicHostedZone.fromPublicHostedZoneAttributes(
+      this,
+      "StickerlandiaHostedZone",
+      {
+        hostedZoneId: hostedZoneId,
+        zoneName: "stickerlandia.dev",
+      },
+    );
 
     const primaryDomainName = `https://${getPrimaryDomainName(env)}`;
 
     const network = new Network(this, "Network", {
       env,
       account: this.account,
-      certificate,
+      certificate: Certificate.fromCertificateArn(
+        this,
+        "Certificate",
+        certificateArn,
+      ),
     });
 
     const persistence = new Persistence(this, "Persistence", {
       env,
       account: this.account,
       vpc: network.vpc,
+    });
+
+    const cNameRecord = new CnameRecord(this, "CnameRecord", {
+      zone: hostedZone,
+      domainName: network.distribution.domainName,
+      recordName: env,
+      ttl: cdk.Duration.minutes(5),
     });
 
     const dnsNamespace = new PrivateDnsNamespace(this, "PrivateDnsNamespace", {
@@ -99,7 +113,7 @@ export class StickerlandiaSharedResourcesStack extends cdk.Stack {
 
     // CDK Outputs
     new cdk.CfnOutput(this, "BaseUrl", {
-      value: `https://${network.distribution.domainName}`,
+      value: primaryDomainName,
       description: "Base URL for Stickerlandia (CloudFront distribution)",
       exportName: `stickerlandia-${env}-base-url`,
     });
@@ -113,8 +127,5 @@ export class StickerlandiaSharedResourcesStack extends cdk.Stack {
 }
 
 export function getPrimaryDomainName(env: string): string | undefined {
-  if (process.env.CERTIFICATE_ARN) {
-    return env === "prod" ? "stickerlandia.dev" : `${env}.stickerlandia.com`;
-  }
-  return undefined;
+  return env === "prod" ? "stickerlandia.dev" : `${env}.stickerlandia.dev`;
 }
