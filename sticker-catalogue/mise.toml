@@ -28,18 +28,18 @@ run = "npm ci"
 [tasks."aws:deploy"]
 description = "Deploy to AWS"
 dir = "infra/aws"
-depends = ["infra:install", "//shared:aws:deploy"]
+depends = ["infra:install"]
 run = "npx cdk deploy --require-approval never"
 
 [tasks."aws:deploy:local"]
 description = "Deploy to AWS (build container locally)"
-depends = ["//:env:setup", "//shared:aws:deploy:local"]
+depends = ["//:env:setup"]
 env = { DEPLOY_MODE = "local" }
 run = "mise run aws:deploy"
 
 [tasks."aws:deploy:release"]
 description = "Deploy to AWS using prebuilt GHCR images"
-depends = ["//:env:setup", "//shared:aws:deploy:release"]
+depends = ["//:env:setup"]
 env = { DEPLOY_MODE = "release" }
 run = "mise run aws:deploy"
 
