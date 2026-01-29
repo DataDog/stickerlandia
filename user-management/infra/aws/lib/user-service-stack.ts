@@ -54,7 +54,7 @@ export class UserServiceStack extends cdk.Stack {
       cluster,
       ddApiKey,
       ddApiKeyParam,
-      ddSite
+      ddSite,
     );
 
     // Create formatted database credentials from the shared RDS secret
@@ -80,6 +80,10 @@ export class UserServiceStack extends cdk.Stack {
       dockerfile:
         "src/Stickerlandia.UserManagement.MigrationService/Dockerfile",
       environmentVariables: {
+        DD_TRACE_OTEL_ENABLED: "true",
+        DD_LOGS_INJECTION: "true",
+        DD_RUNTIME_METRICS_ENABLED: "true",
+        DD_PROFILING_ENABLED: "true",
         DEPLOYMENT_HOST_URL: `https://${sharedResources.cloudfrontDistribution.distributionDomainName}`,
         DRIVING: "ASPNET",
         DRIVEN: "AWS",
@@ -107,7 +111,7 @@ export class UserServiceStack extends cdk.Stack {
       messagingConfiguration: new AWSMessagingProps(
         this,
         "MessagingProps",
-        sharedResources
+        sharedResources,
       ),
       // Services depend on both DB credentials and migration completing
       serviceDependencies: [

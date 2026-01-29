@@ -67,6 +67,10 @@ export class BackgroundWorkers extends Construct {
       };
 
       const environmentVariables = {
+        DD_TRACE_OTEL_ENABLED: "true",
+        DD_LOGS_INJECTION: "true",
+        DD_RUNTIME_METRICS_ENABLED: "true",
+        DD_PROFILING_ENABLED: "true",
         POWERTOOLS_SERVICE_NAME: props.sharedProps.serviceName,
         POWERTOOLS_LOG_LEVEL:
           props.sharedProps.environment === "prod" ? "WARN" : "INFO",
@@ -179,6 +183,10 @@ export class BackgroundWorkers extends Construct {
           imageTag: props.sharedProps.version,
           ddApiKey: props.sharedProps.datadog.apiKeyParameter,
           environmentVariables: {
+            DD_TRACE_OTEL_ENABLED: "true",
+            DD_LOGS_INJECTION: "true",
+            DD_RUNTIME_METRICS_ENABLED: "true",
+            DD_PROFILING_ENABLED: "true",
             POWERTOOLS_SERVICE_NAME: props.sharedProps.serviceName,
             POWERTOOLS_LOG_LEVEL:
               props.sharedProps.environment === "prod" ? "WARN" : "INFO",
