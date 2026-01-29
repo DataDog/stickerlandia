@@ -71,6 +71,8 @@ export class Api extends Construct {
         DD_LOGS_INJECTION: "true",
         DD_RUNTIME_METRICS_ENABLED: "true",
         DD_PROFILING_ENABLED: "true",
+        // Required for Datadog .NET Continuous Profiler
+        LD_PRELOAD: "/opt/datadog/linux-x64/Datadog.Linux.ApiWrapper.x64.so",
         DEPLOYMENT_HOST_URL: `https://${props.serviceProps.cloudfrontDistribution.distributionDomainName}`,
         DRIVING: "ASPNET",
         DRIVEN: "AWS",
