@@ -342,6 +342,8 @@ services:
       DD_TRACE_OTEL_ENABLED: "true"
       DD_LOGS_INJECTION: "true"
       DD_RUNTIME_METRICS_ENABLED: "true"
+      # The .NET profile does not support ARM64, this won't work if running on Apple Silicon Macs
+      DD_PROFILING_ENABLED: "true"
       # Application configuration
       ASPNETCORE_ENVIRONMENT: Development
       DRIVING: AGNOSTIC
@@ -387,6 +389,8 @@ services:
       DD_TRACE_OTEL_ENABLED: "true"
       DD_LOGS_INJECTION: "true"
       DD_RUNTIME_METRICS_ENABLED: "true"
+      # The .NET profile does not support ARM64, this won't work if running on Apple Silicon Macs
+      DD_PROFILING_ENABLED: "true"
       ASPNETCORE_ENVIRONMENT: Development
       DRIVING: AGNOSTIC
       DRIVEN: AGNOSTIC
@@ -414,6 +418,8 @@ services:
       DD_TRACE_OTEL_ENABLED: "true"
       DD_LOGS_INJECTION: "true"
       DD_RUNTIME_METRICS_ENABLED: "true"
+      # The .NET profile does not support ARM64, this won't work if running on Apple Silicon Macs
+      DD_PROFILING_ENABLED: "true"
       ASPNETCORE_ENVIRONMENT: Development
       DRIVING: AGNOSTIC
       DRIVEN: AGNOSTIC
@@ -549,6 +555,9 @@ services:
       - DD_APM_ENABLED=true
       - DD_APM_NON_LOCAL_TRAFFIC=true
       - DD_APM_RECEIVER_PORT=8126
+
+      # Profiling enabled
+      - DD_PROFILING_ENABLED=true
       
       # Log collection configuration
       - DD_LOGS_ENABLED=true
