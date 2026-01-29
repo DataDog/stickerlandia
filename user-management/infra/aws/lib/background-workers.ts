@@ -71,6 +71,7 @@ export class BackgroundWorkers extends Construct {
         DD_LOGS_INJECTION: "true",
         DD_RUNTIME_METRICS_ENABLED: "true",
         DD_PROFILING_ENABLED: "true",
+        LD_PRELOAD: "/opt/datadog/linux-x64/Datadog.Linux.ApiWrapper.x64.so",
         POWERTOOLS_SERVICE_NAME: props.sharedProps.serviceName,
         POWERTOOLS_LOG_LEVEL:
           props.sharedProps.environment === "prod" ? "WARN" : "INFO",
