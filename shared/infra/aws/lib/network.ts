@@ -32,19 +32,15 @@ import {
 import {
   ApplicationListener,
   ApplicationLoadBalancer,
-  ApplicationProtocol,
-  ListenerAction,
-  SslPolicy,
 } from "aws-cdk-lib/aws-elasticloadbalancingv2";
-import {
-  HttpOrigin,
-  LoadBalancerV2Origin,
-  S3BucketOrigin,
-} from "aws-cdk-lib/aws-cloudfront-origins";
+import { HttpOrigin, S3BucketOrigin } from "aws-cdk-lib/aws-cloudfront-origins";
+import { ICertificate } from "aws-cdk-lib/aws-certificatemanager";
+import { getPrimaryDomainName } from "./shared-resources-stack";
 
 export interface NetworkProps {
   env: string;
   account: string;
+  certificate?: ICertificate;
 }
 
 export class Network extends Construct {
@@ -96,16 +92,16 @@ export class Network extends Construct {
         allowAllOutbound: true,
         description: "No inbound / all outbound",
         securityGroupName: "noInboundAllOutboundSecurityGroup",
-      }
+      },
     );
     this.noInboundAllOutboundSecurityGroup.addIngressRule(
       this.noInboundAllOutboundSecurityGroup,
       Port.tcp(8080),
-      "allow self"
+      "allow self",
     );
     this.noInboundAllOutboundSecurityGroup.addIngressRule(
       Peer.ipv4(this.vpc.vpcCidrBlock),
-      Port.tcp(8080)
+      Port.tcp(8080),
     );
 
     this.vpcLink = new VpcLink(this, "HttpApiVpcLink", {
@@ -128,7 +124,7 @@ export class Network extends Construct {
       {
         stringValue: this.noInboundAllOutboundSecurityGroup.securityGroupId,
         parameterName: `/stickerlandia/${props.env}/shared/vpc-link-sg-id`,
-      }
+      },
     );
 
     this.httpApi = new HttpApi(this, "StickerlandiaHttpApi", {
@@ -159,28 +155,34 @@ export class Network extends Construct {
     });
     webFrontendBucket.grantRead(originIdentity);
 
+    // If the certificate is passed in, create a domain for that specific environment.
+    const primaryDomainName = getPrimaryDomainName(props.env);
+    const domainName = primaryDomainName ? [primaryDomainName] : undefined;
+
     this.distribution = new Distribution(this, `Stickerlandia-${props.env}`, {
+      certificate: props.certificate,
+      domainNames: domainName,
       minimumProtocolVersion: SecurityPolicyProtocol.TLS_V1_2_2021,
       defaultRootObject: "index.html",
+      // SPA routing: return index.html for any unmatched routes on the frontend
+      // S3 with OAI returns 403 for non-existent files, so we handle both 403 and 404
+      // This only applies to the default behavior (S3/frontend), not API routes
+      errorResponses: [
+        {
+          httpStatus: 403,
+          responseHttpStatus: 200,
+          responsePagePath: "/index.html",
+        },
+        {
+          httpStatus: 404,
+          responseHttpStatus: 200,
+          responsePagePath: "/index.html",
+        },
+      ],
       defaultBehavior: {
         origin: S3BucketOrigin.withOriginAccessIdentity(webFrontendBucket, {
           originAccessIdentity: originIdentity,
         }),
-        // SPA routing: return index.html for any unmatched routes on the frontend
-        // S3 with OAI returns 403 for non-existent files, so we handle both 403 and 404
-        // This only applies to the default behavior (S3/frontend), not API routes
-        errorResponses: [
-          {
-            httpStatus: 403,
-            responseHttpStatus: 200,
-            responsePagePath: "/index.html",
-          },
-          {
-            httpStatus: 404,
-            responseHttpStatus: 200,
-            responsePagePath: "/index.html",
-          },
-        ],
       },
     });
 
@@ -192,7 +194,7 @@ export class Network extends Construct {
         `${this.httpApi.apiId}.execute-api.${region}.amazonaws.com`,
         {
           protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
-        }
+        },
       ),
       {
         cachePolicy: CachePolicy.CACHING_DISABLED,
@@ -200,7 +202,7 @@ export class Network extends Construct {
         responseHeadersPolicy:
           ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS,
         allowedMethods: AllowedMethods.ALLOW_ALL,
-      }
+      },
     );
 
     this.distribution.addBehavior(
@@ -209,7 +211,7 @@ export class Network extends Construct {
         `${this.httpApi.apiId}.execute-api.${region}.amazonaws.com`,
         {
           protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
-        }
+        },
       ),
       {
         cachePolicy: CachePolicy.CACHING_DISABLED,
@@ -217,7 +219,7 @@ export class Network extends Construct {
         responseHeadersPolicy:
           ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS,
         allowedMethods: AllowedMethods.ALLOW_ALL,
-      }
+      },
     );
 
     this.distribution.addBehavior(
@@ -226,7 +228,7 @@ export class Network extends Construct {
         `${this.httpApi.apiId}.execute-api.${region}.amazonaws.com`,
         {
           protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
-        }
+        },
       ),
       {
         cachePolicy: CachePolicy.CACHING_DISABLED,
@@ -234,7 +236,7 @@ export class Network extends Construct {
         responseHeadersPolicy:
           ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS,
         allowedMethods: AllowedMethods.ALLOW_ALL,
-      }
+      },
     );
 
     this.distribution.addBehavior(
@@ -243,7 +245,7 @@ export class Network extends Construct {
         `${this.httpApi.apiId}.execute-api.${region}.amazonaws.com`,
         {
           protocolPolicy: OriginProtocolPolicy.HTTPS_ONLY,
-        }
+        },
       ),
       {
         cachePolicy: CachePolicy.CACHING_DISABLED,
@@ -251,7 +253,7 @@ export class Network extends Construct {
         responseHeadersPolicy:
           ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS,
         allowedMethods: AllowedMethods.ALLOW_ALL,
-      }
+      },
     );
   }
 }

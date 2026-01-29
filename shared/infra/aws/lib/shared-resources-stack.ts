@@ -7,11 +7,11 @@
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { Network } from "./network";
-import { CorsHttpMethod, HttpApi } from "aws-cdk-lib/aws-apigatewayv2";
 import { PrivateDnsNamespace } from "aws-cdk-lib/aws-servicediscovery";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
 import { EventBus } from "aws-cdk-lib/aws-events";
 import { Persistence } from "./persistence";
+import { get } from "axios";
 // import * as sqs from 'aws-cdk-lib/aws-sqs';
 
 export class StickerlandiaSharedResourcesStack extends cdk.Stack {
@@ -19,10 +19,21 @@ export class StickerlandiaSharedResourcesStack extends cdk.Stack {
     super(scope, id, props);
 
     const env = process.env.ENV || "dev";
+    const certificateArn = process.env.CERTIFICATE_ARN || undefined;
+    const certificate = certificateArn
+      ? cdk.aws_certificatemanager.Certificate.fromCertificateArn(
+          this,
+          "Certificate",
+          certificateArn,
+        )
+      : undefined;
+
+    const primaryDomainName = `https://${getPrimaryDomainName(env)}`;
 
     const network = new Network(this, "Network", {
       env,
       account: this.account,
+      certificate,
     });
 
     const persistence = new Persistence(this, "Persistence", {
@@ -62,9 +73,9 @@ export class StickerlandiaSharedResourcesStack extends cdk.Stack {
       this,
       "CloudFrontEndpointParam",
       {
-        stringValue: network.distribution.domainName,
+        stringValue: primaryDomainName ?? network.distribution.domainName,
         parameterName: `/stickerlandia/${env}/shared/cloudfront-endpoint`,
-      }
+      },
     );
 
     const cloudfrontId = new StringParameter(this, "CloudFrontIdParam", {
@@ -99,4 +110,11 @@ export class StickerlandiaSharedResourcesStack extends cdk.Stack {
       exportName: `stickerlandia-${env}-http-api-url`,
     });
   }
+}
+
+export function getPrimaryDomainName(env: string): string | undefined {
+  if (process.env.CERTIFICATE_ARN) {
+    return env === "prod" ? "stickerlandia.dev" : `${env}.stickerlandia.com`;
+  }
+  return undefined;
 }
