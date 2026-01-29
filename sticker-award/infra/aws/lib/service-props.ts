@@ -68,6 +68,7 @@ export class KafkaMessagingProps extends Construct implements MessagingProps {
 export interface ServiceProps {
   connectionStringSecret: ISecret;
   cloudfrontDistribution: IDistribution;
+  cloudfrontEndpoint: string;
   messagingConfiguration: MessagingProps;
   /** The database credentials construct - used for granting read permissions to ECS execution role */
   databaseCredentials: DatabaseCredentials;

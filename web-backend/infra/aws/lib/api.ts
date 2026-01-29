@@ -33,6 +33,7 @@ export class ApiProps {
   deployInPrivateSubnet?: boolean;
   cluster: Cluster;
   cloudfrontDistribution: IDistribution;
+  cloudfrontEndpoint: string;
 }
 
 export class Api extends Construct {
@@ -41,7 +42,7 @@ export class Api extends Construct {
   userRegisteredTopic: Topic;
   constructor(scope: Construct, id: string, props: ApiProps) {
     super(scope, id);
-    const deploymentHostUrl = `https://${props.cloudfrontDistribution.distributionDomainName}`;
+    const deploymentHostUrl = props.cloudfrontEndpoint;
 
     const webService = new WebService(this, "WebBackendApplication", {
       sharedProps: props.sharedProps,
@@ -64,7 +65,7 @@ export class Api extends Construct {
       },
       secrets: {
         DD_API_KEY: Secret.fromSsmParameter(
-          props.sharedProps.datadog.apiKeyParameter
+          props.sharedProps.datadog.apiKeyParameter,
         ),
       },
       path: "/api/app/{proxy+}",

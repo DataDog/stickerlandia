@@ -46,7 +46,7 @@ export class WebBackendStack extends cdk.Stack {
       cluster,
       ddApiKey,
       ddApiKeyParam,
-      ddSite
+      ddSite,
     );
 
     const serviceProps = {};
@@ -63,6 +63,7 @@ export class WebBackendStack extends cdk.Stack {
       cluster: cluster,
       deployInPrivateSubnet: true,
       cloudfrontDistribution: sharedResources.cloudfrontDistribution,
+      cloudfrontEndpoint: sharedResources.cloudfrontEndpoint,
     });
 
     // CDK Outputs

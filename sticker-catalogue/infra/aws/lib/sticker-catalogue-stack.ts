@@ -71,11 +71,12 @@ export class StickerCatalogueServiceStack extends cdk.Stack {
 
     const serviceProps: ServiceProps = {
       cloudfrontDistribution: sharedResources.cloudfrontDistribution,
+      cloudfrontEndpoint: sharedResources.cloudfrontEndpoint,
       databaseCredentials: dbCredentials,
       messagingProps: new AWSMessagingProps(
         this,
         "MessagingProps",
-        sharedResources
+        sharedResources,
       ),
       serviceDependencies: [dbCredentials.credentialResource],
     };

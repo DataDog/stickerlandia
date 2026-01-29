@@ -86,7 +86,7 @@ export class Api extends Construct {
         MESSAGING_PROVIDER: "aws",
         CATALOGUE_BASE_URL: `https://${props.serviceProps.cloudfrontDistribution.distributionDomainName}`,
         USER_REGISTERED_QUEUE_URL: userRegisteredQueue.queueUrl,
-        OAUTH_ISSUER: `https://${props.serviceProps.cloudfrontDistribution.distributionDomainName}/`,
+        OAUTH_ISSUER: props.serviceProps.cloudfrontEndpoint,
         ...props.serviceProps.messagingConfiguration.asEnvironmentVariables(),
       },
       secrets: secrets,
