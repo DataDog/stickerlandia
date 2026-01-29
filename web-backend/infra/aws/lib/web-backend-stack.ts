@@ -68,7 +68,7 @@ export class WebBackendStack extends cdk.Stack {
 
     // CDK Outputs
     new cdk.CfnOutput(this, "ServiceApiUrl", {
-      value: `https://${sharedResources.cloudfrontDistribution.distributionDomainName}/api/app`,
+      value: `${sharedResources.cloudfrontEndpoint}/api/app`,
       description: "Web Backend Service API URL",
     });
   }
