@@ -52,6 +52,11 @@ export class Api extends Construct {
       port: 8080,
       memoryLimitMiB: 512,
       environmentVariables: {
+        DD_DATA_STREAMS_ENABLED: "true",
+        DD_TRACE_OTEL_ENABLED: "true",
+        DD_LOGS_INJECTION: "true",
+        DD_RUNTIME_METRICS_ENABLED: "true",
+        DD_PROFILING_ENABLED: "true",
         DEPLOYMENT_HOST_URL: `https://${props.serviceProps.cloudfrontDistribution.distributionDomainName}`,
         DRIVING: "AWS",
         DRIVEN: "AWS",
