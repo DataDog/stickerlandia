@@ -53,8 +53,10 @@ public static class AuthServiceExtensions
                 options.AddDevelopmentEncryptionCertificate()
                     .AddDevelopmentSigningCertificate();
 
-                // Access token encryption is disabled so that multiple microservices can read the access token
-                // without having to share the encryption key/certificate. The production app will use https.
+                // Disable access token encryption to allow external services to validate tokens.
+                // This makes tokens transparent (signed JWTs) instead of encrypted JWEs.
+                // Required for services like sticker-award and sticker-catalogue that validate
+                // tokens using the JWKS endpoint.
                 options.DisableAccessTokenEncryption();
 
                 // Register the ASP.NET Core host and configure the ASP.NET Core options.

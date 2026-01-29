@@ -32,6 +32,23 @@ type Config struct {
 	AWS               AWSConfig         `mapstructure:"aws"`
 	Catalogue         CatalogueConfig   `mapstructure:"catalogue"`
 	Logging           LoggingConfig     `mapstructure:"logging"`
+	Auth              AuthConfig        `mapstructure:"auth"`
+}
+
+// AuthConfig holds JWT authentication configuration
+type AuthConfig struct {
+	Issuer    string `mapstructure:"issuer"`
+	JwksUrl   string `mapstructure:"jwks_url"`
+	ClockSkew int    `mapstructure:"clock_skew"`
+}
+
+// JWKSUrl returns the JWKS URL - uses explicit jwks_url if set, otherwise derives from issuer
+func (a *AuthConfig) JWKSUrl() string {
+	if a.JwksUrl != "" {
+		return a.JwksUrl
+	}
+	// Normalize issuer (strip trailing slash) before appending path to avoid double slashes
+	return strings.TrimSuffix(a.Issuer, "/") + "/.well-known/jwks"
 }
 
 // ServerConfig holds HTTP server configuration
@@ -220,6 +237,15 @@ func setDefaults() {
 	// Logging defaults
 	viper.SetDefault("logging.level", "info")
 	viper.SetDefault("logging.format", "json")
+
+	// Auth defaults - JWKS URL can be set separately from issuer for Docker networking
+	viper.SetDefault("auth.issuer", "http://user-management:8080")
+	viper.SetDefault("auth.jwks_url", "") // Empty means derive from issuer
+	viper.SetDefault("auth.clock_skew", 30)
+
+	// Explicit env var bindings for auth config
+	_ = viper.BindEnv("auth.issuer", "OAUTH_ISSUER")
+	_ = viper.BindEnv("auth.jwks_url", "OAUTH_JWKS_URL")
 }
 
 // ConnectionString returns the database connection string
