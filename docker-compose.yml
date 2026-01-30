@@ -17,7 +17,7 @@
 #   - Login:                http://localhost:8080/api/users/v1/login
 #
 # - Traefik Dashboard:      http://localhost:8081/dashboard/
-# - Redpanda Console:       http://localhost:8082
+# - Kafbat Console:         http://localhost:8082
 #
 # 
 # Signing Up
@@ -78,64 +78,93 @@ services:
       - "traefik.http.routers.traefik.service=api@internal"
       - "traefik.http.routers.traefik.entrypoints=dashboard"
 
-  redpanda:
-    image: redpandadata/redpanda:latest
-    container_name: stickerlandia-redpanda
-    command:
-      - redpanda
-      - start
-      - --smp=1
-      - --memory=1G
-      - --reserve-memory=0M
-      - --overprovisioned
-      - --node-id=0
-      - --check=false
-      - --pandaproxy-addr=0.0.0.0:8082
-      - --advertise-pandaproxy-addr=redpanda:8082
-      - --kafka-addr=0.0.0.0:9092
-      - --advertise-kafka-addr=redpanda:9092
-      - --rpc-addr=0.0.0.0:33145
-      - --advertise-rpc-addr=redpanda:33145
-      - --mode dev-container
+  kafka:
+    image: apache/kafka:latest
+    container_name: stickerlandia-kafka
     ports:
       - "9092:9092"
-      # - "8082:8082"
       - "9644:9644"
-    volumes:
-      - redpanda-data:/var/lib/redpanda/data
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_NODE_ID: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:29093
+      KAFKA_LISTENERS: PLAINTEXT://kafka:29092,CONTROLLER://kafka:29093,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
     healthcheck:
-      test: ["CMD", "rpk", "cluster", "health"]
-      interval: 1s
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1"]
+      interval: 5s
       timeout: 10s
-      retries: 5
+      retries: 10
+      start_period: 30s
+    volumes:
+      - kafka-data:/var/lib/kafka/data
 
-  redpanda-init:
-    image: redpandadata/redpanda:latest
-    container_name: redpanda-init
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.6.0
+    container_name: schema-registry
     depends_on:
-      redpanda:
-        condition: service_healthy
-    entrypoint: ["/bin/sh", "-c"]
-    command: >
-      "rpk topic create users.userRegistered.v1 users.stickerClaimed.v1 users.userDetailsUpdated.v1 stickers.stickerAssignedToUser.v1 stickers.stickerRemovedFromUser.v1 stickers.stickerAdded.v1 stickers.stickerUpdated.v1 stickers.stickerDeleted.v1 --brokers redpanda:9092 || true"
-    restart: "no"
-
-  redpanda-console:
-    image: redpandadata/console:latest
-    container_name: stickerlandia-redpanda-console
-    depends_on:
-      redpanda:
+      kafka:
         condition: service_healthy
     ports:
-      - "8082:8080"
+      - "8085:8081"
     environment:
-      KAFKA_BROKERS: redpanda:9092
-      # REDPANDA_ADMIN_API_URLS: http://redpanda:9644
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kafka:29092
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080"]
-      interval: 1s
+      test: ["CMD", "curl", "-f", "http://localhost:8081/subjects"]
+      interval: 5s
       timeout: 10s
-      retries: 5
+      retries: 10
+      start_period: 30s
+
+  kafbat-ui:
+    container_name: kafbat-ui
+    image: ghcr.io/kafbat/kafka-ui
+    ports:
+      - 8082:8080
+    depends_on:
+      - kafka
+      - schema-registry
+    environment:
+      KAFKA_CLUSTERS_0_NAME: kafka
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8081
+
+  kafka-init:
+    image: confluentinc/cp-kafka:6.1.1
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: [ '/bin/sh', '-c' ]
+    restart: "no"
+    command: |
+      "
+      # blocks until kafka is reachable
+      kafka-topics --bootstrap-server kafka:29092 --list
+
+      echo -e 'Creating kafka topics'
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic users.userRegistered.v1 --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic users.stickerClaimed.v1 --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic users.userDetailsUpdated.v1 --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic stickers.stickerAssignedToUser.v1 --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic stickers.stickerRemovedFromUser.v1 --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic stickers.stickerAdded.v1 --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic stickers.stickerUpdated.v1 --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic stickers.stickerDeleted.v1 --replication-factor 1 --partitions 1
+
+      echo -e 'Successfully created the following topics:'
+      kafka-topics --bootstrap-server kafka:29092 --list
+      "
 
   sticker-catalogue-db:
     image: postgres:16
@@ -148,6 +177,13 @@ services:
       - "5432:5432"
     volumes:
       - sticker-catalogue-data:/var/lib/postgresql/data
+      - ./shared/infra/compose/postgres-init:/docker-entrypoint-initdb.d:ro
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+      - -c
+      - pg_stat_statements.track=all
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U sticker_user -d sticker_catalogue"]
       interval: 1s
@@ -165,6 +201,13 @@ services:
       - "5434:5432"
     volumes:
       - sticker-award-data:/var/lib/postgresql/data
+      - ./shared/infra/compose/postgres-init:/docker-entrypoint-initdb.d:ro
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+      - -c
+      - pg_stat_statements.track=all
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U sticker_user -d sticker_awards"]
       interval: 1s
@@ -182,6 +225,13 @@ services:
       - "5433:5432"
     volumes:
       - user-management-data:/var/lib/postgresql/data
+      - ./shared/infra/compose/postgres-init:/docker-entrypoint-initdb.d:ro
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+      - -c
+      - pg_stat_statements.track=all
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U user_mgmt_user -d user_management"]
       interval: 1s
@@ -226,7 +276,7 @@ services:
     depends_on:
       sticker-catalogue-db:
         condition: service_healthy
-      redpanda:
+      kafka:
         condition: service_healthy
       minio:
         condition: service_healthy
@@ -248,8 +298,8 @@ services:
       QUARKUS_DATASOURCE_PASSWORD: sticker_password
       QUARKUS_DATASOURCE_DB_KIND: postgresql
       # Kafka configuration
-      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
-      MP_MESSAGING_CONNECTOR_SMALLRYE_KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      MP_MESSAGING_CONNECTOR_SMALLRYE_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       # S3/MinIO configuration
       QUARKUS_S3_ENDPOINT_OVERRIDE: http://minio:9000
       QUARKUS_S3_AWS_REGION: us-east-1
@@ -278,7 +328,7 @@ services:
     depends_on:
       user-management-db:
         condition: service_healthy
-      redpanda:
+      kafka:
         condition: service_healthy
       user-management-db-migrations:
         condition: service_completed_successfully
@@ -292,6 +342,10 @@ services:
       DD_TRACE_OTEL_ENABLED: "true"
       DD_LOGS_INJECTION: "true"
       DD_RUNTIME_METRICS_ENABLED: "true"
+      # The .NET profiler does not support ARM64, this won't work if running on Apple Silicon Macs
+      DD_PROFILING_ENABLED: "true"
+      # Required for Datadog .NET Continuous Profiler (x64 only)
+      LD_PRELOAD: /opt/datadog/linux-x64/Datadog.Linux.ApiWrapper.x64.so
       # Application configuration
       ASPNETCORE_ENVIRONMENT: Development
       DRIVING: AGNOSTIC
@@ -299,10 +353,10 @@ services:
       DISABLE_SSL: "true"
       # Rate limiting disabled by default in development
       RateLimiting__Enabled: "false"
-      ConnectionStrings__messaging: "redpanda:9092"
+      ConnectionStrings__messaging: "kafka:29092"
       ConnectionStrings__database: "Host=user-management-db;Port=5432;Database=user_management;Username=user_mgmt_user;Password=user_mgmt_password"
-      KAFKA__BOOTSTRAPSERVERS: "redpanda:9092"
-      KAFKA__SCHEMAREGISTRY: "http://redpanda:8082"
+      KAFKA__BOOTSTRAPSERVERS: "kafka:29092"
+      KAFKA__SCHEMAREGISTRY: "http://kafka:8082"
       KAFKA__GROUPID: "stickerlandia-user-management"
       OPENIDDICT_ISSUER: ${DEPLOYMENT_HOST_URL}
       DEPLOYMENT_HOST_URL: ${DEPLOYMENT_HOST_URL}
@@ -327,7 +381,7 @@ services:
     depends_on:
       user-management-db:
         condition: service_healthy
-      redpanda:
+      kafka:
         condition: service_healthy
     environment:
       # DataDog APM configuration
@@ -339,13 +393,17 @@ services:
       DD_TRACE_OTEL_ENABLED: "true"
       DD_LOGS_INJECTION: "true"
       DD_RUNTIME_METRICS_ENABLED: "true"
+      # The .NET profiler does not support ARM64, this won't work if running on Apple Silicon Macs
+      DD_PROFILING_ENABLED: "true"
+      # Required for Datadog .NET Continuous Profiler (x64 only)
+      LD_PRELOAD: /opt/datadog/linux-x64/Datadog.Linux.ApiWrapper.x64.so
       ASPNETCORE_ENVIRONMENT: Development
       DRIVING: AGNOSTIC
       DRIVEN: AGNOSTIC
-      ConnectionStrings__messaging: "redpanda:9092"
+      ConnectionStrings__messaging: "kafka:29092"
       ConnectionStrings__database: "Host=user-management-db;Port=5432;Database=user_management;Username=user_mgmt_user;Password=user_mgmt_password"
-      KAFKA__BOOTSTRAPSERVERS: "redpanda:9092"
-      KAFKA__SCHEMAREGISTRY: "http://redpanda:8082"
+      KAFKA__BOOTSTRAPSERVERS: "kafka:29092"
+      KAFKA__SCHEMAREGISTRY: "http://kafka:8082"
       KAFKA__GROUPID: "stickerlandia-user-management"
     command: ["worker/Stickerlandia.UserManagement.Worker.dll"]
 
@@ -366,13 +424,17 @@ services:
       DD_TRACE_OTEL_ENABLED: "true"
       DD_LOGS_INJECTION: "true"
       DD_RUNTIME_METRICS_ENABLED: "true"
+      # The .NET profiler does not support ARM64, this won't work if running on Apple Silicon Macs
+      DD_PROFILING_ENABLED: "true"
+      # Required for Datadog .NET Continuous Profiler (x64 only)
+      LD_PRELOAD: /opt/datadog/linux-x64/Datadog.Linux.ApiWrapper.x64.so
       ASPNETCORE_ENVIRONMENT: Development
       DRIVING: AGNOSTIC
       DRIVEN: AGNOSTIC
-      ConnectionStrings__messaging: "redpanda:9092"
+      ConnectionStrings__messaging: "kafka:29092"
       ConnectionStrings__database: "Host=user-management-db;Port=5432;Database=user_management;Username=user_mgmt_user;Password=user_mgmt_password"
-      KAFKA__BOOTSTRAPSERVERS: "redpanda:9092"
-      KAFKA__SCHEMAREGISTRY: "http://redpanda:8082"
+      KAFKA__BOOTSTRAPSERVERS: "kafka:29092"
+      KAFKA__SCHEMAREGISTRY: "http://kafka:8082"
       KAFKA__GROUPID: "stickerlandia-user-management"
       DEPLOYMENT_HOST_URL: ${DEPLOYMENT_HOST_URL}
     command: ["migrations/Stickerlandia.UserManagement.MigrationService.dll"]
@@ -435,9 +497,9 @@ services:
         condition: service_healthy
       sticker-award-db:
         condition: service_healthy
-      redpanda:
+      kafka:
         condition: service_healthy
-      redpanda-init:
+      kafka-init:
         condition: service_completed_successfully
     environment:
       # DataDog APM configuration
@@ -462,11 +524,18 @@ services:
       LOG_FORMAT: json
       
       # Kafka configuration
-      KAFKA_BROKERS: redpanda:9092
+      KAFKA_BROKERS: kafka:29092
       KAFKA_GROUP_ID: sticker-award-service
       
       # External service configuration
       CATALOGUE_BASE_URL: http://sticker-catalogue:8080
+
+      # OAuth/JWT configuration
+      # OAUTH_ISSUER: The issuer claim expected in JWT tokens (matches what user-management sets)
+      # Note: OpenIddict adds trailing slash to issuer, so we must include it here
+      # OAUTH_JWKS_URL: Internal Docker network URL to fetch JWKS for token validation
+      OAUTH_ISSUER: ${DEPLOYMENT_HOST_URL}/
+      OAUTH_JWKS_URL: http://user-management:8080/.well-known/jwks
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
       interval: 1s
@@ -507,7 +576,8 @@ services:
       - load-test
 
   datadog-agent:
-    image: datadog/agent:7
+    image: datadog/agent:7.75.0
+    pull_policy: always
     container_name: datadog-agent
     profiles:
       - monitoring
@@ -523,6 +593,9 @@ services:
       - DD_APM_ENABLED=true
       - DD_APM_NON_LOCAL_TRAFFIC=true
       - DD_APM_RECEIVER_PORT=8126
+
+      # Profiling enabled
+      - DD_PROFILING_ENABLED=true
       
       # Log collection configuration
       - DD_LOGS_ENABLED=true
@@ -546,6 +619,11 @@ services:
       # System directories for host metrics
       - /proc/:/host/proc/:ro
       - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+    configs:
+      - source: kafka_consumer_config
+        target: /etc/datadog-agent/conf.d/kafka_consumer.d/conf.yaml
+      - source: postgres_config
+        target: /etc/datadog-agent/conf.d/postgres.d/conf.yaml
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "agent", "health"]
@@ -553,10 +631,45 @@ services:
       timeout: 30s
       retries: 20
       start_period: 40s
+    depends_on:
+      kafka:
+        condition: service_healthy
 
 volumes:
   sticker-catalogue-data:
   sticker-award-data:
   user-management-data:
-  redpanda-data:
+  kafka-data:
   minio-data:
+
+configs:
+  kafka_consumer_config:
+    content: |
+      init_config:
+
+      instances:
+        - enable_cluster_monitoring: true
+          kafka_connect_str: kafka:29092
+          monitor_unlisted_consumer_groups: true
+  postgres_config:
+    content: |
+      init_config:
+      instances:
+        - dbm: true
+          host: user-management-db
+          port: 5432
+          username: datadog
+          password: datadog_password
+          dbname: user_management
+        - dbm: true
+          host: sticker-award-db
+          port: 5432
+          username: datadog
+          password: datadog_password
+          dbname: sticker_awards
+        - dbm: true
+          host: sticker-catalogue-db
+          port: 5432
+          username: datadog
+          password: datadog_password
+          dbname: sticker_catalogue

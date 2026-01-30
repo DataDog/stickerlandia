@@ -199,7 +199,7 @@ test.describe('Sticker Detail Page', () => {
 
   test('is accessible via direct URL with valid ID', async ({ page, request }) => {
     // Get a valid sticker ID from API
-    const apiResponse = await request.get('/api/stickers/v1');
+    const apiResponse = await request.get('/api/stickers/v1/');
     const data = await apiResponse.json();
     const stickerId = data.stickers[0]?.stickerId;
 

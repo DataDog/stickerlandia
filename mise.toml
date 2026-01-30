@@ -4,23 +4,24 @@ experimental_monorepo_root = true
 
 [settings]
 experimental = true
-auto_install = true
+auto_install = false
 
-[tools]
-# Used by CDK infrastructure and web-frontend/web-backend
-node = "22"
+# =============================================================================
+# setup: Local development environment setup
+# =============================================================================
 
-# Used by sticker-award
-go = "1.25"
-
-# Used by sticker-catalogue
-java = "temurin-21"
-
-# Used by sticker-catalogue
-maven = "3.9"
-
-# Used by user-management
-dotnet = "10"
+[tasks."setup_localdev"]
+description = "Install all development tools required for local development"
+run = """
+echo "Installing development tools..."
+mise use --global node@22
+mise use --global go@1.25
+mise use --global java@temurin-21
+mise use --global maven@3.9
+mise use --global dotnet@10
+echo "All development tools installed successfully!"
+echo "Tools can be activated by running 'mise activate' in your shell."
+"""
 
 # =============================================================================
 # env: Environment setup
@@ -167,12 +168,12 @@ depends = ["env:setup"]
 env = { DEPLOY_MODE = "local" }
 run = """
 echo "=== Deploying Stickerlandia to AWS: $ENV (DEPLOY_MODE=$DEPLOY_MODE) ==="
-mise run //shared:aws:deploy
-mise run //user-management:aws:deploy
-mise run //sticker-award:aws:deploy
-mise run //sticker-catalogue:aws:deploy
-mise run //web-backend:aws:deploy
-mise run //web-frontend:aws:deploy
+mise run //shared:aws:deploy:local
+mise run //user-management:aws:deploy:local
+mise run //sticker-award:aws:deploy:local
+mise run //sticker-catalogue:aws:deploy:local
+mise run //web-backend:aws:deploy:local
+mise run //web-frontend:aws:deploy:local
 echo "=== Deployment complete! ==="
 """
 
@@ -182,12 +183,12 @@ depends = ["env:setup"]
 env = { DEPLOY_MODE = "release" }
 run = """
 echo "=== Deploying Stickerlandia to AWS: $ENV (DEPLOY_MODE=$DEPLOY_MODE) ==="
-mise run //shared:aws:deploy
-mise run //user-management:aws:deploy
-mise run //sticker-award:aws:deploy
-mise run //sticker-catalogue:aws:deploy
-mise run //web-backend:aws:deploy
-mise run //web-frontend:aws:deploy
+mise run //shared:aws:deploy:release
+mise run //user-management:aws:deploy:release
+mise run //sticker-award:aws:deploy:release
+mise run //sticker-catalogue:aws:deploy:release
+mise run //web-backend:aws:deploy:release
+mise run //web-frontend:aws:deploy:release
 echo "=== Deployment complete! ==="
 """
 

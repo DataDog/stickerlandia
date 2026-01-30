@@ -14,20 +14,7 @@ main {
     display: block;
 }
 
-.landing-wrapper {
-    display: grid;
-    flex: none;
-    gap: 12px;
-    grid-auto-rows: minmax(0, 1fr);
-    grid-template-columns: repeat(3, minmax(50px, 1fr));
-    grid-template-rows: repeat(1, minmax(0, 1fr));
-    height: min-content;
-    justify-content: center;
-    overflow: visible;
-    padding: 0;
-    position: relative;
-    width: 100%;
-}
+/* Landing wrapper styles moved to inline Tailwind classes for better mobile responsiveness */
 .landing-card {
     --border-bottom-width: 1px;
     --border-color: var(--token-1707e66c-e139-40d8-8020-8176f47ee22b, #e1e2e3);

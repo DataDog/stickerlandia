@@ -125,7 +125,7 @@ func setupTestEnvironment(t *testing.T) *TestEnvironment {
 
 	// Set up router
 	gin.SetMode(gin.TestMode)
-	router := router.Setup(db, cfg, assignmentService)
+	router := router.Setup(db, cfg, assignmentService, nil)
 
 	// Clean up function
 	t.Cleanup(func() {

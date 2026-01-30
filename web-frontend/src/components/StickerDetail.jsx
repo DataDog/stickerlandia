@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router";
+import HeaderBar from "./HeaderBar";
 import Sidebar from "./Sidebar";
 import { API_BASE_URL } from "../config";
+import { authFetch } from "../utils/authFetch";
 
 function StickerDetail() {
   const { id } = useParams();
@@ -13,7 +15,7 @@ function StickerDetail() {
     const fetchSticker = async () => {
       try {
         setLoading(true);
-        const response = await fetch(
+        const response = await authFetch(
           `${API_BASE_URL}/api/stickers/v1/${id}`
         );
 
@@ -50,10 +52,11 @@ function StickerDetail() {
 
   return (
     <div className="isolate flex flex-auto flex-col bg-[--root-bg]">
+      <HeaderBar />
       <main id="main">
-        <div className="grid grid-cols-5">
+        <div className="grid grid-cols-1 lg:grid-cols-5">
           <Sidebar />
-          <div className="col-span-4 p-8">
+          <div className="col-span-1 lg:col-span-4 p-4 sm:p-6 lg:p-8">
             <Link
               to="/catalogue"
               className="text-blue-600 hover:text-blue-800 mb-4 inline-block"

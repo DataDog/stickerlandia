@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { useAuth } from "../context/AuthContext";
+import HeaderBar from "./HeaderBar";
 import Sidebar from "./Sidebar";
 import { API_BASE_URL } from "../config";
+import { authFetch } from "../utils/authFetch";
 
 function MyCollection() {
   const { user } = useAuth();
@@ -17,7 +19,7 @@ function MyCollection() {
         const userId = user.sub || user.email;
 
         // Fetch user's sticker assignments
-        const assignmentsResponse = await fetch(
+        const assignmentsResponse = await authFetch(
           `${API_BASE_URL}/api/awards/v1/assignments/${userId}`
         );
 
@@ -32,7 +34,7 @@ function MyCollection() {
         const enrichedStickers = await Promise.all(
           assignments.map(async (assignment) => {
             try {
-              const metadataResponse = await fetch(
+              const metadataResponse = await authFetch(
                 `${API_BASE_URL}/api/stickers/v1/${assignment.stickerId}`
               );
 
@@ -76,11 +78,12 @@ function MyCollection() {
 
   return (
     <div className="isolate flex flex-auto flex-col bg-[--root-bg]">
+      <HeaderBar />
       <main id="main">
-        <div className="grid grid-cols-5">
+        <div className="grid grid-cols-1 lg:grid-cols-5">
           <Sidebar />
-          <div className="col-span-4 p-8">
-            <h1 className="text-3xl font-bold mb-4">My Collection</h1>
+          <div className="col-span-1 lg:col-span-4 p-4 sm:p-6 lg:p-8">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-4">My Collection</h1>
             <p className="text-gray-600 mb-8">
               Welcome to your sticker collection, {user?.given_name || 'collector'}!
             </p>
@@ -104,7 +107,7 @@ function MyCollection() {
             )}
 
             {!loading && !error && stickers.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {stickers.map((sticker) => (
                   <Link
                     key={sticker.stickerId}
