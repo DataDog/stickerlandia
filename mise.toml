@@ -264,3 +264,16 @@ echo "Running tests against: $BASE_URL"
 BASE_URL=$BASE_URL npx playwright test
 """
 
+# =============================================================================
+# load: Load testing
+# =============================================================================
+
+[tasks."compose:load-test:smoke"]
+depends = ["env:setup"]
+description = "Run smoke load test (2 users, 30 seconds, mixed flows)"
+run = """
+docker compose --profile load-test up -d
+docker compose --profile load-test run --rm load-simulator
+docker compose --profile load-test down -v
+"""
+

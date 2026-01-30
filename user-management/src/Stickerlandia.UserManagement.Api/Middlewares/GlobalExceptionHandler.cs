@@ -102,6 +102,7 @@ internal sealed class GlobalExceptionHandler
     
     private static string GetUserFriendlyMessage(Exception exception) => exception switch
     {
+        UserExistsException => "A user with this email address already exists",
         ArgumentException or FormatException or ArgumentNullException => "Invalid input provided",
         KeyNotFoundException or FileNotFoundException => "Requested resource not found",
         UnauthorizedAccessException => "Unauthorized access",
