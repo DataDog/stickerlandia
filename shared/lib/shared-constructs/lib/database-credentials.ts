@@ -29,6 +29,7 @@ import { IVpc, SubnetType } from "aws-cdk-lib/aws-ec2";
 import * as path from "path";
 import { DatadogLambda } from "datadog-cdk-constructs-v2";
 import { SharedProps } from "./shared-props";
+import { IDatabaseCluster } from "aws-cdk-lib/aws-rds";
 
 export enum ConnectionStringFormat {
   /** .NET format: Host=xxx;Database=xxx;Username=xxx;Password=xxx */
@@ -56,6 +57,11 @@ export interface DatabaseCredentialsProps {
    * Defaults to false to avoid CloudFormation validation errors.
    */
   createSsmParameterReferences?: boolean;
+
+  /** Optionally pass in a database cluster if being created dynamically, this ensures the custom resource doesn't run
+   * until the database is ready.
+   */
+  databaseCluster?: IDatabaseCluster;
 }
 
 /**
@@ -112,7 +118,7 @@ export class DatabaseCredentials extends Construct {
     const handler = new LambdaFunction(this, "CredentialFormatterHandler", {
       runtime: Runtime.NODEJS_20_X,
       handler: "index.handler",
-      timeout: Duration.seconds(60),
+      timeout: Duration.seconds(120), // Increased to allow retries when waiting for database to be ready
       vpc: props.vpc,
       vpcSubnets: { subnetType: SubnetType.PRIVATE_WITH_EGRESS },
       architecture: Architecture.X86_64,
@@ -201,6 +207,11 @@ export class DatabaseCredentials extends Construct {
       },
       removalPolicy: RemovalPolicy.DESTROY,
     });
+
+    // If a database cluster is provided, ensure the custom resource waits for it to be created
+    if (props.databaseCluster) {
+      this.credentialResource.node.addDependency(props.databaseCluster);
+    }
 
     // Create references to Secrets Manager secrets (for ECS - no upfront validation)
     // SSM parameter references are only created when explicitly requested (for Lambda),

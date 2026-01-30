@@ -28,7 +28,7 @@ export class UserServiceStack extends cdk.Stack {
     const environment = process.env.ENV || "dev";
 
     const sharedResources = new SharedResources(this, "SharedResources", {
-      networkName: `${serviceName}-${environment}-vpc`,
+      serviceName: serviceName,
       environment: environment,
     });
 
@@ -67,6 +67,7 @@ export class UserServiceStack extends cdk.Stack {
       // Don't create SSM parameter references - they cause CloudFormation validation errors.
       // Lambda functions will use CloudFormation dynamic references instead.
       createSsmParameterReferences: false,
+      databaseCluster: sharedResources.sharedDatabaseCluster,
     });
 
     // Run database migrations before starting services

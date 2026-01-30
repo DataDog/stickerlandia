@@ -8,6 +8,51 @@ const { SecretsManagerClient, GetSecretValueCommand, CreateSecretCommand, Update
 const { SSMClient, PutParameterCommand, DeleteParameterCommand } = require("@aws-sdk/client-ssm");
 const { Client } = require("pg");
 
+/**
+ * Wait for the database to be ready by attempting to connect with exponential backoff.
+ * This is necessary for newly created Aurora clusters which may take time to accept connections.
+ */
+async function waitForDatabaseReady(host, port, username, password, maxAttempts = 10, initialDelayMs = 2000) {
+  let lastError;
+  let delay = initialDelayMs;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const client = new Client({
+      host,
+      port,
+      user: username,
+      password,
+      database: "postgres",
+      ssl: { rejectUnauthorized: false },
+      connectionTimeoutMillis: 5000,
+    });
+
+    try {
+      console.log(`Attempt ${attempt}/${maxAttempts}: Connecting to database at ${host}:${port}...`);
+      await client.connect();
+      console.log(`Successfully connected to database on attempt ${attempt}`);
+      await client.end();
+      return; // Success
+    } catch (error) {
+      lastError = error;
+      console.log(`Attempt ${attempt}/${maxAttempts} failed: ${error.message}`);
+      try {
+        await client.end();
+      } catch (e) {
+        // Ignore cleanup errors
+      }
+
+      if (attempt < maxAttempts) {
+        console.log(`Waiting ${delay}ms before next attempt...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay = Math.min(delay * 1.5, 10000); // Exponential backoff, max 10 seconds
+      }
+    }
+  }
+
+  throw new Error(`Database not ready after ${maxAttempts} attempts. Last error: ${lastError.message}`);
+}
+
 async function createOrUpdateSecret(client, secretName, secretValue, description) {
   let arn;
   try {
@@ -129,6 +174,10 @@ exports.handler = async (event) => {
   const username = secret.username;
   const password = secret.password;
   const port = secret.port || 5432;
+
+  // Wait for the database to be ready (important for newly created clusters)
+  console.log(`Waiting for database at ${host}:${port} to be ready...`);
+  await waitForDatabaseReady(host, port, username, password);
 
   // Create the database if it doesn't exist
   await ensureDatabaseExists(host, port, username, password, databaseName);

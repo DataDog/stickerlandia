@@ -28,6 +28,7 @@ import {
   S3BucketOrigin,
 } from "aws-cdk-lib/aws-cloudfront-origins";
 import {
+  GatewayVpcEndpointAwsService,
   IVpc,
   Peer,
   Port,
@@ -54,9 +55,10 @@ import { Construct } from "constructs";
 import * as cdk from "aws-cdk-lib";
 import { CnameRecord, PublicHostedZone } from "aws-cdk-lib/aws-route53";
 import { Certificate } from "aws-cdk-lib/aws-certificatemanager";
+
 export interface SharedResourcesProps {
+  serviceName: string;
   environment?: string;
-  networkName: string;
 }
 
 export class SharedResources extends Construct {
@@ -241,7 +243,7 @@ export class SharedResources extends Construct {
     }
 
     this.vpc = new Vpc(this, "Vpc", {
-      vpcName: props.networkName,
+      vpcName: `stickerlandia-${props.serviceName}-${props.environment}-VPC`,
       maxAzs: 2,
       natGateways: 1, // Use a single NAT Gateway for cost efficiency
       subnetConfiguration: [
@@ -261,6 +263,13 @@ export class SharedResources extends Construct {
           subnetType: SubnetType.PRIVATE_ISOLATED,
         },
       ],
+    });
+
+    this.vpc.addGatewayEndpoint("dynamoDBEndpoint", {
+      service: GatewayVpcEndpointAwsService.DYNAMODB,
+    });
+    this.vpc.addGatewayEndpoint("s3Endpoint", {
+      service: GatewayVpcEndpointAwsService.S3,
     });
 
     const noInboundAllOutboundSecurityGroup = new SecurityGroup(
@@ -287,7 +296,7 @@ export class SharedResources extends Construct {
       noInboundAllOutboundSecurityGroup.securityGroupId;
 
     this.vpcLink = new VpcLink(this, "HttpApiVpcLink", {
-      vpcLinkName: `Stickerlandia-${props.environment}-Users-VpcLink`,
+      vpcLinkName: `stickerlandia-${props.serviceName}-${props.environment}-VpcLink`,
       vpc: this.vpc,
       subnets: this.vpc.selectSubnets({
         subnetType: SubnetType.PRIVATE_WITH_EGRESS,
@@ -296,7 +305,7 @@ export class SharedResources extends Construct {
     });
 
     this.httpApi = new HttpApi(this, "StickerlandiaHttpApi", {
-      apiName: `Stickerlandia-Users-${props.environment}`,
+      apiName: `stickerlandia-${props.serviceName}-${props.environment}`,
       corsPreflight: {
         allowOrigins: ["*"],
         allowMethods: [CorsHttpMethod.ANY],
@@ -308,13 +317,13 @@ export class SharedResources extends Construct {
       this,
       "PrivateDnsNamespace",
       {
-        name: `${props.environment}.users.local`,
+        name: `${props.environment}.${props.serviceName}.local`,
         vpc: this.vpc,
       },
     );
 
     this.sharedEventBus = new EventBus(this, "SharedEventBus", {
-      eventBusName: `Stickerlandia-Shared-${props.environment}`,
+      eventBusName: `stickerlandia-${props.serviceName}-${props.environment}`,
     });
 
     var secret = new DatabaseSecret(this, "SharedDBSecret", {
@@ -327,7 +336,7 @@ export class SharedResources extends Construct {
       "DatabaseSecurityGroup",
       {
         vpc: this.vpc,
-        description: "Security group for Stickerlandia database",
+        description: `Security group for stickerlandia-${props.serviceName} database`,
         allowAllOutbound: true,
       },
     );
@@ -338,7 +347,7 @@ export class SharedResources extends Construct {
     );
 
     this.sharedDatabaseCluster = new DatabaseCluster(this, "SharedDB", {
-      clusterIdentifier: `stickerlandia-${props.environment}-db`,
+      clusterIdentifier: `stickerlandia-${props.serviceName}-${props.environment}-db`,
       engine: DatabaseClusterEngine.auroraPostgres({
         version: AuroraPostgresEngineVersion.VER_17_4,
       }),
@@ -349,9 +358,9 @@ export class SharedResources extends Construct {
       securityGroups: [databaseSecurityGroup],
       removalPolicy: RemovalPolicy.DESTROY,
       defaultDatabaseName: "stickerlandia",
-      writer: ClusterInstance.serverlessV2("StickerlandiaWriterInstance"),
+      writer: ClusterInstance.serverlessV2("stickerlandiaWriterInstance"),
       readers: [
-        ClusterInstance.serverlessV2("StickerlandiaReaderInstance", {
+        ClusterInstance.serverlessV2("stickerlandiaReaderInstance", {
           scaleWithWriter: true,
         }),
       ],
@@ -362,18 +371,18 @@ export class SharedResources extends Construct {
       this,
       "DatabaseEndpointParam",
       {
-        parameterName: `/stickerlandia/${props.environment}/shared/database-endpoint`,
+        parameterName: `/stickerlandia/${props.environment}/${props.serviceName}/database-endpoint`,
         stringValue: this.sharedDatabaseCluster.clusterEndpoint.hostname,
-        description: `The database endpoint for the Stickerlandia ${props.environment} environment`,
+        description: `The database endpoint for the stickerlandia ${props.serviceName} ${props.environment} environment`,
         tier: ParameterTier.STANDARD,
       },
     );
 
     // Export the secret ARN so microservices can fetch credentials
     new StringParameter(this, "DatabaseSecretArnParam", {
-      parameterName: `/stickerlandia/${props.environment}/shared/database-secret-arn`,
+      parameterName: `/stickerlandia/${props.environment}/${props.serviceName}/database-secret-arn`,
       stringValue: secret.secretArn,
-      description: `The Secrets Manager ARN for the Stickerlandia ${props.environment} database credentials`,
+      description: `The Secrets Manager ARN for the stickerlandia ${props.serviceName} ${props.environment} database credentials`,
       tier: ParameterTier.STANDARD,
     });
 
@@ -387,7 +396,7 @@ export class SharedResources extends Construct {
 
     const distribution = new Distribution(
       this,
-      `Stickerlandia-${props.environment}`,
+      `Stickerlandia-${props.serviceName}-${props.environment}`,
       {
         certificate: certificate,
         domainNames: [`${props.environment}.stickerlandia.dev`],
@@ -456,11 +465,12 @@ export class SharedResources extends Construct {
     const cNameRecord = new CnameRecord(this, "CnameRecord", {
       zone: hostedZone,
       domainName: distribution.domainName,
-      recordName: props.environment,
+      recordName: `${props.environment}.${props.serviceName}`,
       ttl: cdk.Duration.minutes(5),
     });
 
     this.cloudfrontDistribution = distribution;
-    this.cloudfrontEndpoint = distribution.distributionDomainName;
+    // Use the custom domain with https:// scheme for URI construction in services
+    this.cloudfrontEndpoint = `https://${props.environment}.stickerlandia.dev`;
   }
 }
