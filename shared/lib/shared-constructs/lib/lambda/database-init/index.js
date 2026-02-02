@@ -186,7 +186,9 @@ exports.handler = async (event) => {
   let connectionStringValue = null;
 
   if (format === "dotnet") {
-    const connStr = `Host=${host};Database=${databaseName};Username=${username};Password=${password}`;
+    // Escape single quotes and wrap password in quotes to handle special characters (; = etc.)
+    const escapedPassword = password.replace(/'/g, "''");
+    const connStr = `Host=${host};Database=${databaseName};Username=${username};Password='${escapedPassword}'`;
     connectionStringValue = connStr;
     const [arn] = await Promise.all([
       createOrUpdateSecret(smClient, `${secretNamePrefix}/connection-string`, connStr, `Database connection string (auto-generated)`),
