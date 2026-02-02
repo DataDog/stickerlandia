@@ -35,7 +35,7 @@ export class StickerAwardServiceStack extends cdk.Stack {
     const messagingType: MessagingType = MessagingType.AWS;
 
     const sharedResources = new SharedResources(this, "SharedResources", {
-      networkName: `${serviceName}-${environment}-vpc`,
+      serviceName: serviceName,
       environment: environment,
     });
 

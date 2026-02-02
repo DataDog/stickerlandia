@@ -31,7 +31,7 @@ export class StickerCatalogueServiceStack extends cdk.Stack {
     const environment = process.env.ENV || "dev";
 
     const sharedResources = new SharedResources(this, "SharedResources", {
-      networkName: `${serviceName}-${environment}-vpc`,
+      serviceName: serviceName,
       environment: environment,
     });
 
