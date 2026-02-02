@@ -187,6 +187,7 @@ exports.handler = async (event) => {
 
   if (format === "dotnet") {
     // Escape single quotes and wrap password in quotes to handle special characters (; = etc.)
+    // Semi-colons are used as delimiters in .NET connection strings, so they must be escaped.
     const escapedPassword = password.replace(/'/g, "''");
     const connStr = `Host=${host};Database=${databaseName};Username=${username};Password='${escapedPassword}'`;
     connectionStringValue = connStr;
