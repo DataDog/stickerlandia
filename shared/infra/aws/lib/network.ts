@@ -42,7 +42,6 @@ import {
   S3BucketOrigin,
 } from "aws-cdk-lib/aws-cloudfront-origins";
 import { ICertificate } from "aws-cdk-lib/aws-certificatemanager";
-import { getPrimaryDomainName } from "./shared-resources-stack";
 
 export interface NetworkProps {
   env: string;
@@ -266,4 +265,15 @@ export class Network extends Construct {
       },
     );
   }
+}
+
+export function getPrimaryDomainName(
+  cert: ICertificate | undefined,
+  env: string,
+): string | undefined {
+  return cert
+    ? env === "prod"
+      ? "app.stickerlandia.dev"
+      : `${env}.stickerlandia.dev`
+    : undefined;
 }
