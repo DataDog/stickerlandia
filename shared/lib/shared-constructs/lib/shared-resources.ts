@@ -53,8 +53,6 @@ import {
 import { ParameterTier, StringParameter } from "aws-cdk-lib/aws-ssm";
 import { Construct } from "constructs";
 import * as cdk from "aws-cdk-lib";
-import { CnameRecord, PublicHostedZone } from "aws-cdk-lib/aws-route53";
-import { Certificate } from "aws-cdk-lib/aws-certificatemanager";
 
 export interface SharedResourcesProps {
   serviceName: string;
@@ -233,12 +231,6 @@ export class SharedResources extends Construct {
   }
 
   createSharedResourcesForEnvironment(props: SharedResourcesProps) {
-    const hostedZoneId = process.env.HOSTED_ZONE_ID;
-
-    if (hostedZoneId === undefined) {
-      throw new Error("HOSTED_ZONE_ID environment variable must be set.");
-    }
-
     this.vpc = new Vpc(this, "Vpc", {
       vpcName: `stickerlandia-${props.serviceName}-${props.environment}-VPC`,
       maxAzs: 2,

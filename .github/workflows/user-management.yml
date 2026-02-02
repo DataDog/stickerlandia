@@ -338,8 +338,6 @@ jobs:
           COMMIT_SHA_FULL: ${{ env.sha_full }}
           ENV: "dev"
           DD_API_KEY: ${{secrets.DD_API_KEY}}
-          CERTIFICATE_ARN: ${{secrets.CERTIFICATE_ARN}}
-          HOSTED_ZONE_ID: ${{secrets.HOSTED_ZONE_ID}}
           DD_SITE: "datadoghq.com"
         run: |
           cd user-management/infra/aws
