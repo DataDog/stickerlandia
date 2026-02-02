@@ -33,6 +33,7 @@ _.file = { path = ".env", optional = true }
 [tasks."env:setup"]
 description = "Create .env file with required configuration"
 hide = true
+raw = true
 run = """
 if [ -f .env ]; then
   exit 0
@@ -45,11 +46,10 @@ echo "NOTE: 'dev' and 'prod' are protected environments (CI/CD only)."
 echo "      Use your initials or a personal name for local development."
 echo ""
 
-read -p "Environment name (e.g., your initials): " ENV
-if [ -z "$ENV" ]; then
-  echo "ERROR: Environment name is required. Please use your initials or a personal name."
-  exit 1
-fi
+DEFAULT_ENV=$(whoami | tr -cd '[:alnum:]')
+read -p "Environment name [$DEFAULT_ENV]: " ENV
+ENV=${ENV:-$DEFAULT_ENV}
+ENV=$(echo "$ENV" | tr -cd '[:alnum:]')
 read -p "Datadog API Key: " DD_API_KEY
 read -p "Datadog Site [datadoghq.eu]: " DD_SITE
 DD_SITE=${DD_SITE:-datadoghq.eu}
