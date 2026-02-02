@@ -46,7 +46,6 @@ jobs:
         run: |
           cd shared/lib/shared-constructs
           npm i
-      - uses: actions/setup-go@v5
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@b47578312673ae6fa5b5096b330d9fbac3d116df
         with:
