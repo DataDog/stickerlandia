@@ -28,25 +28,25 @@ run = "npm ci"
 [tasks."aws:deploy"]
 description = "Deploy to AWS"
 dir = "infra/aws"
-depends = ["infra:install"]
+depends = ["infra:install", "aws:guard"]
 run = "npx cdk deploy --require-approval never"
 
 [tasks."aws:deploy:local"]
 description = "Deploy to AWS (build container locally)"
-depends = ["//:env:setup"]
+depends = ["//:env:setup", "aws:guard"]
 env = { DEPLOY_MODE = "local" }
 run = "mise run aws:deploy"
 
 [tasks."aws:deploy:release"]
 description = "Deploy to AWS using prebuilt GHCR images"
-depends = ["//:env:setup"]
+depends = ["//:env:setup", "aws:guard"]
 env = { DEPLOY_MODE = "release" }
 run = "mise run aws:deploy"
 
 [tasks."aws:down"]
 description = "Destroy AWS stack"
 dir = "infra/aws"
-depends = ["infra:install"]
+depends = ["infra:install", "aws:guard"]
 run = "npx cdk destroy --force"
 
 [tasks."aws:info"]
