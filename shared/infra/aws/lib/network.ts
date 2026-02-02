@@ -156,7 +156,7 @@ export class Network extends Construct {
     webFrontendBucket.grantRead(originIdentity);
 
     // If the certificate is passed in, create a domain for that specific environment.
-    const primaryDomainName = getPrimaryDomainName(props.env);
+    const primaryDomainName = getPrimaryDomainName(props.certificate, props.env);
     const domainName = primaryDomainName ? [primaryDomainName] : undefined;
 
     this.distribution = new Distribution(this, `Stickerlandia-${props.env}`, {

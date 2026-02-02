@@ -11,7 +11,7 @@ import { PrivateDnsNamespace } from "aws-cdk-lib/aws-servicediscovery";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
 import { EventBus } from "aws-cdk-lib/aws-events";
 import { Persistence } from "./persistence";
-import { Certificate } from "aws-cdk-lib/aws-certificatemanager";
+import { Certificate, ICertificate } from "aws-cdk-lib/aws-certificatemanager";
 import { CnameRecord, PublicHostedZone } from "aws-cdk-lib/aws-route53";
 
 export class StickerlandiaSharedResourcesStack extends cdk.Stack {
@@ -33,14 +33,17 @@ export class StickerlandiaSharedResourcesStack extends cdk.Stack {
         )
       : undefined;
 
-    const primaryDomainName = `https://${getPrimaryDomainName(env)}`;
+    const cert = certificateArn
+        ? Certificate.fromCertificateArn(this, "Certificate", certificateArn)
+        : undefined;
+
+    const domainName = getPrimaryDomainName(cert, env)
+    const primaryDomainName = domainName ? `https://${domainName}` : undefined;
 
     const network = new Network(this, "Network", {
       env,
       account: this.account,
-      certificate: certificateArn
-        ? Certificate.fromCertificateArn(this, "Certificate", certificateArn)
-        : undefined,
+      certificate: cert,
     });
 
     const persistence = new Persistence(this, "Persistence", {
@@ -115,7 +118,7 @@ export class StickerlandiaSharedResourcesStack extends cdk.Stack {
 
     // CDK Outputs
     new cdk.CfnOutput(this, "BaseUrl", {
-      value: primaryDomainName,
+      value: primaryDomainName ?? network.distribution.domainName,
       description: "Base URL for Stickerlandia (CloudFront distribution)",
       exportName: `stickerlandia-${env}-base-url`,
     });
@@ -128,6 +131,6 @@ export class StickerlandiaSharedResourcesStack extends cdk.Stack {
   }
 }
 
-export function getPrimaryDomainName(env: string): string | undefined {
-  return env === "prod" ? "stickerlandia.dev" : `${env}.stickerlandia.dev`;
+export function getPrimaryDomainName(cert: ICertificate | undefined, env: string): string | undefined {
+  return cert ? env === "prod" ? "stickerlandia.dev" : `${env}.stickerlandia.dev` : undefined;
 }
