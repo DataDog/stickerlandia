@@ -234,12 +234,9 @@ export class SharedResources extends Construct {
 
   createSharedResourcesForEnvironment(props: SharedResourcesProps) {
     const hostedZoneId = process.env.HOSTED_ZONE_ID;
-    const certificateArn = process.env.CERTIFICATE_ARN;
 
-    if (hostedZoneId === undefined || certificateArn === undefined) {
-      throw new Error(
-        "HOSTED_ZONE_ID and CERTIFICATE_ARN environment variables must be set.",
-      );
+    if (hostedZoneId === undefined) {
+      throw new Error("HOSTED_ZONE_ID environment variable must be set.");
     }
 
     this.vpc = new Vpc(this, "Vpc", {
@@ -388,18 +385,10 @@ export class SharedResources extends Construct {
 
     const region = cdk.Stack.of(this).region;
 
-    const certificate = Certificate.fromCertificateArn(
-      this,
-      "Certificate",
-      certificateArn,
-    );
-
     const distribution = new Distribution(
       this,
       `Stickerlandia-${props.serviceName}-${props.environment}`,
       {
-        certificate: certificate,
-        domainNames: [`${props.environment}.stickerlandia.dev`],
         minimumProtocolVersion: SecurityPolicyProtocol.TLS_V1_2_2021,
         defaultRootObject: "index.html",
         defaultBehavior: {
@@ -453,24 +442,8 @@ export class SharedResources extends Construct {
       },
     );
 
-    const hostedZone = PublicHostedZone.fromPublicHostedZoneAttributes(
-      this,
-      "StickerlandiaHostedZone",
-      {
-        hostedZoneId: hostedZoneId,
-        zoneName: "stickerlandia.dev",
-      },
-    );
-
-    const cNameRecord = new CnameRecord(this, "CnameRecord", {
-      zone: hostedZone,
-      domainName: distribution.domainName,
-      recordName: `${props.environment}.${props.serviceName}`,
-      ttl: cdk.Duration.minutes(5),
-    });
-
     this.cloudfrontDistribution = distribution;
     // Use the custom domain with https:// scheme for URI construction in services
-    this.cloudfrontEndpoint = `https://${props.environment}.stickerlandia.dev`;
+    this.cloudfrontEndpoint = `https://${distribution.domainName}`;
   }
 }
