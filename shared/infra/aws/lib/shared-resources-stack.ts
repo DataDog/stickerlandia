@@ -19,28 +19,28 @@ export class StickerlandiaSharedResourcesStack extends cdk.Stack {
     super(scope, id, props);
 
     const env = process.env.ENV || "dev";
-    const certificateArn = process.env.CERTIFICATE_ARN!;
-    const hostedZoneId = process.env.HOSTED_ZONE_ID!;
+    const certificateArn = process.env.CERTIFICATE_ARN;
+    const hostedZoneId = process.env.HOSTED_ZONE_ID;
 
-    const hostedZone = PublicHostedZone.fromPublicHostedZoneAttributes(
-      this,
-      "StickerlandiaHostedZone",
-      {
-        hostedZoneId: hostedZoneId,
-        zoneName: "stickerlandia.dev",
-      },
-    );
+    const hostedZone = hostedZoneId
+      ? PublicHostedZone.fromPublicHostedZoneAttributes(
+          this,
+          "StickerlandiaHostedZone",
+          {
+            hostedZoneId: hostedZoneId,
+            zoneName: "stickerlandia.dev",
+          },
+        )
+      : undefined;
 
     const primaryDomainName = `https://${getPrimaryDomainName(env)}`;
 
     const network = new Network(this, "Network", {
       env,
       account: this.account,
-      certificate: Certificate.fromCertificateArn(
-        this,
-        "Certificate",
-        certificateArn,
-      ),
+      certificate: certificateArn
+        ? Certificate.fromCertificateArn(this, "Certificate", certificateArn)
+        : undefined,
     });
 
     const persistence = new Persistence(this, "Persistence", {
@@ -49,12 +49,14 @@ export class StickerlandiaSharedResourcesStack extends cdk.Stack {
       vpc: network.vpc,
     });
 
-    const cNameRecord = new CnameRecord(this, "CnameRecord", {
-      zone: hostedZone,
-      domainName: network.distribution.domainName,
-      recordName: env,
-      ttl: cdk.Duration.minutes(5),
-    });
+    if (hostedZone) {
+      const cNameRecord = new CnameRecord(this, "CnameRecord", {
+        zone: hostedZone,
+        domainName: network.distribution.domainName,
+        recordName: env,
+        ttl: cdk.Duration.minutes(5),
+      });
+    }
 
     const dnsNamespace = new PrivateDnsNamespace(this, "PrivateDnsNamespace", {
       name: `${env}.stickerlandia.local`,
