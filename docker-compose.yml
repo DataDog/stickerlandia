@@ -285,6 +285,11 @@ services:
     environment:
       # Quarkus profile - use prod-kafka for Kafka messaging
       QUARKUS_PROFILE: prod-kafka
+      # OAuth/JWT configuration
+      # OAUTH_ISSUER: Expected issuer claim in JWT tokens (external URL that user-management advertises)
+      OAUTH_ISSUER: ${DEPLOYMENT_HOST_URL:-http://localhost:8080}/
+      # MP_JWT_VERIFY_PUBLICKEY_LOCATION: Internal URL to fetch JWKS for signature verification
+      MP_JWT_VERIFY_PUBLICKEY_LOCATION: http://user-management:8080/.well-known/jwks
       # DataDog APM configuration
       DD_SERVICE: sticker-catalogue
       DD_ENV: development
