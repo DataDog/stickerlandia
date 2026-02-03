@@ -86,7 +86,7 @@ export class UserServiceStack extends cdk.Stack {
         DD_PROFILING_ENABLED: "true",
         // Required for Datadog .NET Continuous Profiler
         LD_PRELOAD: "/opt/datadog/linux-x64/Datadog.Linux.ApiWrapper.x64.so",
-        DEPLOYMENT_HOST_URL: `${sharedResources.cloudfrontDistribution.distributionDomainName}`,
+        DEPLOYMENT_HOST_URL: sharedResources.domainName,
         DRIVING: "ASPNET",
         DRIVEN: "AWS",
         DISABLE_SSL: "true",
@@ -107,6 +107,7 @@ export class UserServiceStack extends cdk.Stack {
 
     const serviceProps: ServiceProps = {
       cloudfrontDistribution: sharedResources.cloudfrontDistribution,
+      domainName: sharedResources.domainName,
       connectionStringSecret: dbCredentials.connectionStringSecret!,
       connectionStringParameter: dbCredentials.connectionStringParameter,
       databaseCredentials: dbCredentials,
@@ -153,7 +154,7 @@ export class UserServiceStack extends cdk.Stack {
 
     // CDK Outputs
     new cdk.CfnOutput(this, "ServiceApiUrl", {
-      value: `${sharedResources.cloudfrontDistribution.distributionDomainName}/api/users/v1`,
+      value: `${sharedResources.domainName}/api/users/v1`,
       description: "User Management Service API URL",
     });
   }

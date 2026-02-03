@@ -46,10 +46,12 @@ export class WebBackendStack extends cdk.Stack {
       cluster,
       ddApiKey,
       ddApiKeyParam,
-      ddSite
+      ddSite,
     );
 
-    const serviceProps = {};
+    const serviceProps = {
+      domainName: sharedResources.domainName,
+    };
 
     const api = new Api(this, "Api", {
       sharedProps: sharedProps,
@@ -67,7 +69,7 @@ export class WebBackendStack extends cdk.Stack {
 
     // CDK Outputs
     new cdk.CfnOutput(this, "ServiceApiUrl", {
-      value: `https://${sharedResources.cloudfrontDistribution.distributionDomainName}/api/app`,
+      value: `${serviceProps.domainName}/api/app`,
       description: "Web Backend Service API URL",
     });
   }

@@ -67,7 +67,9 @@ export class StickerlandiaSharedResourcesStack extends cdk.Stack {
     });
 
     new StringParameter(this, "CloudFrontEndpointParam", {
-      stringValue: `https://${dns.getPrimaryDomainName(env) ?? network.distribution.domainName}`,
+      stringValue: dns.getPrimaryDomainName(env)
+        ? `https://${dns.getPrimaryDomainName(env)}`
+        : network.distribution.distributionDomainName,
       parameterName: `/stickerlandia/${env}/shared/cloudfront-endpoint`,
     });
 

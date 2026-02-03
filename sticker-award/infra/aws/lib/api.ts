@@ -62,9 +62,10 @@ export class Api extends Construct {
 
     const secrets: { [key: string]: Secret } = {
       DD_API_KEY: Secret.fromSsmParameter(
-        props.sharedProps.datadog.apiKeyParameter
+        props.sharedProps.datadog.apiKeyParameter,
       ),
-      DATABASE_URL: props.serviceProps.databaseCredentials.getConnectionStringEcsSecret()!,
+      DATABASE_URL:
+        props.serviceProps.databaseCredentials.getConnectionStringEcsSecret()!,
       ...props.serviceProps.messagingConfiguration.asSecrets(),
     };
 
@@ -84,9 +85,9 @@ export class Api extends Construct {
         LOG_LEVEL: "info",
         LOG_FORMAT: "json",
         MESSAGING_PROVIDER: "aws",
-        CATALOGUE_BASE_URL: `https://${props.serviceProps.cloudfrontDistribution.distributionDomainName}`,
+        CATALOGUE_BASE_URL: props.serviceProps.domainName,
         USER_REGISTERED_QUEUE_URL: userRegisteredQueue.queueUrl,
-        OAUTH_ISSUER: `https://${props.serviceProps.cloudfrontDistribution.distributionDomainName}/`,
+        OAUTH_ISSUER: `${props.serviceProps.domainName}/`,
         ...props.serviceProps.messagingConfiguration.asEnvironmentVariables(),
       },
       secrets: secrets,
@@ -100,7 +101,7 @@ export class Api extends Construct {
     });
 
     props.serviceProps.messagingConfiguration.grantPermissions(
-      webService.taskRole
+      webService.taskRole,
     );
     userRegisteredQueue.grantConsumeMessages(webService.taskRole);
 
