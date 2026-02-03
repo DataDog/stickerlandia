@@ -72,12 +72,15 @@ export class SharedResources extends Construct {
   constructor(scope: Construct, id: string, props: SharedResourcesProps) {
     super(scope, id);
 
-    // If a VPC is provided, use that to configure shared resources.
-    if (this.integrationEnvironments.includes(props.environment || "")) {
-      this.configureSharedResourcesFromParameters(props);
-    } else {
-      this.createSharedResourcesForEnvironment(props);
-    }
+    this.configureSharedResourcesFromParameters(props);
+
+    // Temporarily commented out, need to re-visit independent deployablility.
+    // In the meantime, shared infra must be deployed to use ANY AWS resources.
+    // if (this.integrationEnvironments.includes(props.environment || "")) {
+    //   this.configureSharedResourcesFromParameters(props);
+    // } else {
+    //   this.createSharedResourcesForEnvironment(props);
+    // }
   }
 
   configureSharedResourcesFromParameters(props: SharedResourcesProps) {
@@ -178,7 +181,7 @@ export class SharedResources extends Construct {
       !sharedDbClusterIdentifier ||
       !sharedDbSecretArn
     ) {
-      throw new Error("Parameters for shared resources are not set correctly.");
+      throw new Error("Parameters for shared resources are not set correctly, you may need to deploy the shared infra stack.");
     }
     this.vpc = Vpc.fromLookup(this, "StickerlandiaVpc", {
       vpcId: vpcId,
