@@ -186,7 +186,7 @@ export class SharedResources extends Construct {
       !sharedEventBus ||
       !sharedDbClusterIdentifier ||
       !sharedDbSecretArn ||
-      domainNameParameter
+      !domainNameParameter
     ) {
       throw new Error(
         "Parameters for shared resources are not set correctly, you may need to deploy the shared infra stack.",
