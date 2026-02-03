@@ -34,19 +34,20 @@ export class Dns extends Construct {
         "ImportedCertificate",
         certificateArn,
       );
+
     } else {
       this.certificate = undefined;
       this.hostedZone = undefined;
     }
   }
 
-  addCnameFor(distribution: Distribution) {
+  addCnameFor(distribution: Distribution, env: string) {
     // Add a CName if the hosted zone exists.
     if (this.hostedZone) {
       const cNameRecord = new CnameRecord(this, "CnameRecord", {
         zone: this.hostedZone!,
         domainName: distribution.domainName,
-        recordName: this.getPrimaryDomainName("prod")!,
+        recordName: this.getPrimaryDomainName(env)!,
         ttl: Duration.minutes(5),
       });
     }
