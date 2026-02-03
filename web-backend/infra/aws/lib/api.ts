@@ -41,7 +41,7 @@ export class Api extends Construct {
   userRegisteredTopic: Topic;
   constructor(scope: Construct, id: string, props: ApiProps) {
     super(scope, id);
-    const deploymentHostUrl = `https://${props.cloudfrontDistribution.distributionDomainName}`;
+    const deploymentHostUrl = `${props.cloudfrontDistribution.distributionDomainName}`;
 
     const webService = new WebService(this, "WebBackendApplication", {
       sharedProps: props.sharedProps,
