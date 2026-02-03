@@ -21,11 +21,13 @@ public static class ServiceExtensions
     public static IServiceCollection AddAzureAdapters(this IServiceCollection services, IConfiguration configuration, bool enableDefaultUi = true)
     {
         ArgumentNullException.ThrowIfNull(configuration, nameof(configuration));
-        
+
+        // AddPostgresAuthServices also configures Data Protection with EF Core
+        // This ensures keys are shared across all instances and persist across restarts
         services.AddPostgresAuthServices(configuration, enableDefaultUi);
 
         services.AddSingleton<IMessagingWorker, ServiceBusStickerClaimedWorker>();
-        
+
         services.AddSingleton<ServiceBusClient>(sp =>
             new ServiceBusClient(configuration["ConnectionStrings:messaging"]));
 
