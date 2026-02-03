@@ -287,7 +287,7 @@ services:
       QUARKUS_PROFILE: prod-kafka
       # DataDog APM configuration
       DD_SERVICE: sticker-catalogue
-      DD_ENV: development
+      DD_ENV: ${ENV:-development}
       DD_VERSION: ${COMMIT_SHA:-latest}
       DD_AGENT_HOST: datadog-agent
       DD_DATA_STREAMS_ENABLED: "true"
@@ -335,7 +335,7 @@ services:
     environment:
       # DataDog APM configuration
       DD_SERVICE: user-management
-      DD_ENV: development
+      DD_ENV: ${ENV:-development}
       DD_VERSION: ${COMMIT_SHA:-latest}
       DD_AGENT_HOST: datadog-agent
       DD_DATA_STREAMS_ENABLED: true
@@ -386,7 +386,7 @@ services:
     environment:
       # DataDog APM configuration
       DD_SERVICE: user-management-worker
-      DD_ENV: development
+      DD_ENV: ${ENV:-development}
       DD_VERSION: ${COMMIT_SHA:-latest}
       DD_AGENT_HOST: datadog-agent
       DD_DATA_STREAMS_ENABLED: true
@@ -418,7 +418,7 @@ services:
     environment:
       # DataDog APM configuration
       DD_SERVICE: user-management-migration-service
-      DD_ENV: development
+      DD_ENV: ${ENV:-development}
       DD_VERSION: ${COMMIT_SHA:-latest}
       DD_AGENT_HOST: datadog-agent
       DD_TRACE_OTEL_ENABLED: "true"
@@ -450,7 +450,7 @@ services:
     environment:
       # DataDog APM configuration
       DD_SERVICE: web-backend
-      DD_ENV: development
+      DD_ENV: ${ENV:-development}
       DD_VERSION: ${COMMIT_SHA:-latest}
       DD_AGENT_HOST: datadog-agent
       # Application configuration
@@ -478,7 +478,7 @@ services:
       DD_RUM_APPLICATION_ID: ${DD_RUM_APPLICATION_ID}
       DD_RUM_CLIENT_TOKEN: ${DD_RUM_CLIENT_TOKEN}
       DD_SITE: ${DD_SITE:-datadoghq.eu}
-      DD_ENV: production
+      DD_ENV: ${ENV:-development}
       DD_VERSION: ${COMMIT_SHA:-latest}
       DD_SERVICE: web-frontend
     labels:
@@ -504,7 +504,7 @@ services:
     environment:
       # DataDog APM configuration
       DD_SERVICE: sticker-award
-      DD_ENV: development
+      DD_ENV: ${ENV:-development}
       DD_VERSION: ${COMMIT_SHA:-latest}
       DD_AGENT_HOST: datadog-agent
       DD_DATA_STREAMS_ENABLED: true
