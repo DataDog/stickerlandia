@@ -166,22 +166,22 @@ export class Network extends Construct {
         origin: S3BucketOrigin.withOriginAccessIdentity(webFrontendBucket, {
           originAccessIdentity: originIdentity,
         }),
-        // SPA routing: return index.html for any unmatched routes on the frontend
-        // S3 with OAI returns 403 for non-existent files, so we handle both 403 and 404
-        // This only applies to the default behavior (S3/frontend), not API routes
-        errorResponses: [
-          {
-            httpStatus: 403,
-            responseHttpStatus: 200,
-            responsePagePath: "/index.html",
-          },
-          {
-            httpStatus: 404,
-            responseHttpStatus: 200,
-            responsePagePath: "/index.html",
-          },
-        ],
       },
+      // SPA routing: return index.html for any unmatched routes on the frontend
+      // S3 with OAI returns 403 for non-existent files, so we handle both 403 and 404
+      // NOTE: This applies to all behaviors including API routes - see #173
+      errorResponses: [
+        {
+          httpStatus: 403,
+          responseHttpStatus: 200,
+          responsePagePath: "/index.html",
+        },
+        {
+          httpStatus: 404,
+          responseHttpStatus: 200,
+          responsePagePath: "/index.html",
+        },
+      ],
     });
 
     const region = cdk.Stack.of(this).region;

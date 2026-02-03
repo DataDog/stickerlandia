@@ -73,7 +73,8 @@ export class SharedResources extends Construct {
     super(scope, id);
 
     // If a VPC is provided, use that to configure shared resources.
-    if (this.integrationEnvironments.includes(props.environment || "")) {
+    // || true: disable for now until we've tested it
+    if (this.integrationEnvironments.includes(props.environment || "") || true) {
       this.configureSharedResourcesFromParameters(props);
     } else {
       this.createSharedResourcesForEnvironment(props);
