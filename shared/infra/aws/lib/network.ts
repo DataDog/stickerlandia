@@ -161,7 +161,7 @@ export class Network extends Construct {
       comment: `OAI for stickerlandia web frontend ${props.env}`,
     });
     webFrontendBucket.grantRead(originIdentity);
-
+    
     this.distribution = new Distribution(this, `Stickerlandia-${props.env}`, {
       certificate: props.dns.certificate,
       domainNames: props.dns.getPrimaryDomainName(props.env)

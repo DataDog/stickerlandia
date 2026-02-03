@@ -31,7 +31,7 @@ export class StickerlandiaSharedResourcesStack extends cdk.Stack {
       dns: dns,
     });
 
-    dns.addCnameFor(network.distribution);
+    dns.addCnameFor(network.distribution, env);
 
     const persistence = new Persistence(this, "Persistence", {
       env,
