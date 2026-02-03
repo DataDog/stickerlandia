@@ -113,7 +113,7 @@ run = "docker compose --profile monitoring build && docker compose --profile mon
 [tasks."compose:deploy:release"]
 description = "Deploy all services using prebuilt GHCR images"
 depends = ["env:setup"]
-run = "docker compose --profile monitoring -f docker-compose.yml -f docker-compose.prebuilt.yml up -d"
+run = "docker compose --profile monitoring --profile load-test -f docker-compose.yml -f docker-compose.prebuilt.yml up -d"
 
 [tasks."compose:deploy:ci"]
 description = "Deploy services for CI (no monitoring)"
