@@ -23,6 +23,17 @@ test.describe('Sticker Catalogue', () => {
     expect(count).toBeGreaterThan(0);
   });
 
+  test('authenticated API call returns 200', async ({ page }) => {
+    const responsePromise = page.waitForResponse(
+      resp => resp.url().includes('/api/stickers/v1/') && resp.request().method() === 'GET'
+    );
+
+    await catalogue.goto();
+
+    const response = await responsePromise;
+    expect(response.status()).toBe(200);
+  });
+
   test('sticker cards show name, image, and description', async () => {
     await catalogue.waitForStickersLoaded();
 
