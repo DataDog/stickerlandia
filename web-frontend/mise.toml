@@ -35,25 +35,25 @@ run = "npm ci"
 [tasks."aws:deploy"]
 description = "Deploy frontend assets to AWS S3"
 dir = "infra/aws"
-depends = ["infra:install", "//:aws:guard", "build:local", "//shared:aws:deploy"]
+depends = ["infra:install", "build:local", "//shared:aws:deploy"]
 run = "npx cdk deploy --require-approval never"
 
 [tasks."aws:deploy:local"]
 description = "Deploy frontend to AWS (local mode)"
-depends = ["//:env:setup", "//:aws:guard", "//shared:aws:deploy:local"]
+depends = ["//:env:setup", "//shared:aws:deploy:local"]
 env = { DEPLOY_MODE = "local" }
 run = "mise run aws:deploy"
 
 [tasks."aws:deploy:release"]
 description = "Deploy frontend to AWS (release mode)"
-depends = ["//:env:setup", "//:aws:guard", "//shared:aws:deploy:release"]
+depends = ["//:env:setup", "//shared:aws:deploy:release"]
 env = { DEPLOY_MODE = "release" }
 run = "mise run aws:deploy"
 
 [tasks."aws:down"]
 description = "Destroy AWS stack"
 dir = "infra/aws"
-depends = ["infra:install", "//:aws:guard"]
+depends = ["infra:install"]
 run = "npx cdk destroy --force"
 
 [tasks."aws:info"]

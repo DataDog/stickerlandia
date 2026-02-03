@@ -40,15 +40,9 @@ fi
 
 echo "Creating .env file..."
 echo "Press Enter to use default values shown in brackets"
-echo ""
-echo "NOTE: 'dev' and 'prod' are protected environments (CI/CD only)."
-echo "      Use your initials or a personal name for local development."
-echo ""
 
-DEFAULT_ENV=$(whoami | tr -cd '[:alnum:]')
-read -p "Environment name [$DEFAULT_ENV]: " ENV
-ENV=${ENV:-$DEFAULT_ENV}
-ENV=$(echo "$ENV" | tr -cd '[:alnum:]')
+read -p "Environment name (e.g., your initials) [dev]: " ENV
+ENV=${ENV:-dev}
 
 read -p "Datadog API Key: " DD_API_KEY
 read -p "Datadog Site [datadoghq.eu]: " DD_SITE
@@ -168,88 +162,9 @@ run = "./scripts/test-services.sh --max-retries 5 --retry-delay 10"
 #   COMMIT_SHA=abc123 npx cdk deploy (from infra/aws directory)
 # =============================================================================
 
-# =============================================================================
-# aws: AWS deployment tasks
-#
-# Deployment modes are controlled via the DEPLOY_MODE environment variable:
-#   - local:   Build containers from local Dockerfiles (DEPLOY_MODE=local)
-#   - release: Pull prebuilt images from GHCR tagged "latest" (DEPLOY_MODE=release)
-#   - (unset): Falls back to COMMIT_SHA env var, or "latest" if not set
-#
-# DEPLOY_MODE is NOT stored in .env, so it propagates naturally through
-# subprocess calls. CDK's SharedProps reads DEPLOY_MODE and sets the
-# appropriate image tag. Services can define their own aws:deploy:local
-# and aws:deploy:release tasks that set DEPLOY_MODE and delegate to aws:deploy.
-#
-# To deploy a specific tagged version from the registry (e.g., a CI-built
-# image), set COMMIT_SHA to the desired tag and run aws:deploy directly
-# without setting DEPLOY_MODE. For example:
-#   COMMIT_SHA=abc123 npx cdk deploy (from infra/aws directory)
-#
-# PROTECTED ENVIRONMENTS:
-#   The 'dev' and 'prod' environments are protected and can ONLY be deployed
-#   to from CI/CD pipelines. Local deployments to these environments will be
-#   blocked by the aws:guard task. This ensures:
-#     - Production stability (no accidental local deployments)
-#     - Consistent deployment process through CI/CD
-#     - Audit trail for all production changes
-#
-#   For local development, use a personal environment name (e.g., your initials).
-#   CI/CD pipelines are detected via standard environment variables:
-#     - CI=true (generic, set by most CI systems)
-#     - GITHUB_ACTIONS=true (GitHub Actions)
-#     - GITLAB_CI=true (GitLab CI)
-#     - CIRCLECI=true (CircleCI)
-#     - JENKINS_URL (Jenkins)
-# =============================================================================
-
-# Guard task to prevent local deployments to protected environments (dev/prod)
-# This task is automatically run as a dependency of aws:deploy:* tasks
-[tasks."aws:guard"]
-description = "Guard against deploying to protected environments locally"
-hide = true
-run = """
-# Protected environment names - only CI/CD can deploy to these
-PROTECTED_ENVS="dev prod"
-
-for protected in $PROTECTED_ENVS; do
-  if [ "$ENV" = "$protected" ]; then
-    # Check for common CI environment variables
-    # Most CI systems set at least one of these
-    if [ -n "$CI" ] || [ -n "$GITHUB_ACTIONS" ] || [ -n "$GITLAB_CI" ] || [ -n "$CIRCLECI" ] || [ -n "$JENKINS_URL" ]; then
-      echo "CI environment detected - allowing deployment to '$ENV'"
-      exit 0
-    fi
-
-    echo ""
-    echo "=========================================="
-    echo "  DEPLOYMENT BLOCKED"
-    echo "=========================================="
-    echo ""
-    echo "  Cannot deploy to '$ENV' from a local machine."
-    echo ""
-    echo "  The '$ENV' environment is protected and can only"
-    echo "  be deployed to through CI/CD pipelines."
-    echo ""
-    echo "  For local development, please use a personal"
-    echo "  environment name (e.g., your initials):"
-    echo ""
-    echo "    1. Delete or edit your .env file"
-    echo "    2. Run: mise run env:setup"
-    echo "    3. Enter a personal environment name"
-    echo ""
-    echo "=========================================="
-    echo ""
-    exit 1
-  fi
-done
-
-echo "Environment '$ENV' is not protected - proceeding with deployment"
-"""
-
 [tasks."aws:deploy:local"]
 description = "Deploy to AWS (build containers locally)"
-depends = ["env:setup", "aws:guard"]
+depends = ["env:setup"]
 env = { DEPLOY_MODE = "local" }
 run = """
 echo "=== Deploying Stickerlandia to AWS: $ENV (DEPLOY_MODE=$DEPLOY_MODE) ==="
@@ -264,7 +179,7 @@ echo "=== Deployment complete! ==="
 
 [tasks."aws:deploy:release"]
 description = "Deploy to AWS using prebuilt GHCR images"
-depends = ["env:setup", "aws:guard"]
+depends = ["env:setup"]
 env = { DEPLOY_MODE = "release" }
 run = """
 echo "=== Deploying Stickerlandia to AWS: $ENV (DEPLOY_MODE=$DEPLOY_MODE) ==="
@@ -279,7 +194,7 @@ echo "=== Deployment complete! ==="
 
 [tasks."aws:down"]
 description = "Destroy all AWS stacks"
-depends = ["//shared:aws:down", "aws:guard"]
+depends = ["//shared:aws:down"]
 run = """
 echo '=== Cleaning up CDK context cache ==='
 find . -name 'cdk.context.json' -type f -delete
