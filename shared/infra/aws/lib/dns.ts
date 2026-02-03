@@ -20,10 +20,13 @@ export class Dns extends Construct {
     const certificateArn = process.env.CERTIFICATE_ARN!;
 
     if (hostedZoneId && certificateArn) {
-      this.hostedZone = PublicHostedZone.fromHostedZoneId(
+      this.hostedZone = PublicHostedZone.fromHostedZoneAttributes(
         this,
         "ImportedHostedZone",
-        hostedZoneId,
+        {
+          hostedZoneId: hostedZoneId,
+          zoneName: "stickerlandia.dev",
+        },
       ) as PublicHostedZone;
 
       this.certificate = Certificate.fromCertificateArn(
