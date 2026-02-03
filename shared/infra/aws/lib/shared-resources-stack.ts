@@ -7,11 +7,11 @@
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { Network } from "./network";
-import { CorsHttpMethod, HttpApi } from "aws-cdk-lib/aws-apigatewayv2";
 import { PrivateDnsNamespace } from "aws-cdk-lib/aws-servicediscovery";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
 import { EventBus } from "aws-cdk-lib/aws-events";
 import { Persistence } from "./persistence";
+import { Dns } from "./dns";
 // import * as sqs from 'aws-cdk-lib/aws-sqs';
 
 export class StickerlandiaSharedResourcesStack extends cdk.Stack {
@@ -20,10 +20,18 @@ export class StickerlandiaSharedResourcesStack extends cdk.Stack {
 
     const env = process.env.ENV || "dev";
 
-    const network = new Network(this, "Network", {
+    const dns = new Dns(this, "Dns", {
       env,
       account: this.account,
     });
+
+    const network = new Network(this, "Network", {
+      env,
+      account: this.account,
+      dns: dns,
+    });
+
+    dns.addCnameFor(network.distribution);
 
     const persistence = new Persistence(this, "Persistence", {
       env,
@@ -58,16 +66,12 @@ export class StickerlandiaSharedResourcesStack extends cdk.Stack {
       parameterName: `/stickerlandia/${env}/shared/vpc-link-id`,
     });
 
-    const cloudfrontEndpoint = new StringParameter(
-      this,
-      "CloudFrontEndpointParam",
-      {
-        stringValue: network.distribution.domainName,
-        parameterName: `/stickerlandia/${env}/shared/cloudfront-endpoint`,
-      }
-    );
+    new StringParameter(this, "CloudFrontEndpointParam", {
+      stringValue: `https://${dns.getPrimaryDomainName(env) ?? network.distribution.domainName}`,
+      parameterName: `/stickerlandia/${env}/shared/cloudfront-endpoint`,
+    });
 
-    const cloudfrontId = new StringParameter(this, "CloudFrontIdParam", {
+    new StringParameter(this, "CloudFrontIdParam", {
       stringValue: network.distribution.distributionId,
       parameterName: `/stickerlandia/${env}/shared/cloudfront-id`,
     });
@@ -76,19 +80,19 @@ export class StickerlandiaSharedResourcesStack extends cdk.Stack {
       eventBusName: `stickerlandia-${env}-event-bus`,
     });
 
-    const eventBusName = new StringParameter(this, "EventBusNameParam", {
+    new StringParameter(this, "EventBusNameParam", {
       stringValue: eventBus.eventBusName,
       parameterName: `/stickerlandia/${env}/shared/eb-name`,
     });
 
-    const ebArnParam = new StringParameter(this, "EventBusArnParam", {
+    new StringParameter(this, "EventBusArnParam", {
       stringValue: eventBus.eventBusArn,
       parameterName: `/stickerlandia/${env}/shared/eb-arn`,
     });
 
     // CDK Outputs
     new cdk.CfnOutput(this, "BaseUrl", {
-      value: `https://${network.distribution.domainName}`,
+      value: `https://${dns.getPrimaryDomainName(env) ?? network.distribution.domainName}`,
       description: "Base URL for Stickerlandia (CloudFront distribution)",
       exportName: `stickerlandia-${env}-base-url`,
     });

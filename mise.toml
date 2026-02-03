@@ -40,10 +40,10 @@ fi
 
 echo "Creating .env file..."
 echo "Press Enter to use default values shown in brackets"
-echo ""
 
 read -p "Environment name (e.g., your initials) [dev]: " ENV
 ENV=${ENV:-dev}
+
 read -p "Datadog API Key: " DD_API_KEY
 read -p "Datadog Site [datadoghq.eu]: " DD_SITE
 DD_SITE=${DD_SITE:-datadoghq.eu}
