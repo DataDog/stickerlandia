@@ -41,13 +41,13 @@ import {
   LoadBalancerV2Origin,
   S3BucketOrigin,
 } from "aws-cdk-lib/aws-cloudfront-origins";
-import { DnsValidatedCertificate, ICertificate } from "aws-cdk-lib/aws-certificatemanager";
+import { ICertificate } from "aws-cdk-lib/aws-certificatemanager";
 import { Dns } from "./dns";
 
 export interface NetworkProps {
   env: string;
   account: string;
-  certificate?: DnsValidatedCertificate;
+  dns: Dns;
 }
 
 export class Network extends Construct {
@@ -162,15 +162,11 @@ export class Network extends Construct {
     });
     webFrontendBucket.grantRead(originIdentity);
 
-    // If the certificate is passed in, create a domain for that specific environment.
-    const primaryDomainName = Dns.getPrimaryDomainName(
-      props.env,
-    );
-    const domainName = primaryDomainName ? [primaryDomainName] : undefined;
-
     this.distribution = new Distribution(this, `Stickerlandia-${props.env}`, {
-      certificate: props.certificate,
-      domainNames: domainName,
+      certificate: props.dns.certificate,
+      domainNames: props.dns.getPrimaryDomainName(props.env)
+        ? [props.dns.getPrimaryDomainName(props.env)!]
+        : undefined,
       minimumProtocolVersion: SecurityPolicyProtocol.TLS_V1_2_2021,
       defaultRootObject: "index.html",
       // SPA routing: return index.html for any unmatched routes on the frontend

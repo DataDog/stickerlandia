@@ -1,8 +1,6 @@
-import {
-  DnsValidatedCertificate,
-  DnsValidatedCertificateProps,
-  ICertificate,
-} from "aws-cdk-lib/aws-certificatemanager";
+import { Duration } from "aws-cdk-lib";
+import { Certificate, ICertificate } from "aws-cdk-lib/aws-certificatemanager";
+import { Distribution, IDistribution } from "aws-cdk-lib/aws-cloudfront";
 import { CnameRecord, PublicHostedZone } from "aws-cdk-lib/aws-route53";
 import { Construct } from "constructs";
 
@@ -12,30 +10,50 @@ export interface DnsProps {
 }
 
 export class Dns extends Construct {
-  certificate?: DnsValidatedCertificate;
-  hostedZone: PublicHostedZone;
+  certificate?: ICertificate;
+  hostedZone?: PublicHostedZone;
 
   constructor(scope: Construct, id: string, props: DnsProps) {
     super(scope, id);
 
-    this.hostedZone = new PublicHostedZone(this, "StickerlandiaHostedZone", {
-      zoneName: `stickerlandia.dev`,
-    });
+    const hostedZoneId = process.env.HOSTED_ZONE_ID!;
+    const certificateArn = process.env.CERTIFICATE_ARN!;
 
-    this.certificate = new DnsValidatedCertificate(
-      this,
-      "MyDnsValidatedCertificate",
-      {
-        domainName: Dns.getPrimaryDomainName(props.env)!,
-        hostedZone: this.hostedZone,
-        region: "us-east-1", // CloudFront only checks this region for certificates.
-      },
-    );
+    if (hostedZoneId && certificateArn) {
+      this.hostedZone = PublicHostedZone.fromHostedZoneId(
+        this,
+        "ImportedHostedZone",
+        hostedZoneId,
+      ) as PublicHostedZone;
+
+      this.certificate = Certificate.fromCertificateArn(
+        this,
+        "ImportedCertificate",
+        certificateArn,
+      );
+    } else {
+      this.certificate = undefined;
+      this.hostedZone = undefined;
+    }
   }
 
-  static getPrimaryDomainName(env: string): string | undefined {
-    return env === "prod"
-      ? "app.stickerlandia.dev"
-      : `${env}.stickerlandia.dev`;
+  addCnameFor(distribution: Distribution) {
+    // Add a CName if the hosted zone exists.
+    if (this.hostedZone) {
+      const cNameRecord = new CnameRecord(this, "CnameRecord", {
+        zone: this.hostedZone!,
+        domainName: distribution.domainName,
+        recordName: this.getPrimaryDomainName("prod")!,
+        ttl: Duration.minutes(5),
+      });
+    }
+  }
+
+  getPrimaryDomainName(env: string): string | undefined {
+    return this.certificate
+      ? env === "prod"
+        ? "app.stickerlandia.dev"
+        : `${env}.stickerlandia.dev`
+      : undefined;
   }
 }

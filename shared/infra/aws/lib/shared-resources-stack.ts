@@ -11,7 +11,6 @@ import { PrivateDnsNamespace } from "aws-cdk-lib/aws-servicediscovery";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
 import { EventBus } from "aws-cdk-lib/aws-events";
 import { Persistence } from "./persistence";
-import { CnameRecord } from "aws-cdk-lib/aws-route53";
 import { Dns } from "./dns";
 // import * as sqs from 'aws-cdk-lib/aws-sqs';
 
@@ -20,7 +19,6 @@ export class StickerlandiaSharedResourcesStack extends cdk.Stack {
     super(scope, id, props);
 
     const env = process.env.ENV || "dev";
-    const domainName = Dns.getPrimaryDomainName(env);
 
     const dns = new Dns(this, "Dns", {
       env,
@@ -30,20 +28,15 @@ export class StickerlandiaSharedResourcesStack extends cdk.Stack {
     const network = new Network(this, "Network", {
       env,
       account: this.account,
-      certificate: dns.certificate,
+      dns: dns,
     });
+
+    dns.addCnameFor(network.distribution);
 
     const persistence = new Persistence(this, "Persistence", {
       env,
       account: this.account,
       vpc: network.vpc,
-    });
-
-    const cNameRecord = new CnameRecord(this, "CnameRecord", {
-      zone: dns.hostedZone,
-      domainName: network.distribution.domainName,
-      recordName: env === "prod" ? "app" : env,
-      ttl: cdk.Duration.minutes(5),
     });
 
     const dnsNamespace = new PrivateDnsNamespace(this, "PrivateDnsNamespace", {
@@ -74,7 +67,7 @@ export class StickerlandiaSharedResourcesStack extends cdk.Stack {
     });
 
     new StringParameter(this, "CloudFrontEndpointParam", {
-      stringValue: `https://${domainName ?? network.distribution.domainName}`,
+      stringValue: `https://${dns.getPrimaryDomainName(env) ?? network.distribution.domainName}`,
       parameterName: `/stickerlandia/${env}/shared/cloudfront-endpoint`,
     });
 
@@ -99,7 +92,7 @@ export class StickerlandiaSharedResourcesStack extends cdk.Stack {
 
     // CDK Outputs
     new cdk.CfnOutput(this, "BaseUrl", {
-      value: `https://${domainName ?? network.distribution.domainName}`,
+      value: `https://${dns.getPrimaryDomainName(env) ?? network.distribution.domainName}`,
       description: "Base URL for Stickerlandia (CloudFront distribution)",
       exportName: `stickerlandia-${env}-base-url`,
     });
