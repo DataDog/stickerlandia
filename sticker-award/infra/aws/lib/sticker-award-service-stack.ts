@@ -97,7 +97,7 @@ export class StickerAwardServiceStack extends cdk.Stack {
 
     // CDK Outputs
     new cdk.CfnOutput(this, "ServiceApiUrl", {
-      value: `https://${sharedResources.cloudfrontDistribution.distributionDomainName}/api/awards/v1`,
+      value: `${sharedResources.cloudfrontDistribution.distributionDomainName}/api/awards/v1`,
       description: "Sticker Award Service API URL",
     });
   }

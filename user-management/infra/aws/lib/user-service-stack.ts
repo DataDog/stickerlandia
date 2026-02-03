@@ -153,7 +153,7 @@ export class UserServiceStack extends cdk.Stack {
 
     // CDK Outputs
     new cdk.CfnOutput(this, "ServiceApiUrl", {
-      value: `https://${sharedResources.cloudfrontDistribution.distributionDomainName}/api/users/v1`,
+      value: `${sharedResources.cloudfrontDistribution.distributionDomainName}/api/users/v1`,
       description: "User Management Service API URL",
     });
   }

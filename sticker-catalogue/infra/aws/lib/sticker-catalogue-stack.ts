@@ -102,7 +102,7 @@ export class StickerCatalogueServiceStack extends cdk.Stack {
 
     // CDK Outputs
     new cdk.CfnOutput(this, "ServiceApiUrl", {
-      value: `https://${sharedResources.cloudfrontDistribution.distributionDomainName}/api/stickers/v1/`,
+      value: `${sharedResources.cloudfrontDistribution.distributionDomainName}/api/stickers/v1/`,
       description: "Sticker Catalogue Service API URL",
     });
   }
