@@ -41,12 +41,13 @@ import {
   LoadBalancerV2Origin,
   S3BucketOrigin,
 } from "aws-cdk-lib/aws-cloudfront-origins";
-import { ICertificate } from "aws-cdk-lib/aws-certificatemanager";
+import { DnsValidatedCertificate, ICertificate } from "aws-cdk-lib/aws-certificatemanager";
+import { Dns } from "./dns";
 
 export interface NetworkProps {
   env: string;
   account: string;
-  certificate?: ICertificate;
+  certificate?: DnsValidatedCertificate;
 }
 
 export class Network extends Construct {
@@ -162,8 +163,7 @@ export class Network extends Construct {
     webFrontendBucket.grantRead(originIdentity);
 
     // If the certificate is passed in, create a domain for that specific environment.
-    const primaryDomainName = getPrimaryDomainName(
-      props.certificate,
+    const primaryDomainName = Dns.getPrimaryDomainName(
       props.env,
     );
     const domainName = primaryDomainName ? [primaryDomainName] : undefined;
@@ -265,15 +265,4 @@ export class Network extends Construct {
       },
     );
   }
-}
-
-export function getPrimaryDomainName(
-  cert: ICertificate | undefined,
-  env: string,
-): string | undefined {
-  return cert
-    ? env === "prod"
-      ? "app.stickerlandia.dev"
-      : `${env}.stickerlandia.dev`
-    : undefined;
 }
