@@ -28,6 +28,7 @@ export class Dns extends Construct {
       {
         domainName: Dns.getPrimaryDomainName(props.env)!,
         hostedZone: this.hostedZone,
+        region: "us-east-1", // CloudFront only checks this region for certificates.
       },
     );
   }
