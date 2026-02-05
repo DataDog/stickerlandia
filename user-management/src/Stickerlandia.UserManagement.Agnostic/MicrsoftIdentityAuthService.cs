@@ -48,7 +48,7 @@ public class MicrosoftIdentityAuthService(
         // Add Custom claims
         identity.AddClaim(new Claim(OpenIddictConstants.Claims.Name, user.Id));
         identity.AddClaim(new Claim(OpenIddictConstants.Claims.Subject, user.Id));
-        identity.AddClaim(new Claim(OpenIddictConstants.Claims.Audience, "Resource"));
+        identity.AddClaim(new Claim(OpenIddictConstants.Claims.Audience, "stickerlandia"));
         identity.AddClaim(new Claim(OpenIddictConstants.Claims.Email, user.Email ?? ""));
         identity.AddClaim(new Claim(OpenIddictConstants.Claims.Username, user.Id));
 
@@ -70,9 +70,11 @@ public class MicrosoftIdentityAuthService(
                 => new[] { OpenIddictConstants.Destinations.AccessToken },
 
             OpenIddictConstants.Claims.Email or
-                OpenIddictConstants.Claims.Role or
                 OpenIddictConstants.Claims.PreferredUsername
                 => new[] { OpenIddictConstants.Destinations.IdentityToken },
+
+            OpenIddictConstants.Claims.Role
+                => new[] { OpenIddictConstants.Destinations.AccessToken, OpenIddictConstants.Destinations.IdentityToken },
 
             _ => Array.Empty<string>()
         };

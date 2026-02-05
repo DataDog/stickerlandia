@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Aspire_StickerClaimedProcessorFunction": {
+      "commandName": "Executable",
+      "executablePath": "dotnet",
+      "commandLineArgs": "exec --depsfile ./Stickerlandia.PrintService.Lambda.deps.json --runtimeconfig ./Stickerlandia.PrintService.Lambda.runtimeconfig.json $(HOME)/.dotnet/tools/.store/amazon.lambda.testtool/0.10.3/amazon.lambda.testtool/0.10.3/content/Amazon.Lambda.RuntimeSupport/net8.0/Amazon.Lambda.RuntimeSupport.dll Stickerlandia.PrintService.Lambda::Stickerlandia.PrintService.Lambda.Sqs_StickerClaimed_Generated::StickerClaimed",
+      "workingDirectory": "./bin/$(Configuration)/net8.0"
+    }
+  }
+}
