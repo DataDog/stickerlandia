@@ -67,7 +67,13 @@ export class Api extends Construct {
       ddApiKey: props.sharedProps.datadog.apiKeyParameter,
       port: 8080,
       environmentVariables: {
-        DEPLOYMENT_HOST_URL: `https://${props.serviceProps.cloudfrontDistribution.distributionDomainName}`,
+        DD_TRACE_OTEL_ENABLED: "true",
+        DD_LOGS_INJECTION: "true",
+        DD_RUNTIME_METRICS_ENABLED: "true",
+        DD_PROFILING_ENABLED: "true",
+        // Required for Datadog .NET Continuous Profiler
+        LD_PRELOAD: "/opt/datadog/linux-x64/Datadog.Linux.ApiWrapper.x64.so",
+        DEPLOYMENT_HOST_URL: props.serviceProps.domainName,
         DRIVING: "ASPNET",
         DRIVEN: "AWS",
         DISABLE_SSL: "true",
@@ -79,7 +85,7 @@ export class Api extends Construct {
       },
       secrets: {
         DD_API_KEY: Secret.fromSsmParameter(
-          props.sharedProps.datadog.apiKeyParameter
+          props.sharedProps.datadog.apiKeyParameter,
         ),
         ConnectionStrings__database:
           props.serviceProps.databaseCredentials.getConnectionStringEcsSecret()!,

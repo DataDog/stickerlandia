@@ -302,9 +302,14 @@ services:
     environment:
       # Quarkus profile - use prod-kafka for Kafka messaging
       QUARKUS_PROFILE: prod-kafka
+      # OAuth/JWT configuration
+      # OAUTH_ISSUER: Expected issuer claim in JWT tokens (external URL that user-management advertises)
+      OAUTH_ISSUER: ${DEPLOYMENT_HOST_URL:-http://localhost:8080}/
+      # MP_JWT_VERIFY_PUBLICKEY_LOCATION: Internal URL to fetch JWKS for signature verification
+      MP_JWT_VERIFY_PUBLICKEY_LOCATION: http://user-management:8080/.well-known/jwks
       # DataDog APM configuration
       DD_SERVICE: sticker-catalogue
-      DD_ENV: development
+      DD_ENV: ${ENV:-development}
       DD_VERSION: ${COMMIT_SHA:-latest}
       DD_AGENT_HOST: datadog-agent
       DD_DATA_STREAMS_ENABLED: "true"
@@ -431,18 +436,24 @@ services:
     environment:
       # DataDog APM configuration
       DD_SERVICE: user-management
-      DD_ENV: development
+      DD_ENV: ${ENV:-development}
       DD_VERSION: ${COMMIT_SHA:-latest}
       DD_AGENT_HOST: datadog-agent
       DD_DATA_STREAMS_ENABLED: true
       DD_TRACE_OTEL_ENABLED: "true"
       DD_LOGS_INJECTION: "true"
       DD_RUNTIME_METRICS_ENABLED: "true"
+      # The .NET profiler does not support ARM64, this won't work if running on Apple Silicon Macs
+      DD_PROFILING_ENABLED: "true"
+      # Required for Datadog .NET Continuous Profiler (x64 only)
+      LD_PRELOAD: /opt/datadog/linux-x64/Datadog.Linux.ApiWrapper.x64.so
       # Application configuration
       ASPNETCORE_ENVIRONMENT: Development
       DRIVING: AGNOSTIC
       DRIVEN: AGNOSTIC
       DISABLE_SSL: "true"
+      # Rate limiting disabled by default in development
+      RateLimiting__Enabled: "false"
       ConnectionStrings__messaging: "kafka:29092"
       ConnectionStrings__database: "Host=user-management-db;Port=5432;Database=user_management;Username=user_mgmt_user;Password=user_mgmt_password"
       KAFKA__BOOTSTRAPSERVERS: "kafka:29092"
@@ -479,13 +490,17 @@ services:
     environment:
       # DataDog APM configuration
       DD_SERVICE: user-management-worker
-      DD_ENV: development
+      DD_ENV: ${ENV:-development}
       DD_VERSION: ${COMMIT_SHA:-latest}
       DD_AGENT_HOST: datadog-agent
       DD_DATA_STREAMS_ENABLED: true
       DD_TRACE_OTEL_ENABLED: "true"
       DD_LOGS_INJECTION: "true"
       DD_RUNTIME_METRICS_ENABLED: "true"
+      # The .NET profiler does not support ARM64, this won't work if running on Apple Silicon Macs
+      DD_PROFILING_ENABLED: "true"
+      # Required for Datadog .NET Continuous Profiler (x64 only)
+      LD_PRELOAD: /opt/datadog/linux-x64/Datadog.Linux.ApiWrapper.x64.so
       ASPNETCORE_ENVIRONMENT: Development
       DRIVING: AGNOSTIC
       DRIVEN: AGNOSTIC
@@ -507,12 +522,16 @@ services:
     environment:
       # DataDog APM configuration
       DD_SERVICE: user-management-migration-service
-      DD_ENV: development
+      DD_ENV: ${ENV:-development}
       DD_VERSION: ${COMMIT_SHA:-latest}
       DD_AGENT_HOST: datadog-agent
       DD_TRACE_OTEL_ENABLED: "true"
       DD_LOGS_INJECTION: "true"
       DD_RUNTIME_METRICS_ENABLED: "true"
+      # The .NET profiler does not support ARM64, this won't work if running on Apple Silicon Macs
+      DD_PROFILING_ENABLED: "true"
+      # Required for Datadog .NET Continuous Profiler (x64 only)
+      LD_PRELOAD: /opt/datadog/linux-x64/Datadog.Linux.ApiWrapper.x64.so
       ASPNETCORE_ENVIRONMENT: Development
       DRIVING: AGNOSTIC
       DRIVEN: AGNOSTIC
@@ -535,11 +554,13 @@ services:
     environment:
       # DataDog APM configuration
       DD_SERVICE: web-backend
-      DD_ENV: development
+      DD_ENV: ${ENV:-development}
       DD_VERSION: ${COMMIT_SHA:-latest}
       DD_AGENT_HOST: datadog-agent
       # Application configuration
       NODE_ENV: development
+      # Rate limiting disabled by default in development
+      SKIP_RATE_LIMIT: "true"
       OAUTH_ISSUER_INTERNAL: http://user-management:8080
       OAUTH_CLIENT_ID: web-ui
       OAUTH_CLIENT_SECRET: stickerlandia-web-ui-secret-2025
@@ -561,7 +582,7 @@ services:
       DD_RUM_APPLICATION_ID: ${DD_RUM_APPLICATION_ID}
       DD_RUM_CLIENT_TOKEN: ${DD_RUM_CLIENT_TOKEN}
       DD_SITE: ${DD_SITE:-datadoghq.eu}
-      DD_ENV: production
+      DD_ENV: ${ENV:-development}
       DD_VERSION: ${COMMIT_SHA:-latest}
       DD_SERVICE: web-frontend
     labels:
@@ -587,7 +608,7 @@ services:
     environment:
       # DataDog APM configuration
       DD_SERVICE: sticker-award
-      DD_ENV: development
+      DD_ENV: ${ENV:-development}
       DD_VERSION: ${COMMIT_SHA:-latest}
       DD_AGENT_HOST: datadog-agent
       DD_DATA_STREAMS_ENABLED: true
@@ -631,12 +652,40 @@ services:
       - "traefik.http.routers.sticker-award.priority=100"
       - "traefik.http.services.sticker-award.loadbalancer.server.port=8080"
 
+  # Load testing service - runs k6 load tests against the stack
+  load-simulator:
+    image: grafana/k6:latest
+    volumes:
+      - ./load-tests:/scripts
+    environment:
+      - TARGET_URL=http://traefik:80
+      - DEPLOYMENT_HOST_URL=${DEPLOYMENT_HOST_URL:-http://localhost:8080}
+      - WORKLOAD=${WORKLOAD:-smoke}
+      - SCENARIO=${SCENARIO:-mixed}
+      - TEST_EMAIL=${TEST_EMAIL:-user@stickerlandia.com}
+      - TEST_PASSWORD=${TEST_PASSWORD:-Stickerlandia2025!}
+    command: run /scripts/load-test.js
+    depends_on:
+      traefik:
+        condition: service_healthy
+      user-management:
+        condition: service_healthy
+      sticker-catalogue:
+        condition: service_healthy
+      sticker-award:
+        condition: service_healthy
+      web-backend:
+        condition: service_started
+    profiles:
+      - load-test
+
   datadog-agent:
     image: datadog/agent:7.75.0
     pull_policy: always
     container_name: datadog-agent
     profiles:
       - monitoring
+      - load-test
     environment:
       # Core Datadog configuration
       - DD_API_KEY=${DD_API_KEY}
@@ -648,6 +697,9 @@ services:
       - DD_APM_ENABLED=true
       - DD_APM_NON_LOCAL_TRAFFIC=true
       - DD_APM_RECEIVER_PORT=8126
+
+      # Profiling enabled
+      - DD_PROFILING_ENABLED=true
       
       # Log collection configuration
       - DD_LOGS_ENABLED=true

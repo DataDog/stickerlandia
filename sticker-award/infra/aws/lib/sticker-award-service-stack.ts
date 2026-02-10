@@ -15,7 +15,11 @@ import { Api } from "./api";
 import { Cluster } from "aws-cdk-lib/aws-ecs";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
 import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
-import { AWSMessagingProps, KafkaMessagingProps, ServiceProps } from "./service-props";
+import {
+  AWSMessagingProps,
+  KafkaMessagingProps,
+  ServiceProps,
+} from "./service-props";
 
 export enum MessagingType {
   AWS,
@@ -57,7 +61,7 @@ export class StickerAwardServiceStack extends cdk.Stack {
       cluster,
       ddApiKey,
       ddApiKeyParam,
-      ddSite
+      ddSite,
     );
 
     // Create formatted database credentials from the shared RDS secret
@@ -71,12 +75,13 @@ export class StickerAwardServiceStack extends cdk.Stack {
 
     const serviceProps: ServiceProps = {
       cloudfrontDistribution: sharedResources.cloudfrontDistribution,
+      domainName: sharedResources.domainName,
       connectionStringSecret: dbCredentials.connectionStringSecret!,
       databaseCredentials: dbCredentials,
       messagingConfiguration: new AWSMessagingProps(
         this,
         "MessagingProps",
-        sharedResources
+        sharedResources,
       ),
       serviceDependencies: [dbCredentials.credentialResource],
     };
@@ -97,7 +102,7 @@ export class StickerAwardServiceStack extends cdk.Stack {
 
     // CDK Outputs
     new cdk.CfnOutput(this, "ServiceApiUrl", {
-      value: `https://${sharedResources.cloudfrontDistribution.distributionDomainName}/api/awards/v1`,
+      value: `${sharedResources.domainName}/api/awards/v1`,
       description: "Sticker Award Service API URL",
     });
   }

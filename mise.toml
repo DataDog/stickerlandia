@@ -40,10 +40,10 @@ fi
 
 echo "Creating .env file..."
 echo "Press Enter to use default values shown in brackets"
-echo ""
 
 read -p "Environment name (e.g., your initials) [dev]: " ENV
 ENV=${ENV:-dev}
+
 read -p "Datadog API Key: " DD_API_KEY
 read -p "Datadog Site [datadoghq.eu]: " DD_SITE
 DD_SITE=${DD_SITE:-datadoghq.eu}
@@ -113,7 +113,7 @@ run = "docker compose --profile monitoring build && docker compose --profile mon
 [tasks."compose:deploy:release"]
 description = "Deploy all services using prebuilt GHCR images"
 depends = ["env:setup"]
-run = "docker compose --profile monitoring -f docker-compose.yml -f docker-compose.prebuilt.yml up -d"
+run = "docker compose --profile monitoring --profile load-test -f docker-compose.yml -f docker-compose.prebuilt.yml up -d"
 
 [tasks."compose:deploy:ci"]
 description = "Deploy services for CI (no monitoring)"
@@ -265,5 +265,18 @@ BASE_URL=$(aws cloudformation describe-stacks \
   --output text)
 echo "Running tests against: $BASE_URL"
 BASE_URL=$BASE_URL npx playwright test
+"""
+
+# =============================================================================
+# load: Load testing
+# =============================================================================
+
+[tasks."compose:load-test:smoke"]
+depends = ["env:setup"]
+description = "Run smoke load test (2 users, 30 seconds, mixed flows)"
+run = """
+docker compose --profile load-test up -d
+docker compose --profile load-test run --rm load-simulator
+docker compose --profile load-test down -v
 """
 

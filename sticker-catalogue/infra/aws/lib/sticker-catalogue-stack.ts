@@ -57,7 +57,7 @@ export class StickerCatalogueServiceStack extends cdk.Stack {
       cluster,
       ddApiKey,
       ddApiKeyParam,
-      ddSite
+      ddSite,
     );
 
     // Create formatted database credentials from the shared RDS secret
@@ -71,11 +71,12 @@ export class StickerCatalogueServiceStack extends cdk.Stack {
 
     const serviceProps: ServiceProps = {
       cloudfrontDistribution: sharedResources.cloudfrontDistribution,
+      domainName: sharedResources.domainName,
       databaseCredentials: dbCredentials,
       messagingProps: new AWSMessagingProps(
         this,
         "MessagingProps",
-        sharedResources
+        sharedResources,
       ),
       serviceDependencies: [dbCredentials.credentialResource],
     };
@@ -102,7 +103,7 @@ export class StickerCatalogueServiceStack extends cdk.Stack {
 
     // CDK Outputs
     new cdk.CfnOutput(this, "ServiceApiUrl", {
-      value: `https://${sharedResources.cloudfrontDistribution.distributionDomainName}/api/stickers/v1/`,
+      value: `${sharedResources.domainName}/api/stickers/v1/`,
       description: "Sticker Catalogue Service API URL",
     });
   }

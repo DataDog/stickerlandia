@@ -3,11 +3,19 @@ import { useNavigate } from "react-router";
 import { useAuth } from "./context/AuthContext";
 import HeaderBar from "./components/HeaderBar";
 import Landing from "./components/Landing";
+import { datadogRum } from '@datadog/browser-rum';
 import "./App.css";
 
 function App() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const navigate = useNavigate();
+
+  if (isAuthenticated) {
+      datadogRum.setUser({
+        name: user.preferred_username,
+        email: user.email
+      })
+  }
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
