@@ -1,17 +1,35 @@
 import React, { useState, useEffect } from "react";
-import { useParams, Link } from "react-router";
+import { useParams, Link, useNavigate } from "react-router";
+import LocalPrintshopOutlinedIcon from "@mui/icons-material/LocalPrintshopOutlined";
 import HeaderBar from "./HeaderBar";
 import Sidebar from "./Sidebar";
 import { API_BASE_URL } from "../config";
+import AuthService from "../services/AuthService";
+import { useAuth } from "../context/AuthContext";
 import { authFetch } from "../utils/authFetch";
 
 function StickerDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { user, isLoading: authLoading } = useAuth();
   const [sticker, setSticker] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    const userId = user?.sub || user?.email;
+
+    // Validate userId before fetching
+    if (!userId) {
+      if (!authLoading) {
+        setError('Unable to identify user. Please log in again.');
+        setLoading(false);
+      }
+      return;
+    }
+
+    const controller = new AbortController();
+
     const fetchSticker = async () => {
       try {
         setLoading(true);
@@ -32,7 +50,9 @@ function StickerDetail() {
         console.error("Error fetching sticker:", err);
         setError(err.message);
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -141,6 +161,15 @@ function StickerDetail() {
                             : "Out of stock"}
                         </span>
                       </div>
+                    </div>
+                    <div className="flex justify-center">
+                      <button
+                        onClick={() => navigate('/print-station', { state: { sticker } })}
+                        className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                      >
+                        <LocalPrintshopOutlinedIcon />
+                        Print This Sticker
+                      </button>
                     </div>
 
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
