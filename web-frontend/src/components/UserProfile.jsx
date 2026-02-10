@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import AuthService from "../services/AuthService";
 import { API_BASE_URL } from "../config";
+import { authFetch } from "../utils/authFetch";
 import Sidebar from "./Sidebar";
 import HotelClassOutlinedIcon from '@mui/icons-material/HotelClassOutlined';
 
@@ -17,7 +18,7 @@ const UserProfile = () => {
         setLoading(true);
         // Use sub (subject) as the unique user identifier from OIDC
         const userId = user.sub || user.email;
-        const response = await fetch(
+        const response = await authFetch(
           `${API_BASE_URL}/api/awards/v1/assignments/${userId}`
         );
 

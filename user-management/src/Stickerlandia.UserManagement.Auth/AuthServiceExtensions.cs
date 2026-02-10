@@ -28,7 +28,9 @@ public static class AuthServiceExtensions
                 var explicitIssuer = Environment.GetEnvironmentVariable("OPENIDDICT_ISSUER");
                 if (!string.IsNullOrEmpty(explicitIssuer))
                 {
-                    options.SetIssuer(new Uri(explicitIssuer));
+                    // Trim trailing slash to ensure consistent issuer format across services
+                    var issuerUrl = explicitIssuer.TrimEnd('/');
+                    options.SetIssuer(new Uri(issuerUrl, UriKind.Absolute));
                 }
                 
                 // Enable the token endpoint.
@@ -50,6 +52,12 @@ public static class AuthServiceExtensions
                 // Register the signing and encryption credentials.
                 options.AddDevelopmentEncryptionCertificate()
                     .AddDevelopmentSigningCertificate();
+
+                // Disable access token encryption to allow external services to validate tokens.
+                // This makes tokens transparent (signed JWTs) instead of encrypted JWEs.
+                // Required for services like sticker-award and sticker-catalogue that validate
+                // tokens using the JWKS endpoint.
+                options.DisableAccessTokenEncryption();
 
                 // Register the ASP.NET Core host and configure the ASP.NET Core options.
                 if (disableSsl)

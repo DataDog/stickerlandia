@@ -6,6 +6,7 @@ import Sidebar from "./Sidebar";
 import { API_BASE_URL } from "../config";
 import AuthService from "../services/AuthService";
 import { useAuth } from "../context/AuthContext";
+import { authFetch } from "../utils/authFetch";
 
 function StickerDetail() {
   const { id } = useParams();
@@ -32,7 +33,7 @@ function StickerDetail() {
     const fetchSticker = async () => {
       try {
         setLoading(true);
-        const response = await fetch(
+        const response = await authFetch(
           `${API_BASE_URL}/api/stickers/v1/${id}`
         );
 

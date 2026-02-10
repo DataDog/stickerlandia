@@ -4,23 +4,24 @@ experimental_monorepo_root = true
 
 [settings]
 experimental = true
-auto_install = true
+auto_install = false
 
-[tools]
-# Used by CDK infrastructure and web-frontend/web-backend
-node = "22"
+# =============================================================================
+# setup: Local development environment setup
+# =============================================================================
 
-# Used by sticker-award
-go = "1.25"
-
-# Used by sticker-catalogue
-java = "temurin-21"
-
-# Used by sticker-catalogue
-maven = "3.9"
-
-# Used by user-management
-dotnet = "10"
+[tasks."setup_localdev"]
+description = "Install all development tools required for local development"
+run = """
+echo "Installing development tools..."
+mise use --global node@22
+mise use --global go@1.25
+mise use --global java@temurin-21
+mise use --global maven@3.9
+mise use --global dotnet@10
+echo "All development tools installed successfully!"
+echo "Tools can be activated by running 'mise activate' in your shell."
+"""
 
 # =============================================================================
 # env: Environment setup
@@ -39,10 +40,10 @@ fi
 
 echo "Creating .env file..."
 echo "Press Enter to use default values shown in brackets"
-echo ""
 
 read -p "Environment name (e.g., your initials) [dev]: " ENV
 ENV=${ENV:-dev}
+
 read -p "Datadog API Key: " DD_API_KEY
 read -p "Datadog Site [datadoghq.eu]: " DD_SITE
 DD_SITE=${DD_SITE:-datadoghq.eu}
@@ -112,7 +113,7 @@ run = "docker compose --profile monitoring build && docker compose --profile mon
 [tasks."compose:deploy:release"]
 description = "Deploy all services using prebuilt GHCR images"
 depends = ["env:setup"]
-run = "docker compose --profile monitoring -f docker-compose.yml -f docker-compose.prebuilt.yml up -d"
+run = "docker compose --profile monitoring --profile load-test -f docker-compose.yml -f docker-compose.prebuilt.yml up -d"
 
 [tasks."compose:deploy:ci"]
 description = "Deploy services for CI (no monitoring)"
@@ -171,6 +172,7 @@ mise run //shared:aws:deploy:local
 mise run //user-management:aws:deploy:local
 mise run //sticker-award:aws:deploy:local
 mise run //sticker-catalogue:aws:deploy:local
+mise run //print-service:aws:deploy:local
 mise run //web-backend:aws:deploy:local
 mise run //web-frontend:aws:deploy:local
 echo "=== Deployment complete! ==="
@@ -185,6 +187,7 @@ echo "=== Deploying Stickerlandia to AWS: $ENV (DEPLOY_MODE=$DEPLOY_MODE) ==="
 mise run //shared:aws:deploy:release
 mise run //user-management:aws:deploy:release
 mise run //sticker-award:aws:deploy:release
+mise run //print-service:aws:deploy:release
 mise run //sticker-catalogue:aws:deploy:release
 mise run //web-backend:aws:deploy:release
 mise run //web-frontend:aws:deploy:release
@@ -207,6 +210,7 @@ mise run //shared:aws:info
 mise run //user-management:aws:info
 mise run //sticker-award:aws:info
 mise run //sticker-catalogue:aws:info
+mise run //print-service:aws:info
 mise run //web-backend:aws:info
 mise run //web-frontend:aws:info
 """
@@ -261,5 +265,18 @@ BASE_URL=$(aws cloudformation describe-stacks \
   --output text)
 echo "Running tests against: $BASE_URL"
 BASE_URL=$BASE_URL npx playwright test
+"""
+
+# =============================================================================
+# load: Load testing
+# =============================================================================
+
+[tasks."compose:load-test:smoke"]
+depends = ["env:setup"]
+description = "Run smoke load test (2 users, 30 seconds, mixed flows)"
+run = """
+docker compose --profile load-test up -d
+docker compose --profile load-test run --rm load-simulator
+docker compose --profile load-test down -v
 """
 

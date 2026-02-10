@@ -1,0 +1,73 @@
+# Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+# This product includes software developed at Datadog (https://www.datadoghq.com/).
+# Copyright 2025-Present Datadog, Inc.
+
+name: Shared AWS Infra
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "shared/infra/aws/**"
+      - ".github/**"
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: "Deploy to AWS dev environment after build"
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  deploy-aws-dev:
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+      - name: Install CDK
+        run: |
+          npm install -g aws-cdk
+      - name: Install dependencies
+        shell: bash
+        run: |
+          cd shared/lib/shared-constructs
+          npm i
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@b47578312673ae6fa5b5096b330d9fbac3d116df
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: GitHub_to_AWS_via_FederatedOIDC
+          aws-region: "eu-west-1"
+      - name: Set Commit Hash Environment Variables
+        shell: bash
+        run: |
+          echo "sha_short=$(git rev-parse --short "$GITHUB_SHA")" >> "$GITHUB_ENV"
+          echo "sha_full=$(git rev-parse "$GITHUB_SHA")" >> "$GITHUB_ENV"
+      - name: Deploy to dev AWS
+        shell: bash
+        env:
+          COMMIT_SHA: ${{ env.sha_short }}
+          COMMIT_SHA_FULL: ${{ env.sha_full }}
+          ENV: "dev"
+          DD_API_KEY: ${{secrets.DD_API_KEY}}
+          HOSTED_ZONE_ID: ${{secrets.HOSTED_ZONE_ID}}
+          CERTIFICATE_ARN: ${{secrets.CERTIFICATE_ARN}}
+          DD_SITE: "datadoghq.com"
+        run: |
+          cd shared/infra/aws
+          npm i
+          cdk deploy --require-approval never

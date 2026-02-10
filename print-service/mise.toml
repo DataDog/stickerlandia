@@ -1,0 +1,63 @@
+# print-service mise tasks
+
+[tasks."build:local"]
+description = "Build .NET solution"
+run = "dotnet build"
+
+[tasks."build:docker-dev"]
+description = "Build dev container"
+run = """
+ARCH=${ARCH:-$(uname -m | sed 's/x86_64/amd64/')}
+docker build --platform linux/$ARCH -f src/Stickerlandia.PrintService.Api/Dockerfile -t stickerlandia/print-service:dev .
+docker build --platform linux/$ARCH -f src/Stickerlandia.PrintService.Client/Dockerfile -t stickerlandia/print-service-client:dev .
+"""
+
+[tasks."build:docker-release"]
+description = "Build release container"
+run = """
+ARCH=${ARCH:-$(uname -m | sed 's/x86_64/amd64/')}
+docker build --platform linux/$ARCH -f src/Stickerlandia.PrintService.Api/Dockerfile -t stickerlandia/print-service:latest .
+docker build --platform linux/$ARCH -f src/Stickerlandia.PrintService.Client/Dockerfile -t stickerlandia/print-service-client:latest .
+"""
+
+[tasks."infra:install"]
+description = "Install CDK dependencies"
+dir = "infra/aws"
+sources = ["package-lock.json"]
+outputs = ["node_modules/.package-lock.json"]
+run = "npm ci"
+
+[tasks."aws:deploy"]
+description = "Deploy to AWS"
+dir = "infra/aws"
+depends = ["infra:install", "//shared:aws:deploy"]
+run = "npx cdk deploy --require-approval never"
+
+[tasks."aws:deploy:local"]
+description = "Deploy to AWS"
+dir = "infra/aws"
+depends = ["infra:install", "//shared:aws:deploy"]
+env = { COMMIT_SHA = "local" }
+run = "npx cdk deploy --require-approval never"
+
+[tasks."aws:deploy:release"]
+description = "Deploy to AWS using prebuilt GHCR images"
+depends = ["//:env:setup", "//shared:aws:deploy:release"]
+env = { DEPLOY_MODE = "release" }
+run = "mise run aws:deploy"
+
+[tasks."aws:down"]
+description = "Destroy AWS stack"
+dir = "infra/aws"
+depends = ["infra:install"]
+run = "npx cdk destroy --force"
+
+[tasks."aws:info"]
+description = "Show AWS stack outputs"
+run = """
+echo "=== PrintService-$ENV ==="
+aws cloudformation describe-stacks \
+  --stack-name "PrintService-$ENV" \
+  --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' \
+  --output table 2>/dev/null || echo "Stack not deployed"
+"""

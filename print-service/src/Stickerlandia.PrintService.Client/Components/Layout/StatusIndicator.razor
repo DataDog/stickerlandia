@@ -1,0 +1,23 @@
+@inject ClientStatusService StatusService
+@implements IDisposable
+
+<div class="status-indicator @StatusService.GetStatusCssClass()">
+    <span class="status-dot"></span>
+    <span class="status-text">@StatusService.GetStatusText()</span>
+    @if (StatusService.LastPollTime.HasValue)
+    {
+        <span class="status-time">Last poll: @StatusService.LastPollTime.Value.LocalDateTime.ToString("HH:mm:ss")</span>
+    }
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        StatusService.OnStatusChanged += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        StatusService.OnStatusChanged -= StateHasChanged;
+    }
+}

@@ -77,6 +77,7 @@ export class Api extends Construct {
         QUARKUS_DATASOURCE_JDBC_ACQUISITION_TIMEOUT: "30S",
         QUARKUS_S3_PATH_STYLE_ACCESS: "true",
         STICKER_IMAGES_BUCKET: props.stickerImagesBucket.bucketName,
+        OAUTH_ISSUER: props.serviceProps.domainName,
         ...props.serviceProps.messagingProps.asEnvironmentVariables(),
       },
       secrets: secrets,

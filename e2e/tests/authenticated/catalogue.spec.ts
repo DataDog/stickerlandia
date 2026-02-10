@@ -23,6 +23,17 @@ test.describe('Sticker Catalogue', () => {
     expect(count).toBeGreaterThan(0);
   });
 
+  test('authenticated API call returns 200', async ({ page }) => {
+    const responsePromise = page.waitForResponse(
+      resp => resp.url().includes('/api/stickers/v1/') && resp.request().method() === 'GET'
+    );
+
+    await catalogue.goto();
+
+    const response = await responsePromise;
+    expect(response.status()).toBe(200);
+  });
+
   test('sticker cards show name, image, and description', async () => {
     await catalogue.waitForStickersLoaded();
 
@@ -199,7 +210,7 @@ test.describe('Sticker Detail Page', () => {
 
   test('is accessible via direct URL with valid ID', async ({ page, request }) => {
     // Get a valid sticker ID from API
-    const apiResponse = await request.get('/api/stickers/v1');
+    const apiResponse = await request.get('/api/stickers/v1/');
     const data = await apiResponse.json();
     const stickerId = data.stickers[0]?.stickerId;
 

@@ -89,6 +89,7 @@ export class SharedProps {
         apm: {
           isEnabled: true,
           traceInferredProxyServices: true,
+          isProfilingEnabled: true,
         },
         logCollection: {
           isEnabled: true,

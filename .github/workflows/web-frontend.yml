@@ -84,6 +84,7 @@ jobs:
   deploy-aws-dev:
     runs-on: ubuntu-latest
     needs: [push-image]
+    environment: dev
     if: |
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
@@ -122,6 +123,13 @@ jobs:
           echo "sha_full=$(git rev-parse "$GITHUB_SHA")" >> "$GITHUB_ENV"
       - name: Build frontend code
         shell: bash
+        env:
+          DD_RUM_APPLICATION_ID: ${{ secrets.DD_RUM_APPLICATION_ID }}
+          DD_RUM_CLIENT_TOKEN: ${{ secrets.DD_RUM_CLIENT_TOKEN }}
+          DD_ENV: dev
+          DD_VERSION: ${{ env.sha_short }}
+          DD_SERVICE: web-frontend
+          DD_SITE: datadoghq.com
         run: |
           cd web-frontend
           npm install

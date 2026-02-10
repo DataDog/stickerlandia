@@ -13,16 +13,16 @@
 	},
 
 	"portsAttributes": {
-	  "8080": {
-	    "label": "stickerlandia"
-	  },
-	  "8081": {
-	    "label": "Traefik dash"
-	  },
-	  "8082": {
-	  	"label": "Redpanda console"
-	  }
-	},
+    "8080": {
+      "label": "stickerlandia"
+    },
+    "8081": {
+      "label": "Traefik dash"
+    },
+    "8082": {
+      "label": "Kafbat Console"
+    }
+  },
 
 	"postAttachCommand": "chmod +x .devcontainer/setup.sh && .devcontainer/setup.sh",
 }
