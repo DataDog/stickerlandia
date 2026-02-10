@@ -26,7 +26,11 @@ function UserInfo() {
           {user?.name || user?.email || "User Name"}
         </span>
         <span className="block text-sm text-gray-600">
-          {isLoading ? "..." : "Sticker Collector"}
+          {isLoading
+            ? "..."
+            : user?.role?.length
+              ? user.role.join(", ")
+              : "No roles assigned"}
         </span>
       </div>
     </div>

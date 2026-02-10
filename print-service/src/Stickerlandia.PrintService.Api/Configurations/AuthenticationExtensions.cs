@@ -25,6 +25,10 @@ internal static class AuthenticationExtensions
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
+                // Prevent mapping "role" → long ClaimTypes.Role URI so that
+                // RoleClaimType = "role" matches the actual JWT claim name.
+                options.MapInboundClaims = false;
+
                 if (authMode.Equals("OidcDiscovery", StringComparison.OrdinalIgnoreCase))
                 {
                     ConfigureOidcDiscovery(options, configuration);
@@ -70,7 +74,8 @@ internal static class AuthenticationExtensions
             ValidAudience = audience,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ClockSkew = TimeSpan.FromMinutes(5)
+            ClockSkew = TimeSpan.FromMinutes(5),
+            RoleClaimType = "role"
         };
 
         // If a separate metadata address is configured, use it for all OIDC fetching
@@ -82,13 +87,15 @@ internal static class AuthenticationExtensions
                 metadataAddress += "/";
             }
 
-            using var httpHandler = new HttpClientHandler();
+            var httpHandler = new HttpClientHandler();
             if (!requireHttpsMetadata)
             {
                 httpHandler.ServerCertificateCustomValidationCallback = (_, _, _, _) => true;
             }
 
-            using var httpClient = new HttpClient(httpHandler);
+            // Do NOT use 'using var' here — the HttpClient is captured by the
+            // IssuerSigningKeyResolver lambda and must survive beyond this method.
+            var httpClient = new HttpClient(httpHandler);
             var internalJwksUrl = metadataAddress + ".well-known/jwks";
 
             // Use IssuerSigningKeyResolver to dynamically fetch keys from internal URL
@@ -135,7 +142,8 @@ internal static class AuthenticationExtensions
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Convert.FromBase64String(signingKey)),
-            ClockSkew = TimeSpan.FromMinutes(5)
+            ClockSkew = TimeSpan.FromMinutes(5),
+            RoleClaimType = "role"
         };
     }
 }

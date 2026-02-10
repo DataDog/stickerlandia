@@ -7,6 +7,7 @@ import { API_BASE_URL } from "../config";
 import AuthService from "../services/AuthService";
 import { useAuth } from "../context/AuthContext";
 import { authFetch } from "../utils/authFetch";
+import { getLastActiveEvent } from "../services/eventStorage";
 
 function StickerDetail() {
   const { id } = useParams();
@@ -164,7 +165,13 @@ function StickerDetail() {
                     </div>
                     <div className="flex justify-center">
                       <button
-                        onClick={() => navigate('/print-station', { state: { sticker } })}
+                        onClick={() => {
+                          const lastEvent = getLastActiveEvent()
+                          const path = lastEvent
+                            ? `/print-station/${encodeURIComponent(lastEvent)}`
+                            : '/print-station'
+                          navigate(path, { state: { sticker } })
+                        }}
                         className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                       >
                         <LocalPrintshopOutlinedIcon />

@@ -95,8 +95,8 @@ export default function PrintDialog({ printer, eventName, preselectedSticker, on
       await submitPrintJob(eventName, printer.printerName, {
         userId,
         stickerId: selectedSticker.stickerId,
-        stickerUrl: `${API_BASE_URL}/api/stickers/v1/${encodeURIComponent(selectedSticker.stickerId)}/image`
-      })
+        stickerUrl: `${API_BASE_URL}/api/stickers/v1/${encodeURIComponent(selectedSticker.stickerId)}/image`,
+      });
 
       setSuccess(true)
     } catch (err) {

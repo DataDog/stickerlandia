@@ -27,6 +27,7 @@ createRoot(document.getElementById("root")).render(
           <Route path="stickers/:id" element={<StickerDetail />} />
           <Route path="catalogue" element={<StickerList />} />
           <Route path="print-station" element={<PrintStation />} />
+          <Route path="print-station/:eventName" element={<PrintStation />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

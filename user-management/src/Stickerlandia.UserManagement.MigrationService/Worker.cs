@@ -167,7 +167,7 @@ internal sealed class Worker(
             {
                 EmailAddress = "admin@stickerlandia.com",
                 FirstName = "Default",
-                LastName = "User",
+                LastName = "Admin",
                 Password = "Admin2025!"
             }, AccountType.Admin);
             

@@ -33,20 +33,23 @@ export const AuthProvider = ({ children }) => {
           setIsAuthenticated(false)
         }
       } else {
-        // No valid token, check if we have one in the URL (from OAuth callback)
+        // Check if we just completed OAuth (BFF redirected with ?auth=complete)
         const urlParams = new URLSearchParams(window.location.search)
-        const accessToken = urlParams.get('access_token')
-        const expiresAt = urlParams.get('expires_at')
-        
-        if (accessToken && expiresAt) {
-          // Store the token and get user info
-          AuthService.storeToken(accessToken, parseInt(expiresAt, 10))
-          const result = await AuthService.getUserWithToken()
-          if (result.authenticated) {
-            setUser(result.user)
-            setIsAuthenticated(true)
+        if (urlParams.get('auth') === 'complete') {
+          // Fetch the token from the BFF (one-time exchange)
+          const tokenRes = await fetch('/api/app/auth/token', {
+            method: 'POST',
+            credentials: 'include'
+          })
+          if (tokenRes.ok) {
+            const { access_token, expires_at } = await tokenRes.json()
+            AuthService.storeToken(access_token, parseInt(expires_at, 10))
+            const result = await AuthService.getUserWithToken()
+            if (result.authenticated) {
+              setUser(result.user)
+              setIsAuthenticated(true)
+            }
           }
-          
           // Clean up the URL
           window.history.replaceState({}, document.title, window.location.pathname)
         } else {

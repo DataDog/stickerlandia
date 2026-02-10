@@ -122,6 +122,16 @@ public static class AuthServiceExtensions
                             context.EmailVerified = false;
                         }
 
+                        if (context.AccessTokenPrincipal.HasScope(OpenIddictConstants.Scopes.Roles))
+                        {
+                            var roles = context.AccessTokenPrincipal.GetClaims(OpenIddictConstants.Claims.Role);
+                            if (roles.Any())
+                            {
+                                context.Claims[OpenIddictConstants.Claims.Role] =
+                                    System.Text.Json.JsonSerializer.SerializeToElement(roles.ToList());
+                            }
+                        }
+
                         return default;
                     }));
             })

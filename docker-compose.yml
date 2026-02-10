@@ -249,6 +249,13 @@ services:
       - "5435:5432"
     volumes:
       - print-service-data:/var/lib/postgresql/data
+      - ./shared/infra/compose/postgres-init:/docker-entrypoint-initdb.d:ro
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+      - -c
+      - pg_stat_statements.track=all
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U print_service_user -d print_service"]
       interval: 1s
@@ -348,7 +355,7 @@ services:
       dockerfile: src/Stickerlandia.PrintService.Api/Dockerfile
     container_name: print-service
     depends_on:
-      redpanda:
+      kafka:
         condition: service_healthy
       print-service-db-migrations:
         condition: service_completed_successfully
@@ -370,10 +377,10 @@ services:
       DRIVING: AGNOSTIC
       DRIVEN: AGNOSTIC
       DISABLE_SSL: "true"
-      ConnectionStrings__messaging: "redpanda:9092"
+      ConnectionStrings__messaging: "kafka:29092"
       ConnectionStrings__database: "Host=print-service-db;Port=5432;Database=print_service;Username=print_service_user;Password=print_service_password"
-      KAFKA__BOOTSTRAPSERVERS: "redpanda:9092"
-      KAFKA__SCHEMAREGISTRY: "http://redpanda:8082"
+      KAFKA__BOOTSTRAPSERVERS: "kafka:9092"
+      KAFKA__SCHEMAREGISTRY: "http://kafka:8082"
       KAFKA__GROUPID: "stickerlandia-print"
       Authentication__Audience: "stickerlandia"
       Authentication__Authority: ${DEPLOYMENT_HOST_URL}
@@ -384,7 +391,7 @@ services:
       DEPLOYMENT_HOST_URL: ${DEPLOYMENT_HOST_URL}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/api/print/v1/health"]
-      interval: 1s
+      interval: 120s
       timeout: 15s
       retries: 10
     labels:
@@ -401,6 +408,8 @@ services:
     depends_on:
       print-service-db:
         condition: service_healthy
+      kafka:
+        condition: service_healthy
     environment:
       # DataDog APM configuration
       DD_SERVICE: print-service-migration-service
@@ -413,10 +422,10 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       DRIVING: AGNOSTIC
       DRIVEN: AGNOSTIC
-      ConnectionStrings__messaging: "redpanda:9092"
+      ConnectionStrings__messaging: "kafka:29092"
       ConnectionStrings__database: "Host=print-service-db;Port=5432;Database=print_service;Username=print_service_user;Password=print_service_password"
-      KAFKA__BOOTSTRAPSERVERS: "redpanda:9092"
-      KAFKA__SCHEMAREGISTRY: "http://redpanda:8082"
+      KAFKA__BOOTSTRAPSERVERS: "kafka:9092"
+      KAFKA__SCHEMAREGISTRY: "http://kafka:8082"
       KAFKA__GROUPID: "stickerlandia-print"
       DEPLOYMENT_HOST_URL: ${DEPLOYMENT_HOST_URL}
     command: ["migrations/Stickerlandia.PrintService.MigrationService.dll"]
@@ -518,6 +527,8 @@ services:
     container_name: user-management-migrations
     depends_on:
       user-management-db:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
     environment:
       # DataDog APM configuration
@@ -778,3 +789,9 @@ configs:
           username: datadog
           password: datadog_password
           dbname: sticker_catalogue
+        - dbm: true
+          host: print-service-db
+          port: 5432
+          username: datadog
+          password: datadog_password
+          dbname: print_service

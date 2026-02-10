@@ -63,7 +63,7 @@ app.use(lusca({
     secret: process.env.CSRF_SECRET || 'dev-csrf-secret-change-in-production',
     cookie: true, // Store CSRF token in cookie
     header: 'x-csrf-token', // Accept token in header
-    whitelist: ['/api/app/auth/callback'] // Skip CSRF for OAuth callback
+    whitelist: ['/api/app/auth/callback', '/api/app/auth/token'] // Skip CSRF for OAuth callback and token exchange
   },
   csp: false, // Disable Lusca's CSP (we use Helmet)
   xframe: false, // Disable Lusca's X-Frame-Options (we use Helmet)
@@ -182,9 +182,6 @@ app.post('/api/app/auth/login', loginRateLimit, (req, res) => {
 // Step 3: IdP redirects back to BFF with authorization code
 app.get('/api/app/auth/callback', async (req, res) => {
   try {
-    console.debug('Callback URL:', req.url)
-    console.debug('Query params:', req.query)
-    
     if (!client) {
       return res.status(500).send('OIDC client not initialized')
     }
@@ -212,29 +209,11 @@ app.get('/api/app/auth/callback', async (req, res) => {
     }
 
     // Exchange authorization code for tokens
-    console.debug('Attempting token exchange with:', {
-      redirect_uri: sessionOAuth.redirect_uri,
-      code: code.substring(0, 10) + '...',
-      state: state.substring(0, 10) + '...',
-      issuer: client.issuer.issuer
-    })
-    
-    console.debug('Full callback parameters:', { code, state })
-    console.debug('Session OAuth data:', sessionOAuth)
-    console.debug('Client issuer metadata:', {
-      issuer: client.issuer.issuer,
-      token_endpoint: client.issuer.token_endpoint
-    })
-    
-    // Debug what we're passing to callback
-    const checks = { 
+    const checks = {
       code_verifier: sessionOAuth.code_verifier,
       nonce: sessionOAuth.nonce,
       state: sessionOAuth.state
     }
-    console.debug('Callback params:', callbackParams)
-    console.debug('Callback checks:', checks)
-    console.debug('Using configured redirect URI:', sessionOAuth.redirect_uri)
     
     const tokenSet = await client.callback(sessionOAuth.redirect_uri, callbackParams, checks)
     
@@ -255,11 +234,13 @@ app.get('/api/app/auth/callback', async (req, res) => {
     // Clear OAuth temp data
     delete req.session.oauth
 
-    // Redirect back to frontend with token in query params (for new client-side flow)
-    const queryParams = new URLSearchParams()
-    queryParams.set('access_token', tokenSet.access_token)
-    queryParams.set('expires_at', tokenSet.expires_at)
-    res.redirect(`/?${queryParams.toString()}`)
+    // Flag that a token is ready for pickup via /api/app/auth/token
+    req.session.pendingToken = {
+      access_token: tokenSet.access_token,
+      expires_at: tokenSet.expires_at
+    }
+
+    res.redirect('/?auth=complete')
   } catch (error) {
     console.error('OAuth callback failed:', error)
     res.status(400).send('Authentication failed')
@@ -300,6 +281,22 @@ app.get('/api/app/auth/user', async (req, res) => {
   }
 })
 
+// One-time token exchange — frontend calls this after ?auth=complete redirect
+app.post('/api/app/auth/token', (req, res) => {
+  const pending = req.session.pendingToken
+  if (!pending) {
+    return res.status(404).json({ error: 'No pending token' })
+  }
+
+  // Clear immediately so the token can only be retrieved once
+  delete req.session.pendingToken
+
+  res.json({
+    access_token: pending.access_token,
+    expires_at: pending.expires_at
+  })
+})
+
 // Logout - clear session and optionally call IdP logout
 app.post('/api/app/auth/logout', (req, res) => {
   // Capture id_token before destroying session
@@ -308,7 +305,7 @@ app.post('/api/app/auth/logout', (req, res) => {
   // Clear session and cookie
   req.session.destroy((err) => {
     if (err) console.error('Session destroy error:', err)
-    res.clearCookie('connect.sid', { path: '/' })
+    res.clearCookie('sessionId', { path: '/' })
 
     if (idToken && client) {
       // Generate IdP logout URL with correct deployment host

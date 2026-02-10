@@ -19,5 +19,5 @@ public record RegisterPrinterResponse : PrinterDTO
         Key = printer.Key;
     }
 
-    [JsonPropertyName("Key")] public string Key { get; set; } = string.Empty;
+    [JsonPropertyName("key")] public string Key { get; set; } = string.Empty;
 }

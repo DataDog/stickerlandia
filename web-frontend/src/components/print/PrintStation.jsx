@@ -5,17 +5,19 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useLocation } from 'react-router'
+import { useLocation, useParams, Link } from 'react-router'
 import { useAuth } from '../../context/AuthContext'
-import { DEFAULT_EVENT } from '../../config'
 import { getPrintersWithStatus } from '../../services/print'
+import { addKnownEvent, setLastActiveEvent } from '../../services/eventStorage'
 import PrinterCard from './PrinterCard'
 import PrintDialog from './PrintDialog'
 import RegisterPrinterDialog from './RegisterPrinterDialog'
+import EventSelector from './EventSelector'
 import Sidebar from '../Sidebar'
 
 export default function PrintStation() {
   const location = useLocation()
+  const { eventName } = useParams()
   const { user, isAuthenticated, isLoading: authLoading } = useAuth()
 
   // Data fetching state (inline, following MyCollection pattern)
@@ -31,14 +33,23 @@ export default function PrintStation() {
   // Pre-selected sticker from navigation (e.g., from StickerDetail page)
   const preselectedSticker = location.state?.sticker || null
 
-  const eventName = DEFAULT_EVENT
-  const isAdmin = user?.roles?.includes('admin')
+  const isAdmin = user?.role?.some(r => r.toLowerCase() === 'admin')
   const isMountedRef = useRef(true)
 
   const PRINTER_STATUS_POLL_INTERVAL_MS = 30000
 
+  // Track visited event in localStorage
+  useEffect(() => {
+    if (eventName) {
+      addKnownEvent(eventName)
+      setLastActiveEvent(eventName)
+    }
+  }, [eventName])
+
   // Fetch printers - separates initial load from background refresh
   const fetchPrinters = useCallback(async (isBackgroundRefresh = false) => {
+    if (!eventName || !isAuthenticated) return
+
     try {
       if (!isBackgroundRefresh) {
         setLoading(true)
@@ -59,10 +70,12 @@ export default function PrintStation() {
         setLoading(false)
       }
     }
-  }, [eventName])
+  }, [eventName, isAuthenticated])
 
-  // Initial fetch + polling
+  // Initial fetch + polling (only when authenticated)
   useEffect(() => {
+    if (!eventName || !isAuthenticated) return
+
     isMountedRef.current = true
     fetchPrinters(false) // Initial load shows spinner
 
@@ -72,7 +85,7 @@ export default function PrintStation() {
       isMountedRef.current = false
       clearInterval(interval)
     }
-  }, [fetchPrinters])
+  }, [fetchPrinters, eventName, isAuthenticated])
 
   // Show loading while checking auth
   if (authLoading) {
@@ -89,6 +102,11 @@ export default function PrintStation() {
         <p className="text-gray-600">Please log in to access the Print Station.</p>
       </div>
     )
+  }
+
+  // No event selected — show event selector (after auth is confirmed)
+  if (!eventName) {
+    return <EventSelector />
   }
 
   const handlePrintClick = (printer) => {
@@ -111,7 +129,15 @@ export default function PrintStation() {
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h1 className="text-3xl font-bold text-gray-800">Print Station</h1>
-                <p className="text-gray-600">Event: {eventName}</p>
+                <p className="text-gray-600">
+                  Event: {eventName}
+                  <Link
+                    to="/print-station"
+                    className="ml-3 text-purple-600 hover:text-purple-800 text-sm"
+                  >
+                    Switch Event
+                  </Link>
+                </p>
               </div>
 
               {isAdmin && (

@@ -11,12 +11,24 @@ const BASE_URL = `${API_BASE_URL}/api/print/v1`
 
 const getHeaders = () => {
   const tokenData = AuthService.getStoredToken()
-  if (!tokenData?.access_token) {
+  if (!tokenData?.access_token || !AuthService.isTokenValid()) {
     throw new Error('Session expired. Please log in again.')
   }
+
   return {
     'Authorization': `Bearer ${tokenData.access_token}`,
     'Content-Type': 'application/json'
+  }
+}
+
+// Detect responses that were redirected to a non-API page (e.g. login page returning HTML)
+const assertJsonResponse = (response) => {
+  const contentType = response.headers.get('content-type') || ''
+  if (!contentType.includes('application/json') && !contentType.includes('application/problem+json')) {
+    if (response.redirected) {
+      throw new Error('Your session has expired. Please log in again.')
+    }
+    throw new Error('Unexpected response from the print service. Please try again.')
   }
 }
 
@@ -47,13 +59,17 @@ export const getPrintersWithStatus = async (eventName) => {
     })
   ])
 
+  assertJsonResponse(printersRes)
+
   if (!printersRes.ok) {
     const error = await printersRes.json().catch(() => ({}))
     throw new Error(getErrorMessage(printersRes, error.detail))
   }
 
   const printers = await printersRes.json()
-  const statuses = statusesRes.ok ? await statusesRes.json() : { data: { printers: [] } }
+  const statuses = statusesRes.ok && statusesRes.headers.get('content-type')?.includes('json')
+    ? await statusesRes.json()
+    : { data: { printers: [] } }
 
   // Map statuses by printerId
   const statusMap = {}
@@ -70,6 +86,7 @@ export const getPrintersWithStatus = async (eventName) => {
 }
 
 export const submitPrintJob = async (eventName, printerName, printJob) => {
+  console.log(printJob);
   const response = await fetch(
     `${BASE_URL}/event/${encodeURIComponent(eventName)}/printer/${encodeURIComponent(printerName)}/jobs`,
     {
@@ -79,6 +96,8 @@ export const submitPrintJob = async (eventName, printerName, printJob) => {
       body: JSON.stringify(printJob)
     }
   )
+
+  assertJsonResponse(response)
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}))
@@ -95,6 +114,8 @@ export const registerPrinter = async (eventName, printerName) => {
     credentials: 'include',
     body: JSON.stringify({ eventName, printerName })
   })
+
+  assertJsonResponse(response)
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}))
