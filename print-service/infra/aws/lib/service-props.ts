@@ -1,12 +1,10 @@
 import { IDistribution } from "aws-cdk-lib/aws-cloudfront";
 import { IStringParameter, StringParameter } from "aws-cdk-lib/aws-ssm";
-import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 import { Construct, IDependable } from "constructs";
 import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
 import { Secret } from "aws-cdk-lib/aws-ecs";
 import { SharedResources } from "../../../../shared/lib/shared-constructs/lib/shared-resources";
 import { IGrantable } from "aws-cdk-lib/aws-iam";
-import { DatabaseCredentials } from "../../../../shared/lib/shared-constructs/lib/database-credentials";
 import {
   MessagingProps,
   AWSMessagingProps as AWSMessagingPropsBase,

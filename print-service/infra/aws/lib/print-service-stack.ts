@@ -51,9 +51,6 @@ export class PrintServiceStack extends cdk.Stack {
       ddSite
     );
 
-    // Run database migrations before starting services
-    const imageTag = process.env.VERSION || "LOCAL";
-
     const serviceProps: ServiceProps = {
       cloudfrontDistribution: sharedResources.cloudfrontDistribution,
       messagingConfiguration: new AWSMessagingProps(
@@ -61,18 +58,21 @@ export class PrintServiceStack extends cdk.Stack {
         "MessagingProps",
         sharedResources
       ),
-      // Services depend on both DB credentials and migration completing
       serviceDependencies: [],
     };
 
     // The data model of the Print Service supports the constraints that DynamoDB imposes on an application
     // Using DynamoDB instead of Postgres
+    const isProduction = environment === "prod";
+
     const printerTable = new Table(this, "PrinterTable", {
       tableName: `Printers-${environment}`,
       partitionKey: { name: "PK", type: cdk.aws_dynamodb.AttributeType.STRING },
       sortKey: { name: "SK", type: cdk.aws_dynamodb.AttributeType.STRING },
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      removalPolicy: isProduction ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
       billingMode: cdk.aws_dynamodb.BillingMode.PAY_PER_REQUEST,
+      pointInTimeRecovery: true,
+      deletionProtection: isProduction,
     });
     printerTable.addGlobalSecondaryIndex({
       indexName: "GSI1",
@@ -90,8 +90,11 @@ export class PrintServiceStack extends cdk.Stack {
         type: cdk.aws_dynamodb.AttributeType.STRING,
       },
       sortKey: { name: "SK", type: cdk.aws_dynamodb.AttributeType.STRING },
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      removalPolicy: isProduction ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
       billingMode: cdk.aws_dynamodb.BillingMode.PAY_PER_REQUEST,
+      pointInTimeRecovery: true,
+      deletionProtection: isProduction,
+      timeToLiveAttribute: "TTL",
     });
     printJobTable.addGlobalSecondaryIndex({
       indexName: "GSI1",

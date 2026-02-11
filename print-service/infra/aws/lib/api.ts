@@ -101,5 +101,6 @@ export class Api extends Construct {
 
     props.printerTable.grantReadWriteData(webService.taskRole);
     props.printJobTable.grantReadWriteData(webService.taskRole);
+    props.serviceProps.messagingConfiguration.grantPermissions(webService.taskRole);
   }
 }
