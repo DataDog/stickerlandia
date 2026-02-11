@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@datadog/browser-logs": "^6.27.0",
+    "@datadog/browser-logs": "^6.18.0",
     "@datadog/browser-rum": "^6.18.0",
     "@datadog/browser-rum-react": "^6.18.0",
     "react": "^19.1.0",
