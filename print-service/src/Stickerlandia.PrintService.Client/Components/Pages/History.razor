@@ -1,0 +1,152 @@
+@page "/history"
+@rendermode InteractiveServer
+@inject ILocalStorageService LocalStorage
+
+<PageTitle>History - Printer Client</PageTitle>
+
+<h1>Job History</h1>
+
+<div class="history-filters">
+    <div class="filter-group">
+        <label>Status:</label>
+        <select @bind="_statusFilter">
+            <option value="">All</option>
+            <option value="Completed">Completed</option>
+            <option value="Failed">Failed</option>
+            <option value="Received">Received</option>
+        </select>
+    </div>
+    <div class="filter-group">
+        <label>From:</label>
+        <input type="date" @bind="_fromDate" />
+    </div>
+    <div class="filter-group">
+        <label>To:</label>
+        <input type="date" @bind="_toDate" />
+    </div>
+    <button class="btn btn-secondary" @onclick="ApplyFilters">Apply Filters</button>
+    <button class="btn btn-secondary" @onclick="ClearFilters">Clear</button>
+</div>
+
+<div class="history-table-container">
+    @if (_jobs.Count == 0)
+    {
+        <p class="no-data">No jobs found</p>
+    }
+    else
+    {
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Date/Time</th>
+                    <th>Job ID</th>
+                    <th>User</th>
+                    <th>Sticker</th>
+                    <th>Status</th>
+                    <th>Acknowledged</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var job in _pagedJobs)
+                {
+                    <tr class="@GetRowClass(job)">
+                        <td>@job.ReceivedAt.LocalDateTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                        <td class="job-id-cell" title="@job.PrintJobId">@job.PrintJobId[..12]...</td>
+                        <td>@job.UserId</td>
+                        <td>@job.StickerId</td>
+                        <td class="status-cell">
+                            <span class="status-badge @GetStatusBadgeClass(job.Status)">@job.Status</span>
+                            @if (!string.IsNullOrEmpty(job.FailureReason))
+                            {
+                                <span class="failure-reason" title="@job.FailureReason">(!)</span>
+                            }
+                        </td>
+                        <td>@(job.Acknowledged ? "Yes" : "No")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <div class="pagination">
+            <button class="btn btn-secondary" @onclick="PreviousPage" disabled="@(_currentPage <= 1)">Previous</button>
+            <span>Page @_currentPage of @_totalPages</span>
+            <button class="btn btn-secondary" @onclick="NextPage" disabled="@(_currentPage >= _totalPages)">Next</button>
+        </div>
+    }
+</div>
+
+@code {
+    private const int PageSize = 20;
+    private IReadOnlyList<PrintJobRecord> _jobs = [];
+    private IReadOnlyList<PrintJobRecord> _pagedJobs = [];
+    private int _currentPage = 1;
+    private int _totalPages = 1;
+    private string _statusFilter = string.Empty;
+    private DateOnly? _fromDate;
+    private DateOnly? _toDate;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadJobsAsync();
+    }
+
+    private async Task LoadJobsAsync()
+    {
+        _jobs = await LocalStorage.GetJobsAsync(_fromDate, _toDate, _statusFilter);
+        _totalPages = Math.Max(1, (int)Math.Ceiling(_jobs.Count / (double)PageSize));
+        _currentPage = 1;
+        UpdatePagedJobs();
+    }
+
+    private void UpdatePagedJobs()
+    {
+        _pagedJobs = _jobs
+            .Skip((_currentPage - 1) * PageSize)
+            .Take(PageSize)
+            .ToList();
+    }
+
+    private async Task ApplyFilters()
+    {
+        await LoadJobsAsync();
+    }
+
+    private async Task ClearFilters()
+    {
+        _statusFilter = string.Empty;
+        _fromDate = null;
+        _toDate = null;
+        await LoadJobsAsync();
+    }
+
+    private void PreviousPage()
+    {
+        if (_currentPage > 1)
+        {
+            _currentPage--;
+            UpdatePagedJobs();
+        }
+    }
+
+    private void NextPage()
+    {
+        if (_currentPage < _totalPages)
+        {
+            _currentPage++;
+            UpdatePagedJobs();
+        }
+    }
+
+    private static string GetRowClass(PrintJobRecord job) => job.Status switch
+    {
+        "Failed" => "row-failed",
+        _ => string.Empty
+    };
+
+    private static string GetStatusBadgeClass(string status) => status switch
+    {
+        "Completed" => "badge-success",
+        "Failed" => "badge-danger",
+        _ => "badge-warning"
+    };
+}

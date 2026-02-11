@@ -1,17 +1,37 @@
 import React, { useState, useEffect } from "react";
-import { useParams, Link } from "react-router";
+import { useParams, Link, useNavigate } from "react-router";
+import LocalPrintshopOutlinedIcon from "@mui/icons-material/LocalPrintshopOutlined";
 import HeaderBar from "./HeaderBar";
 import Sidebar from "./Sidebar";
 import { API_BASE_URL } from "../config";
+import AuthService from "../services/AuthService";
+import { useAuth } from "../context/AuthContext";
 import { authFetch } from "../utils/authFetch";
+import { getLastActiveEvent } from "../services/eventStorage";
 
 function StickerDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { user, isLoading: authLoading } = useAuth();
   const [sticker, setSticker] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isOwned, setIsOwned] = useState(false);
 
   useEffect(() => {
+    const userId = user?.sub || user?.email;
+
+    // Validate userId before fetching
+    if (!userId) {
+      if (!authLoading) {
+        setError('Unable to identify user. Please log in again.');
+        setLoading(false);
+      }
+      return;
+    }
+
+    const controller = new AbortController();
+
     const fetchSticker = async () => {
       try {
         setLoading(true);
@@ -28,11 +48,23 @@ function StickerDetail() {
 
         const data = await response.json();
         setSticker(data);
+
+        // Check if user owns this sticker
+        const awardsResponse = await authFetch(
+          `${API_BASE_URL}/api/awards/v1/assignments/${encodeURIComponent(userId)}`
+        );
+        if (awardsResponse.ok) {
+          const awardsData = await awardsResponse.json();
+          const assignments = awardsData.stickers || [];
+          setIsOwned(assignments.some((a) => a.stickerId === id));
+        }
       } catch (err) {
         console.error("Error fetching sticker:", err);
         setError(err.message);
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -142,6 +174,23 @@ function StickerDetail() {
                         </span>
                       </div>
                     </div>
+                    {isOwned && (
+                      <div className="flex justify-center">
+                        <button
+                          onClick={() => {
+                            const lastEvent = getLastActiveEvent()
+                            const path = lastEvent
+                              ? `/print-station/${encodeURIComponent(lastEvent)}`
+                              : '/print-station'
+                            navigate(path, { state: { sticker } })
+                          }}
+                          className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                        >
+                          <LocalPrintshopOutlinedIcon />
+                          Print This Sticker
+                        </button>
+                      </div>
+                    )}
 
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                       <h2 className="text-lg font-semibold text-gray-800 mb-3">

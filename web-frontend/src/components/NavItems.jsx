@@ -14,7 +14,7 @@ const mainNavItems = [
   { to: "/collection", icon: MenuBookOutlinedIcon, label: "My Collection" },
   { to: "/catalogue", icon: AssessmentOutlinedIcon, label: "Catalogue" },
   { to: "/public-dashboard", icon: AssessmentOutlinedIcon, label: "Public Dashboard" },
-  { to: "", icon: LocalPrintshopOutlinedIcon, label: "Print Station", isExternal: true },
+  { to: "/print-station", icon: LocalPrintshopOutlinedIcon, label: "Print Station", adminOnly: true },
 ];
 
 const secondaryNavItems = [
@@ -23,9 +23,14 @@ const secondaryNavItems = [
 ];
 
 function MainNavList({ onItemClick }) {
+  const { user } = useAuth();
+  const isAdmin = user?.role?.some(r => r.toLowerCase() === 'admin');
+
+  const visibleItems = mainNavItems.filter(item => !item.adminOnly || isAdmin);
+
   return (
     <ul>
-      {mainNavItems.map((item) => (
+      {visibleItems.map((item) => (
         <li key={item.label} className="my-3 px-5">
           {item.isExternal ? (
             <a className="block py-2" href={item.to} onClick={onItemClick}>

@@ -172,6 +172,7 @@ mise run //shared:aws:deploy:local
 mise run //user-management:aws:deploy:local
 mise run //sticker-award:aws:deploy:local
 mise run //sticker-catalogue:aws:deploy:local
+mise run //print-service:aws:deploy:local
 mise run //web-backend:aws:deploy:local
 mise run //web-frontend:aws:deploy:local
 echo "=== Deployment complete! ==="
@@ -186,6 +187,7 @@ echo "=== Deploying Stickerlandia to AWS: $ENV (DEPLOY_MODE=$DEPLOY_MODE) ==="
 mise run //shared:aws:deploy:release
 mise run //user-management:aws:deploy:release
 mise run //sticker-award:aws:deploy:release
+mise run //print-service:aws:deploy:release
 mise run //sticker-catalogue:aws:deploy:release
 mise run //web-backend:aws:deploy:release
 mise run //web-frontend:aws:deploy:release
@@ -208,6 +210,7 @@ mise run //shared:aws:info
 mise run //user-management:aws:info
 mise run //sticker-award:aws:info
 mise run //sticker-catalogue:aws:info
+mise run //print-service:aws:info
 mise run //web-backend:aws:info
 mise run //web-frontend:aws:info
 """

@@ -4,14 +4,14 @@
 
 # Stickerlandia Service Endpoints
 # -------------------------------
-# - Sticker Catalogue API:      
+# - Sticker Catalogue API:
 #   - Sticker catalog:      http://localhost:8080/api/stickers/v1
-#   - Sticker image:        http://localhost:8080/api/stickers/v1/sticker-001/image 
-# 
+#   - Sticker image:        http://localhost:8080/api/stickers/v1/sticker-001/image
+#
 # - Sticker Award API:
 #   - User assignments:     http://localhost:8080/api/awards/v1/assignments/user-001
 #   - Award sticker:        http://localhost:8080/api/awards/v1/assignments
-# 
+#
 # - User Management API:    http://localhost:8080/api/users
 #   - Registration:         http://localhost:8080/api/users/v1/register
 #   - Login:                http://localhost:8080/api/users/v1/login
@@ -19,7 +19,7 @@
 # - Traefik Dashboard:      http://localhost:8081/dashboard/
 # - Kafbat Console:         http://localhost:8082
 #
-# 
+#
 # Signing Up
 # ---------
 # curl -X POST http://localhost:8080/api/users/v1/register \
@@ -31,14 +31,14 @@
 #      "password": "ValidPass123!"
 #    }'
 #
-# 
+#
 # Logging In
 # ----------
 # curl -X POST http://localhost:8080/api/users/v1/login \
 #   -H "Content-Type:  application/x-www-form-urlencoded" \
 #   -d "grant_type=password&username=john.doe@example.com&password=ValidPass123!&client_id=user-authentication&client_secret=388D45FA-B36B-4988-BA59-B187D329C207"
 
-# 
+#
 # Assigning a Sticker
 # -------------------
 # curl -X POST http://localhost:8080/api/awards/v1/assignments/user-123 \
@@ -48,16 +48,15 @@
 #     "reason": "Excellent debugging work on the payment gateway issue"
 #   }'
 
-# 
-
+#
 
 services:
   traefik:
     image: traefik:v3.6
     container_name: traefik
     ports:
-      - "8080:80"     # App traffic
-      - "8081:8080"   # Dashboard
+      - "8080:80" # App traffic
+      - "8081:8080" # Dashboard
     command:
       - --api.dashboard=true
       - --api.insecure=true
@@ -68,7 +67,15 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/entrypoints"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8080/api/entrypoints",
+        ]
       interval: 1s
       timeout: 10s
       retries: 5
@@ -100,7 +107,11 @@ services:
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_LOG_DIRS: /var/lib/kafka/data
     healthcheck:
-      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1",
+        ]
       interval: 5s
       timeout: 10s
       retries: 10
@@ -145,7 +156,7 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
-    entrypoint: [ '/bin/sh', '-c' ]
+    entrypoint: ["/bin/sh", "-c"]
     restart: "no"
     command: |
       "
@@ -161,6 +172,11 @@ services:
       kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic stickers.stickerAdded.v1 --replication-factor 1 --partitions 1
       kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic stickers.stickerUpdated.v1 --replication-factor 1 --partitions 1
       kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic stickers.stickerDeleted.v1 --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic printJobs.queued.v1 --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic printJobs.failed.v1 --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic printJobs.completed.v1 --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic printers.registered.v1 --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic printers.deleted.v1 --replication-factor 1 --partitions 1
 
       echo -e 'Successfully created the following topics:'
       kafka-topics --bootstrap-server kafka:29092 --list
@@ -234,6 +250,30 @@ services:
       - pg_stat_statements.track=all
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U user_mgmt_user -d user_management"]
+      interval: 1s
+      timeout: 10s
+      retries: 5
+
+  print-service-db:
+    image: postgres:16
+    container_name: print-service-db
+    environment:
+      POSTGRES_DB: print_service
+      POSTGRES_USER: print_service_user
+      POSTGRES_PASSWORD: print_service_password
+    ports:
+      - "5435:5432"
+    volumes:
+      - print-service-data:/var/lib/postgresql/data
+      - ./shared/infra/compose/postgres-init:/docker-entrypoint-initdb.d:ro
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+      - -c
+      - pg_stat_statements.track=all
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U print_service_user -d print_service"]
       interval: 1s
       timeout: 10s
       retries: 5
@@ -325,6 +365,161 @@ services:
       - "traefik.http.routers.sticker-catalogue.priority=100"
       - "traefik.http.services.sticker-catalogue.loadbalancer.server.port=8080"
 
+  print-service:
+    build:
+      context: ./print-service
+      dockerfile: src/Stickerlandia.PrintService.Api/Dockerfile
+    container_name: print-service
+    depends_on:
+      kafka:
+        condition: service_healthy
+      print-service-db-migrations:
+        condition: service_completed_successfully
+      user-management:
+        condition: service_healthy
+    environment:
+      # DataDog APM configuration
+      DD_SERVICE: print-service
+      DD_ENV: ${ENV:-development}
+      DD_VERSION: ${COMMIT_SHA:-latest}
+      DD_AGENT_HOST: datadog-agent
+      DD_DATA_STREAMS_ENABLED: "true"
+      DD_TRACE_OTEL_ENABLED: "true"
+      DD_LOGS_INJECTION: "true"
+      DD_RUNTIME_METRICS_ENABLED: "true"
+      DD_PROFILING_ENABLED: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://datadog-agent:4317"
+      OTEL_SERVICE_NAME: "print-service"
+      # Application configuration
+      ASPNETCORE_ENVIRONMENT: Development
+      DRIVING: AGNOSTIC
+      DRIVEN: AGNOSTIC
+      DISABLE_SSL: "true"
+      ConnectionStrings__messaging: "kafka:29092"
+      ConnectionStrings__database: "Host=print-service-db;Port=5432;Database=print_service;Username=print_service_user;Password=print_service_password"
+      KAFKA__BOOTSTRAPSERVERS: "kafka:9092"
+      KAFKA__SCHEMAREGISTRY: "http://kafka:8082"
+      KAFKA__GROUPID: "stickerlandia-print"
+      Authentication__Audience: "stickerlandia"
+      Authentication__Authority: ${DEPLOYMENT_HOST_URL}
+      Authentication__MetadataAddress: "http://user-management:8080"
+      Authentication__Mode: "OidcDiscovery"
+      Authentication__RequireHttpsMetadata: "false"
+      OPENIDDICT_ISSUER: ${DEPLOYMENT_HOST_URL}
+      DEPLOYMENT_HOST_URL: ${DEPLOYMENT_HOST_URL}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/print/v1/health"]
+      interval: 120s
+      timeout: 15s
+      retries: 10
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.print-service.rule=PathPrefix(`/api/print`)"
+      - "traefik.http.routers.print-service.priority=100"
+      - "traefik.http.services.print-service.loadbalancer.server.port=8080"
+
+
+  print-service-worker:
+    build:
+      context: ./print-service
+      dockerfile: src/Stickerlandia.PrintService.Worker/Dockerfile
+    container_name: print-service-worker
+    depends_on:
+      kafka:
+        condition: service_healthy
+      print-service-db-migrations:
+        condition: service_completed_successfully
+      user-management:
+        condition: service_healthy
+    environment:
+      # DataDog APM configuration
+      DD_SERVICE: print-service
+      DD_ENV: ${ENV:-development}
+      DD_VERSION: ${COMMIT_SHA:-latest}
+      DD_AGENT_HOST: datadog-agent
+      DD_DATA_STREAMS_ENABLED: "true"
+      DD_TRACE_OTEL_ENABLED: "true"
+      DD_LOGS_INJECTION: "true"
+      DD_RUNTIME_METRICS_ENABLED: "true"
+      DD_PROFILING_ENABLED: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://datadog-agent:4317"
+      OTEL_SERVICE_NAME: "print-service"
+      # Application configuration
+      ASPNETCORE_ENVIRONMENT: Development
+      DRIVING: AGNOSTIC
+      DRIVEN: AGNOSTIC
+      DISABLE_SSL: "true"
+      ConnectionStrings__messaging: "kafka:29092"
+      ConnectionStrings__database: "Host=print-service-db;Port=5432;Database=print_service;Username=print_service_user;Password=print_service_password"
+      KAFKA__BOOTSTRAPSERVERS: "kafka:9092"
+      KAFKA__SCHEMAREGISTRY: "http://kafka:8082"
+      KAFKA__GROUPID: "stickerlandia-print"
+      Authentication__Audience: "stickerlandia"
+      Authentication__Authority: ${DEPLOYMENT_HOST_URL}
+      Authentication__MetadataAddress: "http://user-management:8080"
+      Authentication__Mode: "OidcDiscovery"
+      Authentication__RequireHttpsMetadata: "false"
+      OPENIDDICT_ISSUER: ${DEPLOYMENT_HOST_URL}
+      DEPLOYMENT_HOST_URL: ${DEPLOYMENT_HOST_URL}
+
+  print-service-client:
+    build:
+      context: ./print-service
+      dockerfile: src/Stickerlandia.PrintService.Client/Dockerfile
+    container_name: print-service-client
+    depends_on:
+      print-service:
+        condition: service_healthy
+    ports:
+      - "8086:8080"
+    environment:
+      # DataDog APM configuration
+      DD_SERVICE: print-service-client
+      DD_ENV: ${ENV:-development}
+      DD_VERSION: ${COMMIT_SHA:-latest}
+      DD_AGENT_HOST: datadog-agent
+      DD_DATA_STREAMS_ENABLED: "true"
+      DD_TRACE_OTEL_ENABLED: "true"
+      DD_LOGS_INJECTION: "true"
+      DD_RUNTIME_METRICS_ENABLED: "true"
+      DD_PROFILING_ENABLED: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://datadog-agent:4317"
+      OTEL_SERVICE_NAME: "print-service-client"
+      # Application configuration
+      ASPNETCORE_ENVIRONMENT: Development
+      DEFAULT_BACKEND_URL: http://print-service:8080
+      DEFAULT_PRINTER_KEY: "thisisadefaultkey"
+
+  print-service-db-migrations:
+    build:
+      context: ./print-service
+      dockerfile: src/Stickerlandia.PrintService.MigrationService/Dockerfile
+    container_name: print-service-migrations
+    depends_on:
+      print-service-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      # DataDog APM configuration
+      DD_SERVICE: print-service-migration-service
+      DD_ENV: development
+      DD_VERSION: ${COMMIT_SHA:-latest}
+      DD_AGENT_HOST: datadog-agent
+      DD_TRACE_OTEL_ENABLED: "true"
+      DD_LOGS_INJECTION: "true"
+      DD_RUNTIME_METRICS_ENABLED: "true"
+      ASPNETCORE_ENVIRONMENT: Development
+      DRIVING: AGNOSTIC
+      DRIVEN: AGNOSTIC
+      ConnectionStrings__messaging: "kafka:29092"
+      ConnectionStrings__database: "Host=print-service-db;Port=5432;Database=print_service;Username=print_service_user;Password=print_service_password"
+      KAFKA__BOOTSTRAPSERVERS: "kafka:9092"
+      KAFKA__SCHEMAREGISTRY: "http://kafka:8082"
+      KAFKA__GROUPID: "stickerlandia-print"
+      DEPLOYMENT_HOST_URL: ${DEPLOYMENT_HOST_URL}
+    command: ["migrations/Stickerlandia.PrintService.MigrationService.dll"]
+
   user-management:
     build:
       context: ./user-management
@@ -376,6 +571,9 @@ services:
       - "traefik.http.routers.user-management.priority=100"
       - "traefik.http.routers.auth.rule=PathRegexp(`(?i)^/auth`)"
       - "traefik.http.routers.auth.priority=100"
+      - "traefik.http.routers.oidc-discovery.rule=PathPrefix(`/.well-known`)"
+      - "traefik.http.routers.oidc-discovery.priority=100"
+      - "traefik.http.routers.oidc-discovery.service=user-management"
       - "traefik.http.services.user-management.loadbalancer.server.port=8080"
 
   user-management-worker:
@@ -419,6 +617,8 @@ services:
     container_name: user-management-migrations
     depends_on:
       user-management-db:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
     environment:
       # DataDog APM configuration
@@ -515,7 +715,7 @@ services:
       DD_DATA_STREAMS_ENABLED: true
       # Server configuration
       SERVER_PORT: 8080
-      
+
       # Database configuration
       DATABASE_HOST: sticker-award-db
       DATABASE_PORT: 5432
@@ -523,15 +723,15 @@ services:
       DATABASE_PASSWORD: sticker_password
       DATABASE_NAME: sticker_awards
       DATABASE_SSL_MODE: disable
-      
+
       # Logging configuration
       LOG_LEVEL: info
       LOG_FORMAT: json
-      
+
       # Kafka configuration
       KAFKA_BROKERS: kafka:29092
       KAFKA_GROUP_ID: sticker-award-service
-      
+
       # External service configuration
       CATALOGUE_BASE_URL: http://sticker-catalogue:8080
 
@@ -542,7 +742,15 @@ services:
       OAUTH_ISSUER: ${DEPLOYMENT_HOST_URL}/
       OAUTH_JWKS_URL: http://user-management:8080/.well-known/jwks
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8080/health",
+        ]
       interval: 1s
       timeout: 10s
       retries: 3
@@ -584,16 +792,25 @@ services:
     image: datadog/agent:7.75.0
     pull_policy: always
     container_name: datadog-agent
+    pid: host
     profiles:
       - monitoring
       - load-test
+    ports:
+      - "8126:8126"
+      - "4317:4317"
+      - "4318:4318"
+    expose:
+      - "8126" # APM tracing port
+      - "4317" # OTLP gRPC port for OpenTelemetry
+      - "4318" # OTLP HTTP port for OpenTelemetry
     environment:
       # Core Datadog configuration
       - DD_API_KEY=${DD_API_KEY}
       - DD_SITE=${DD_SITE:-datadoghq.eu}
       - DD_HOSTNAME=stickerlandia-dev
       - DD_TAGS=env:development,project:stickerlandia
-      
+
       # APM (Application Performance Monitoring) configuration
       - DD_APM_ENABLED=true
       - DD_APM_NON_LOCAL_TRAFFIC=true
@@ -601,20 +818,21 @@ services:
 
       # Profiling enabled
       - DD_PROFILING_ENABLED=true
-      
+
       # Log collection configuration
       - DD_LOGS_ENABLED=true
       - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
       - DD_LOGS_CONFIG_AUTO_MULTI_LINE_DETECTION=true
-      
+
       # Container monitoring
       - DD_CONTAINER_EXCLUDE_LOGS=name:datadog-agent
       - DD_CONTAINER_EXCLUDE_METRICS=name:datadog-agent
-      
+
       # OTLP configuration for OpenTelemetry
+      - DD_OTELCOLLECTOR_ENABLED=true
       - DD_OTLP_CONFIG_RECEIVER_PROTOCOLS_GRPC_ENDPOINT=0.0.0.0:4317
       - DD_OTLP_CONFIG_RECEIVER_PROTOCOLS_HTTP_ENDPOINT=0.0.0.0:4318
-      
+
       # Docker integration
       - DD_DOCKER_LABELS_AS_TAGS=true
       - DD_DOCKER_ENV_AS_TAGS=true
@@ -643,6 +861,7 @@ services:
 volumes:
   sticker-catalogue-data:
   sticker-award-data:
+  print-service-data:
   user-management-data:
   kafka-data:
   minio-data:
@@ -678,3 +897,9 @@ configs:
           username: datadog
           password: datadog_password
           dbname: sticker_catalogue
+        - dbm: true
+          host: print-service-db
+          port: 5432
+          username: datadog
+          password: datadog_password
+          dbname: print_service

@@ -14,6 +14,15 @@ setup('authenticate', async ({ page }) => {
   // Verify we're on the dashboard
   await expect(page).toHaveURL(/\/dashboard/);
 
+  // Copy sessionStorage auth token to localStorage so storageState preserves it
+  // (storageState saves cookies + localStorage, but NOT sessionStorage)
+  await page.evaluate(() => {
+    const token = sessionStorage.getItem('auth_token');
+    if (token) {
+      localStorage.setItem('auth_token_backup', token);
+    }
+  });
+
   // Save authentication state
   await page.context().storageState({ path: authFile });
   console.log('Authentication state saved successfully');

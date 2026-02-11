@@ -10,6 +10,7 @@
     "test:auth": "playwright test --project=auth",
     "test:authenticated": "playwright test --project=authenticated",
     "test:api": "playwright test --project=api",
+    "test:admin": "playwright test --project=setup --project=admin",
     "test:ui": "playwright test --ui",
     "test:headed": "playwright test --headed",
     "test:debug": "playwright test --debug",

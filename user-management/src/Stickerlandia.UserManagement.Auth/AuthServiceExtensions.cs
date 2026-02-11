@@ -28,7 +28,9 @@ public static class AuthServiceExtensions
                 var explicitIssuer = Environment.GetEnvironmentVariable("OPENIDDICT_ISSUER");
                 if (!string.IsNullOrEmpty(explicitIssuer))
                 {
-                    options.SetIssuer(new Uri(explicitIssuer));
+                    // Trim trailing slash to ensure consistent issuer format across services
+                    var issuerUrl = explicitIssuer.TrimEnd('/');
+                    options.SetIssuer(new Uri(issuerUrl, UriKind.Absolute));
                 }
                 
                 // Enable the token endpoint.
@@ -118,6 +120,16 @@ public static class AuthServiceExtensions
                         {
                             context.Email = context.AccessTokenPrincipal.GetClaim(OpenIddictConstants.Claims.Email);
                             context.EmailVerified = false;
+                        }
+
+                        if (context.AccessTokenPrincipal.HasScope(OpenIddictConstants.Scopes.Roles))
+                        {
+                            var roles = context.AccessTokenPrincipal.GetClaims(OpenIddictConstants.Claims.Role);
+                            if (roles.Any())
+                            {
+                                context.Claims[OpenIddictConstants.Claims.Role] =
+                                    System.Text.Json.JsonSerializer.SerializeToElement(roles.ToList());
+                            }
                         }
 
                         return default;
