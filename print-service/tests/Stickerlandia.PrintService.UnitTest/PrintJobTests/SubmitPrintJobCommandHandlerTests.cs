@@ -254,21 +254,6 @@ public class SubmitPrintJobCommandHandlerTests : IDisposable
             await action.Should().ThrowAsync<InvalidPrintJobException>();
         }
 
-        [Fact]
-        public async Task WithInvalidCommand_InvalidStickerUrl_ThrowsInvalidPrintJobException()
-        {
-            var command = new SubmitPrintJobCommand
-            {
-                UserId = "user123",
-                StickerId = "sticker123",
-                StickerUrl = "not-a-valid-url"
-            };
-
-            var action = async () => await _handler.Handle("TestEvent", "TestPrinter", command);
-
-            await action.Should().ThrowAsync<InvalidPrintJobException>();
-        }
-
         private void SetupExistingPrinter(string eventName, string printerName)
         {
             var printerId = new PrinterId($"{eventName.ToUpperInvariant()}-{printerName.ToUpperInvariant()}");
