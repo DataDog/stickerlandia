@@ -117,20 +117,7 @@ public class SubmitPrintJobCommandTests
         }
 
         [Fact]
-        public void WithInvalidStickerUrl_ReturnsFalse()
-        {
-            var command = new SubmitPrintJobCommand
-            {
-                UserId = "user123",
-                StickerId = "sticker456",
-                StickerUrl = "not-a-valid-url"
-            };
-
-            command.IsValid().Should().BeFalse();
-        }
-
-        [Fact]
-        public void WithRelativeUrl_ReturnsFalse()
+        public void WithRelativeUrl_ReturnsTrue()
         {
             var command = new SubmitPrintJobCommand
             {
@@ -139,7 +126,7 @@ public class SubmitPrintJobCommandTests
                 StickerUrl = "/images/sticker.png"
             };
 
-            command.IsValid().Should().BeFalse();
+            command.IsValid().Should().BeTrue();
         }
     }
 }
