@@ -18,6 +18,7 @@ Each command starts services, runs the test, then cleans up.
 mise run load:smoke:public   # Public endpoints only (no auth)
 mise run load:smoke:auth     # Authenticated flows only
 mise run load:smoke:register # Registration flow
+mise run load:smoke:print    # Print flow (authenticated user prints owned sticker)
 ```
 
 ### Keep Services Running
@@ -74,5 +75,5 @@ WORKLOAD=load SCENARIO=auth mise run load:smoke
 
 | Variable | Default | Options |
 |----------|---------|---------|
-| `WORKLOAD` | `smoke` | `smoke`, `load`, `sustained`, `sustained:auth`, `sustained:catalogue` |
-| `SCENARIO` | `mixed` | `mixed`, `public`, `auth`, `register` |
+| `WORKLOAD` | `smoke` | `smoke`, `load`, `sustained`, `sustained:auth`, `sustained:catalogue`, `sustained:print` |
+| `SCENARIO` | `mixed` | `mixed`, `public`, `auth`, `register`, `print` |

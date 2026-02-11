@@ -92,6 +92,19 @@ const WORKLOADS = {
       },
     },
   },
+  'sustained:print': {
+    scenarios: {
+      print_stress: {
+        executor: 'constant-arrival-rate',
+        rate: 5,
+        timeUnit: '1s',
+        duration: '5m',
+        preAllocatedVUs: 10,
+        maxVUs: 20,
+        exec: 'printFlow',
+      },
+    },
+  },
   sustained: {
     scenarios: {
       auth_flow: {
@@ -120,6 +133,15 @@ const WORKLOADS = {
         preAllocatedVUs: 2,
         maxVUs: 5,
         exec: 'registrationFlow',
+      },
+      print_flow: {
+        executor: 'constant-arrival-rate',
+        rate: 5,
+        timeUnit: '1s',
+        duration: '10m',
+        preAllocatedVUs: 10,
+        maxVUs: 20,
+        exec: 'printFlow',
       },
     },
   },
@@ -240,7 +262,19 @@ function performOAuthLogin(jar, email = null, password = null) {
     }
   }
 
-  if (submitRes.url && submitRes.url.includes('/dashboard')) {
+  if (submitRes.url && (submitRes.url.includes('/dashboard') || submitRes.url.includes('auth=complete'))) {
+    // Exchange session for access token via BFF token endpoint
+    const tokenRes = http.post(`${BASE_URL}/api/app/auth/token`, null, { jar });
+    if (tokenRes.status === 200) {
+      try {
+        const tokenData = tokenRes.json();
+        if (tokenData.access_token) {
+          return { success: true, accessToken: tokenData.access_token };
+        }
+      } catch (e) {
+        // Fall through to session-based
+      }
+    }
     return { success: true, accessToken: null, sessionBased: true };
   }
 
@@ -529,6 +563,180 @@ export function registrationFlow() {
 }
 
 // =============================================================================
+// Scenario: Print Flow (Authenticated User Prints Owned Sticker)
+// =============================================================================
+
+export function printFlow() {
+  group('Print Flow', () => {
+    const jar = http.cookieJar();
+    const authResult = performOAuthLogin(jar);
+
+    const loginSuccess = check(authResult, { 'print: login successful': (r) => r.success === true });
+
+    if (!loginSuccess) {
+      console.warn(`Print flow auth failed: ${authResult.error}`);
+      return;
+    }
+
+    sleep(1 + Math.random() * 2);
+
+    const authHeaders = authResult.accessToken
+      ? { 'Authorization': `Bearer ${authResult.accessToken}` }
+      : {};
+
+    // Step 1: Get user identity
+    const userRes = http.get(`${BASE_URL}/api/app/auth/user`, { headers: authHeaders, jar });
+    check(userRes, { 'print: user info loads': (r) => r.status === 200 });
+
+    let userId = null;
+    if (userRes.status === 200) {
+      try {
+        const userInfo = userRes.json();
+        if (userInfo.authenticated && userInfo.user) {
+          userId = userInfo.user.sub || userInfo.user.id;
+        }
+      } catch (e) {
+        console.warn('printFlow: failed to parse user response', e);
+      }
+    }
+
+    if (!userId) {
+      console.warn('printFlow: could not determine userId, skipping');
+      return;
+    }
+
+    sleep(1 + Math.random() * 2);
+
+    // Step 2: Fetch user's owned stickers (awards)
+    const awardsRes = http.get(`${BASE_URL}/api/awards/v1/assignments/${userId}`, { headers: authHeaders });
+    check(awardsRes, { 'print: user awards loads': (r) => r.status === 200 || r.status === 404 });
+
+    let ownedStickers = [];
+    if (awardsRes.status === 200) {
+      try {
+        const awardsData = awardsRes.json();
+        ownedStickers = awardsData.stickers || [];
+      } catch (e) {
+        console.warn('printFlow: failed to parse awards response', e);
+      }
+    }
+
+    if (ownedStickers.length === 0) {
+      console.warn('printFlow: user has no owned stickers, skipping print');
+      return;
+    }
+
+    sleep(1 + Math.random() * 2);
+
+    // Step 3: View a sticker from collection (simulate browsing detail page)
+    const selectedSticker = ownedStickers[Math.floor(Math.random() * ownedStickers.length)];
+    const stickerId = selectedSticker.stickerId || selectedSticker.id;
+
+    const detailRes = http.get(`${BASE_URL}/api/stickers/v1/${stickerId}`, { headers: authHeaders });
+    check(detailRes, { 'print: sticker detail loads': (r) => r.status === 200 });
+
+    sleep(1 + Math.random() * 2);
+
+    // Step 4: Discover available events and printers
+    const eventsRes = http.get(`${BASE_URL}/api/print/v1/events`, { headers: authHeaders, jar });
+    check(eventsRes, { 'print: events list loads': (r) => r.status === 200 });
+
+    let events = [];
+    if (eventsRes.status === 200) {
+      try {
+        const eventsData = eventsRes.json();
+        events = eventsData.data || [];
+      } catch (e) {
+        console.warn('printFlow: failed to parse events response', e);
+      }
+    }
+
+    if (events.length === 0) {
+      console.warn('printFlow: no events available, skipping print');
+      return;
+    }
+
+    const eventName = events[Math.floor(Math.random() * events.length)];
+
+    sleep(1 + Math.random() * 2);
+
+    // Step 5: Get printers and their status for the event
+    const printersRes = http.get(`${BASE_URL}/api/print/v1/event/${encodeURIComponent(eventName)}/printers/status`, {
+      headers: authHeaders,
+      jar,
+    });
+    check(printersRes, { 'print: printer status loads': (r) => r.status === 200 });
+
+    let printers = [];
+    if (printersRes.status === 200) {
+      try {
+        const printersData = printersRes.json();
+        const allPrinters = (printersData.data && printersData.data.printers) || [];
+        // Prefer online printers, fall back to any printer
+        printers = allPrinters.filter((p) => p.status === 'Online');
+        if (printers.length === 0) {
+          printers = allPrinters;
+        }
+      } catch (e) {
+        console.warn('printFlow: failed to parse printers response', e);
+      }
+    }
+
+    if (printers.length === 0) {
+      console.warn('printFlow: no printers available for event, skipping print');
+      return;
+    }
+
+    const printer = printers[Math.floor(Math.random() * printers.length)];
+    const printerName = printer.printerName || printer.name;
+
+    sleep(1 + Math.random() * 2);
+
+    // Step 6: Submit print job for the owned sticker
+    const stickerUrl = `${DEPLOYMENT_HOST_URL}/api/stickers/v1/${encodeURIComponent(stickerId)}/image`;
+    const printJobPayload = JSON.stringify({
+      userId: userId,
+      stickerId: stickerId,
+      stickerUrl: stickerUrl,
+    });
+
+    const printRes = http.post(
+      `${BASE_URL}/api/print/v1/event/${encodeURIComponent(eventName)}/printer/${encodeURIComponent(printerName)}/jobs`,
+      printJobPayload,
+      {
+        headers: { ...authHeaders, 'Content-Type': 'application/json' },
+        jar,
+      },
+    );
+    check(printRes, {
+      'print: job submitted': (r) => r.status === 201,
+    });
+
+    if (printRes.status === 201) {
+      try {
+        const printData = printRes.json();
+        const jobId = printData.data && printData.data.printJobId;
+        if (jobId) {
+          console.log(`printFlow: submitted job ${jobId} for sticker ${stickerId}`);
+        }
+      } catch (e) {
+        // Response parsed fine, just logging
+      }
+    } else {
+      console.warn(`printFlow: print job submission failed with status ${printRes.status}`);
+    }
+
+    sleep(1 + Math.random() * 2);
+
+    // Step 7: Logout
+    if (Math.random() < 0.5) {
+      const logoutSuccess = performLogout(jar);
+      check({ success: logoutSuccess }, { 'print: logout succeeds': (r) => r.success === true });
+    }
+  });
+}
+
+// =============================================================================
 // Main Execution
 // =============================================================================
 
@@ -539,12 +747,17 @@ export default function () {
     authenticatedFlow();
   } else if (scenario === 'register') {
     registrationFlow();
+  } else if (scenario === 'print') {
+    printFlow();
   } else {
-    // Mixed workload: 60% public, 40% authenticated
-    if (Math.random() < 0.6) {
+    // Mixed workload: 50% public, 30% authenticated, 20% print
+    const roll = Math.random();
+    if (roll < 0.5) {
       publicBrowsingFlow();
-    } else {
+    } else if (roll < 0.8) {
       authenticatedFlow();
+    } else {
+      printFlow();
     }
   }
 }
