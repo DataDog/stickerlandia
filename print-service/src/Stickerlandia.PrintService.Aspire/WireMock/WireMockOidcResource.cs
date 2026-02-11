@@ -152,7 +152,7 @@ internal sealed class WireMockOidcResource : Resource, IDisposable
             new(JwtRegisteredClaimNames.Sub, userId),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
         };
-        claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
+        claims.AddRange(roles.Select(r => new Claim("role", r)));
 
         var token = new JwtSecurityToken(
             issuer: issuer,

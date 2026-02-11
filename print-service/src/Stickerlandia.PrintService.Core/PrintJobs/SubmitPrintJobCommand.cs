@@ -24,6 +24,8 @@ public record SubmitPrintJobCommand
     {
         return !string.IsNullOrEmpty(UserId)
                && !string.IsNullOrEmpty(StickerId)
-               && !string.IsNullOrEmpty(StickerUrl);
+               && !string.IsNullOrEmpty(StickerUrl)
+               && Uri.TryCreate(StickerUrl, UriKind.Absolute, out var uri)
+               && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
     }
 }

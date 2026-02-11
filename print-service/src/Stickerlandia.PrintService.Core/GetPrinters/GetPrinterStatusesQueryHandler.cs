@@ -28,14 +28,12 @@ public class GetPrinterStatusesQueryHandler(IPrinterRepository repository, IPrin
         {
             var printers = await repository.GetPrintersForEventAsync(query.EventName);
 
-            var countTasks = printers.Select(async p =>
+            var statuses = new List<PrinterStatusDto>(printers.Count);
+            foreach (var p in printers)
             {
                 var count = await printJobRepository.CountActiveJobsForPrinterAsync(p.Id!.Value);
-                return (Printer: p, ActiveJobCount: count);
-            });
-
-            var printersWithCounts = await Task.WhenAll(countTasks);
-            var statuses = printersWithCounts.Select(pc => PrinterStatusDto.FromPrinter(pc.Printer, pc.ActiveJobCount)).ToList();
+                statuses.Add(PrinterStatusDto.FromPrinter(p, count));
+            }
 
             var onlineCount = statuses.Count(s => s.Status == "Online");
             var offlineCount = statuses.Count - onlineCount;
