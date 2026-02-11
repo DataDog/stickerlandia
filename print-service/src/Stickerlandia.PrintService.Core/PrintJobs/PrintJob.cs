@@ -75,7 +75,9 @@ public class PrintJob
         DateTimeOffset createdAt,
         DateTimeOffset? processedAt,
         DateTimeOffset? completedAt,
-        string? failureReason)
+        string? failureReason,
+        string? traceParent = null,
+        Dictionary<string, string>? propagationHeaders = null)
     {
         return new PrintJob
         {
@@ -88,7 +90,9 @@ public class PrintJob
             CreatedAt = createdAt,
             ProcessedAt = processedAt,
             CompletedAt = completedAt,
-            FailureReason = failureReason
+            FailureReason = failureReason,
+            TraceParent = traceParent ?? string.Empty,
+            PropagationHeaders = propagationHeaders ?? new Dictionary<string, string>()
         };
     }
 
@@ -130,6 +134,16 @@ public class PrintJob
         _domainEvents.Add(new PrintJobFailedEvent(this));
     }
 
+    public void AddTraceParent(string traceParent)
+    {
+        TraceParent = traceParent;
+    }
+    
+    public void AddHeader(string header, string value)
+    {
+        PropagationHeaders.Add(header, value);
+    }
+
     public PrintJobId Id { get; private set; } = null!;
 
     public PrinterId PrinterId { get; private set; } = null!;
@@ -149,6 +163,10 @@ public class PrintJob
     public DateTimeOffset? CompletedAt { get; private set; }
 
     public string? FailureReason { get; private set; }
+
+    public string TraceParent {get; private set; } = string.Empty;
+
+    public Dictionary<string, string> PropagationHeaders { get; private set; } = new();
 
     public IReadOnlyCollection<DomainEvent> DomainEvents => _domainEvents;
 

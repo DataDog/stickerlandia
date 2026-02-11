@@ -5,22 +5,39 @@
  */
 
 using Stickerlandia.PrintService.Core;
+using Stickerlandia.PrintService.Core.Observability;
 using Stickerlandia.PrintService.Core.Outbox;
 using Stickerlandia.PrintService.Core.RegisterPrinter;
 
 namespace Stickerlandia.PrintService.UnitTest.PrinterTests;
 
-public class RegisterPrinterCommandHandlerTests
+public class RegisterPrinterCommandHandlerTests : IDisposable
 {
     private readonly IOutbox _outbox;
     private readonly IPrinterRepository _repository;
+    private readonly PrintJobInstrumentation _instrumentation;
     private readonly RegisterPrinterCommandHandler _handler;
 
     public RegisterPrinterCommandHandlerTests()
     {
         _outbox = A.Fake<IOutbox>();
         _repository = A.Fake<IPrinterRepository>();
-        _handler = new RegisterPrinterCommandHandler(_outbox, _repository);
+        _instrumentation = new PrintJobInstrumentation();
+        _handler = new RegisterPrinterCommandHandler(_outbox, _repository, _instrumentation);
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _instrumentation.Dispose();
+        }
     }
 
     public class HandleMethod : RegisterPrinterCommandHandlerTests

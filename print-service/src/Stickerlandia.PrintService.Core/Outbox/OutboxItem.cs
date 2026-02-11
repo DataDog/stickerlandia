@@ -8,7 +8,7 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
-using Datadog.Trace;
+using System.Diagnostics;
 
 namespace Stickerlandia.PrintService.Core.Outbox;
 
@@ -19,11 +19,11 @@ public class OutboxItem
         ItemId = Guid.NewGuid().ToString();
         EventTime = DateTime.UtcNow;
 
-        var currentSpan = Tracer.Instance.ActiveScope?.Span;
+        var currentActivity = Activity.Current;
 
-        if (currentSpan != null)
+        if (currentActivity != null)
         {
-            TraceId = $"00-{currentSpan.TraceId}-{currentSpan.SpanId}-01";
+            TraceId = $"00-{currentActivity.TraceId}-{currentActivity.SpanId}-01";
         }
     }
 

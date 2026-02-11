@@ -78,6 +78,11 @@ internal sealed class GlobalExceptionHandler
             Log.GenericWarning(_logger, "Print job status invalid", ex);
             await HandleExceptionAsync(context, ex);
         }
+        catch (PrinterHasActiveJobsException ex)
+        {
+            Log.GenericWarning(_logger, "Printer has active jobs", ex);
+            await HandleExceptionAsync(context, ex);
+        }
         catch (ArgumentNullException ex)
         {
             Log.GenericWarning(_logger, "Failed to retrieve user details", ex);
@@ -113,6 +118,7 @@ internal sealed class GlobalExceptionHandler
 
     private static int DetermineStatusCode(Exception exception) => exception switch
     {
+        PrinterHasActiveJobsException => (int)HttpStatusCode.Conflict,
         PrinterExistsException or InvalidPrintJobException or PrintJobStatusException or ArgumentException or FormatException or ArgumentNullException => (int)HttpStatusCode.BadRequest,
         InvalidUserException or PrinterNotFoundException or PrintJobNotFoundException or KeyNotFoundException or FileNotFoundException => (int)HttpStatusCode.NotFound,
         PrintJobOwnershipException or UnauthorizedAccessException => (int)HttpStatusCode.Forbidden,
@@ -122,6 +128,7 @@ internal sealed class GlobalExceptionHandler
 
     private static string GetUserFriendlyMessage(Exception exception) => exception switch
     {
+        PrinterHasActiveJobsException ex => ex.Message,
         PrinterNotFoundException ex => ex.Message,
         InvalidPrintJobException ex => ex.Message,
         PrintJobNotFoundException ex => ex.Message,

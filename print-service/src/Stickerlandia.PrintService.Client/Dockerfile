@@ -48,7 +48,7 @@ ENV DD_INTEGRATIONS=/opt/datadog/integrations.json
 ENV DD_LOGS_INJECTION=true
 ENV DD_RUNTIME_METRICS_ENABLED=true
 ENV DD_PROFILING_ENABLED=1
-LABEL com.datadoghq.tags.service="user-service"
+LABEL com.datadoghq.tags.service="print-service-client"
 LABEL com.datadoghq.tags.version=${DD_GIT_COMMIT_SHA}
 
 RUN groupadd -g 1001 appgroup && \

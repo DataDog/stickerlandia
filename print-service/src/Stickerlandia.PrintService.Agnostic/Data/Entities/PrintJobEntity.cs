@@ -7,6 +7,7 @@
 // URL properties use string for JSON serialization simplicity
 #pragma warning disable CA1056
 
+using System.Text.Json;
 using Stickerlandia.PrintService.Core;
 using Stickerlandia.PrintService.Core.PrintJobs;
 
@@ -36,6 +37,10 @@ public class PrintJobEntity
 
     public string? FailureReason { get; set; }
 
+    public string TraceParent { get; set; } = string.Empty;
+
+    public string PropagationHeadersJson { get; set; } = "{}";
+
     public uint RowVersion { get; set; }
 
     public static PrintJobEntity FromDomain(PrintJob printJob)
@@ -54,12 +59,18 @@ public class PrintJobEntity
             CreatedAt = printJob.CreatedAt,
             ProcessedAt = printJob.ProcessedAt,
             CompletedAt = printJob.CompletedAt,
-            FailureReason = printJob.FailureReason
+            FailureReason = printJob.FailureReason,
+            TraceParent = printJob.TraceParent,
+            PropagationHeadersJson = JsonSerializer.Serialize(printJob.PropagationHeaders)
         };
     }
 
     public PrintJob ToDomain()
     {
+        var headers = string.IsNullOrEmpty(PropagationHeadersJson)
+            ? new Dictionary<string, string>()
+            : JsonSerializer.Deserialize<Dictionary<string, string>>(PropagationHeadersJson) ?? new Dictionary<string, string>();
+
         return PrintJob.From(
             new PrintJobId(PrintJobId),
             new PrinterId(PrinterId),
@@ -70,6 +81,8 @@ public class PrintJobEntity
             CreatedAt,
             ProcessedAt,
             CompletedAt,
-            FailureReason);
+            FailureReason,
+            TraceParent,
+            headers);
     }
 }

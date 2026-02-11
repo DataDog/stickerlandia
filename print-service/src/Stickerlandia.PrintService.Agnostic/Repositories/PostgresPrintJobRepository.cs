@@ -4,6 +4,7 @@
  * Copyright 2025-Present Datadog, Inc.
  */
 
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Stickerlandia.PrintService.Agnostic.Data;
 using Stickerlandia.PrintService.Agnostic.Data.Entities;
@@ -90,8 +91,41 @@ public class PostgresPrintJobRepository(PrintServiceDbContext dbContext) : IPrin
         entity.ProcessedAt = printJob.ProcessedAt;
         entity.CompletedAt = printJob.CompletedAt;
         entity.FailureReason = printJob.FailureReason;
+        entity.TraceParent = printJob.TraceParent;
+        entity.PropagationHeadersJson = JsonSerializer.Serialize(printJob.PropagationHeaders);
 
         await dbContext.SaveChangesAsync().ConfigureAwait(false);
+    }
+
+    public async Task DeleteJobsForPrinterAsync(string printerId)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(printerId);
+
+        await dbContext.PrintJobs
+            .Where(j => j.PrinterId == printerId)
+            .ExecuteDeleteAsync()
+            .ConfigureAwait(false);
+    }
+
+    public async Task<bool> HasJobsInStatusAsync(string printerId, PrintJobStatus status)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(printerId);
+
+        return await dbContext.PrintJobs
+            .AsNoTracking()
+            .AnyAsync(j => j.PrinterId == printerId && j.Status == (int)status)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<int> CountActiveJobsForPrinterAsync(string printerId)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(printerId);
+
+        return await dbContext.PrintJobs
+            .AsNoTracking()
+            .CountAsync(j => j.PrinterId == printerId
+                && (j.Status == (int)PrintJobStatus.Queued || j.Status == (int)PrintJobStatus.Processing))
+            .ConfigureAwait(false);
     }
 
     private async Task<bool> TryClaimJobAsync(PrintJobEntity job)

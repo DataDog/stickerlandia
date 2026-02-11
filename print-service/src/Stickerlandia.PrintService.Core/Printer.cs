@@ -134,6 +134,12 @@ public class Printer
         LastHeartbeat = DateTimeOffset.UtcNow;
         Changed = true;
     }
+    
+    public void UpdateKey(string? optionalNewKey = null)
+    {
+        Key = optionalNewKey ?? Convert.ToBase64String(Guid.NewGuid().ToByteArray());
+        Changed = true;
+    }
 
     /// <summary>
     /// Records that a job was processed.

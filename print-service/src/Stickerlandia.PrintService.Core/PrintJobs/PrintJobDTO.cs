@@ -29,6 +29,12 @@ public record PrintJobDto
     [JsonPropertyName("createdAt")]
     public DateTimeOffset CreatedAt { get; init; }
 
+    [JsonPropertyName("traceparent")]
+    public string TraceParent { get; init; } = string.Empty;
+
+    [JsonPropertyName("propagationHeaders")]
+    public Dictionary<string, string> PropagationHeaders { get; init; } = new();
+
     /// <summary>
     /// Creates a DTO from a PrintJob entity.
     /// </summary>
@@ -42,7 +48,9 @@ public record PrintJobDto
             UserId = printJob.UserId,
             StickerId = printJob.StickerId,
             StickerUrl = printJob.StickerUrl,
-            CreatedAt = printJob.CreatedAt
+            CreatedAt = printJob.CreatedAt,
+            PropagationHeaders = printJob.PropagationHeaders,
+            TraceParent = printJob.TraceParent
         };
     }
 }

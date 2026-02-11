@@ -3,6 +3,7 @@
 // Copyright 2025 Datadog, Inc.
 
 using System.Diagnostics;
+using Datadog.Trace;
 using Stickerlandia.PrintService.Core.Observability;
 using Stickerlandia.PrintService.Core.Outbox;
 
@@ -44,6 +45,20 @@ public class SubmitPrintJobCommandHandler(
                 command.UserId,
                 command.StickerId,
                 command.StickerUrl);
+
+            // Inject DSM context at submission time so it's persisted with the job
+            if (activity != null)
+            {
+                using var context = Tracer.Instance.StartActive("print_queue");
+
+                printJob.AddTraceParent($"00-{activity.Context.TraceId}-{activity.Context.SpanId}-01");
+
+                var injector = new SpanContextInjector();
+                injector.InjectIncludingDsm(printJob, (_, key, value) =>
+                {
+                    printJob.AddHeader(key, value);
+                }, context.Span.Context, "print", "print_queue");
+            }
 
             await printJobRepository.AddAsync(printJob);
 

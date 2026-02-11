@@ -7,8 +7,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useLocation, useParams, Link } from 'react-router'
 import { useAuth } from '../../context/AuthContext'
-import { getPrintersWithStatus } from '../../services/print'
-import { addKnownEvent, setLastActiveEvent } from '../../services/eventStorage'
+import { getPrintersWithStatus, deletePrinter } from '../../services/print'
+import { setLastActiveEvent } from '../../services/eventStorage'
 import PrinterCard from './PrinterCard'
 import PrintDialog from './PrintDialog'
 import RegisterPrinterDialog from './RegisterPrinterDialog'
@@ -41,7 +41,6 @@ export default function PrintStation() {
   // Track visited event in localStorage
   useEffect(() => {
     if (eventName) {
-      addKnownEvent(eventName)
       setLastActiveEvent(eventName)
     }
   }, [eventName])
@@ -119,6 +118,30 @@ export default function PrintStation() {
     setSelectedPrinter(null)
   }
 
+  const handleDeletePrinter = async (printer) => {
+    if (!window.confirm(`Delete printer "${printer.printerName}"? This will also delete all its print jobs.`)) {
+      return
+    }
+
+    try {
+      await deletePrinter(eventName, printer.printerName)
+      fetchPrinters(false)
+    } catch (err) {
+      if (err.status === 409) {
+        if (window.confirm(`${err.message}\n\nForce delete this printer and all its jobs?`)) {
+          try {
+            await deletePrinter(eventName, printer.printerName, true)
+            fetchPrinters(false)
+          } catch (forceErr) {
+            setError(forceErr.message)
+          }
+        }
+      } else {
+        setError(err.message)
+      }
+    }
+  }
+
   return (
     <div className="isolate flex flex-auto flex-col bg-[--root-bg]">
       <main id="main">
@@ -193,7 +216,9 @@ export default function PrintStation() {
                   <PrinterCard
                     key={printer.printerId}
                     printer={printer}
+                    isAdmin={isAdmin}
                     onPrintClick={() => handlePrintClick(printer)}
+                    onDeleteClick={() => handleDeletePrinter(printer)}
                   />
                 ))}
               </div>

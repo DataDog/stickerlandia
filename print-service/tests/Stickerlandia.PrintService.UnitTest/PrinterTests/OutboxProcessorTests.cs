@@ -8,17 +8,19 @@ using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Stickerlandia.PrintService.Core;
+using Stickerlandia.PrintService.Core.Observability;
 using Stickerlandia.PrintService.Core.Outbox;
 using Stickerlandia.PrintService.Core.RegisterPrinter;
 
 namespace Stickerlandia.PrintService.UnitTest.PrinterTests;
 
-public class OutboxProcessorTests
+public class OutboxProcessorTests : IDisposable
 {
     private readonly IOutbox _outbox;
     private readonly IPrintServiceEventPublisher _eventPublisher;
     private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly ILogger<OutboxProcessor> _logger;
+    private readonly PrintJobInstrumentation _instrumentation;
     private readonly OutboxProcessor _processor;
 
     public OutboxProcessorTests()
@@ -41,7 +43,22 @@ public class OutboxProcessorTests
         A.CallTo(() => _serviceScopeFactory.CreateScope())
             .Returns(serviceScope);
 
-        _processor = new OutboxProcessor(_serviceScopeFactory, _logger);
+        _instrumentation = new PrintJobInstrumentation();
+        _processor = new OutboxProcessor(_serviceScopeFactory, _logger, _instrumentation);
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _instrumentation.Dispose();
+        }
     }
 
     public class ProcessAsyncMethod : OutboxProcessorTests

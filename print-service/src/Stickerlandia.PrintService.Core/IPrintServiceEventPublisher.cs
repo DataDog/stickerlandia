@@ -8,11 +8,21 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
+using Stickerlandia.PrintService.Core.DeletePrinter;
+using Stickerlandia.PrintService.Core.PrintJobs;
 using Stickerlandia.PrintService.Core.RegisterPrinter;
 
 namespace Stickerlandia.PrintService.Core;
 
 public interface IPrintServiceEventPublisher
 {
+    Task PublishPrintJobQueuedEvent(PrintJobQueuedEvent printJobQueuedEvent);
+    
+    Task PublishPrintJobFailedEvent(PrintJobFailedEvent printJobFailedEvent);
+
     Task PublishPrinterRegisteredEvent(PrinterRegisteredEvent printerRegisteredEvent);
+
+    Task PublishPrintJobCompletedEvent(PrintJobCompletedEvent printJobCompletedEvent);
+
+    Task PublishPrinterDeletedEvent(PrinterDeletedEvent printerDeletedEvent);
 }

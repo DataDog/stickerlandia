@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using OpenTelemetry;
+using OpenTelemetry.Exporter;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -40,6 +42,7 @@ public static class DefaultServiceExtensions
                 config.MinimumLevel.Information()
                     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
                     .Enrich.FromLogContext()
+                    .Enrich.With(new TraceContextEnricher())
                     .WriteTo.Console(new JsonFormatter());
             });
 
@@ -63,7 +66,7 @@ public static class DefaultServiceExtensions
         var otlpEndpoint = builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"];
 
         // Configure tracing
-        builder.Services.AddOpenTelemetry()
+        var otel = builder.Services.AddOpenTelemetry()
             .WithTracing(tracing =>
             {
                 tracing
@@ -75,21 +78,13 @@ public static class DefaultServiceExtensions
                         options.Filter = httpContext =>
                             !httpContext.Request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase);
                     })
-                    .AddHttpClientInstrumentation();
-
-                // Add OTLP exporter if endpoint is configured
-                if (!string.IsNullOrEmpty(otlpEndpoint))
-                {
-                    tracing.AddOtlpExporter(options =>
+                    .AddHttpClientInstrumentation(options =>
                     {
-                        options.Endpoint = new Uri(otlpEndpoint);
+                        options.FilterHttpRequestMessage = (httpRequestMessage) =>
+                        {
+                            return !httpRequestMessage.RequestUri?.Host.Contains("datadog-agent", StringComparison.OrdinalIgnoreCase) ?? true;
+                        };
                     });
-                }
-                else
-                {
-                    // Use console exporter for development
-                    tracing.AddConsoleExporter();
-                }
             })
             .WithMetrics(metrics =>
             {
@@ -97,22 +92,11 @@ public static class DefaultServiceExtensions
                     .SetResourceBuilder(resourceBuilder)
                     .AddMeter(PrintJobInstrumentation.ServiceName)
                     .AddAspNetCoreInstrumentation()
-                    .AddHttpClientInstrumentation();
-
-                // Add OTLP exporter if endpoint is configured
-                if (!string.IsNullOrEmpty(otlpEndpoint))
-                {
-                    metrics.AddOtlpExporter(options =>
-                    {
-                        options.Endpoint = new Uri(otlpEndpoint);
-                    });
-                }
-                else
-                {
-                    // Use console exporter for development
-                    metrics.AddConsoleExporter();
-                }
+                    .AddHttpClientInstrumentation()
+                    .AddRuntimeInstrumentation();
             });
+
+        otel.UseOtlpExporter(OtlpExportProtocol.Grpc, new Uri(otlpEndpoint ?? "http://localhost:4317"));
 
         return builder;
     }

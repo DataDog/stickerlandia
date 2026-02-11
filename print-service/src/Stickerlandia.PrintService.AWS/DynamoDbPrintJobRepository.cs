@@ -3,6 +3,7 @@
 // Copyright 2025 Datadog, Inc.
 
 using System.Globalization;
+using System.Text.Json;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using Microsoft.Extensions.Options;
@@ -123,6 +124,106 @@ public class DynamoDbPrintJobRepository(
         await dynamoDbClient.PutItemAsync(request).ConfigureAwait(false);
     }
 
+    public async Task DeleteJobsForPrinterAsync(string printerId)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(printerId);
+
+        var pk = $"PRINTER#{printerId}";
+
+        // Query all jobs for this printer
+        var request = new QueryRequest
+        {
+            TableName = _tableName,
+            KeyConditionExpression = "PK = :pk",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                [":pk"] = new() { S = pk }
+            },
+            ProjectionExpression = "PK, SK"
+        };
+
+        var response = await dynamoDbClient.QueryAsync(request).ConfigureAwait(false);
+
+        // Batch delete in groups of 25 (DynamoDB limit)
+        foreach (var batch in response.Items.Chunk(25))
+        {
+            var writeRequests = batch.Select(item => new WriteRequest
+            {
+                DeleteRequest = new DeleteRequest
+                {
+                    Key = new Dictionary<string, AttributeValue>
+                    {
+                        [PartitionKey] = item[PartitionKey],
+                        [SortKey] = item[SortKey]
+                    }
+                }
+            }).ToList();
+
+            var batchRequest = new BatchWriteItemRequest
+            {
+                RequestItems = new Dictionary<string, List<WriteRequest>>
+                {
+                    [_tableName] = writeRequests
+                }
+            };
+
+            await dynamoDbClient.BatchWriteItemAsync(batchRequest).ConfigureAwait(false);
+        }
+    }
+
+    public async Task<bool> HasJobsInStatusAsync(string printerId, PrintJobStatus status)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(printerId);
+
+        var gsi1Pk = $"PRINTER#{printerId}#STATUS#{status}";
+
+        var request = new QueryRequest
+        {
+            TableName = _tableName,
+            IndexName = "GSI1",
+            KeyConditionExpression = "GSI1PK = :gsi1pk",
+            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            {
+                [":gsi1pk"] = new() { S = gsi1Pk }
+            },
+            Limit = 1,
+            Select = Select.COUNT
+        };
+
+        var response = await dynamoDbClient.QueryAsync(request).ConfigureAwait(false);
+
+        return response.Count > 0;
+    }
+
+    public async Task<int> CountActiveJobsForPrinterAsync(string printerId)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(printerId);
+
+        var totalCount = 0;
+
+        foreach (var status in new[] { PrintJobStatus.Queued, PrintJobStatus.Processing })
+        {
+            var gsi1Pk = $"PRINTER#{printerId}#STATUS#{status}";
+
+            var request = new QueryRequest
+            {
+                TableName = _tableName,
+                IndexName = "GSI1",
+                KeyConditionExpression = "GSI1PK = :gsi1pk",
+                ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+                {
+                    [":gsi1pk"] = new() { S = gsi1Pk }
+                },
+                Select = Select.COUNT
+            };
+
+            var response = await dynamoDbClient.QueryAsync(request).ConfigureAwait(false);
+            totalCount += response.Count ?? 0;
+        }
+
+        return totalCount;
+    }
+
     private async Task<bool> TryClaimJobAsync(PrintJob job)
     {
         try
@@ -177,6 +278,16 @@ public class DynamoDbPrintJobRepository(
             ["CreatedAt"] = new() { S = printJob.CreatedAt.ToString("O", CultureInfo.InvariantCulture) }
         };
 
+        if (!string.IsNullOrEmpty(printJob.TraceParent))
+        {
+            item["TraceParent"] = new() { S = printJob.TraceParent };
+        }
+
+        if (printJob.PropagationHeaders.Count > 0)
+        {
+            item["PropagationHeaders"] = new() { S = JsonSerializer.Serialize(printJob.PropagationHeaders) };
+        }
+
         if (printJob.ProcessedAt.HasValue)
         {
             item["ProcessedAt"] = new() { S = printJob.ProcessedAt.Value.ToString("O", CultureInfo.InvariantCulture) };
@@ -227,6 +338,18 @@ public class DynamoDbPrintJobRepository(
             failureReason = failureReasonValue.S;
         }
 
+        string? traceParent = null;
+        if (item.TryGetValue("TraceParent", out var traceParentValue))
+        {
+            traceParent = traceParentValue.S;
+        }
+
+        Dictionary<string, string>? propagationHeaders = null;
+        if (item.TryGetValue("PropagationHeaders", out var propagationHeadersValue))
+        {
+            propagationHeaders = JsonSerializer.Deserialize<Dictionary<string, string>>(propagationHeadersValue.S);
+        }
+
         return PrintJob.From(
             printJobId,
             printerId,
@@ -237,6 +360,8 @@ public class DynamoDbPrintJobRepository(
             createdAt,
             processedAt,
             completedAt,
-            failureReason);
+            failureReason,
+            traceParent,
+            propagationHeaders);
     }
 }

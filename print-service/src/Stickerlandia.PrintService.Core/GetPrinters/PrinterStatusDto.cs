@@ -42,9 +42,15 @@ public sealed record PrinterStatusDto
     public DateTimeOffset? LastJobProcessed { get; init; }
 
     /// <summary>
+    /// The number of active (queued or processing) jobs for this printer.
+    /// </summary>
+    [JsonPropertyName("activeJobCount")]
+    public int ActiveJobCount { get; init; }
+
+    /// <summary>
     /// Creates a PrinterStatusDto from a Printer entity.
     /// </summary>
-    public static PrinterStatusDto FromPrinter(Printer printer)
+    public static PrinterStatusDto FromPrinter(Printer printer, int activeJobCount = 0)
     {
         ArgumentNullException.ThrowIfNull(printer);
 
@@ -54,7 +60,8 @@ public sealed record PrinterStatusDto
             PrinterName = printer.PrinterName,
             Status = printer.Status.ToString(),
             LastHeartbeat = printer.LastHeartbeat,
-            LastJobProcessed = printer.LastJobProcessed
+            LastJobProcessed = printer.LastJobProcessed,
+            ActiveJobCount = activeJobCount
         };
     }
 }

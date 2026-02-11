@@ -16,6 +16,7 @@ using Stickerlandia.PrintService.Api;
 using Stickerlandia.PrintService.Api.Configurations;
 using Stickerlandia.PrintService.Api.Middlewares;
 using Stickerlandia.PrintService.Core;
+using Stickerlandia.PrintService.Core.DeletePrinter;
 using Stickerlandia.PrintService.Core.GetPrinters;
 using Stickerlandia.PrintService.Core.PrintJobs;
 using Stickerlandia.PrintService.ServiceDefaults;
@@ -135,6 +136,17 @@ v1ApiEndpoints.MapHealthChecks("/health", new HealthCheckOptions
     ResponseWriter = WriteHealthCheckResponse
 });
 
+v1ApiEndpoints.MapGet("/events", GetDistinctEventsEndpoint.HandleAsync)
+    .RequireAuthorization(policyBuilder =>
+    {
+        policyBuilder.RequireAuthenticatedUser()
+            .RequireRole(adminRole, userRole);
+    })
+    .WithDescription("Get a distinct list of all event names")
+    .Produces<ApiResponse<List<string>>>(200)
+    .ProducesProblem(401)
+    .ProducesProblem(403);
+
 v1ApiEndpoints.MapGet("/event/{eventName}", GetPrintersForEvent.HandleAsync)
     .RequireAuthorization(policyBuilder =>
     {
@@ -167,6 +179,32 @@ v1ApiEndpoints.MapPost("/event/{eventName}", RegisterPrinterEndpoint.HandleAsync
     .Produces<ApiResponse<string>>(200)
     .ProducesProblem(401)
     .ProducesProblem(403);
+
+v1ApiEndpoints.MapDelete("/event/{eventName}/printer/{printerName}", DeletePrinterEndpoint.HandleAsync)
+    .RequireAuthorization(policyBuilder =>
+    {
+        policyBuilder.RequireAuthenticatedUser()
+            .RequireRole(adminRole);
+    })
+    .WithDescription("Delete a printer and all its print jobs")
+    .Produces(204)
+    .ProducesProblem(401)
+    .ProducesProblem(403)
+    .ProducesProblem(404)
+    .ProducesProblem(409);
+
+v1ApiEndpoints.MapDelete("/event/{eventName}", DeleteEventEndpoint.HandleAsync)
+    .RequireAuthorization(policyBuilder =>
+    {
+        policyBuilder.RequireAuthenticatedUser()
+            .RequireRole(adminRole);
+    })
+    .WithDescription("Delete an event and all its printers")
+    .Produces<ApiResponse<DeleteEventResponse>>(200)
+    .ProducesProblem(401)
+    .ProducesProblem(403)
+    .ProducesProblem(404)
+    .ProducesProblem(409);
 
 v1ApiEndpoints.MapPost("/event/{eventName}/printer/{printerName}/jobs", SubmitPrintJobEndpoint.HandleAsync)
     .RequireAuthorization(policyBuilder =>
@@ -213,7 +251,7 @@ try
     var urlList = app.Urls;
     var urls = string.Join(" ", urlList);
 
-    logger.Information("UserManagement API started on {Urls}", urls);
+    logger.Information("PrintService API started on {Urls}", urls);
 }
 catch (Exception ex)
 {

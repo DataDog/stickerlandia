@@ -5,8 +5,9 @@
  */
 
 import LocalPrintshopOutlinedIcon from '@mui/icons-material/LocalPrintshopOutlined'
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 
-export default function PrinterCard({ printer, onPrintClick }) {
+export default function PrinterCard({ printer, onPrintClick, isAdmin, onDeleteClick }) {
   return (
     <div className="landing-card">
       <div className="flex items-center justify-between mb-4">
@@ -15,25 +16,47 @@ export default function PrinterCard({ printer, onPrintClick }) {
           <h3 className="font-bold text-xl">{printer.printerName}</h3>
         </div>
 
-        {/* Status indicator: color + dot + text (accessible) */}
-        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${
-          printer.isOnline
-            ? 'bg-green-100 text-green-800'
-            : 'bg-gray-100 text-gray-600'
-        }`}>
-          <span
-            className={`w-2 h-2 rounded-full ${printer.isOnline ? 'bg-green-500' : 'bg-gray-400'}`}
-            aria-hidden="true"
-          />
-          {printer.isOnline ? 'Online' : 'Offline'}
+        <div className="flex items-center gap-2">
+          {/* Status indicator: color + dot + text (accessible) */}
+          <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${
+            printer.isOnline
+              ? 'bg-green-100 text-green-800'
+              : 'bg-gray-100 text-gray-600'
+          }`}>
+            <span
+              className={`w-2 h-2 rounded-full ${printer.isOnline ? 'bg-green-500' : 'bg-gray-400'}`}
+              aria-hidden="true"
+            />
+            {printer.isOnline ? 'Online' : 'Offline'}
+          </div>
+
+          {isAdmin && (
+            <button
+              onClick={onDeleteClick}
+              title="Delete printer"
+              className="p-1 text-gray-400 hover:text-red-600 transition-colors rounded"
+            >
+              <DeleteOutlineIcon fontSize="small" />
+            </button>
+          )}
         </div>
       </div>
 
-      {printer.lastJobProcessed && (
-        <p className="text-sm text-gray-500 mb-4">
-          Last job: {new Date(printer.lastJobProcessed).toLocaleString()}
-        </p>
-      )}
+      <div className="flex items-center justify-between mb-4">
+        {printer.lastJobProcessed ? (
+          <p className="text-sm text-gray-500">
+            Last job: {new Date(printer.lastJobProcessed).toLocaleString()}
+          </p>
+        ) : (
+          <p className="text-sm text-gray-400">No jobs processed yet</p>
+        )}
+
+        {printer.activeJobCount > 0 && (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+            {printer.activeJobCount} in queue
+          </span>
+        )}
+      </div>
 
       <button
         onClick={onPrintClick}

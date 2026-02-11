@@ -6,18 +6,38 @@
 
 using Stickerlandia.PrintService.Core;
 using Stickerlandia.PrintService.Core.GetPrinters;
+using Stickerlandia.PrintService.Core.Observability;
+using Stickerlandia.PrintService.Core.PrintJobs;
 
 namespace Stickerlandia.PrintService.UnitTest.PrinterTests;
 
-public class GetPrinterStatusesQueryHandlerTests
+public class GetPrinterStatusesQueryHandlerTests : IDisposable
 {
     private readonly IPrinterRepository _repository;
+    private readonly IPrintJobRepository _printJobRepository;
+    private readonly PrintJobInstrumentation _instrumentation;
     private readonly GetPrinterStatusesQueryHandler _handler;
 
     public GetPrinterStatusesQueryHandlerTests()
     {
         _repository = A.Fake<IPrinterRepository>();
-        _handler = new GetPrinterStatusesQueryHandler(_repository);
+        _printJobRepository = A.Fake<IPrintJobRepository>();
+        _instrumentation = new PrintJobInstrumentation();
+        _handler = new GetPrinterStatusesQueryHandler(_repository, _printJobRepository, _instrumentation);
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _instrumentation.Dispose();
+        }
     }
 
     public class HandleMethod : GetPrinterStatusesQueryHandlerTests
@@ -109,6 +129,34 @@ public class GetPrinterStatusesQueryHandlerTests
             status.PrinterName.Should().Be("Printer1");
             status.LastHeartbeat.Should().Be(lastHeartbeat);
             status.LastJobProcessed.Should().Be(lastJobProcessed);
+        }
+
+        [Fact]
+        public async Task WithActiveJobs_ReturnsActiveJobCount()
+        {
+            var printer = CreatePrinter("TestEvent", "Printer1");
+            SetupPrinters("TestEvent", new List<Printer> { printer });
+            A.CallTo(() => _printJobRepository.CountActiveJobsForPrinterAsync(printer.Id!.Value))
+                .Returns(5);
+            var query = new GetPrinterStatusesQuery { EventName = "TestEvent" };
+
+            var result = await _handler.Handle(query);
+
+            result.Printers[0].ActiveJobCount.Should().Be(5);
+        }
+
+        [Fact]
+        public async Task WithNoActiveJobs_ReturnsZeroActiveJobCount()
+        {
+            var printer = CreatePrinter("TestEvent", "Printer1");
+            SetupPrinters("TestEvent", new List<Printer> { printer });
+            A.CallTo(() => _printJobRepository.CountActiveJobsForPrinterAsync(printer.Id!.Value))
+                .Returns(0);
+            var query = new GetPrinterStatusesQuery { EventName = "TestEvent" };
+
+            var result = await _handler.Handle(query);
+
+            result.Printers[0].ActiveJobCount.Should().Be(0);
         }
 
         private void SetupPrinters(string eventName, List<Printer> printers)

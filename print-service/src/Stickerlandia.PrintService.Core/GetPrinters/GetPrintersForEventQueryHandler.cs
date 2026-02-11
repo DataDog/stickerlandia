@@ -9,30 +9,38 @@
 // Copyright 2025 Datadog, Inc.
 
 using System.Diagnostics;
+using Stickerlandia.PrintService.Core.Observability;
 
 namespace Stickerlandia.PrintService.Core.GetPrinters;
 
-public class GetPrintersForEventQueryHandler(IPrinterRepository repository)
+public class GetPrintersForEventQueryHandler(IPrinterRepository repository, PrintJobInstrumentation instrumentation)
 {
     public async Task<List<PrinterDTO>> Handle(GetPrintersForEventQuery query)
     {
         ArgumentNullException.ThrowIfNull(query);
 
+        if (query.EventName is null)
+        {
+            throw new ArgumentException("Invalid auth token");
+        }
+
+        using var activity = PrintJobInstrumentation.StartGetPrintersActivity(query.EventName);
+
         try
         {
-            if (query.EventName is null)
-            {
-                throw new ArgumentException("Invalid auth token");
-            }
-
             var printers = await repository.GetPrintersForEventAsync(query.EventName);
+            var result = printers.Select(printer => new PrinterDTO(printer)).ToList();
 
-            return printers.Select(printer => new PrinterDTO(printer)).ToList();
+            activity?.SetTag("print.result_count", result.Count);
+            activity?.SetStatus(ActivityStatusCode.Ok);
+            instrumentation.RecordPrintersQueried(query.EventName, result.Count);
+
+            return result;
         }
-        catch (InvalidUserException ex)
+        catch (Exception ex)
         {
-            Activity.Current?.AddTag("user.notfound", true);
-            Activity.Current?.AddTag("error.message", ex.Message);
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            activity?.SetTag("error.type", ex.GetType().Name);
 
             throw;
         }

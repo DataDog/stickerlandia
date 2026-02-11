@@ -9,15 +9,18 @@
 // Copyright 2025 Datadog, Inc.
 
 using System.Diagnostics;
+using Stickerlandia.PrintService.Core.Observability;
 using Stickerlandia.PrintService.Core.Outbox;
 
 namespace Stickerlandia.PrintService.Core.RegisterPrinter;
 
-public class RegisterPrinterCommandHandler(IOutbox outbox, IPrinterRepository repository)
+public class RegisterPrinterCommandHandler(IOutbox outbox, IPrinterRepository repository, PrintJobInstrumentation instrumentation)
 {
     public async Task<RegisterPrinterResponse> Handle(RegisterPrinterCommand command)
     {
         ArgumentNullException.ThrowIfNull(command, nameof(RegisterPrinterCommand));
+
+        using var activity = PrintJobInstrumentation.StartRegisterPrinterActivity(command.EventName, command.PrinterName);
 
         try
         {
@@ -33,12 +36,16 @@ public class RegisterPrinterCommandHandler(IOutbox outbox, IPrinterRepository re
                 PrinterId = printer.Id!.Value
             });
 
+            activity?.SetTag("print.printer_id", printer.Id!.Value);
+            activity?.SetStatus(ActivityStatusCode.Ok);
+            instrumentation.RecordPrinterRegistered(command.EventName);
+
             return new RegisterPrinterResponse(printer);
         }
         catch (Exception ex)
         {
-            Activity.Current?.AddTag("user.registration.failed", true);
-            Activity.Current?.AddTag("error.message", ex.Message);
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            activity?.SetTag("error.type", ex.GetType().Name);
 
             throw;
         }

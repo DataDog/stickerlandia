@@ -13,4 +13,19 @@ public interface IPrintJobRepository
     Task<List<PrintJob>> GetQueuedJobsForPrinterAsync(string printerId, int maxJobs = 10);
 
     Task UpdateAsync(PrintJob printJob);
+
+    /// <summary>
+    /// Deletes all print jobs for a given printer.
+    /// </summary>
+    Task DeleteJobsForPrinterAsync(string printerId);
+
+    /// <summary>
+    /// Checks if a printer has any jobs in the given status.
+    /// </summary>
+    Task<bool> HasJobsInStatusAsync(string printerId, PrintJobStatus status);
+
+    /// <summary>
+    /// Counts the number of active (queued or processing) jobs for a printer.
+    /// </summary>
+    Task<int> CountActiveJobsForPrinterAsync(string printerId);
 }

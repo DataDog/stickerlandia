@@ -9,6 +9,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
 using Stickerlandia.PrintService.Agnostic.Data;
+using Stickerlandia.PrintService.Core;
+using Stickerlandia.PrintService.Core.RegisterPrinter;
 
 // Allow catch of a generic exception in the worker to ensure the worker failing doesn't crash the entire application.
 #pragma warning disable CA1031
@@ -34,6 +36,7 @@ internal sealed class Worker(
             var dbContext = scope.ServiceProvider.GetRequiredService<PrintServiceDbContext>();
 
             await RunMigrationAsync(dbContext, cancellationToken);
+            await SeedDataAsync(scope.ServiceProvider.GetRequiredService<IPrinterRepository>());
         }
         catch (Exception)
         {
@@ -59,5 +62,28 @@ internal sealed class Worker(
             // Run migration in a transaction to avoid partial migration if it fails.
             await dbContext.Database.MigrateAsync(cancellationToken);
         });
+    }
+
+    private static async Task SeedDataAsync(IPrinterRepository repository)
+    {
+        using var seedDataActivity = s_activitySource.StartActivity("run.seedData", ActivityKind.Client);
+        
+        // Data already seeded
+        if (await repository.GetPrinterAsync("default", "default") is not null)
+        {
+            return;
+        }
+
+        var printer = Printer.Register("default", "default");
+        printer.UpdateKey("thisisadefaultkey");
+
+        try
+        {
+            await repository.AddPrinterAsync(printer);
+        }
+        catch (Exception)
+        {
+            // Ignore exceptions during seeding as the printer might already exist if the seeding is retried after a failure.
+        }
     }
 }

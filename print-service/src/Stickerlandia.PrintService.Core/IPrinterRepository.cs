@@ -16,6 +16,8 @@ public interface IPrinterRepository
 
     Task<List<Printer>> GetPrintersForEventAsync(string eventName);
 
+    Task<List<string>> GetDistinctEventNamesAsync();
+
     Task<bool> PrinterExistsAsync(string eventName, string printerName);
 
     /// <summary>
@@ -27,4 +29,9 @@ public interface IPrinterRepository
     /// Updates the printer after changes have been made.
     /// </summary>
     Task UpdateAsync(Printer printer);
+
+    /// <summary>
+    /// Deletes a printer by event name and printer name.
+    /// </summary>
+    Task DeleteAsync(string eventName, string printerName);
 }

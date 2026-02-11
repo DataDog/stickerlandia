@@ -9,6 +9,7 @@
 // Copyright 2025 Datadog, Inc.
 
 using Microsoft.Extensions.DependencyInjection;
+using Stickerlandia.PrintService.Core.DeletePrinter;
 using Stickerlandia.PrintService.Core.GetPrinters;
 using Stickerlandia.PrintService.Core.Observability;
 using Stickerlandia.PrintService.Core.Outbox;
@@ -27,10 +28,13 @@ public static class ServiceExtensions
         // Command and query handlers
         services.AddTransient<RegisterPrinterCommandHandler>();
         services.AddTransient<GetPrintersForEventQueryHandler>();
+        services.AddTransient<GetDistinctEventsQueryHandler>();
         services.AddTransient<GetPrinterStatusesQueryHandler>();
         services.AddTransient<SubmitPrintJobCommandHandler>();
         services.AddTransient<GetPrintJobsForPrinterQueryHandler>();
         services.AddTransient<AcknowledgePrintJobCommandHandler>();
+        services.AddTransient<DeletePrinterCommandHandler>();
+        services.AddTransient<DeleteEventCommandHandler>();
 
         services.AddTransient<OutboxProcessor>();
 

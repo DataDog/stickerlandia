@@ -11,6 +11,8 @@ servers:
   - url: /api/print/v1
     description: Print Service API v1
 tags:
+  - name: Events
+    description: Event discovery
   - name: Printers
     description: Printer registration and status management
   - name: Print Jobs
@@ -18,6 +20,35 @@ tags:
   - name: Printer Client
     description: Endpoints for printer client applications (API Key auth)
 paths:
+  /events:
+    get:
+      tags:
+        - Events
+      summary: Get all events
+      description: Get a distinct list of all event names that have registered printers
+      operationId: getDistinctEvents
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of event names
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Forbidden
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
   /event/{eventName}:
     get:
       tags:
@@ -93,6 +124,73 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
+    delete:
+      tags:
+        - Events
+      summary: Delete an event
+      description: >
+        Delete an event and all its printers. Iterates over each printer in the
+        event, deletes its print jobs, deletes the printer, and publishes a
+        PrinterDeletedEvent for each. By default returns 409 Conflict if any
+        printer has jobs in Processing status. Use force=true to override.
+      operationId: deleteEvent
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: eventName
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The event name
+        - name: force
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: >
+            When false (default), returns 409 if any printer has in-flight
+            (Processing) jobs. When true, deletes all printers and jobs
+            regardless of status.
+      responses:
+        '200':
+          description: Event deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteEventResponseWrapper'
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Forbidden - requires admin role
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: No printers found for event
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: >
+            Conflict - one or more printers have jobs in Processing status.
+            Use force=true to delete anyway.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  message:
+                    type: string
 
   /event/{eventName}/printers/status:
     get:
@@ -125,6 +223,71 @@ paths:
                 $ref: '#/components/schemas/ProblemDetails'
         '403':
           description: Forbidden
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /event/{eventName}/printer/{printerName}:
+    delete:
+      tags:
+        - Printers
+      summary: Delete a printer
+      description: >
+        Delete a printer and all its print jobs. Publishes a PrinterDeletedEvent
+        via the outbox. By default returns 409 Conflict if the printer has jobs
+        in Processing status. Use force=true to override.
+      operationId: deletePrinter
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: eventName
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The event name
+        - name: printerName
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The printer name
+        - name: force
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: >
+            When false (default), returns 409 if the printer has in-flight
+            (Processing) jobs. When true, deletes the printer and all jobs
+            regardless of status.
+      responses:
+        '204':
+          description: Printer deleted successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '403':
+          description: Forbidden - requires admin role
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: Printer not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: >
+            Conflict - printer has jobs in Processing status.
+            Use force=true to delete anyway.
           content:
             application/problem+json:
               schema:
@@ -346,6 +509,19 @@ components:
         - eventName
         - printerName
 
+    EventListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            type: string
+          description: Distinct event names, sorted alphabetically
+
     PrinterListResponse:
       type: object
       properties:
@@ -401,6 +577,26 @@ components:
           type: string
         data:
           $ref: '#/components/schemas/RegisterPrinterResponse'
+
+    DeleteEventResponse:
+      type: object
+      properties:
+        printersDeleted:
+          type: integer
+          format: int32
+          description: Number of printers deleted
+      required:
+        - printersDeleted
+
+    DeleteEventResponseWrapper:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/DeleteEventResponse'
 
     PrinterStatusDto:
       type: object

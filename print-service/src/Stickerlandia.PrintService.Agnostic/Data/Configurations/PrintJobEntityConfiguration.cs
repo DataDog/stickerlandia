@@ -43,6 +43,14 @@ public class PrintJobEntityConfiguration : IEntityTypeConfiguration<PrintJobEnti
         builder.Property(p => p.FailureReason)
             .HasMaxLength(1024);
 
+        builder.Property(p => p.TraceParent)
+            .HasMaxLength(256)
+            .HasDefaultValue(string.Empty);
+
+        builder.Property(p => p.PropagationHeadersJson)
+            .HasMaxLength(4096)
+            .HasDefaultValue("{}");
+
         // Unique index on PrintJobId
         builder.HasIndex(p => p.PrintJobId)
             .IsUnique();

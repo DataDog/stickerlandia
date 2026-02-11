@@ -2,6 +2,11 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
+using OpenTelemetry;
+using OpenTelemetry.Exporter;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Polly;
 using Polly.Extensions.Http;
 using Serilog;
@@ -9,8 +14,10 @@ using Serilog.Formatting.Json;
 using Stickerlandia.PrintService.Client.Components;
 using Stickerlandia.PrintService.Client.Configuration;
 using Stickerlandia.PrintService.Client.Services;
+using Stickerlandia.PrintService.Client.Telemetry;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddEnvironmentVariables();
 
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
@@ -20,6 +27,48 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 
 builder.Host.UseSerilog();
+
+// Configure OpenTelemetry
+var otlpEndpoint = builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"];
+var resourceBuilder = ResourceBuilder.CreateDefault()
+    .AddService(
+        serviceName: PrintClientInstrumentation.ServiceName,
+        serviceVersion: PrintClientInstrumentation.ServiceVersion)
+    .AddAttributes([
+        new KeyValuePair<string, object>("deployment.environment",
+            builder.Configuration["ASPNETCORE_ENVIRONMENT"] ?? "development")
+    ]);
+
+builder.Services.AddSingleton<PrintClientInstrumentation>();
+var otel = builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing =>
+    {
+        tracing
+            .SetResourceBuilder(resourceBuilder)
+            .AddSource(PrintClientInstrumentation.ServiceName)
+            .AddAspNetCoreInstrumentation()
+            
+            .AddHttpClientInstrumentation(options =>
+            {
+                options.FilterHttpRequestMessage = (httpRequestMessage) =>
+                {
+                    return !httpRequestMessage.RequestUri?.Host.Contains("datadog-agent", StringComparison.OrdinalIgnoreCase) ?? true;
+                };
+            });
+    })
+    .WithMetrics(metrics =>
+    {
+        metrics
+            .SetResourceBuilder(resourceBuilder)
+            .AddMeter(PrintClientInstrumentation.ServiceName)
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation();
+    });
+
+if (otlpEndpoint != null)
+{
+    otel.UseOtlpExporter(OtlpExportProtocol.Grpc, new Uri(otlpEndpoint));
+}
 
 // Add Blazor services
 builder.Services.AddRazorComponents()
@@ -57,6 +106,22 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
     app.UseHsts();
+}
+
+// Create default configuration if it doesn't exist and is configured
+if (!string.IsNullOrEmpty(app.Configuration["DEFAULT_PRINTER_KEY"]))
+{
+    var configService = app.Services.GetRequiredService<IConfigurationService>();
+    if (!ConfigurationService.ConfigurationExists())
+    {
+        await configService.SaveAsync(new PrinterClientConfig()
+        {
+            ApiKey = app.Configuration["DEFAULT_PRINTER_KEY"]!,
+            BackendUrl = app.Configuration["DEFAULT_BACKEND_URL"] ?? "http://localhost:8080",
+            PollingIntervalSeconds = 10,
+            MaxJobsPerPoll = 10
+        });
+    }
 }
 
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);

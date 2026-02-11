@@ -87,6 +87,23 @@ public class DynamoDbPrinterRepository(
         return response.Items.Select(MapToPrinter).ToList();
     }
 
+    public async Task<List<string>> GetDistinctEventNamesAsync()
+    {
+        var request = new ScanRequest
+        {
+            TableName = _tableName,
+            ProjectionExpression = "PK"
+        };
+
+        var response = await dynamoDbClient.ScanAsync(request).ConfigureAwait(false);
+
+        return response.Items
+            .Select(item => item[PartitionKey].S)
+            .Distinct()
+            .OrderBy(e => e)
+            .ToList();
+    }
+
     public async Task<bool> PrinterExistsAsync(string eventName, string printerName)
     {
         ArgumentException.ThrowIfNullOrEmpty(eventName);
@@ -240,6 +257,26 @@ public class DynamoDbPrinterRepository(
         };
 
         await dynamoDbClient.PutItemAsync(request).ConfigureAwait(false);
+    }
+
+    public async Task DeleteAsync(string eventName, string printerName)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(eventName);
+        ArgumentException.ThrowIfNullOrEmpty(printerName);
+
+        var printerId = $"{eventName.ToUpperInvariant()}-{printerName.ToUpperInvariant()}";
+
+        var request = new DeleteItemRequest
+        {
+            TableName = _tableName,
+            Key = new Dictionary<string, AttributeValue>
+            {
+                [PartitionKey] = new() { S = eventName },
+                [SortKey] = new() { S = printerId }
+            }
+        };
+
+        await dynamoDbClient.DeleteItemAsync(request).ConfigureAwait(false);
     }
 
     private static Printer MapToPrinter(Dictionary<string, AttributeValue> item)

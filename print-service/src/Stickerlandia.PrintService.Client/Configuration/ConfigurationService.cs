@@ -41,6 +41,16 @@ internal sealed class ConfigurationService : IConfigurationService, IDisposable
 
     public event Action? OnConfigurationChanged;
 
+    public static bool ConfigurationExists()
+    {
+        if (!File.Exists(ConfigFilePath))
+        {
+            return false;
+        }
+
+        return true;
+    }
+    
     public async Task LoadAsync()
     {
         await _lock.WaitAsync();

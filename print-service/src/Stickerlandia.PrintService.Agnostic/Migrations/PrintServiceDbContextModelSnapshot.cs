@@ -311,6 +311,13 @@ namespace Stickerlandia.PrintService.Agnostic.Migrations
                     b.Property<DateTimeOffset?>("ProcessedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("PropagationHeadersJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(4096)
+                        .HasColumnType("character varying(4096)")
+                        .HasDefaultValue("{}");
+
                     b.Property<uint>("RowVersion")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
@@ -329,6 +336,13 @@ namespace Stickerlandia.PrintService.Agnostic.Migrations
                         .IsRequired()
                         .HasMaxLength(2048)
                         .HasColumnType("character varying(2048)");
+
+                    b.Property<string>("TraceParent")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasDefaultValue("");
 
                     b.Property<string>("UserId")
                         .IsRequired()

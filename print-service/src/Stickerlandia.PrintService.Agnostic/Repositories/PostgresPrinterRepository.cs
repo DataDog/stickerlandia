@@ -76,6 +76,17 @@ public class PostgresPrinterRepository(PrintServiceDbContext dbContext) : IPrint
         return entities.Select(e => e.ToDomain()).ToList();
     }
 
+    public async Task<List<string>> GetDistinctEventNamesAsync()
+    {
+        return await dbContext.Printers
+            .AsNoTracking()
+            .Select(p => p.EventName)
+            .Distinct()
+            .OrderBy(e => e)
+            .ToListAsync()
+            .ConfigureAwait(false);
+    }
+
     public async Task<bool> PrinterExistsAsync(string eventName, string printerName)
     {
         ArgumentException.ThrowIfNullOrEmpty(eventName);
@@ -122,5 +133,18 @@ public class PostgresPrinterRepository(PrintServiceDbContext dbContext) : IPrint
         entity.LastJobProcessed = printer.LastJobProcessed;
 
         await dbContext.SaveChangesAsync().ConfigureAwait(false);
+    }
+
+    public async Task DeleteAsync(string eventName, string printerName)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(eventName);
+        ArgumentException.ThrowIfNullOrEmpty(printerName);
+
+        var printerId = $"{eventName.ToUpperInvariant()}-{printerName.ToUpperInvariant()}";
+
+        await dbContext.Printers
+            .Where(p => p.PrinterId == printerId)
+            .ExecuteDeleteAsync()
+            .ConfigureAwait(false);
     }
 }

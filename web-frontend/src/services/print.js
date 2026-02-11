@@ -46,6 +46,23 @@ const getErrorMessage = (response, fallbackDetail) => {
   return fallbackDetail || 'An unexpected error occurred.'
 }
 
+export const getEvents = async () => {
+  const response = await fetch(`${BASE_URL}/events`, {
+    headers: getHeaders(),
+    credentials: 'include'
+  })
+
+  assertJsonResponse(response)
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new Error(getErrorMessage(response, error.detail))
+  }
+
+  const result = await response.json()
+  return result.data || []
+}
+
 export const getPrintersWithStatus = async (eventName) => {
   const encodedEventName = encodeURIComponent(eventName)
   const [printersRes, statusesRes] = await Promise.all([
@@ -114,6 +131,58 @@ export const registerPrinter = async (eventName, printerName) => {
     credentials: 'include',
     body: JSON.stringify({ eventName, printerName })
   })
+
+  assertJsonResponse(response)
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new Error(getErrorMessage(response, error.detail))
+  }
+
+  return response.json()
+}
+
+export const deletePrinter = async (eventName, printerName, force = false) => {
+  const url = `${BASE_URL}/event/${encodeURIComponent(eventName)}/printer/${encodeURIComponent(printerName)}${force ? '?force=true' : ''}`
+  const response = await fetch(url, {
+    method: 'DELETE',
+    headers: getHeaders(),
+    credentials: 'include'
+  })
+
+  if (response.status === 204) return { success: true }
+
+  if (response.status === 409) {
+    const error = await response.json().catch(() => ({}))
+    const err = new Error(error.detail || 'Printer has active jobs. Use force delete to override.')
+    err.status = 409
+    throw err
+  }
+
+  assertJsonResponse(response)
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}))
+    throw new Error(getErrorMessage(response, error.detail))
+  }
+
+  return { success: true }
+}
+
+export const deleteEvent = async (eventName, force = false) => {
+  const url = `${BASE_URL}/event/${encodeURIComponent(eventName)}${force ? '?force=true' : ''}`
+  const response = await fetch(url, {
+    method: 'DELETE',
+    headers: getHeaders(),
+    credentials: 'include'
+  })
+
+  if (response.status === 409) {
+    const error = await response.json().catch(() => ({}))
+    const err = new Error(error.message || 'Event has printers with active jobs. Use force delete to override.')
+    err.status = 409
+    throw err
+  }
 
   assertJsonResponse(response)
 

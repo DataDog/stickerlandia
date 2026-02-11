@@ -7,7 +7,23 @@
         "launchBrowser": true,
         "applicationUrl": "http://localhost:5065",
         "environmentVariables": {
-          "ASPNETCORE_ENVIRONMENT": "Development"
+          "ASPNETCORE_ENVIRONMENT": "Development",
+          "CORECLR_ENABLE_PROFILING": "1",
+          "CORECLR_PROFILER": "{846F5F1C-F9AE-4B07-969E-05C26BC060D8}",
+          "CORECLR_PROFILER_PATH": "bin/Debug/net10.0/datadog/osx/Datadog.Trace.ClrProfiler.Native.dylib",
+          "DD_DOTNET_TRACER_HOME": "bin/Debug/net10.0/datadog",
+          "DD_AGENT_HOST": "localhost",
+          "DD_TRACE_AGENT_PORT": "8126",
+          "DD_ENV": "local",
+          "DD_SERVICE": "print-service-client",
+          "DD_DATA_STREAMS_ENABLED": "true",
+          "DD_TRACE_OTEL_ENABLED": "true",
+          "DD_LOGS_INJECTION": "true",
+          "DD_RUNTIME_METRICS_ENABLED": "true",
+          "DD_PROFILING_ENABLED": "true",
+          "DD_TRACE_DEBUG": "1",
+          "OTEL_EXPORTER_OTLP_ENDPOINT": "http://localhost:4317",
+          "OTEL_SERVICE_NAME": "print-service-client"
         }
       },
       "https": {

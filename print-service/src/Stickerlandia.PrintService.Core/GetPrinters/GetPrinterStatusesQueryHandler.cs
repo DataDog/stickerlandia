@@ -3,13 +3,15 @@
 // Copyright 2025 Datadog, Inc.
 
 using System.Diagnostics;
+using Stickerlandia.PrintService.Core.Observability;
+using Stickerlandia.PrintService.Core.PrintJobs;
 
 namespace Stickerlandia.PrintService.Core.GetPrinters;
 
 /// <summary>
 /// Handler for retrieving printer statuses for an event.
 /// </summary>
-public class GetPrinterStatusesQueryHandler(IPrinterRepository repository)
+public class GetPrinterStatusesQueryHandler(IPrinterRepository repository, IPrintJobRepository printJobRepository, PrintJobInstrumentation instrumentation)
 {
     public async Task<GetPrinterStatusesResponse> Handle(GetPrinterStatusesQuery query)
     {
@@ -20,18 +22,43 @@ public class GetPrinterStatusesQueryHandler(IPrinterRepository repository)
             throw new ArgumentException("Event name is required", nameof(query));
         }
 
-        Activity.Current?.AddTag("printer.status.event_name", query.EventName);
+        using var activity = PrintJobInstrumentation.StartGetPrinterStatusesActivity(query.EventName);
 
-        var printers = await repository.GetPrintersForEventAsync(query.EventName);
-
-        var statuses = printers.Select(PrinterStatusDto.FromPrinter).ToList();
-
-        Activity.Current?.AddTag("printer.status.count", statuses.Count);
-
-        return new GetPrinterStatusesResponse
+        try
         {
-            Printers = statuses
-        };
+            var printers = await repository.GetPrintersForEventAsync(query.EventName);
+
+            var countTasks = printers.Select(async p =>
+            {
+                var count = await printJobRepository.CountActiveJobsForPrinterAsync(p.Id!.Value);
+                return (Printer: p, ActiveJobCount: count);
+            });
+
+            var printersWithCounts = await Task.WhenAll(countTasks);
+            var statuses = printersWithCounts.Select(pc => PrinterStatusDto.FromPrinter(pc.Printer, pc.ActiveJobCount)).ToList();
+
+            var onlineCount = statuses.Count(s => s.Status == "Online");
+            var offlineCount = statuses.Count - onlineCount;
+
+            activity?.SetTag("print.total_printers", statuses.Count);
+            activity?.SetTag("print.online_count", onlineCount);
+            activity?.SetTag("print.offline_count", offlineCount);
+            activity?.SetStatus(ActivityStatusCode.Ok);
+
+            instrumentation.RecordPrinterStatusCheck(query.EventName, onlineCount, offlineCount);
+
+            return new GetPrinterStatusesResponse
+            {
+                Printers = statuses
+            };
+        }
+        catch (Exception ex)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            activity?.SetTag("error.type", ex.GetType().Name);
+
+            throw;
+        }
     }
 }
 

@@ -2,22 +2,59 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2026 Datadog, Inc.
 
-using System.Globalization;
+using System.Diagnostics;
 using System.Text;
 using CloudNative.CloudEvents;
 using CloudNative.CloudEvents.SystemTextJson;
 using Confluent.Kafka;
-using Datadog.Trace;
 using Microsoft.Extensions.Logging;
 using Saunter.Attributes;
 using Stickerlandia.PrintService.Core;
+using Stickerlandia.PrintService.Core.DeletePrinter;
 using Stickerlandia.PrintService.Core.Observability;
+using Stickerlandia.PrintService.Core.PrintJobs;
 using Stickerlandia.PrintService.Core.RegisterPrinter;
 
 namespace Stickerlandia.PrintService.Agnostic;
 
 public class KafkaEventPublisher(ProducerConfig config, ILogger<KafkaEventPublisher> logger) : IPrintServiceEventPublisher
 {
+    [Channel("printJobs.queued.v1")]
+    [PublishOperation(typeof(PrintJobQueuedEvent))]
+    public async Task PublishPrintJobQueuedEvent(PrintJobQueuedEvent printJobQueuedEvent)
+    {
+        ArgumentNullException.ThrowIfNull(printJobQueuedEvent, nameof(printJobQueuedEvent));
+
+        var cloudEvent = new CloudEvent(CloudEventsSpecVersion.V1_0)
+        {
+            Id = Guid.NewGuid().ToString(),
+            Source = new Uri("https://stickerlandia.com"),
+            Type = printJobQueuedEvent.EventName,
+            Time = DateTime.UtcNow,
+            Data = printJobQueuedEvent
+        };
+
+        await Publish<PrinterRegisteredEvent>(cloudEvent);
+    }
+
+    [Channel("printJobs.failed.v1")]
+    [PublishOperation(typeof(PrintJobFailedEvent))]
+    public async Task PublishPrintJobFailedEvent(PrintJobFailedEvent printJobFailedEvent)
+    {
+        ArgumentNullException.ThrowIfNull(printJobFailedEvent, nameof(printJobFailedEvent));
+
+        var cloudEvent = new CloudEvent(CloudEventsSpecVersion.V1_0)
+        {
+            Id = Guid.NewGuid().ToString(),
+            Source = new Uri("https://stickerlandia.com"),
+            Type = printJobFailedEvent.EventName,
+            Time = DateTime.UtcNow,
+            Data = printJobFailedEvent
+        };
+
+        await Publish<PrinterRegisteredEvent>(cloudEvent);
+    }
+
     [Channel("print.printerRegistered.v1")]
     [PublishOperation(typeof(PrinterRegisteredEvent))]
     public async Task PublishPrinterRegisteredEvent(PrinterRegisteredEvent printerRegisteredEvent)
@@ -36,24 +73,54 @@ public class KafkaEventPublisher(ProducerConfig config, ILogger<KafkaEventPublis
         await Publish<PrinterRegisteredEvent>(cloudEvent);
     }
 
+    [Channel("printJobs.completed.v1")]
+    [PublishOperation(typeof(PrintJobCompletedEvent))]
+    public async Task PublishPrintJobCompletedEvent(PrintJobCompletedEvent printJobCompletedEvent)
+    {
+        ArgumentNullException.ThrowIfNull(printJobCompletedEvent, nameof(printJobCompletedEvent));
+
+        var cloudEvent = new CloudEvent(CloudEventsSpecVersion.V1_0)
+        {
+            Id = Guid.NewGuid().ToString(),
+            Source = new Uri("https://stickerlandia.com"),
+            Type = printJobCompletedEvent.EventName,
+            Time = DateTime.UtcNow,
+            Data = printJobCompletedEvent
+        };
+
+        await Publish<PrintJobCompletedEvent>(cloudEvent);
+    }
+
+    [Channel("print.printerDeleted.v1")]
+    [PublishOperation(typeof(PrinterDeletedEvent))]
+    public async Task PublishPrinterDeletedEvent(PrinterDeletedEvent printerDeletedEvent)
+    {
+        ArgumentNullException.ThrowIfNull(printerDeletedEvent, nameof(printerDeletedEvent));
+
+        var cloudEvent = new CloudEvent(CloudEventsSpecVersion.V1_0)
+        {
+            Id = Guid.NewGuid().ToString(),
+            Source = new Uri("https://stickerlandia.com"),
+            Type = printerDeletedEvent.EventName,
+            Time = DateTime.UtcNow,
+            Data = printerDeletedEvent
+        };
+
+        await Publish<PrinterDeletedEvent>(cloudEvent);
+    }
+
     private async Task Publish<T>(CloudEvent cloudEvent)
     {
-        var activeSpan = Tracer.Instance.ActiveScope?.Span;
-        IScope? processScope = null;
+        using var activity = PrintJobInstrumentation.ActivitySource.StartActivity(
+            $"publish {cloudEvent.Type}", ActivityKind.Producer);
 
         try
         {
-            if (activeSpan != null)
+            var currentActivity = Activity.Current;
+            if (currentActivity != null)
             {
-                processScope = Tracer.Instance.StartActive($"publish {cloudEvent.Type}", new SpanCreationSettings
-                {
-                    Parent = activeSpan.Context
-                });
-
-                // Convert TraceId and SpanId to proper hex format for W3C traceparent
-                var traceIdHex = activeSpan.TraceId.ToString("x32", CultureInfo.InvariantCulture).PadLeft(32, '0');
-                var spanIdHex = activeSpan.SpanId.ToString("x16", CultureInfo.InvariantCulture).PadLeft(16, '0');
-                cloudEvent.SetAttributeFromString("traceparent", $"00-{traceIdHex}-{spanIdHex}-01");
+                cloudEvent.SetAttributeFromString("traceparent",
+                    $"00-{currentActivity.TraceId}-{currentActivity.SpanId}-01");
             }
 
             var formatter = new JsonEventFormatter<T>();
@@ -92,16 +159,14 @@ public class KafkaEventPublisher(ProducerConfig config, ILogger<KafkaEventPublis
             }
 
             producer.Flush(TimeSpan.FromSeconds(10));
+            activity?.SetStatus(ActivityStatusCode.Ok);
         }
         catch (Exception ex)
         {
             Log.MessagePublishingError(logger, "Error publishing message", ex);
-            processScope?.Span.SetException(ex);
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            activity?.SetTag("error.type", ex.GetType().Name);
             throw;
-        }
-        finally
-        {
-            processScope?.Close();
         }
     }
 }

@@ -6,18 +6,35 @@
 
 using Stickerlandia.PrintService.Core;
 using Stickerlandia.PrintService.Core.GetPrinters;
+using Stickerlandia.PrintService.Core.Observability;
 
 namespace Stickerlandia.PrintService.UnitTest.PrinterTests;
 
-public class GetPrintersForEventQueryHandlerTests
+public class GetPrintersForEventQueryHandlerTests : IDisposable
 {
     private readonly IPrinterRepository _repository;
+    private readonly PrintJobInstrumentation _instrumentation;
     private readonly GetPrintersForEventQueryHandler _handler;
 
     public GetPrintersForEventQueryHandlerTests()
     {
         _repository = A.Fake<IPrinterRepository>();
-        _handler = new GetPrintersForEventQueryHandler(_repository);
+        _instrumentation = new PrintJobInstrumentation();
+        _handler = new GetPrintersForEventQueryHandler(_repository, _instrumentation);
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _instrumentation.Dispose();
+        }
     }
 
     public class HandleMethod : GetPrintersForEventQueryHandlerTests
