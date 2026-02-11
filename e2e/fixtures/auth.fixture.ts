@@ -140,6 +140,32 @@ export async function performLogin(page: Page): Promise<void> {
   console.log(`[performLogin] Login complete - dashboard content visible`);
 }
 
+/**
+ * Restore the auth token from localStorage backup into sessionStorage.
+ *
+ * Playwright's storageState preserves cookies + localStorage but NOT sessionStorage.
+ * The auth setup saves the JWT to localStorage as 'auth_token_backup'.
+ * This helper copies it back to sessionStorage so the frontend AuthContext
+ * can use it for authenticated API calls.
+ *
+ * Call this before navigating to any page that requires authenticated API calls
+ * (e.g., collection, print station, sticker detail with ownership check).
+ */
+export async function restoreSessionToken(page: Page): Promise<void> {
+  const baseUrl = process.env.BASE_URL || 'http://localhost:8080';
+
+  // Navigate to the origin to establish context for storage access
+  await page.goto(baseUrl);
+
+  // Copy the token from localStorage to sessionStorage
+  await page.evaluate(() => {
+    const backup = localStorage.getItem('auth_token_backup');
+    if (backup) {
+      sessionStorage.setItem('auth_token', backup);
+    }
+  });
+}
+
 // Helper to check if user is logged in
 export async function isLoggedIn(page: Page): Promise<boolean> {
   try {

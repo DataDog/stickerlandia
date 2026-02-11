@@ -7,14 +7,16 @@ export class CollectionPage {
   readonly stickerCards: Locator;
   readonly emptyState: Locator;
   readonly filterControls: Locator;
+  readonly loadingIndicator: Locator;
 
   constructor(page: Page) {
     this.page = page;
-    this.pageTitle = page.locator('h1, h2').first();
-    this.stickerGrid = page.locator('[data-testid="sticker-grid"]');
-    this.stickerCards = page.locator('[data-testid="sticker-card"]');
-    this.emptyState = page.locator('[data-testid="empty-state"]');
+    this.pageTitle = page.locator('h1').first();
+    this.stickerGrid = page.locator('.grid').first();
+    this.stickerCards = page.locator('a.landing-card');
+    this.emptyState = page.getByText('No stickers in your collection yet.');
     this.filterControls = page.locator('[data-testid="filter-controls"]');
+    this.loadingIndicator = page.getByText('Loading your collection...');
   }
 
   async goto() {
@@ -27,6 +29,10 @@ export class CollectionPage {
 
   async clickSticker(index: number) {
     await this.stickerCards.nth(index).click();
+  }
+
+  async waitForLoaded() {
+    await this.loadingIndicator.waitFor({ state: 'hidden', timeout: 10000 });
   }
 
   async expectStickersLoaded() {
@@ -53,6 +59,7 @@ export class StickerDetailPage {
   readonly backLink: Locator;
   readonly loadingIndicator: Locator;
   readonly errorMessage: Locator;
+  readonly printButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -70,6 +77,7 @@ export class StickerDetailPage {
     this.backLink = page.getByRole('link', { name: /Back to Catalogue/i });
     this.loadingIndicator = page.getByText('Loading sticker details...');
     this.errorMessage = page.locator('.text-red-500');
+    this.printButton = page.getByRole('button', { name: /Print This Sticker/i });
   }
 
   async goto(id: string) {

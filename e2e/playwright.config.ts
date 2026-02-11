@@ -25,11 +25,19 @@ export default defineConfig({
   },
 
   projects: [
-    // Setup project for authentication
+    // Setup project for user authentication
     {
       name: 'setup',
-      testMatch: /.*\.setup\.ts/,
+      testDir: './tests/auth',
+      testMatch: /auth\.setup\.ts/,
       teardown: 'cleanup',
+    },
+    // Setup project for admin authentication (runs after user setup to avoid concurrency issues)
+    {
+      name: 'admin-setup',
+      testDir: './tests/admin',
+      testMatch: /admin-auth\.setup\.ts/,
+      dependencies: ['setup'],
     },
     {
       name: 'cleanup',
@@ -73,6 +81,18 @@ export default defineConfig({
         storageState: '.auth/user.json',
       },
       dependencies: ['setup'],
+    },
+
+    // Admin tests - require admin login
+    {
+      name: 'admin',
+      testDir: './tests/admin',
+      testIgnore: ['**/admin-auth.setup.ts'],
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/admin.json',
+      },
+      dependencies: ['admin-setup'],
     },
 
     // API tests
