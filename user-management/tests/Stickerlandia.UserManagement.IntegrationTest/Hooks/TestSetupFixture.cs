@@ -8,7 +8,7 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
-#pragma warning disable CA1515,CA1063,CA2012,CA2000
+#pragma warning disable CA1515,CA1063,CA2012,CA2000,CA5400
 
 using Aspire.Hosting;
 using Aspire.Hosting.Testing;
@@ -89,7 +89,8 @@ public class TestSetupFixture : IDisposable
             var handler = new HttpClientHandler
             {
                 UseCookies = true,
-                CheckCertificateRevocationList = true
+                ServerCertificateCustomValidationCallback =
+                    HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
             };
 
             HttpClient = new HttpClient(handler, true)
@@ -140,7 +141,8 @@ public class TestSetupFixture : IDisposable
             var handler = new HttpClientHandler
             {
                 UseCookies = true,
-                CheckCertificateRevocationList = true
+                ServerCertificateCustomValidationCallback =
+                    HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
             };
 
             return new HttpClient(handler, true)

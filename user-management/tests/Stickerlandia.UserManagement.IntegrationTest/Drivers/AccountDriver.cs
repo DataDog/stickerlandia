@@ -12,7 +12,7 @@ using Stickerlandia.UserManagement.Core.StickerClaimedEvent;
 using Stickerlandia.UserManagement.IntegrationTest.ViewModels;
 using Xunit.Abstractions;
 
-#pragma warning disable CA2234, CA2000, CA1031
+#pragma warning disable CA2234, CA2000, CA1031, CA5400
 
 #pragma warning disable CA1812
 
@@ -36,8 +36,9 @@ internal sealed class AccountDriver : IDisposable
         {
             CookieContainer = cookieContainer,
             UseCookies = true,
-            CheckCertificateRevocationList = true,
-            AllowAutoRedirect = false
+            AllowAutoRedirect = false,
+            ServerCertificateCustomValidationCallback =
+                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
         };
 
         // Create a separate HttpClient for OAuth2.0 operations that doesn't auto-follow redirects
@@ -45,8 +46,9 @@ internal sealed class AccountDriver : IDisposable
         {
             CookieContainer = cookieContainer,
             UseCookies = true,
-            CheckCertificateRevocationList = true,
-            AllowAutoRedirect = true
+            AllowAutoRedirect = true,
+            ServerCertificateCustomValidationCallback =
+                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
         };
 
         _oauthClient = new HttpClient(oauthHandler, true)
