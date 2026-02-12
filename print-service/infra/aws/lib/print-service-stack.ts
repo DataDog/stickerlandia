@@ -12,7 +12,8 @@ import { Api } from "./api";
 import { Cluster } from "aws-cdk-lib/aws-ecs";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
 import { AWSMessagingProps, ServiceProps } from "./service-props";
-import { Table } from "aws-cdk-lib/aws-dynamodb";
+import { StreamViewType, Table } from "aws-cdk-lib/aws-dynamodb";
+import { BackgroundWorkers } from "./background-workers";
 
 export class PrintServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -73,6 +74,8 @@ export class PrintServiceStack extends cdk.Stack {
       billingMode: cdk.aws_dynamodb.BillingMode.PAY_PER_REQUEST,
       pointInTimeRecovery: true,
       deletionProtection: isProduction,
+      stream: StreamViewType.NEW_IMAGE,
+      timeToLiveAttribute: "TTL",
     });
     printerTable.addGlobalSecondaryIndex({
       indexName: "GSI1",
@@ -94,6 +97,7 @@ export class PrintServiceStack extends cdk.Stack {
       billingMode: cdk.aws_dynamodb.BillingMode.PAY_PER_REQUEST,
       pointInTimeRecovery: true,
       deletionProtection: isProduction,
+      stream: StreamViewType.NEW_IMAGE,
       timeToLiveAttribute: "TTL",
     });
     printJobTable.addGlobalSecondaryIndex({
@@ -120,6 +124,14 @@ export class PrintServiceStack extends cdk.Stack {
       serviceDiscoveryNamespace: sharedResources.serviceDiscoveryNamespace,
       cluster: cluster,
       deployInPrivateSubnet: true,
+      printerTable: printerTable,
+      printJobTable: printJobTable,
+    });
+
+    const backgroundWorkers = new BackgroundWorkers(this, "BackgroundWorkers", {
+      sharedProps,
+      serviceProps,
+      sharedEventBus: sharedResources.sharedEventBus,
       printerTable: printerTable,
       printJobTable: printJobTable,
     });
