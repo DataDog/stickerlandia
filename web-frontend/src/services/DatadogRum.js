@@ -6,6 +6,7 @@
 
 import { datadogRum } from '@datadog/browser-rum';
 import { reactPlugin } from '@datadog/browser-rum-react';
+import { datadogLogs } from '@datadog/browser-logs';
 
 
 export const initializeDatadogRum = () => {
@@ -21,6 +22,15 @@ export const initializeDatadogRum = () => {
     console.warn('Datadog RUM not initialized: missing application ID or client token');
     return;
   }
+
+  datadogLogs.init({
+    clientToken,
+    // `site` refers to the Datadog site parameter of your organization
+    // see https://docs.datadoghq.com/getting_started/site/
+    site,
+    forwardErrorsToLogs: true,
+    sessionSampleRate: 100,
+  });
 
   datadogRum.init({
     applicationId,
