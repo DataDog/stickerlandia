@@ -19,6 +19,23 @@
         "PackageType": "Zip",
         "Handler": "Stickerlandia.PrintService.Lambda::Stickerlandia.PrintService.Lambda.OutboxFunctions_Worker_Generated::Worker"
       }
+    },
+    "StickerlandiaPrintServiceLambdaOutboxFunctionsHandleStreamGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations"
+      },
+      "Properties": {
+        "Runtime": "dotnet10",
+        "CodeUri": ".",
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "Stickerlandia.PrintService.Lambda::Stickerlandia.PrintService.Lambda.OutboxFunctions_HandleStream_Generated::HandleStream"
+      }
     }
   },
   "Outputs": {

@@ -5,6 +5,7 @@
  */
 
 using Microsoft.AspNetCore.Mvc;
+using Stickerlandia.PrintService.Core;
 using Stickerlandia.PrintService.Core.PrintJobs;
 
 namespace Stickerlandia.PrintService.Api;
@@ -14,10 +15,13 @@ internal static class SubmitPrintJobEndpoint
     public static async Task<IResult> HandleAsync(
         string eventName,
         string printerName,
-        [FromServices] SubmitPrintJobCommandHandler handler,
-        [FromBody] SubmitPrintJobCommand request)
+        [FromServices] ICommandHandler<SubmitPrintJobCommand, SubmitPrintJobResponse> handler,
+        [FromBody] SubmitPrintJobCommand request,
+        CancellationToken cancellationToken)
     {
-        var response = await handler.Handle(eventName, printerName, request);
+        var command = request with { EventName = eventName, PrinterName = printerName };
+
+        var response = await handler.Handle(command, cancellationToken);
 
         return Results.Created($"/api/print/v1/printer/jobs/{response.PrintJobId}", new ApiResponse<SubmitPrintJobResponse>(response));
     }

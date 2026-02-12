@@ -19,6 +19,7 @@
         <PackageReference Include="Amazon.Lambda.KafkaEvents" Version="2.1.0" />
         <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.4" />
         <PackageReference Include="Amazon.Lambda.Annotations" Version="1.8.0" />
+        <PackageReference Include="Amazon.Lambda.DynamoDBEvents" Version="3.1.2" />
         <PackageReference Include="Amazon.Lambda.SQSEvents" Version="2.2.0" />
         <PackageReference Include="Serilog" Version="4.3.0" />
         <PackageReference Include="Serilog.Formatting.Compact" Version="3.0.0" />
@@ -30,6 +31,7 @@
       which is available in the Managed .NET Lambda runtime already includes those assemblies.
     -->
     <ItemGroup>
+      <ProjectReference Include="..\Stickerlandia.PrintService.AWS\Stickerlandia.PrintService.AWS.csproj" />
       <ProjectReference Include="..\Stickerlandia.PrintService.Core\Stickerlandia.PrintService.Core.csproj" />
       <ProjectReference Include="..\Stickerlandia.PrintService.ServiceDefaults\Stickerlandia.PrintService.ServiceDefaults.csproj" />
     </ItemGroup>

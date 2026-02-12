@@ -3,6 +3,7 @@
 // Copyright 2026 Datadog, Inc.
 
 using Microsoft.AspNetCore.Mvc;
+using Stickerlandia.PrintService.Core;
 using Stickerlandia.PrintService.Core.DeletePrinter;
 
 namespace Stickerlandia.PrintService.Api;
@@ -13,11 +14,12 @@ internal static class DeletePrinterEndpoint
         string eventName,
         string printerName,
         [FromQuery] bool force,
-        [FromServices] DeletePrinterCommandHandler handler)
+        [FromServices] ICommandHandler<DeletePrinterCommand> handler,
+        CancellationToken cancellationToken)
     {
         var command = new DeletePrinterCommand(eventName, printerName, force);
 
-        await handler.Handle(command);
+        await handler.Handle(command, cancellationToken);
 
         return Results.NoContent();
     }

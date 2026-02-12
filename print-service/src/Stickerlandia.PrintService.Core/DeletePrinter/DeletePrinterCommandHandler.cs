@@ -13,8 +13,9 @@ public class DeletePrinterCommandHandler(
     IOutbox outbox,
     IPrinterRepository printerRepository,
     IPrintJobRepository printJobRepository)
+    : ICommandHandler<DeletePrinterCommand>
 {
-    public async Task Handle(DeletePrinterCommand command)
+    public async Task Handle(DeletePrinterCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command, nameof(DeletePrinterCommand));
 
@@ -41,6 +42,10 @@ public class DeletePrinterCommandHandler(
                 }
             }
 
+            // Two-phase tradeoff: DeleteJobsForPrinterAsync (BatchWriteItem) executes immediately,
+            // while printer delete + outbox event are transactional via CommitAsync. If CommitAsync
+            // fails after jobs are deleted, the printer remains but its jobs are gone. Accepted
+            // tradeoff per design doc section 6.
             await printJobRepository.DeleteJobsForPrinterAsync(printer.Id!.Value);
             await printerRepository.DeleteAsync(command.EventName, command.PrinterName);
 

@@ -41,12 +41,10 @@ public class SubmitPrintJobCommandHandlerTests : IDisposable
         [Fact]
         public async Task WithValidCommand_CreatesPrintJob()
         {
-            var eventName = "TestEvent";
-            var printerName = "TestPrinter";
-            var command = CreateValidCommand();
-            SetupExistingPrinter(eventName, printerName);
+            var command = CreateValidCommand("TestEvent", "TestPrinter");
+            SetupExistingPrinter(command.EventName, command.PrinterName);
 
-            await _handler.Handle(eventName, printerName, command);
+            await _handler.Handle(command);
 
             A.CallTo(() => _printJobRepository.AddAsync(A<PrintJob>.That.Matches(j =>
                 j.UserId == command.UserId &&
@@ -59,12 +57,10 @@ public class SubmitPrintJobCommandHandlerTests : IDisposable
         [Fact]
         public async Task WithValidCommand_StoresEventInOutbox()
         {
-            var eventName = "TestEvent";
-            var printerName = "TestPrinter";
-            var command = CreateValidCommand();
-            SetupExistingPrinter(eventName, printerName);
+            var command = CreateValidCommand("TestEvent", "TestPrinter");
+            SetupExistingPrinter(command.EventName, command.PrinterName);
 
-            await _handler.Handle(eventName, printerName, command);
+            await _handler.Handle(command);
 
             A.CallTo(() => _outbox.StoreEventFor(A<PrintJobQueuedEvent>.That.Matches(e =>
                 e.UserId == command.UserId &&
@@ -75,12 +71,10 @@ public class SubmitPrintJobCommandHandlerTests : IDisposable
         [Fact]
         public async Task WithValidCommand_ReturnsResponseWithPrintJobId()
         {
-            var eventName = "TestEvent";
-            var printerName = "TestPrinter";
-            var command = CreateValidCommand();
-            SetupExistingPrinter(eventName, printerName);
+            var command = CreateValidCommand("TestEvent", "TestPrinter");
+            SetupExistingPrinter(command.EventName, command.PrinterName);
 
-            var result = await _handler.Handle(eventName, printerName, command);
+            var result = await _handler.Handle(command);
 
             result.Should().NotBeNull();
             result.PrintJobId.Should().NotBeNullOrEmpty();
@@ -90,12 +84,10 @@ public class SubmitPrintJobCommandHandlerTests : IDisposable
         [Fact]
         public async Task WithValidCommand_LinksPrintJobToPrinter()
         {
-            var eventName = "TestEvent";
-            var printerName = "TestPrinter";
-            var command = CreateValidCommand();
-            SetupExistingPrinter(eventName, printerName);
+            var command = CreateValidCommand("TestEvent", "TestPrinter");
+            SetupExistingPrinter(command.EventName, command.PrinterName);
 
-            await _handler.Handle(eventName, printerName, command);
+            await _handler.Handle(command);
 
             A.CallTo(() => _printJobRepository.AddAsync(A<PrintJob>.That.Matches(j =>
                 j.PrinterId.Value == "TESTEVENT-TESTPRINTER")))
@@ -105,30 +97,26 @@ public class SubmitPrintJobCommandHandlerTests : IDisposable
         [Fact]
         public async Task WithNonExistentPrinter_ThrowsPrinterNotFoundException()
         {
-            var eventName = "TestEvent";
-            var printerName = "NonExistentPrinter";
-            var command = CreateValidCommand();
-            A.CallTo(() => _printerRepository.GetPrinterAsync(eventName, printerName))
+            var command = CreateValidCommand("TestEvent", "NonExistentPrinter");
+            A.CallTo(() => _printerRepository.GetPrinterAsync(command.EventName, command.PrinterName))
                 .Returns((Printer?)null);
 
-            var action = async () => await _handler.Handle(eventName, printerName, command);
+            var action = async () => await _handler.Handle(command);
 
             await action.Should().ThrowAsync<PrinterNotFoundException>()
-                .WithMessage($"Printer '{printerName}' not found for event '{eventName}'.");
+                .WithMessage($"Printer '{command.PrinterName}' not found for event '{command.EventName}'.");
         }
 
         [Fact]
         public async Task WithNonExistentPrinter_DoesNotAddPrintJob()
         {
-            var eventName = "TestEvent";
-            var printerName = "NonExistentPrinter";
-            var command = CreateValidCommand();
-            A.CallTo(() => _printerRepository.GetPrinterAsync(eventName, printerName))
+            var command = CreateValidCommand("TestEvent", "NonExistentPrinter");
+            A.CallTo(() => _printerRepository.GetPrinterAsync(command.EventName, command.PrinterName))
                 .Returns((Printer?)null);
 
             try
             {
-                await _handler.Handle(eventName, printerName, command);
+                await _handler.Handle(command);
             }
             catch (PrinterNotFoundException)
             {
@@ -142,15 +130,13 @@ public class SubmitPrintJobCommandHandlerTests : IDisposable
         [Fact]
         public async Task WithNonExistentPrinter_DoesNotStoreInOutbox()
         {
-            var eventName = "TestEvent";
-            var printerName = "NonExistentPrinter";
-            var command = CreateValidCommand();
-            A.CallTo(() => _printerRepository.GetPrinterAsync(eventName, printerName))
+            var command = CreateValidCommand("TestEvent", "NonExistentPrinter");
+            A.CallTo(() => _printerRepository.GetPrinterAsync(command.EventName, command.PrinterName))
                 .Returns((Printer?)null);
 
             try
             {
-                await _handler.Handle(eventName, printerName, command);
+                await _handler.Handle(command);
             }
             catch (PrinterNotFoundException)
             {
@@ -164,9 +150,9 @@ public class SubmitPrintJobCommandHandlerTests : IDisposable
         [Fact]
         public async Task WithNullEventName_ThrowsArgumentException()
         {
-            var command = CreateValidCommand();
+            var command = CreateValidCommand(null!, "TestPrinter");
 
-            var action = async () => await _handler.Handle(null!, "TestPrinter", command);
+            var action = async () => await _handler.Handle(command);
 
             await action.Should().ThrowAsync<ArgumentException>();
         }
@@ -174,9 +160,9 @@ public class SubmitPrintJobCommandHandlerTests : IDisposable
         [Fact]
         public async Task WithEmptyEventName_ThrowsArgumentException()
         {
-            var command = CreateValidCommand();
+            var command = CreateValidCommand("", "TestPrinter");
 
-            var action = async () => await _handler.Handle("", "TestPrinter", command);
+            var action = async () => await _handler.Handle(command);
 
             await action.Should().ThrowAsync<ArgumentException>();
         }
@@ -184,9 +170,9 @@ public class SubmitPrintJobCommandHandlerTests : IDisposable
         [Fact]
         public async Task WithNullPrinterName_ThrowsArgumentException()
         {
-            var command = CreateValidCommand();
+            var command = CreateValidCommand("TestEvent", null!);
 
-            var action = async () => await _handler.Handle("TestEvent", null!, command);
+            var action = async () => await _handler.Handle(command);
 
             await action.Should().ThrowAsync<ArgumentException>();
         }
@@ -194,9 +180,9 @@ public class SubmitPrintJobCommandHandlerTests : IDisposable
         [Fact]
         public async Task WithEmptyPrinterName_ThrowsArgumentException()
         {
-            var command = CreateValidCommand();
+            var command = CreateValidCommand("TestEvent", "");
 
-            var action = async () => await _handler.Handle("TestEvent", "", command);
+            var action = async () => await _handler.Handle(command);
 
             await action.Should().ThrowAsync<ArgumentException>();
         }
@@ -204,7 +190,7 @@ public class SubmitPrintJobCommandHandlerTests : IDisposable
         [Fact]
         public async Task WithNullCommand_ThrowsArgumentNullException()
         {
-            var action = async () => await _handler.Handle("TestEvent", "TestPrinter", null!);
+            var action = async () => await _handler.Handle(null!);
 
             await action.Should().ThrowAsync<ArgumentNullException>();
         }
@@ -214,12 +200,14 @@ public class SubmitPrintJobCommandHandlerTests : IDisposable
         {
             var command = new SubmitPrintJobCommand
             {
+                EventName = "TestEvent",
+                PrinterName = "TestPrinter",
                 UserId = "",
                 StickerId = "sticker123",
                 StickerUrl = "https://example.com/sticker.png"
             };
 
-            var action = async () => await _handler.Handle("TestEvent", "TestPrinter", command);
+            var action = async () => await _handler.Handle(command);
 
             await action.Should().ThrowAsync<InvalidPrintJobException>();
         }
@@ -229,12 +217,14 @@ public class SubmitPrintJobCommandHandlerTests : IDisposable
         {
             var command = new SubmitPrintJobCommand
             {
+                EventName = "TestEvent",
+                PrinterName = "TestPrinter",
                 UserId = "user123",
                 StickerId = "",
                 StickerUrl = "https://example.com/sticker.png"
             };
 
-            var action = async () => await _handler.Handle("TestEvent", "TestPrinter", command);
+            var action = async () => await _handler.Handle(command);
 
             await action.Should().ThrowAsync<InvalidPrintJobException>();
         }
@@ -244,12 +234,14 @@ public class SubmitPrintJobCommandHandlerTests : IDisposable
         {
             var command = new SubmitPrintJobCommand
             {
+                EventName = "TestEvent",
+                PrinterName = "TestPrinter",
                 UserId = "user123",
                 StickerId = "sticker123",
                 StickerUrl = ""
             };
 
-            var action = async () => await _handler.Handle("TestEvent", "TestPrinter", command);
+            var action = async () => await _handler.Handle(command);
 
             await action.Should().ThrowAsync<InvalidPrintJobException>();
         }
@@ -264,10 +256,12 @@ public class SubmitPrintJobCommandHandlerTests : IDisposable
         }
     }
 
-    private static SubmitPrintJobCommand CreateValidCommand()
+    private static SubmitPrintJobCommand CreateValidCommand(string eventName = "TestEvent", string printerName = "TestPrinter")
     {
         return new SubmitPrintJobCommand
         {
+            EventName = eventName,
+            PrinterName = printerName,
             UserId = "user123",
             StickerId = "sticker456",
             StickerUrl = "https://example.com/stickers/456.png"

@@ -28,7 +28,7 @@ namespace Stickerlandia.PrintService.AWS;
 [AsyncApi]
 public class EventBridgeEventPublisher(
     ILogger<EventBridgeEventPublisher> logger,
-    AmazonEventBridgeClient client,
+    IAmazonEventBridge client,
     IOptions<AwsConfiguration> awsConfiguration) : IPrintServiceEventPublisher
 {
     [Channel("printJobs.queued.v1")]
@@ -46,7 +46,7 @@ public class EventBridgeEventPublisher(
             Data = printJobQueuedEvent
         };
 
-        await Publish(cloudEvent);
+        await PublishCloudEventAsync(cloudEvent);
     }
 
     [Channel("printJobs.failed.v1")]
@@ -64,7 +64,7 @@ public class EventBridgeEventPublisher(
             Data = printJobFailedEvent
         };
 
-        await Publish(cloudEvent);
+        await PublishCloudEventAsync(cloudEvent);
     }
     
     [Channel("printers.registered.v1")]
@@ -82,7 +82,7 @@ public class EventBridgeEventPublisher(
             Data = printerRegisteredEvent
         };
 
-        await Publish(cloudEvent);
+        await PublishCloudEventAsync(cloudEvent);
     }
 
     [Channel("printJobs.completed.v1")]
@@ -100,7 +100,7 @@ public class EventBridgeEventPublisher(
             Data = printJobCompletedEvent
         };
 
-        await Publish(cloudEvent);
+        await PublishCloudEventAsync(cloudEvent);
     }
 
     [Channel("printers.deleted.v1")]
@@ -118,10 +118,10 @@ public class EventBridgeEventPublisher(
             Data = printerDeletedEvent
         };
 
-        await Publish(cloudEvent);
+        await PublishCloudEventAsync(cloudEvent);
     }
 
-    private async Task Publish(CloudEvent cloudEvent)
+    internal async Task PublishCloudEventAsync(CloudEvent cloudEvent)
     {
         using var activity = PrintJobInstrumentation.ActivitySource.StartActivity(
             $"publish {cloudEvent.Type}", ActivityKind.Producer);
@@ -135,11 +135,11 @@ public class EventBridgeEventPublisher(
                     $"00-{currentActivity.TraceId}-{currentActivity.SpanId}-01");
             }
 
-            var formatter = new JsonEventFormatter<PrinterRegisteredEvent>();
+            var formatter = new JsonEventFormatter();
             var data = formatter.EncodeStructuredModeMessage(cloudEvent, out _);
             var jsonString = System.Text.Encoding.UTF8.GetString(data.Span);
 
-            await client.PutEventsAsync(new PutEventsRequest()
+            var response = await client.PutEventsAsync(new PutEventsRequest()
             {
                 Entries = new List<PutEventsRequestEntry>(1)
                 {
@@ -152,6 +152,14 @@ public class EventBridgeEventPublisher(
                     }
                 }
             });
+
+            if (response.FailedEntryCount is > 0)
+            {
+                var failedEntries = response.Entries
+                    .Where(e => !string.IsNullOrEmpty(e.ErrorCode))
+                    .ToList();
+                throw new EventBridgePartialFailureException(response.FailedEntryCount.Value, failedEntries);
+            }
 
             activity?.SetStatus(ActivityStatusCode.Ok);
         }

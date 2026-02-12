@@ -8,157 +8,106 @@ import { Construct } from "constructs";
 import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared-props";
 import { InstrumentedLambdaFunction } from "./constructs/instrumented-function";
 import { Duration } from "aws-cdk-lib";
-import { IQueue } from "aws-cdk-lib/aws-sqs";
-import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
-import { SqsDestination } from "aws-cdk-lib/aws-lambda-destinations";
-import {
-  IEventBus,
-  Rule,
-  RuleTargetInput,
-  Schedule,
-} from "aws-cdk-lib/aws-events";
-import { LambdaFunction, SqsQueue } from "aws-cdk-lib/aws-events-targets";
-import { ITopic } from "aws-cdk-lib/aws-sns";
+import { SqsDlq} from "aws-cdk-lib/aws-lambda-event-sources";
+import { IEventBus } from "aws-cdk-lib/aws-events";
 import { ServiceProps } from "./service-props";
-import { WorkerService } from "../../../../shared/lib/shared-constructs/lib/worker-service";
-import { IVpc, SecurityGroup, SubnetType } from "aws-cdk-lib/aws-ec2";
-import {
-  CpuArchitecture,
-  ICluster,
-  OperatingSystemFamily,
-  Secret,
-} from "aws-cdk-lib/aws-ecs";
-import { IPrivateDnsNamespace } from "aws-cdk-lib/aws-servicediscovery";
+import { Queue } from "aws-cdk-lib/aws-sqs";
+import { DynamoEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
+import { FilterCriteria, FilterRule, StartingPosition } from "aws-cdk-lib/aws-lambda";
+import { ITable } from "aws-cdk-lib/aws-dynamodb";
 
 export interface BackgroundWorkersProps {
-  cluster: ICluster;
-  vpc: IVpc;
-  vpcLinkSecurityGroupId: string;
-  serviceDiscoveryNamespace: IPrivateDnsNamespace;
-  serviceDiscoveryName: string;
-  deployInPrivateSubnet?: boolean;
   sharedProps: SharedProps;
   serviceProps: ServiceProps;
   sharedEventBus: IEventBus;
-  useLambda: boolean;
+  printerTable: ITable;
+  printJobsTable: ITable;
 }
 
 export class BackgroundWorkers extends Construct {
   constructor(scope: Construct, id: string, props: BackgroundWorkersProps) {
     super(scope, id);
 
-    if (props.useLambda) {
-      // // Get connection string value from CustomResource output, resolved at deploy time
-      // const connectionString = props.serviceProps.databaseCredentials.getConnectionStringForLambda();
+    // --- Outbox Stream Processing Infrastructure ---
 
-      // // Reference the VPC link security group for Lambda functions that need database access
-      // const lambdaSecurityGroup = SecurityGroup.fromSecurityGroupId(
-      //   this,
-      //   "LambdaSecurityGroup",
-      //   props.vpcLinkSecurityGroupId
-      // );
+    // DLQ for records that fail stream processing after all retries
+    const outboxDlq = new Queue(this, "OutboxStreamDLQ", {
+      queueName: `outbox-stream-dlq-${props.sharedProps.environment}`,
+      retentionPeriod: Duration.days(14),
+    });
 
-      // // Lambda functions need to be in private subnets to access RDS
-      // const vpcSubnets = {
-      //   subnetType: SubnetType.PRIVATE_WITH_EGRESS,
-      // };
+    // Stream Lambda processes DynamoDB Streams events from both tables,
+    // filters for outbox INSERT records, and publishes to EventBridge
+    const outboxStreamLambda = new InstrumentedLambdaFunction(
+      this,
+      "OutboxStreamFunction",
+      {
+        sharedProps: props.sharedProps,
+        handler:
+          "Stickerlandia.PrintService.Lambda::Stickerlandia.PrintService.Lambda.OutboxFunctions_HandleStream_Generated::HandleStream",
+        buildDef: "../../src/Stickerlandia.PrintService.Lambda/",
+        functionName: "outbox-stream",
+        environment: {
+          DRIVING: "AWS",
+          DRIVEN: "AWS",
+          Aws__PrinterTableName: props.printerTable.tableName,
+          Aws__PrintJobTableName: props.printJobsTable.tableName,
+          ...props.serviceProps.messagingConfiguration.asEnvironmentVariables(),
+        },
+        memorySize: 512,
+        timeout: Duration.seconds(30),
+        onFailure: undefined,
+      },
+    );
 
-      // const environmentVariables = {
-      //   POWERTOOLS_SERVICE_NAME: props.sharedProps.serviceName,
-      //   POWERTOOLS_LOG_LEVEL:
-      //     props.sharedProps.environment === "prod" ? "WARN" : "INFO",
-      //   ENV: props.sharedProps.environment,
-      //   ConnectionStrings__database: connectionString,
-      //   DRIVING: "ASPNET",
-      //   DRIVEN: "AWS",
-      //   DISABLE_SSL: "true",
-      //   ...props.serviceProps.messagingConfiguration.asEnvironmentVariables(),
-      // };
+    // Grant permissions: EventBridge PutEvents + DynamoDB stream read
+    props.sharedEventBus.grantPutEventsTo(
+      outboxStreamLambda.function,
+    );
+    props.printerTable.grantStreamRead(outboxStreamLambda.function);
+    props.printJobsTable.grantStreamRead(outboxStreamLambda.function);
 
-      // const outboxWorker = new InstrumentedLambdaFunction(
-      //   this,
-      //   "OutboxWorkerFunction",
-      //   {
-      //     sharedProps: props.sharedProps,
-      //     handler:
-      //       "Stickerlandia.PrintService.Lambda::Stickerlandia.PrintService.Lambda.OutboxFunctions_Worker_Generated::Worker",
-      //     buildDef: "../../src/Stickerlandia.PrintService.Lambda/",
-      //     functionName: "outbox-worker",
-      //     environment: environmentVariables,
-      //     memorySize: 1024,
-      //     timeout: Duration.seconds(50),
-      //     logLevel: props.sharedProps.environment === "prod" ? "WARN" : "INFO",
-      //     onFailure: undefined,
-      //     vpc: props.vpc,
-      //     vpcSubnets: vpcSubnets,
-      //     securityGroups: [lambdaSecurityGroup],
-      //   }
-      // );
-      // props.sharedEventBus.grantPutEventsTo(outboxWorker.function);
+    // Event source filter: only process INSERT events where PK starts with "OUTBOX#"
+    const outboxStreamFilter = FilterCriteria.filter({
+      eventName: FilterRule.isEqual("INSERT"),
+      dynamodb: {
+        NewImage: {
+          PK: {
+            S: FilterRule.beginsWith("OUTBOX#"),
+          },
+        },
+      },
+    });
 
-      // // Add dependencies for outbox worker Lambda
-      // if (props.serviceProps.serviceDependencies) {
-      //   for (const dependency of props.serviceProps.serviceDependencies) {
-      //     outboxWorker.function.node.addDependency(dependency);
-      //   }
-      // }
+    // Event source mapping: Printers table stream → Lambda
+    outboxStreamLambda.function.addEventSource(
+      new DynamoEventSource(props.printerTable, {
+        startingPosition: StartingPosition.TRIM_HORIZON,
+        batchSize: 10,
+        maxBatchingWindow: Duration.seconds(5),
+        maxRecordAge: Duration.hours(1),
+        retryAttempts: 3,
+        bisectBatchOnError: true,
+        reportBatchItemFailures: true,
+        onFailure: new SqsDlq(outboxDlq),
+        filters: [outboxStreamFilter],
+      }),
+    );
 
-      // const outboxWorkerSchedule = new Rule(this, "OutboxWorkerSchedule", {
-      //   description: "Trigger outbox worker every 1 minute",
-      //   schedule: Schedule.rate(Duration.minutes(1)),
-      // });
+    // Event source mapping: PrintJobs table stream → Lambda
+    outboxStreamLambda.function.addEventSource(
+      new DynamoEventSource(props.printJobsTable, {
+        startingPosition: StartingPosition.TRIM_HORIZON,
+        batchSize: 10,
+        maxBatchingWindow: Duration.seconds(5),
+        maxRecordAge: Duration.hours(1),
+        retryAttempts: 3,
+        bisectBatchOnError: true,
+        reportBatchItemFailures: true,
+        onFailure: new SqsDlq(outboxDlq),
+        filters: [outboxStreamFilter],
+      }),
+    );
 
-      // // Add the Lambda function as a target
-      // outboxWorkerSchedule.addTarget(
-      //   new LambdaFunction(outboxWorker.function, {
-      //     retryAttempts: 2,
-      //     event: RuleTargetInput.fromObject({
-      //       run: true,
-      //     }),
-      //   })
-      // );
-    } else {
-      // const workerService = new WorkerService(
-      //   this,
-      //   "PrintServiceWorkerService",
-      //   {
-      //     sharedProps: props.sharedProps,
-      //     vpc: props.vpc,
-      //     cluster: props.cluster,
-      //     image: "ghcr.io/datadog/stickerlandia/print-service-worker",
-      //     imageTag: props.sharedProps.version,
-      //     ddApiKey: props.sharedProps.datadog.apiKeyParameter,
-      //     environmentVariables: {
-      //       POWERTOOLS_SERVICE_NAME: props.sharedProps.serviceName,
-      //       POWERTOOLS_LOG_LEVEL:
-      //         props.sharedProps.environment === "prod" ? "WARN" : "INFO",
-      //       ENV: props.sharedProps.environment,
-      //       DRIVING: "ASPNET",
-      //       DRIVEN: "AGNOSTIC",
-      //       DISABLE_SSL: "true",
-      //       LOGGING__LOGLEVEL__DEFAULT: "INFORMATION",
-      //       LOGGING__LOGLEVEL__MICROSOFT: "INFORMATION",
-      //       "LOGGING__LOGLEVEL__MICROSOFT.ENTITYFRAMEWORKCORE.DATABASE.COMMAND":
-      //         "WARNING",
-      //       ...props.serviceProps.messagingConfiguration.asEnvironmentVariables(),
-      //     },
-      //     secrets: {
-      //       DD_API_KEY: Secret.fromSsmParameter(
-      //         props.sharedProps.datadog.apiKeyParameter
-      //       ),
-      //       ConnectionStrings__database: props.serviceProps.databaseCredentials.getConnectionStringEcsSecret()!,
-      //       ...props.serviceProps.messagingConfiguration.asSecrets(),
-      //     },
-      //     serviceDiscoveryNamespace: props.serviceDiscoveryNamespace,
-      //     serviceDiscoveryName: props.serviceDiscoveryName,
-      //     deployInPrivateSubnet: props.deployInPrivateSubnet,
-      //     runtimePlatform: {
-      //       cpuArchitecture: CpuArchitecture.ARM64,
-      //       operatingSystemFamily: OperatingSystemFamily.LINUX,
-      //     },
-      //     serviceDependencies: props.serviceProps.serviceDependencies,
-      //   }
-      // );
-    }
   }
 }

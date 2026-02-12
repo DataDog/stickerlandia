@@ -46,12 +46,18 @@ public static class ServiceExtensions
             return new AmazonDynamoDBClient();
         });
         services.AddSingleton(sp => new AmazonSQSClient());
-        services.AddSingleton(sp => new AmazonEventBridgeClient());
+        services.AddSingleton<IAmazonEventBridge>(sp => new AmazonEventBridgeClient());
         services.AddSingleton(sp => new AmazonSimpleNotificationServiceClient());
-        services.AddSingleton<IPrinterRepository, DynamoDbPrinterRepository>();
-        services.AddSingleton<IPrintJobRepository, DynamoDbPrintJobRepository>();
-        services.AddSingleton<IPrinterKeyValidator, DynamoDbPrinterKeyValidator>();
-        services.AddSingleton<IOutbox, AwsOutboxImplementation>();
+        // Transaction scope and unit of work. Overrides Core's NoOpUnitOfWork via "last wins"
+        // DI semantics. This method MUST be called after AddStickerlandiaUserManagement().
+        services.AddScoped<DynamoDbWriteTransaction>();
+        services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<DynamoDbWriteTransaction>());
+
+        // Repositories and outbox are Scoped to share the transaction scope
+        services.AddScoped<IPrinterRepository, DynamoDbPrinterRepository>();
+        services.AddScoped<IPrintJobRepository, DynamoDbPrintJobRepository>();
+        services.AddScoped<IPrinterKeyValidator, DynamoDbPrinterKeyValidator>();
+        services.AddScoped<IOutbox, DynamoDbOutbox>();
 
         services.AddSingleton<IPrintServiceEventPublisher, EventBridgeEventPublisher>();
 

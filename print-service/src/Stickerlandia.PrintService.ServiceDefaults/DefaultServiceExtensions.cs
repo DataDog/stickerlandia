@@ -108,6 +108,11 @@ public static class DefaultServiceExtensions
         IConfiguration configuration,
         bool enableDefaultUi)
     {
+        // Core services MUST be registered first so that platform-specific adapters
+        // (e.g. AWS) can override the default NoOpUnitOfWork via "last wins" DI semantics.
+        services
+            .AddStickerlandiaUserManagement();
+
         var drivenAdapters = Environment.GetEnvironmentVariable("DRIVEN") ?? "";
 
         switch (drivenAdapters.ToUpperInvariant())
@@ -125,9 +130,6 @@ public static class DefaultServiceExtensions
             default:
                 throw new ArgumentException($"Unknown driven adapters {drivenAdapters}");
         }
-
-        services
-            .AddStickerlandiaUserManagement();
 
         return services;
     }

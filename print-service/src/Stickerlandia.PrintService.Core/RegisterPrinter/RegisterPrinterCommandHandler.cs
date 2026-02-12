@@ -15,8 +15,9 @@ using Stickerlandia.PrintService.Core.Outbox;
 namespace Stickerlandia.PrintService.Core.RegisterPrinter;
 
 public class RegisterPrinterCommandHandler(IOutbox outbox, IPrinterRepository repository, PrintJobInstrumentation instrumentation)
+    : ICommandHandler<RegisterPrinterCommand, RegisterPrinterResponse>
 {
-    public async Task<RegisterPrinterResponse> Handle(RegisterPrinterCommand command)
+    public async Task<RegisterPrinterResponse> Handle(RegisterPrinterCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command, nameof(RegisterPrinterCommand));
 
