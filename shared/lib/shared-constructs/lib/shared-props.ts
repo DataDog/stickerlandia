@@ -82,6 +82,9 @@ export class SharedProps {
         clusterName: cluster.clusterName,
         environmentVariables: {
           DD_APM_IGNORE_RESOURCES: "(GET|HEAD) .*/health$",
+          DD_OTLP_CONFIG_RECEIVER_PROTOCOLS_GRPC_ENDPOINT: "0.0.0.0:4317",
+          DD_OTLP_CONFIG_RECEIVER_PROTOCOLS_HTTP_ENDPOINT: "0.0.0.0:4318",
+          DD_LOGS_INJECTION: "true",
         },
         dogstatsd: {
           isEnabled: true,
