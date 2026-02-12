@@ -83,10 +83,9 @@ public static class DefaultServiceExtensions
                         options.FilterHttpRequestMessage = (httpRequestMessage) =>
                         {
                             // Exclude any requests to the Datadog agent or localhost as they are likely related to telemetry export and not relevant for application tracing
-                            var isDatadogHost = httpRequestMessage.RequestUri?.Host.Contains("datadog-agent", StringComparison.OrdinalIgnoreCase) ?? true;
-                            var isLocalHost = httpRequestMessage.RequestUri?.Host.Contains("localhost", StringComparison.OrdinalIgnoreCase) ?? true;
+                            var isOtelPath = httpRequestMessage.RequestUri?.AbsolutePath.Contains("opentelemetry", StringComparison.OrdinalIgnoreCase) ?? false;
 
-                            return !isDatadogHost && !isLocalHost;
+                            return !isOtelPath;
                         };
                     });
             })
