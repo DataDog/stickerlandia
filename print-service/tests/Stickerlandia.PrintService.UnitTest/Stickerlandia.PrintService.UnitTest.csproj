@@ -31,6 +31,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Stickerlandia.PrintService.Core\Stickerlandia.PrintService.Core.csproj" />
+    <ProjectReference Include="..\..\src\Stickerlandia.PrintService.AWS\Stickerlandia.PrintService.AWS.csproj" />
   </ItemGroup>
 
 </Project>

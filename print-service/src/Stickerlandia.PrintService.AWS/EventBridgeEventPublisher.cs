@@ -28,7 +28,7 @@ namespace Stickerlandia.PrintService.AWS;
 [AsyncApi]
 public class EventBridgeEventPublisher(
     ILogger<EventBridgeEventPublisher> logger,
-    AmazonEventBridgeClient client,
+    IAmazonEventBridge client,
     IOptions<AwsConfiguration> awsConfiguration) : IPrintServiceEventPublisher
 {
     [Channel("printJobs.queued.v1")]
@@ -135,11 +135,11 @@ public class EventBridgeEventPublisher(
                     $"00-{currentActivity.TraceId}-{currentActivity.SpanId}-01");
             }
 
-            var formatter = new JsonEventFormatter<PrinterRegisteredEvent>();
+            var formatter = new JsonEventFormatter();
             var data = formatter.EncodeStructuredModeMessage(cloudEvent, out _);
             var jsonString = System.Text.Encoding.UTF8.GetString(data.Span);
 
-            await client.PutEventsAsync(new PutEventsRequest()
+            var response = await client.PutEventsAsync(new PutEventsRequest()
             {
                 Entries = new List<PutEventsRequestEntry>(1)
                 {
@@ -152,6 +152,14 @@ public class EventBridgeEventPublisher(
                     }
                 }
             });
+
+            if (response.FailedEntryCount is > 0)
+            {
+                var failedEntries = response.Entries
+                    .Where(e => !string.IsNullOrEmpty(e.ErrorCode))
+                    .ToList();
+                throw new EventBridgePartialFailureException(response.FailedEntryCount.Value, failedEntries);
+            }
 
             activity?.SetStatus(ActivityStatusCode.Ok);
         }

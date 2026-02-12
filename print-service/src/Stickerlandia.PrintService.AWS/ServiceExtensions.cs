@@ -46,7 +46,7 @@ public static class ServiceExtensions
             return new AmazonDynamoDBClient();
         });
         services.AddSingleton(sp => new AmazonSQSClient());
-        services.AddSingleton(sp => new AmazonEventBridgeClient());
+        services.AddSingleton<IAmazonEventBridge>(sp => new AmazonEventBridgeClient());
         services.AddSingleton(sp => new AmazonSimpleNotificationServiceClient());
         services.AddSingleton<IPrinterRepository, DynamoDbPrinterRepository>();
         services.AddSingleton<IPrintJobRepository, DynamoDbPrintJobRepository>();
