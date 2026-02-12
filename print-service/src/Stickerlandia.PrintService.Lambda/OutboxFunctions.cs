@@ -7,14 +7,11 @@
 #pragma warning disable CA1031 // Catch general exceptions - stream processing must report per-record failures
 
 using System.Diagnostics;
-using Amazon.EventBridge;
-using Amazon.EventBridge.Model;
+using System.Text.Json;
 using Amazon.Lambda.Annotations;
 using Amazon.Lambda.DynamoDBEvents;
 using CloudNative.CloudEvents;
-using CloudNative.CloudEvents.SystemTextJson;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Stickerlandia.PrintService.AWS;
 using Stickerlandia.PrintService.Core.Observability;
 using Stickerlandia.PrintService.Core.Outbox;
@@ -24,8 +21,7 @@ namespace Stickerlandia.PrintService.Lambda;
 public sealed partial class OutboxFunctions(
     ILogger<OutboxFunctions> logger,
     OutboxProcessor outboxProcessor,
-    IAmazonEventBridge eventBridgeClient,
-    IOptions<AwsConfiguration> awsConfiguration)
+    EventBridgeEventPublisher eventPublisher)
 {
     [LambdaFunction]
     public async Task Worker(object evtData)
@@ -59,12 +55,15 @@ public sealed partial class OutboxFunctions(
                 using var activity = PrintJobInstrumentation.ActivitySource.StartActivity(
                     $"publish {eventType}", ActivityKind.Producer);
 
-                // Restore trace context from the original request
+                // Link to the original request's trace context
                 if (newImage.TryGetValue(OutboxItemAttributes.TraceId, out var traceIdAttr) &&
-                    !string.IsNullOrEmpty(traceIdAttr.S))
+                    !string.IsNullOrEmpty(traceIdAttr.S) &&
+                    ActivityContext.TryParse(traceIdAttr.S, null, out var parentContext))
                 {
-                    activity?.SetTag("traceparent", traceIdAttr.S);
+                    activity?.AddLink(new ActivityLink(parentContext));
                 }
+
+                var parsedData = JsonDocument.Parse(eventData).RootElement;
 
                 var cloudEvent = new CloudEvent(CloudEventsSpecVersion.V1_0)
                 {
@@ -73,33 +72,10 @@ public sealed partial class OutboxFunctions(
                     Type = eventType,
                     Time = DateTimeOffset.UtcNow,
                     DataContentType = "application/json",
-                    Data = eventData
+                    Data = parsedData
                 };
 
-                var formatter = new JsonEventFormatter();
-                var data = formatter.EncodeStructuredModeMessage(cloudEvent, out _);
-                var jsonString = System.Text.Encoding.UTF8.GetString(data.Span);
-
-                var response = await eventBridgeClient.PutEventsAsync(new PutEventsRequest
-                {
-                    Entries =
-                    [
-                        new PutEventsRequestEntry
-                        {
-                            EventBusName = awsConfiguration.Value.EventBusName,
-                            Source = $"{Environment.GetEnvironmentVariable("ENV") ?? "dev"}.users",
-                            DetailType = eventType,
-                            Detail = jsonString,
-                        }
-                    ]
-                });
-
-                if (response.FailedEntryCount is > 0)
-                {
-                    throw new EventBridgePartialFailureException(
-                        response.FailedEntryCount.Value,
-                        response.Entries.Where(e => !string.IsNullOrEmpty(e.ErrorCode)).ToList());
-                }
+                await eventPublisher.PublishCloudEventAsync(cloudEvent);
 
                 activity?.SetStatus(ActivityStatusCode.Ok);
                 LogEventPublished(logger, eventType, itemId);

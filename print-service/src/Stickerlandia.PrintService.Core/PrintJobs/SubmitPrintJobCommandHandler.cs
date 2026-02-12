@@ -16,7 +16,7 @@ public class SubmitPrintJobCommandHandler(
     PrintJobInstrumentation instrumentation)
     : ICommandHandler<SubmitPrintJobCommand, SubmitPrintJobResponse>
 {
-    public async Task<SubmitPrintJobResponse> Handle(SubmitPrintJobCommand command)
+    public async Task<SubmitPrintJobResponse> Handle(SubmitPrintJobCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentException.ThrowIfNullOrEmpty(command.EventName);

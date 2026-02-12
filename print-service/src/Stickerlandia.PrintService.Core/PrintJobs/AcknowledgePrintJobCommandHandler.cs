@@ -18,7 +18,7 @@ public class AcknowledgePrintJobCommandHandler(
     PrintJobInstrumentation instrumentation)
     : ICommandHandler<AcknowledgePrintJobCommand, AcknowledgePrintJobResponse>
 {
-    public async Task<AcknowledgePrintJobResponse> Handle(AcknowledgePrintJobCommand command)
+    public async Task<AcknowledgePrintJobResponse> Handle(AcknowledgePrintJobCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
 

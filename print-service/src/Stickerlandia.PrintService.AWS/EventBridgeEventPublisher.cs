@@ -46,7 +46,7 @@ public class EventBridgeEventPublisher(
             Data = printJobQueuedEvent
         };
 
-        await Publish(cloudEvent);
+        await PublishCloudEventAsync(cloudEvent);
     }
 
     [Channel("printJobs.failed.v1")]
@@ -64,7 +64,7 @@ public class EventBridgeEventPublisher(
             Data = printJobFailedEvent
         };
 
-        await Publish(cloudEvent);
+        await PublishCloudEventAsync(cloudEvent);
     }
     
     [Channel("printers.registered.v1")]
@@ -82,7 +82,7 @@ public class EventBridgeEventPublisher(
             Data = printerRegisteredEvent
         };
 
-        await Publish(cloudEvent);
+        await PublishCloudEventAsync(cloudEvent);
     }
 
     [Channel("printJobs.completed.v1")]
@@ -100,7 +100,7 @@ public class EventBridgeEventPublisher(
             Data = printJobCompletedEvent
         };
 
-        await Publish(cloudEvent);
+        await PublishCloudEventAsync(cloudEvent);
     }
 
     [Channel("printers.deleted.v1")]
@@ -118,10 +118,10 @@ public class EventBridgeEventPublisher(
             Data = printerDeletedEvent
         };
 
-        await Publish(cloudEvent);
+        await PublishCloudEventAsync(cloudEvent);
     }
 
-    private async Task Publish(CloudEvent cloudEvent)
+    internal async Task PublishCloudEventAsync(CloudEvent cloudEvent)
     {
         using var activity = PrintJobInstrumentation.ActivitySource.StartActivity(
             $"publish {cloudEvent.Type}", ActivityKind.Producer);

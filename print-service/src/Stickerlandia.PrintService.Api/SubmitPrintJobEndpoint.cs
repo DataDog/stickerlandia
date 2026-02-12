@@ -16,12 +16,12 @@ internal static class SubmitPrintJobEndpoint
         string eventName,
         string printerName,
         [FromServices] ICommandHandler<SubmitPrintJobCommand, SubmitPrintJobResponse> handler,
-        [FromBody] SubmitPrintJobCommand request)
+        [FromBody] SubmitPrintJobCommand request,
+        CancellationToken cancellationToken)
     {
-        request.EventName = eventName;
-        request.PrinterName = printerName;
+        var command = request with { EventName = eventName, PrinterName = printerName };
 
-        var response = await handler.Handle(request);
+        var response = await handler.Handle(command, cancellationToken);
 
         return Results.Created($"/api/print/v1/printer/jobs/{response.PrintJobId}", new ApiResponse<SubmitPrintJobResponse>(response));
     }

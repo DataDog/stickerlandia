@@ -13,6 +13,7 @@ public sealed partial class DynamoDbWriteTransaction : IUnitOfWork
     private readonly ILogger<DynamoDbWriteTransaction> _logger;
     private readonly List<TransactWriteItem> _operations = [];
     private bool _committed;
+    private bool _faulted;
 
     public DynamoDbWriteTransaction(IAmazonDynamoDB dynamoDb, ILogger<DynamoDbWriteTransaction> logger)
     {
@@ -44,9 +45,9 @@ public sealed partial class DynamoDbWriteTransaction : IUnitOfWork
         });
     }
 
-    public int OperationCount => _operations.Count;
+    internal int OperationCount => _operations.Count;
 
-    public Dictionary<string, AttributeValue> GetBufferedItem(int index) =>
+    internal Dictionary<string, AttributeValue> GetBufferedItem(int index) =>
         _operations[index].Put?.Item
         ?? _operations[index].Delete?.Key
         ?? throw new InvalidOperationException("Operation has neither Put nor Delete.");
@@ -58,11 +59,10 @@ public sealed partial class DynamoDbWriteTransaction : IUnitOfWork
             return;
         }
 
-        _committed = true;
-
         switch (_operations.Count)
         {
             case 0:
+                _committed = true;
                 return;
 
             case 1:
@@ -88,6 +88,7 @@ public sealed partial class DynamoDbWriteTransaction : IUnitOfWork
                         cancellationToken);
                 }
 
+                _committed = true;
                 return;
 
             default:
@@ -104,15 +105,25 @@ public sealed partial class DynamoDbWriteTransaction : IUnitOfWork
                         TransactItems = _operations
                     },
                     cancellationToken);
+                _committed = true;
                 return;
         }
     }
+
+    public void MarkFaulted() => _faulted = true;
 
     public ValueTask DisposeAsync()
     {
         if (_operations.Count > 0 && !_committed)
         {
-            LogUncommittedOperations(_logger, _operations.Count);
+            if (_faulted)
+            {
+                LogUncommittedOperationsExpected(_logger, _operations.Count);
+            }
+            else
+            {
+                LogUncommittedOperations(_logger, _operations.Count);
+            }
         }
 
         GC.SuppressFinalize(this);
@@ -123,4 +134,9 @@ public sealed partial class DynamoDbWriteTransaction : IUnitOfWork
         Level = LogLevel.Critical,
         Message = "DynamoDbWriteTransaction disposed with {Count} uncommitted operations. CommitAsync() was never called. Operations were LOST.")]
     private static partial void LogUncommittedOperations(ILogger logger, int count);
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "DynamoDbWriteTransaction disposed with {Count} uncommitted operations after handler exception. Operations were not persisted.")]
+    private static partial void LogUncommittedOperationsExpected(ILogger logger, int count);
 }

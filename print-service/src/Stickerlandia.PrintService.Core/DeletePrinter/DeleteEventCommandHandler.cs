@@ -17,7 +17,7 @@ public class DeleteEventCommandHandler(
     IPrintJobRepository printJobRepository)
     : ICommandHandler<DeleteEventCommand, DeleteEventResponse>
 {
-    public async Task<DeleteEventResponse> Handle(DeleteEventCommand command)
+    public async Task<DeleteEventResponse> Handle(DeleteEventCommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command, nameof(DeleteEventCommand));
 

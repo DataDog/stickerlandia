@@ -13,11 +13,12 @@ internal static class DeleteEventEndpoint
     public static async Task<IResult> HandleAsync(
         string eventName,
         [FromQuery] bool force,
-        [FromServices] ICommandHandler<DeleteEventCommand, DeleteEventResponse> handler)
+        [FromServices] ICommandHandler<DeleteEventCommand, DeleteEventResponse> handler,
+        CancellationToken cancellationToken)
     {
         var command = new DeleteEventCommand(eventName, force);
 
-        var response = await handler.Handle(command);
+        var response = await handler.Handle(command, cancellationToken);
 
         return Results.Ok(new ApiResponse<DeleteEventResponse>(response));
     }

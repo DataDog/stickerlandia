@@ -44,7 +44,12 @@ public sealed class OutboxFunctionsTests : IDisposable
         A.CallTo(() => _eventBridgeClient.PutEventsAsync(A<PutEventsRequest>._, A<CancellationToken>._))
             .Returns(new PutEventsResponse { FailedEntryCount = 0, Entries = [] });
 
-        _sut = new OutboxFunctions(_logger, outboxProcessor, _eventBridgeClient, _awsConfiguration);
+        var eventPublisher = new EventBridgeEventPublisher(
+            A.Fake<ILogger<EventBridgeEventPublisher>>(),
+            _eventBridgeClient,
+            _awsConfiguration);
+
+        _sut = new OutboxFunctions(_logger, outboxProcessor, eventPublisher);
     }
 
     public void Dispose()

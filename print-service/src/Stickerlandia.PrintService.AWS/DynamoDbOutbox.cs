@@ -29,8 +29,8 @@ public sealed partial class DynamoDbOutbox : IOutbox
     {
         ArgumentNullException.ThrowIfNull(domainEvent);
         var itemId = Guid.NewGuid().ToString();
-        var eventTime = DateTime.UtcNow;
-        var ttlEpoch = new DateTimeOffset(eventTime).ToUnixTimeSeconds()
+        var eventTime = DateTimeOffset.UtcNow;
+        var ttlEpoch = eventTime.ToUnixTimeSeconds()
                        + (long)OutboxItemAttributes.TtlDuration.TotalSeconds;
 
         var item = new Dictionary<string, AttributeValue>

@@ -27,6 +27,7 @@ public class DynamoDbPrintJobRepository(
     // TTL duration for completed/failed jobs: 2 days
     private static readonly TimeSpan TtlDuration = TimeSpan.FromDays(2);
 
+    /// <summary>Buffered in transaction scope — committed via CommitAsync.</summary>
     public Task<PrintJob> AddAsync(PrintJob printJob)
     {
         ArgumentNullException.ThrowIfNull(printJob);
@@ -104,6 +105,7 @@ public class DynamoDbPrintJobRepository(
         return jobs;
     }
 
+    /// <summary>Buffered in transaction scope — committed via CommitAsync.</summary>
     public Task UpdateAsync(PrintJob printJob)
     {
         ArgumentNullException.ThrowIfNull(printJob);
@@ -115,6 +117,7 @@ public class DynamoDbPrintJobRepository(
         return Task.CompletedTask;
     }
 
+    /// <summary>Immediate BatchWriteItem — executes outside transaction scope.</summary>
     public async Task DeleteJobsForPrinterAsync(string printerId)
     {
         ArgumentException.ThrowIfNullOrEmpty(printerId);
@@ -215,6 +218,7 @@ public class DynamoDbPrintJobRepository(
         return totalCount;
     }
 
+    /// <summary>Immediate conditional update — optimistic lock, not part of transaction.</summary>
     private async Task<bool> TryClaimJobAsync(PrintJob job)
     {
         try

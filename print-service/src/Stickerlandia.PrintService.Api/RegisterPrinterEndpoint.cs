@@ -16,9 +16,10 @@ internal static class RegisterPrinterEndpoint
         string eventName,
         HttpContext context,
         [FromServices] ICommandHandler<RegisterPrinterCommand, RegisterPrinterResponse> handler,
-        [FromBody] RegisterPrinterCommand request)
+        [FromBody] RegisterPrinterCommand request,
+        CancellationToken cancellationToken)
     {
-        var response = await handler.Handle(request);
+        var response = await handler.Handle(request, cancellationToken);
 
         return Results.Created($"/api/print/v1/event/{eventName}", new ApiResponse<RegisterPrinterResponse>(response));
     }

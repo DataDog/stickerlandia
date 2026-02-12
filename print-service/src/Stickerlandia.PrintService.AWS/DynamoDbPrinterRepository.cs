@@ -21,6 +21,7 @@ public class DynamoDbPrinterRepository(
 
     private readonly string _tableName = configuration.Value.PrinterTableName;
 
+    /// <summary>Buffered in transaction scope — committed via CommitAsync.</summary>
     public Task AddPrinterAsync(Printer printer)
     {
         ArgumentNullException.ThrowIfNull(printer);
@@ -178,6 +179,7 @@ public class DynamoDbPrinterRepository(
         return MapToPrinter(response.Items[0]);
     }
 
+    /// <summary>Immediate standalone write — idempotent heartbeat update, not part of transaction.</summary>
     public async Task UpdateHeartbeatAsync(string printerId)
     {
         ArgumentException.ThrowIfNullOrEmpty(printerId);
@@ -222,6 +224,7 @@ public class DynamoDbPrinterRepository(
         await dynamoDbClient.UpdateItemAsync(updateRequest).ConfigureAwait(false);
     }
 
+    /// <summary>Buffered in transaction scope — committed via CommitAsync.</summary>
     public Task UpdateAsync(Printer printer)
     {
         ArgumentNullException.ThrowIfNull(printer);
@@ -252,6 +255,7 @@ public class DynamoDbPrinterRepository(
         return Task.CompletedTask;
     }
 
+    /// <summary>Buffered in transaction scope — committed via CommitAsync.</summary>
     public Task DeleteAsync(string eventName, string printerName)
     {
         ArgumentException.ThrowIfNullOrEmpty(eventName);

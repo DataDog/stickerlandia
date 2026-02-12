@@ -14,11 +14,12 @@ internal static class DeletePrinterEndpoint
         string eventName,
         string printerName,
         [FromQuery] bool force,
-        [FromServices] ICommandHandler<DeletePrinterCommand> handler)
+        [FromServices] ICommandHandler<DeletePrinterCommand> handler,
+        CancellationToken cancellationToken)
     {
         var command = new DeletePrinterCommand(eventName, printerName, force);
 
-        await handler.Handle(command);
+        await handler.Handle(command, cancellationToken);
 
         return Results.NoContent();
     }

@@ -48,7 +48,8 @@ public static class ServiceExtensions
         services.AddSingleton(sp => new AmazonSQSClient());
         services.AddSingleton<IAmazonEventBridge>(sp => new AmazonEventBridgeClient());
         services.AddSingleton(sp => new AmazonSimpleNotificationServiceClient());
-        // Transaction scope and unit of work (overrides Core's NoOpUnitOfWork)
+        // Transaction scope and unit of work. Overrides Core's NoOpUnitOfWork via "last wins"
+        // DI semantics. This method MUST be called after AddStickerlandiaUserManagement().
         services.AddScoped<DynamoDbWriteTransaction>();
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<DynamoDbWriteTransaction>());
 

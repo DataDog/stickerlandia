@@ -195,4 +195,111 @@ public class DynamoDbWriteTransactionTests
                 A<CancellationToken>._))
             .MustHaveHappenedOnceExactly();
     }
+
+    [Fact]
+    public async Task CommitAsync_WhenPutItemThrows_CommittedRemainsFalse_DisposeLogsCritical()
+    {
+        var sut = new DynamoDbWriteTransaction(_dynamoDb, _logger);
+        var item = new Dictionary<string, AttributeValue>
+        {
+            ["PK"] = new("TEST"),
+            ["SK"] = new("ITEM#1")
+        };
+
+        A.CallTo(() => _dynamoDb.PutItemAsync(A<PutItemRequest>._, A<CancellationToken>._))
+            .Throws(new AmazonDynamoDBException("Transient failure"));
+
+        sut.AddPut("TestTable", item);
+
+        var act = async () => await sut.CommitAsync();
+        await act.Should().ThrowAsync<AmazonDynamoDBException>();
+
+        await sut.DisposeAsync();
+
+        A.CallTo(_logger)
+            .Where(call => call.Method.Name == "Log"
+                           && call.GetArgument<LogLevel>(0) == LogLevel.Critical)
+            .MustHaveHappenedOnceExactly();
+    }
+
+    [Fact]
+    public async Task CommitAsync_WhenTransactWriteThrows_CommittedRemainsFalse_DisposeLogsCritical()
+    {
+        var sut = new DynamoDbWriteTransaction(_dynamoDb, _logger);
+        sut.AddPut("TestTable", new Dictionary<string, AttributeValue>
+        {
+            ["PK"] = new("ITEM#1"),
+            ["SK"] = new("DATA")
+        });
+        sut.AddPut("TestTable", new Dictionary<string, AttributeValue>
+        {
+            ["PK"] = new("ITEM#2"),
+            ["SK"] = new("DATA")
+        });
+
+        A.CallTo(() => _dynamoDb.TransactWriteItemsAsync(A<TransactWriteItemsRequest>._, A<CancellationToken>._))
+            .Throws(new AmazonDynamoDBException("Transient failure"));
+
+        var act = async () => await sut.CommitAsync();
+        await act.Should().ThrowAsync<AmazonDynamoDBException>();
+
+        await sut.DisposeAsync();
+
+        A.CallTo(_logger)
+            .Where(call => call.Method.Name == "Log"
+                           && call.GetArgument<LogLevel>(0) == LogLevel.Critical)
+            .MustHaveHappenedOnceExactly();
+    }
+
+    [Fact]
+    public async Task CommitAsync_CanBeRetriedAfterTransientFailure()
+    {
+        await using var sut = new DynamoDbWriteTransaction(_dynamoDb, _logger);
+        var item = new Dictionary<string, AttributeValue>
+        {
+            ["PK"] = new("TEST"),
+            ["SK"] = new("ITEM#1")
+        };
+
+        A.CallTo(() => _dynamoDb.PutItemAsync(A<PutItemRequest>._, A<CancellationToken>._))
+            .Throws(new AmazonDynamoDBException("Transient failure")).Once()
+            .Then.Returns(new PutItemResponse());
+
+        sut.AddPut("TestTable", item);
+
+        // First call fails
+        var act = async () => await sut.CommitAsync();
+        await act.Should().ThrowAsync<AmazonDynamoDBException>();
+
+        // Retry succeeds
+        await sut.CommitAsync();
+
+        A.CallTo(() => _dynamoDb.PutItemAsync(A<PutItemRequest>._, A<CancellationToken>._))
+            .MustHaveHappenedTwiceExactly();
+    }
+
+    [Fact]
+    public async Task DisposeAsync_WhenFaulted_LogsWarningInsteadOfCritical()
+    {
+        var sut = new DynamoDbWriteTransaction(_dynamoDb, _logger);
+        var item = new Dictionary<string, AttributeValue>
+        {
+            ["PK"] = new("TEST"),
+            ["SK"] = new("ITEM#1")
+        };
+
+        sut.AddPut("TestTable", item);
+        sut.MarkFaulted();
+        await sut.DisposeAsync();
+
+        A.CallTo(_logger)
+            .Where(call => call.Method.Name == "Log"
+                           && call.GetArgument<LogLevel>(0) == LogLevel.Warning)
+            .MustHaveHappenedOnceExactly();
+
+        A.CallTo(_logger)
+            .Where(call => call.Method.Name == "Log"
+                           && call.GetArgument<LogLevel>(0) == LogLevel.Critical)
+            .MustNotHaveHappened();
+    }
 }

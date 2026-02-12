@@ -62,6 +62,9 @@ public static class ServiceExtensions
 
         services.AddTransient<OutboxProcessor>();
 
+        // Default no-op unit of work. Platform-specific adapters (e.g. AWS) override this
+        // registration with their own implementation. .NET DI uses "last wins" semantics,
+        // so AddAwsAdapters (or equivalent) MUST be called after this method.
         services.AddScoped<IUnitOfWork, NoOpUnitOfWork>();
 
         return services;

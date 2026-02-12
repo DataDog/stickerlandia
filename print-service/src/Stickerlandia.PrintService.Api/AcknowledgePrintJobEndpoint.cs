@@ -21,7 +21,8 @@ internal static class AcknowledgePrintJobEndpoint
         string printJobId,
         ClaimsPrincipal user,
         [FromServices] ICommandHandler<AcknowledgePrintJobCommand, AcknowledgePrintJobResponse> handler,
-        [FromBody] AcknowledgePrintJobRequest request)
+        [FromBody] AcknowledgePrintJobRequest request,
+        CancellationToken cancellationToken)
     {
         var printerId = user.FindFirstValue(PrinterKeyAuthenticationHandler.PrinterIdClaimType);
 
@@ -38,7 +39,7 @@ internal static class AcknowledgePrintJobEndpoint
             PrinterId = printerId
         };
 
-        var response = await handler.Handle(command);
+        var response = await handler.Handle(command, cancellationToken);
 
         return Results.Ok(new ApiResponse<AcknowledgePrintJobResponse>(response));
     }

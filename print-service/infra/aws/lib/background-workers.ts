@@ -9,12 +9,7 @@ import { SharedProps } from "../../../../shared/lib/shared-constructs/lib/shared
 import { InstrumentedLambdaFunction } from "./constructs/instrumented-function";
 import { Duration } from "aws-cdk-lib";
 import { SqsDlq} from "aws-cdk-lib/aws-lambda-event-sources";
-import {
-  IEventBus,
-  Rule,
-  Schedule,
-} from "aws-cdk-lib/aws-events";
-import { LambdaFunction } from "aws-cdk-lib/aws-events-targets";
+import { IEventBus } from "aws-cdk-lib/aws-events";
 import { ServiceProps } from "./service-props";
 import { Queue } from "aws-cdk-lib/aws-sqs";
 import { DynamoEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
@@ -25,7 +20,6 @@ export interface BackgroundWorkersProps {
   sharedProps: SharedProps;
   serviceProps: ServiceProps;
   sharedEventBus: IEventBus;
-  useLambda: boolean;
   printerTable: ITable;
   printJobsTable: ITable;
 }
@@ -66,12 +60,12 @@ export class BackgroundWorkers extends Construct {
       },
     );
 
-    // Grant permissions: EventBridge PutEvents + DynamoDB table read
+    // Grant permissions: EventBridge PutEvents + DynamoDB stream read
     props.sharedEventBus.grantPutEventsTo(
       outboxStreamLambda.function,
     );
-    props.printerTable.grantReadData(outboxStreamLambda.function);
-    props.printJobsTable.grantReadData(outboxStreamLambda.function);
+    props.printerTable.grantStreamRead(outboxStreamLambda.function);
+    props.printJobsTable.grantStreamRead(outboxStreamLambda.function);
 
     // Event source filter: only process INSERT events where PK starts with "OUTBOX#"
     const outboxStreamFilter = FilterCriteria.filter({
@@ -91,6 +85,7 @@ export class BackgroundWorkers extends Construct {
         startingPosition: StartingPosition.TRIM_HORIZON,
         batchSize: 10,
         maxBatchingWindow: Duration.seconds(5),
+        maxRecordAge: Duration.hours(1),
         retryAttempts: 3,
         bisectBatchOnError: true,
         reportBatchItemFailures: true,
@@ -105,6 +100,7 @@ export class BackgroundWorkers extends Construct {
         startingPosition: StartingPosition.TRIM_HORIZON,
         batchSize: 10,
         maxBatchingWindow: Duration.seconds(5),
+        maxRecordAge: Duration.hours(1),
         retryAttempts: 3,
         bisectBatchOnError: true,
         reportBatchItemFailures: true,
@@ -113,44 +109,5 @@ export class BackgroundWorkers extends Construct {
       }),
     );
 
-    // --- Fallback Sweeper (belt and suspenders) ---
-
-    const outboxWorkerLambda = new InstrumentedLambdaFunction(
-      this,
-      "OutboxWorkerFunction",
-      {
-        sharedProps: props.sharedProps,
-        handler:
-          "Stickerlandia.PrintService.Lambda::Stickerlandia.PrintService.Lambda.OutboxFunctions_Worker_Generated::Worker",
-        buildDef: "../../src/Stickerlandia.PrintService.Lambda/",
-        functionName: "outbox-worker",
-        environment: {
-          DRIVING: "AWS",
-          DRIVEN: "AWS",
-          Aws__PrinterTableName: props.printerTable.tableName,
-          Aws__PrintJobTableName: props.printJobsTable.tableName,
-          ...props.serviceProps.messagingConfiguration.asEnvironmentVariables(),
-        },
-        memorySize: 512,
-        timeout: Duration.seconds(50),
-        onFailure: undefined,
-      },
-    );
-
-    props.sharedEventBus.grantPutEventsTo(
-      outboxStreamLambda.function,
-    );
-    props.printerTable.grantReadWriteData(outboxWorkerLambda.function);
-    props.printJobsTable.grantReadWriteData(outboxWorkerLambda.function);
-    // Run sweeper every 5 minutes as a safety net for missed stream events
-    const outboxWorkerSchedule = new Rule(this, "OutboxWorkerSchedule", {
-      description: "Trigger outbox fallback sweeper every 5 minutes",
-      schedule: Schedule.rate(Duration.minutes(5)),
-    });
-    outboxWorkerSchedule.addTarget(
-      new LambdaFunction(outboxWorkerLambda.function, {
-        retryAttempts: 2,
-      }),
-    );
   }
 }
