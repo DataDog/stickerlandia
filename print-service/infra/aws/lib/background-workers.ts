@@ -21,7 +21,7 @@ export interface BackgroundWorkersProps {
   serviceProps: ServiceProps;
   sharedEventBus: IEventBus;
   printerTable: ITable;
-  printJobsTable: ITable;
+  printJobTable: ITable;
 }
 
 export class BackgroundWorkers extends Construct {
@@ -51,7 +51,7 @@ export class BackgroundWorkers extends Construct {
           DRIVING: "AWS",
           DRIVEN: "AWS",
           Aws__PrinterTableName: props.printerTable.tableName,
-          Aws__PrintJobTableName: props.printJobsTable.tableName,
+          Aws__PrintJobTableName: props.printJobTable.tableName,
           ...props.serviceProps.messagingConfiguration.asEnvironmentVariables(),
         },
         memorySize: 512,
@@ -65,7 +65,7 @@ export class BackgroundWorkers extends Construct {
       outboxStreamLambda.function,
     );
     props.printerTable.grantStreamRead(outboxStreamLambda.function);
-    props.printJobsTable.grantStreamRead(outboxStreamLambda.function);
+    props.printJobTable.grantStreamRead(outboxStreamLambda.function);
 
     // Event source filter: only process INSERT events where PK starts with "OUTBOX#"
     const outboxStreamFilter = FilterCriteria.filter({
@@ -96,7 +96,7 @@ export class BackgroundWorkers extends Construct {
 
     // Event source mapping: PrintJobs table stream → Lambda
     outboxStreamLambda.function.addEventSource(
-      new DynamoEventSource(props.printJobsTable, {
+      new DynamoEventSource(props.printJobTable, {
         startingPosition: StartingPosition.TRIM_HORIZON,
         batchSize: 10,
         maxBatchingWindow: Duration.seconds(5),
