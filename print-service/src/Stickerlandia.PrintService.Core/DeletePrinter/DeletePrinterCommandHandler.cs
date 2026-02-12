@@ -13,6 +13,7 @@ public class DeletePrinterCommandHandler(
     IOutbox outbox,
     IPrinterRepository printerRepository,
     IPrintJobRepository printJobRepository)
+    : ICommandHandler<DeletePrinterCommand>
 {
     public async Task Handle(DeletePrinterCommand command)
     {

@@ -14,30 +14,28 @@ public class SubmitPrintJobCommandHandler(
     IPrinterRepository printerRepository,
     IPrintJobRepository printJobRepository,
     PrintJobInstrumentation instrumentation)
+    : ICommandHandler<SubmitPrintJobCommand, SubmitPrintJobResponse>
 {
-    public async Task<SubmitPrintJobResponse> Handle(
-        string eventName,
-        string printerName,
-        SubmitPrintJobCommand command)
+    public async Task<SubmitPrintJobResponse> Handle(SubmitPrintJobCommand command)
     {
-        ArgumentException.ThrowIfNullOrEmpty(eventName);
-        ArgumentException.ThrowIfNullOrEmpty(printerName);
         ArgumentNullException.ThrowIfNull(command);
+        ArgumentException.ThrowIfNullOrEmpty(command.EventName);
+        ArgumentException.ThrowIfNullOrEmpty(command.PrinterName);
 
         if (!command.IsValid())
         {
             throw new InvalidPrintJobException("Invalid print job command. UserId, StickerId, and a valid StickerUrl are required.");
         }
 
-        using var activity = PrintJobInstrumentation.StartSubmitJobActivity(eventName, printerName, command.StickerId);
+        using var activity = PrintJobInstrumentation.StartSubmitJobActivity(command.EventName, command.PrinterName, command.StickerId);
 
         try
         {
-            var printer = await printerRepository.GetPrinterAsync(eventName, printerName);
+            var printer = await printerRepository.GetPrinterAsync(command.EventName, command.PrinterName);
 
             if (printer is null)
             {
-                throw new PrinterNotFoundException($"Printer '{printerName}' not found for event '{eventName}'.");
+                throw new PrinterNotFoundException($"Printer '{command.PrinterName}' not found for event '{command.EventName}'.");
             }
 
             var printJob = PrintJob.Create(
@@ -72,7 +70,7 @@ public class SubmitPrintJobCommandHandler(
             activity?.SetStatus(ActivityStatusCode.Ok);
 
             // Record metrics
-            instrumentation.RecordJobSubmitted(printer.Id!.Value, eventName);
+            instrumentation.RecordJobSubmitted(printer.Id!.Value, command.EventName);
 
             return new SubmitPrintJobResponse(printJob);
         }

@@ -4,9 +4,8 @@
  * Copyright 2025-Present Datadog, Inc.
  */
 
-using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
-using Stickerlandia.PrintService.Api.Helpers;
+using Stickerlandia.PrintService.Core;
 using Stickerlandia.PrintService.Core.RegisterPrinter;
 
 namespace Stickerlandia.PrintService.Api;
@@ -16,10 +15,10 @@ internal static class RegisterPrinterEndpoint
     public static async Task<IResult> HandleAsync(
         string eventName,
         HttpContext context,
-        [FromServices] RegisterPrinterCommandHandler updateHandler,
+        [FromServices] ICommandHandler<RegisterPrinterCommand, RegisterPrinterResponse> handler,
         [FromBody] RegisterPrinterCommand request)
     {
-        var response = await updateHandler.Handle(request);
+        var response = await handler.Handle(request);
 
         return Results.Created($"/api/print/v1/event/{eventName}", new ApiResponse<RegisterPrinterResponse>(response));
     }

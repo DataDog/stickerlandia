@@ -14,6 +14,7 @@ namespace Stickerlandia.PrintService.AWS;
 
 public class DynamoDbPrintJobRepository(
     IAmazonDynamoDB dynamoDbClient,
+    DynamoDbWriteTransaction transaction,
     IOptions<AwsConfiguration> configuration) : IPrintJobRepository
 {
     private const string PartitionKey = "PK";
@@ -26,21 +27,15 @@ public class DynamoDbPrintJobRepository(
     // TTL duration for completed/failed jobs: 2 days
     private static readonly TimeSpan TtlDuration = TimeSpan.FromDays(2);
 
-    public async Task<PrintJob> AddAsync(PrintJob printJob)
+    public Task<PrintJob> AddAsync(PrintJob printJob)
     {
         ArgumentNullException.ThrowIfNull(printJob);
 
         var item = MapToItem(printJob);
 
-        var request = new PutItemRequest
-        {
-            TableName = _tableName,
-            Item = item
-        };
+        transaction.AddPut(_tableName, item);
 
-        await dynamoDbClient.PutItemAsync(request).ConfigureAwait(false);
-
-        return printJob;
+        return Task.FromResult(printJob);
     }
 
     public async Task<PrintJob?> GetByIdAsync(string printJobId)
@@ -109,19 +104,15 @@ public class DynamoDbPrintJobRepository(
         return jobs;
     }
 
-    public async Task UpdateAsync(PrintJob printJob)
+    public Task UpdateAsync(PrintJob printJob)
     {
         ArgumentNullException.ThrowIfNull(printJob);
 
         var item = MapToItem(printJob);
 
-        var request = new PutItemRequest
-        {
-            TableName = _tableName,
-            Item = item
-        };
+        transaction.AddPut(_tableName, item);
 
-        await dynamoDbClient.PutItemAsync(request).ConfigureAwait(false);
+        return Task.CompletedTask;
     }
 
     public async Task DeleteJobsForPrinterAsync(string printerId)

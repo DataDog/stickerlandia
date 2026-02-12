@@ -10,6 +10,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Stickerlandia.PrintService.Api.Configurations;
+using Stickerlandia.PrintService.Core;
 using Stickerlandia.PrintService.Core.PrintJobs;
 
 namespace Stickerlandia.PrintService.Api;
@@ -19,7 +20,7 @@ internal static class AcknowledgePrintJobEndpoint
     public static async Task<IResult> HandleAsync(
         string printJobId,
         ClaimsPrincipal user,
-        [FromServices] AcknowledgePrintJobCommandHandler handler,
+        [FromServices] ICommandHandler<AcknowledgePrintJobCommand, AcknowledgePrintJobResponse> handler,
         [FromBody] AcknowledgePrintJobRequest request)
     {
         var printerId = user.FindFirstValue(PrinterKeyAuthenticationHandler.PrinterIdClaimType);

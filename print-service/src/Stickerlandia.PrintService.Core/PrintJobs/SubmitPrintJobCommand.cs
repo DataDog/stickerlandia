@@ -11,6 +11,12 @@ namespace Stickerlandia.PrintService.Core.PrintJobs;
 
 public record SubmitPrintJobCommand
 {
+    [JsonIgnore]
+    public string EventName { get; set; } = string.Empty;
+
+    [JsonIgnore]
+    public string PrinterName { get; set; } = string.Empty;
+
     [JsonPropertyName("userId")]
     public string UserId { get; set; } = string.Empty;
 

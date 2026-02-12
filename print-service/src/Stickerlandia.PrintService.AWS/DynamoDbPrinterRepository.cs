@@ -12,6 +12,7 @@ namespace Stickerlandia.PrintService.AWS;
 
 public class DynamoDbPrinterRepository(
     IAmazonDynamoDB dynamoDbClient,
+    DynamoDbWriteTransaction transaction,
     IOptions<AwsConfiguration> configuration) : IPrinterRepository
 {
     private const string PartitionKey = "PK";
@@ -20,7 +21,7 @@ public class DynamoDbPrinterRepository(
 
     private readonly string _tableName = configuration.Value.PrinterTableName;
 
-    public async Task AddPrinterAsync(Printer printer)
+    public Task AddPrinterAsync(Printer printer)
     {
         ArgumentNullException.ThrowIfNull(printer);
         ArgumentNullException.ThrowIfNull(printer.Id);
@@ -35,13 +36,9 @@ public class DynamoDbPrinterRepository(
             ["Key"] = new() { S = printer.Key }
         };
 
-        var request = new PutItemRequest
-        {
-            TableName = _tableName,
-            Item = item
-        };
+        transaction.AddPut(_tableName, item);
 
-        await dynamoDbClient.PutItemAsync(request).ConfigureAwait(false);
+        return Task.CompletedTask;
     }
 
     public async Task<Printer?> GetPrinterByIdAsync(Guid printerId)
@@ -225,7 +222,7 @@ public class DynamoDbPrinterRepository(
         await dynamoDbClient.UpdateItemAsync(updateRequest).ConfigureAwait(false);
     }
 
-    public async Task UpdateAsync(Printer printer)
+    public Task UpdateAsync(Printer printer)
     {
         ArgumentNullException.ThrowIfNull(printer);
         ArgumentNullException.ThrowIfNull(printer.Id);
@@ -250,33 +247,27 @@ public class DynamoDbPrinterRepository(
             item["LastJobProcessed"] = new() { S = printer.LastJobProcessed.Value.ToString("O", CultureInfo.InvariantCulture) };
         }
 
-        var request = new PutItemRequest
-        {
-            TableName = _tableName,
-            Item = item
-        };
+        transaction.AddPut(_tableName, item);
 
-        await dynamoDbClient.PutItemAsync(request).ConfigureAwait(false);
+        return Task.CompletedTask;
     }
 
-    public async Task DeleteAsync(string eventName, string printerName)
+    public Task DeleteAsync(string eventName, string printerName)
     {
         ArgumentException.ThrowIfNullOrEmpty(eventName);
         ArgumentException.ThrowIfNullOrEmpty(printerName);
 
         var printerId = $"{eventName.ToUpperInvariant()}-{printerName.ToUpperInvariant()}";
 
-        var request = new DeleteItemRequest
+        var key = new Dictionary<string, AttributeValue>
         {
-            TableName = _tableName,
-            Key = new Dictionary<string, AttributeValue>
-            {
-                [PartitionKey] = new() { S = eventName },
-                [SortKey] = new() { S = printerId }
-            }
+            [PartitionKey] = new() { S = eventName },
+            [SortKey] = new() { S = printerId }
         };
 
-        await dynamoDbClient.DeleteItemAsync(request).ConfigureAwait(false);
+        transaction.AddDelete(_tableName, key);
+
+        return Task.CompletedTask;
     }
 
     private static Printer MapToPrinter(Dictionary<string, AttributeValue> item)

@@ -25,16 +25,40 @@ public static class ServiceExtensions
         // Observability
         services.AddSingleton<PrintJobInstrumentation>();
 
-        // Command and query handlers
-        services.AddTransient<RegisterPrinterCommandHandler>();
+        // Query handlers
         services.AddTransient<GetPrintersForEventQueryHandler>();
         services.AddTransient<GetDistinctEventsQueryHandler>();
         services.AddTransient<GetPrinterStatusesQueryHandler>();
-        services.AddTransient<SubmitPrintJobCommandHandler>();
         services.AddTransient<GetPrintJobsForPrinterQueryHandler>();
-        services.AddTransient<AcknowledgePrintJobCommandHandler>();
-        services.AddTransient<DeletePrinterCommandHandler>();
-        services.AddTransient<DeleteEventCommandHandler>();
+
+        // Command handlers — concrete implementations
+        services.AddScoped<RegisterPrinterCommandHandler>();
+        services.AddScoped<SubmitPrintJobCommandHandler>();
+        services.AddScoped<AcknowledgePrintJobCommandHandler>();
+        services.AddScoped<DeletePrinterCommandHandler>();
+        services.AddScoped<DeleteEventCommandHandler>();
+
+        // Command handler interfaces — decorated with UnitOfWork
+        services.AddScoped<ICommandHandler<RegisterPrinterCommand, RegisterPrinterResponse>>(sp =>
+            new UnitOfWorkCommandHandler<RegisterPrinterCommand, RegisterPrinterResponse>(
+                sp.GetRequiredService<RegisterPrinterCommandHandler>(),
+                sp.GetRequiredService<IUnitOfWork>()));
+        services.AddScoped<ICommandHandler<SubmitPrintJobCommand, SubmitPrintJobResponse>>(sp =>
+            new UnitOfWorkCommandHandler<SubmitPrintJobCommand, SubmitPrintJobResponse>(
+                sp.GetRequiredService<SubmitPrintJobCommandHandler>(),
+                sp.GetRequiredService<IUnitOfWork>()));
+        services.AddScoped<ICommandHandler<AcknowledgePrintJobCommand, AcknowledgePrintJobResponse>>(sp =>
+            new UnitOfWorkCommandHandler<AcknowledgePrintJobCommand, AcknowledgePrintJobResponse>(
+                sp.GetRequiredService<AcknowledgePrintJobCommandHandler>(),
+                sp.GetRequiredService<IUnitOfWork>()));
+        services.AddScoped<ICommandHandler<DeletePrinterCommand>>(sp =>
+            new UnitOfWorkCommandHandler<DeletePrinterCommand>(
+                sp.GetRequiredService<DeletePrinterCommandHandler>(),
+                sp.GetRequiredService<IUnitOfWork>()));
+        services.AddScoped<ICommandHandler<DeleteEventCommand, DeleteEventResponse>>(sp =>
+            new UnitOfWorkCommandHandler<DeleteEventCommand, DeleteEventResponse>(
+                sp.GetRequiredService<DeleteEventCommandHandler>(),
+                sp.GetRequiredService<IUnitOfWork>()));
 
         services.AddTransient<OutboxProcessor>();
 

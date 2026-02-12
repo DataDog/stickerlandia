@@ -15,6 +15,7 @@ public class DeleteEventCommandHandler(
     IOutbox outbox,
     IPrinterRepository printerRepository,
     IPrintJobRepository printJobRepository)
+    : ICommandHandler<DeleteEventCommand, DeleteEventResponse>
 {
     public async Task<DeleteEventResponse> Handle(DeleteEventCommand command)
     {
