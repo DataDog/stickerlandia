@@ -10,7 +10,7 @@ using System.Text.Json;
 using Stickerlandia.PrintService.IntegrationTest.ViewModels;
 using Xunit.Abstractions;
 
-#pragma warning disable CA2234, CA2000
+#pragma warning disable CA2234, CA2000, CA5400
 
 namespace Stickerlandia.PrintService.IntegrationTest.Drivers;
 
@@ -30,8 +30,9 @@ internal sealed class PrinterDriver : IDisposable
         {
             CookieContainer = cookieContainer,
             UseCookies = true,
-            CheckCertificateRevocationList = true,
-            AllowAutoRedirect = true
+            AllowAutoRedirect = true,
+            ServerCertificateCustomValidationCallback =
+                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
         };
 
         _httpClient = new HttpClient(httpHandler, true)
