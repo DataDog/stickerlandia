@@ -18,6 +18,9 @@ public sealed class TraceContextEnricher : ILogEventEnricher
 {
     public void Enrich(LogEvent logEvent, ILogEventPropertyFactory propertyFactory)
     {
+        ArgumentNullException.ThrowIfNull(logEvent);
+        ArgumentNullException.ThrowIfNull(propertyFactory);
+
         var activity = Activity.Current;
         if (activity is null) return;
 
