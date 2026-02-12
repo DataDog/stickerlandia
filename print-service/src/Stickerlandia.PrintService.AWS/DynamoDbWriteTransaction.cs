@@ -44,6 +44,13 @@ public sealed partial class DynamoDbWriteTransaction : IUnitOfWork
         });
     }
 
+    public int OperationCount => _operations.Count;
+
+    public Dictionary<string, AttributeValue> GetBufferedItem(int index) =>
+        _operations[index].Put?.Item
+        ?? _operations[index].Delete?.Key
+        ?? throw new InvalidOperationException("Operation has neither Put nor Delete.");
+
     public async Task CommitAsync(CancellationToken cancellationToken = default)
     {
         if (_committed)
