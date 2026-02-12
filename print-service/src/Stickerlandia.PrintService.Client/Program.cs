@@ -47,12 +47,15 @@ var otel = builder.Services.AddOpenTelemetry()
             .SetResourceBuilder(resourceBuilder)
             .AddSource(PrintClientInstrumentation.ServiceName)
             .AddAspNetCoreInstrumentation()
-            
             .AddHttpClientInstrumentation(options =>
             {
                 options.FilterHttpRequestMessage = (httpRequestMessage) =>
                 {
-                    return !httpRequestMessage.RequestUri?.Host.Contains("datadog-agent", StringComparison.OrdinalIgnoreCase) ?? true;
+                    // Exclude any requests to the Datadog agent or localhost as they are likely related to telemetry export and not relevant for application tracing
+                    var isDatadogHost = httpRequestMessage.RequestUri?.Host.Contains("datadog-agent", StringComparison.OrdinalIgnoreCase) ?? true;
+                    var isLocalHost = httpRequestMessage.RequestUri?.Host.Contains("localhost", StringComparison.OrdinalIgnoreCase) ?? true;
+
+                    return !isDatadogHost && !isLocalHost;
                 };
             });
     })

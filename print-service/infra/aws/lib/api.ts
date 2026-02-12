@@ -58,6 +58,8 @@ export class Api extends Construct {
         DD_RUNTIME_METRICS_ENABLED: "true",
         DD_PROFILING_ENABLED: "true",
         DEPLOYMENT_HOST_URL: `https://${props.serviceProps.cloudfrontDistribution.distributionDomainName}`,
+        OTEL_EXPORTER_OTLP_ENDPOINT: "http://localhost:4317",
+        OTEL_SERVICE_NAME: props.sharedProps.serviceName,
         DRIVING: "AWS",
         DRIVEN: "AWS",
         Aws__PrinterTableName: props.printerTable.tableName,
@@ -76,7 +78,7 @@ export class Api extends Construct {
       },
       secrets: {
         DD_API_KEY: Secret.fromSsmParameter(
-          props.sharedProps.datadog.apiKeyParameter
+          props.sharedProps.datadog.apiKeyParameter,
         ),
         ...props.serviceProps.messagingConfiguration.asSecrets(),
       },
