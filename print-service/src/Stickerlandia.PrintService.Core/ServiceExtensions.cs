@@ -38,6 +38,8 @@ public static class ServiceExtensions
 
         services.AddTransient<OutboxProcessor>();
 
+        services.AddScoped<IUnitOfWork, NoOpUnitOfWork>();
+
         return services;
     }
 }
