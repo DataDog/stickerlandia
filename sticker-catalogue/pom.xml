@@ -115,7 +115,7 @@
         <dependency>
             <groupId>io.quarkiverse.loggingjson</groupId>
             <artifactId>quarkus-logging-json</artifactId>
-            <version>3.2.0</version>
+            <version>3.4.1</version>
         </dependency>
 
         <dependency>
