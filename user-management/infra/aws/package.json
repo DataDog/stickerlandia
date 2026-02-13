@@ -12,8 +12,8 @@
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
-    "@types/node": "24.9.2",
-    "aws-cdk": "2.1100.3",
+    "@types/node": "24.10.11",
+    "aws-cdk": "2.1105.0",
     "jest": "^30.2.0",
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
@@ -21,8 +21,8 @@
   },
   "dependencies": {
     "@aws-cdk/aws-lambda-dotnet": "^0.0.6",
-    "aws-cdk-lib": "2.234.1",
-    "constructs": "^10.4.4",
-    "datadog-cdk-constructs-v2": "^3.6.0"
+    "aws-cdk-lib": "2.237.1",
+    "constructs": "^10.4.5",
+    "datadog-cdk-constructs-v2": "^3.9.0"
   }
 }
