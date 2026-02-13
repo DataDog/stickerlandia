@@ -18,8 +18,8 @@
     "codegen": "playwright codegen"
   },
   "devDependencies": {
-    "@playwright/test": "^1.49.0",
-    "@types/node": "^22.10.0",
+    "@playwright/test": "^1.58.1",
+    "@types/node": "^22.19.9",
     "dotenv": "^16.4.7",
     "typescript": "^5.7.0"
   }
