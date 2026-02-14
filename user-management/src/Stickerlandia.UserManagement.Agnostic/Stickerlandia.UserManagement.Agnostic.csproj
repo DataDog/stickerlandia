@@ -18,6 +18,7 @@
     <PackageReference Include="CloudNative.CloudEvents.SystemTextJson" Version="2.8.0" />
     <PackageReference Include="Confluent.Kafka" Version="2.13.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="2.51.0" />
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" Version="10.0.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

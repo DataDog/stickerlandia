@@ -8,16 +8,20 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Stickerlandia.UserManagement.Core;
 
 namespace Stickerlandia.UserManagement.Agnostic;
 
-public class UserManagementDbContext : IdentityDbContext<PostgresUserAccount>
+public class UserManagementDbContext : IdentityDbContext<PostgresUserAccount>, IDataProtectionKeyContext
 {
     public new DbSet<PostgresUserAccount> Users { get; set; } = null!;
     public DbSet<PostgresOutboxItem> OutboxItems { get; set; } = null!;
+
+    // IDataProtectionKeyContext implementation - stores Data Protection keys in the database
+    public DbSet<DataProtectionKey> DataProtectionKeys { get; set; } = null!;
 
     public UserManagementDbContext(DbContextOptions options) : base(options)
     {
