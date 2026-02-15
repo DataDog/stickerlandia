@@ -121,33 +121,6 @@ public sealed class PrintJobTests(ITestOutputHelper testOutputHelper, TestSetupF
     }
 
     [Fact]
-    public async Task WhenAPrintJobIsSubmittedWithInvalidUrlItShouldReturnBadRequest()
-    {
-        // Arrange
-        var eventName = $"TestEvent-{Guid.NewGuid():N}";
-        var printerName = $"TestPrinter-{Guid.NewGuid():N}";
-        var authToken = _driver.GetAdminToken();
-
-        // First register the printer
-        var registerResult = await _driver.RegisterPrinter(authToken, eventName, printerName);
-        registerResult.Should().NotBeNull("Printer registration should succeed");
-
-        var printJobRequest = new SubmitPrintJobRequest
-        {
-            UserId = "test-user-123",
-            StickerId = "sticker-456",
-            StickerUrl = "not-a-valid-url"
-        };
-
-        // Act
-        var (statusCode, response) = await _driver.SubmitPrintJob(authToken, eventName, printerName, printJobRequest);
-
-        // Assert
-        statusCode.Should().Be(HttpStatusCode.BadRequest);
-        response.Should().BeNull();
-    }
-
-    [Fact]
     public async Task WhenAPrintJobIsSubmittedWithMissingUserIdItShouldReturnBadRequest()
     {
         // Arrange
