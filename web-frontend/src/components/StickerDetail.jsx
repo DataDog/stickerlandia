@@ -4,7 +4,6 @@ import LocalPrintshopOutlinedIcon from "@mui/icons-material/LocalPrintshopOutlin
 import HeaderBar from "./HeaderBar";
 import Sidebar from "./Sidebar";
 import { API_BASE_URL } from "../config";
-import AuthService from "../services/AuthService";
 import { useAuth } from "../context/AuthContext";
 import { authFetch } from "../utils/authFetch";
 import { getLastActiveEvent } from "../services/eventStorage";
@@ -12,24 +11,13 @@ import { getLastActiveEvent } from "../services/eventStorage";
 function StickerDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user } = useAuth();
   const [sticker, setSticker] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isOwned, setIsOwned] = useState(false);
 
   useEffect(() => {
-    const userId = user?.sub || user?.email;
-
-    // Validate userId before fetching
-    if (!userId) {
-      if (!authLoading) {
-        setError('Unable to identify user. Please log in again.');
-        setLoading(false);
-      }
-      return;
-    }
-
     const controller = new AbortController();
 
     const fetchSticker = async () => {
@@ -47,20 +35,14 @@ function StickerDetail() {
         }
 
         const data = await response.json();
-        setSticker(data);
-
-        // Check if user owns this sticker
-        const awardsResponse = await authFetch(
-          `${API_BASE_URL}/api/awards/v1/assignments/${encodeURIComponent(userId)}`
-        );
-        if (awardsResponse.ok) {
-          const awardsData = await awardsResponse.json();
-          const assignments = awardsData.stickers || [];
-          setIsOwned(assignments.some((a) => a.stickerId === id));
+        if (!controller.signal.aborted) {
+          setSticker(data);
         }
       } catch (err) {
         console.error("Error fetching sticker:", err);
-        setError(err.message);
+        if (!controller.signal.aborted) {
+          setError(err.message);
+        }
       } finally {
         if (!controller.signal.aborted) {
           setLoading(false);
@@ -69,7 +51,34 @@ function StickerDetail() {
     };
 
     fetchSticker();
+    return () => controller.abort();
   }, [id]);
+
+  // Check ownership when user context is available
+  useEffect(() => {
+    const userId = user?.sub || user?.email;
+    if (!userId || !sticker) return;
+
+    const controller = new AbortController();
+
+    const checkOwnership = async () => {
+      try {
+        const awardsResponse = await authFetch(
+          `${API_BASE_URL}/api/awards/v1/assignments/${encodeURIComponent(userId)}`
+        );
+        if (awardsResponse.ok && !controller.signal.aborted) {
+          const awardsData = await awardsResponse.json();
+          const assignments = awardsData.stickers || [];
+          setIsOwned(assignments.some((a) => a.stickerId === id));
+        }
+      } catch (err) {
+        console.error("Error checking ownership:", err);
+      }
+    };
+
+    checkOwnership();
+    return () => controller.abort();
+  }, [id, user, sticker]);
 
   const formatDate = (dateString) => {
     if (!dateString) return "Unknown";

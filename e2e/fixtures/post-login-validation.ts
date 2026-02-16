@@ -63,9 +63,9 @@ export async function validateLoggedInState(page: Page): Promise<ValidationResul
   expect(userName.length).toBeGreaterThan(0);
   console.log(`[validateLoggedInState] User name: ${userName}`);
 
-  // 3. Verify "Sticker Collector" text is visible (sidebar user info)
-  const stickerCollectorText = page.getByText('Sticker Collector');
-  await expect(stickerCollectorText).toBeVisible({ timeout: 10000 });
+  // 3. Verify user role text is visible in sidebar (e.g. "user", "admin")
+  const userRoleText = page.locator('.text-sm.text-gray-600').filter({ hasNotText: '...' });
+  await expect(userRoleText).toBeVisible({ timeout: 10000 });
 
   // 4. Verify Sign Out is visible (indicates authenticated state)
   const signOut = page.getByText('Sign Out');

@@ -7,7 +7,7 @@ import { datadogRum } from '@datadog/browser-rum';
 import "./App.css";
 
 function App() {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
   if (isAuthenticated) {
@@ -18,18 +18,10 @@ function App() {
   }
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
+    if (isAuthenticated) {
       navigate("/dashboard");
     }
-  }, [isAuthenticated, isLoading, navigate]);
-
-  if (isLoading) {
-    return (
-      <div style={{ textAlign: "center", padding: "50px" }}>
-        <h2>Loading...</h2>
-      </div>
-    );
-  }
+  }, [isAuthenticated, navigate]);
 
   return (
     <div className="isolate flex flex-auto flex-col bg-[--root-bg]">
