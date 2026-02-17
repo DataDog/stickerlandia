@@ -28,9 +28,9 @@ function UserInfo() {
         <span className="block text-sm text-gray-600">
           {isLoading
             ? "..."
-            : user?.role?.length
-              ? user.role.join(", ")
-              : "No roles assigned"}
+            : user?.role?.includes("admin")
+              ? "Sticker Admin"
+              : "Sticker Collector"}
         </span>
       </div>
     </div>
