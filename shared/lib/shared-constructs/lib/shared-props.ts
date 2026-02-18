@@ -40,7 +40,8 @@ export class SharedProps {
     ddApiKey: string,
     ddApiKeyParam: IStringParameter,
     ddSite: string | undefined = undefined,
-    enableDatadog: boolean = true
+    enableDatadog: boolean = true,
+    datadogAgentEnvironmentVariables: { [key: string]: string } = {}
   ) {
     const environment = process.env.ENV || "dev";
     const deployMode = process.env.DEPLOY_MODE;
@@ -81,7 +82,7 @@ export class SharedProps {
         site: ddSite ?? "datadoghq.com",
         clusterName: cluster.clusterName,
         environmentVariables: {
-          DD_APM_IGNORE_RESOURCES: "(GET|HEAD) .*/health$",
+          ...datadogAgentEnvironmentVariables,
           DD_OTLP_CONFIG_RECEIVER_PROTOCOLS_GRPC_ENDPOINT: "0.0.0.0:4317",
           DD_OTLP_CONFIG_RECEIVER_PROTOCOLS_HTTP_ENDPOINT: "0.0.0.0:4318",
           DD_LOGS_INJECTION: "true",
