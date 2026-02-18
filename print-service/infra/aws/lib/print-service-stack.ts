@@ -49,7 +49,12 @@ export class PrintServiceStack extends cdk.Stack {
       cluster,
       ddApiKey,
       ddApiKeyParam,
-      ddSite
+      ddSite,
+      true,
+      {
+        DD_APM_IGNORE_RESOURCES:
+          "(GET|HEAD) .*/health$,POST localhost:4317/opentelemetry.proto.collector.trace.v1.TraceService/Export,POST localhost:4317/opentelemetry.proto.collector.metrics.v1.MetricsService/Export",
+      },
     );
 
     const serviceProps: ServiceProps = {

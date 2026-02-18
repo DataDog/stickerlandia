@@ -58,6 +58,10 @@ export class StickerCatalogueServiceStack extends cdk.Stack {
       ddApiKey,
       ddApiKeyParam,
       ddSite,
+      true,
+      {
+        DD_APM_IGNORE_RESOURCES: "(GET|HEAD) .*/health$",
+      },
     );
 
     // Create formatted database credentials from the shared RDS secret

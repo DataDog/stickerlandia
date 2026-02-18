@@ -47,6 +47,10 @@ export class WebBackendStack extends cdk.Stack {
       ddApiKey,
       ddApiKeyParam,
       ddSite,
+      true,
+      {
+        DD_APM_IGNORE_RESOURCES: "(GET|HEAD) .*/health$",
+      },
     );
 
     const serviceProps = {
