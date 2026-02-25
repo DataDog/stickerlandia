@@ -12,7 +12,7 @@ namespace Stickerlandia.UserManagement.IntegrationTest.Drivers;
 
 internal sealed class MockMessaging : IMessaging
 {
-    public Task SendMessageAsync(string queueName, object message)
+    public Task SendMessageAsync(string queueName, string messageJson)
     {
         // Mock implementation - just simulate successful message sending
         return Task.CompletedTask;

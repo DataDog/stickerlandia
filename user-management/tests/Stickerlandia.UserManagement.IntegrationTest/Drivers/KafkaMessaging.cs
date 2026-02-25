@@ -8,10 +8,6 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
-using System.Text;
-using System.Text.Json;
-using CloudNative.CloudEvents;
-using CloudNative.CloudEvents.SystemTextJson;
 using Confluent.Kafka;
 
 namespace Stickerlandia.UserManagement.IntegrationTest.Drivers;
@@ -30,24 +26,13 @@ internal sealed class KafkaMessaging : IMessaging, IAsyncDisposable
             Acks             = Acks.All
         };
     }
-    public async Task SendMessageAsync(string queueName, object message)
+    public async Task SendMessageAsync(string queueName, string messageJson)
     {
         using var producer = new ProducerBuilder<string, string>(config).Build();
 
-        var cloudEvent = new CloudEvent(CloudEventsSpecVersion.V1_0)
-        {
-            Id = Guid.NewGuid().ToString(),
-            Source = new Uri("https://stickerlandia.com"),
-            Type = queueName,
-            Time = DateTime.UtcNow,
-            Data = JsonDocument.Parse(JsonSerializer.Serialize(message)).RootElement
-        };
-        var formatter = new JsonEventFormatter();
-        var encoded = formatter.EncodeStructuredModeMessage(cloudEvent, out _);
-
         await producer.ProduceAsync(queueName, new Message<string, string>
         {
-            Key = "", Value = Encoding.UTF8.GetString(encoded.Span)
+            Key = "", Value = messageJson
         });
 
         producer.Flush(TimeSpan.FromSeconds(10));

@@ -10,9 +10,6 @@
 
 #pragma warning disable CA1812
 
-using System.Text.Json;
-using CloudNative.CloudEvents;
-using CloudNative.CloudEvents.SystemTextJson;
 using Google.Api.Gax;
 using Google.Cloud.PubSub.V1;
 using Google.Protobuf;
@@ -72,23 +69,12 @@ internal sealed class GooglePubSubMessaging : IMessaging, IAsyncDisposable
         }
     }
 
-    public async Task SendMessageAsync(string queueName, object message)
+    public async Task SendMessageAsync(string queueName, string messageJson)
     {
         if (!_clients.TryGetValue(queueName, out var client))
             throw new InvalidOperationException($"No publisher client configured for topic '{queueName}'");
 
-        var cloudEvent = new CloudEvent(CloudEventsSpecVersion.V1_0)
-        {
-            Id = Guid.NewGuid().ToString(),
-            Source = new Uri("https://stickerlandia.com"),
-            Type = queueName,
-            Time = DateTime.UtcNow,
-            Data = JsonDocument.Parse(JsonSerializer.Serialize(message)).RootElement
-        };
-        var formatter = new JsonEventFormatter();
-        var encoded = formatter.EncodeStructuredModeMessage(cloudEvent, out _);
-
-        await client.PublishAsync(ByteString.CopyFrom(encoded.Span));
+        await client.PublishAsync(ByteString.CopyFromUtf8(messageJson));
     }
 
     public async ValueTask DisposeAsync()
