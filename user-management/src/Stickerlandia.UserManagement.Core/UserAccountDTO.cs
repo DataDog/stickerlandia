@@ -42,7 +42,7 @@ public record UserAccountDto
     [JsonPropertyName("claimedStickerCount")]
     public int ClaimedStickerCount { get; set; }
 
-    [JsonPropertyName("claimedStickerCount")]
+    [JsonPropertyName("printedStickerCount")]
     public int PrintedStickerCount { get; set; }
 
     [JsonPropertyName("dateCreated")]

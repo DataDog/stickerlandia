@@ -8,11 +8,14 @@ using System.Text.Json;
 using Amazon.Lambda.Annotations;
 using Amazon.Lambda.CloudWatchEvents;
 using Amazon.Lambda.SQSEvents;
+using CloudNative.CloudEvents;
+using CloudNative.CloudEvents.SystemTextJson;
 using Datadog.Trace;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.StickerClaimedEvent;
+using Stickerlandia.UserManagement.Core.StickerPrintedEvent;
 using Log = Stickerlandia.UserManagement.Core.Observability.Log;
 
 namespace Stickerlandia.UserManagement.Lambda;
@@ -41,17 +44,23 @@ public class SqsHandler(ILogger<SqsHandler> logger, IServiceScopeFactory service
         List<SQSBatchResponse.BatchItemFailure> failedMessages,
         StickerClaimedHandler handler)
     {
-        var evtData = JsonSerializer.Deserialize<CloudWatchEvent<StickerClaimedEventV1>>(message.Body, _jsonSerializerOptions);
+        var evtData = JsonSerializer.Deserialize<CloudWatchEvent<JsonElement>>(message.Body, _jsonSerializerOptions);
 
         if (evtData == null)
         {
             failedMessages.Add(new SQSBatchResponse.BatchItemFailure { ItemIdentifier = message.MessageId });
             return;
         }
+        
+        var detailBytes = JsonSerializer.SerializeToUtf8Bytes(evtData.Detail, _jsonSerializerOptions);
+        var formatter = new JsonEventFormatter<StickerClaimedEventV1>();
+        var cloudEvent = await formatter.DecodeStructuredModeMessageAsync(
+            new MemoryStream(detailBytes), null, new List<CloudEventAttribute>());
+        var stickerClaimed = (StickerClaimedEventV1?)cloudEvent.Data;
 
         try
         {
-            await handler.Handle(evtData.Detail!);
+            await handler.Handle(stickerClaimed!);
         }
         catch (InvalidUserException ex)
         {

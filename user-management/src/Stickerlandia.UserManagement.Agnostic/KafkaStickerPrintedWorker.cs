@@ -12,6 +12,8 @@
 #pragma warning disable CA1031
 
 using System.Text.Json;
+using CloudNative.CloudEvents;
+using CloudNative.CloudEvents.SystemTextJson;
 using Confluent.Kafka;
 using Datadog.Trace;
 using Microsoft.Extensions.DependencyInjection;
@@ -31,6 +33,7 @@ public class KafkaStickerPrintedWorker(
     ProducerConfig producerConfig)
     : IMessagingWorker
 {
+    private readonly JsonSerializerOptions _jsonSerializerOptions = new() { PropertyNameCaseInsensitive = true };
     private const string topic = "printJobs.completed.v1";
     private const string dlqTopic = "printJobs.completed.v1.dlq";
 
@@ -42,20 +45,24 @@ public class KafkaStickerPrintedWorker(
         using var processSpan = Tracer.Instance.StartActive($"printJobs.completed.v1");
 
         Log.ReceivedMessage(logger, "kafka");
+        
+        var detailBytes = JsonSerializer.SerializeToUtf8Bytes(consumeResult.Message.Value, _jsonSerializerOptions);
+        var formatter = new JsonEventFormatter<StickerPrintedEventV1>();
+        var cloudEvent = await formatter.DecodeStructuredModeMessageAsync(
+            new MemoryStream(detailBytes), null, new List<CloudEventAttribute>());
+        var stickerPrinted = (StickerPrintedEventV1?)cloudEvent.Data;
 
-        var evtData = JsonSerializer.Deserialize<StickerPrintedEventV1>(consumeResult.Message.Value);
-
-        if (evtData == null) return false;
+        if (stickerPrinted == null) return false;
 
         try
         {
-            await handler.Handle(evtData!);
+            await handler.Handle(stickerPrinted);
         }
         catch (InvalidUserException ex)
         {
             Log.InvalidUser(logger, ex);
 
-            SendToDLQ(consumeResult, evtData);
+            SendToDLQ(consumeResult, stickerPrinted);
         }
 
         return true;

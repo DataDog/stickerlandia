@@ -145,7 +145,7 @@ export class BackgroundWorkers extends Construct {
           memorySize: 1024,
           timeout: Duration.seconds(25),
           logLevel: props.sharedProps.environment === "prod" ? "WARN" : "INFO",
-          onFailure: new SqsDestination(props.stickerClaimedDLQ),
+          onFailure: new SqsDestination(props.stickerPrintedDLQ),
           vpc: props.vpc,
           vpcSubnets: vpcSubnets,
           securityGroups: [lambdaSecurityGroup],
