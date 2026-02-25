@@ -88,6 +88,7 @@ public static class ServiceExtensions
 
         services.AddSingleton(producerConfig);
         services.AddSingleton(consumerConfig);
+        services.AddSingleton<IKafkaConsumerFactory, KafkaConsumerFactory>();
 
         // Register event publisher as singleton
         services.AddSingleton<IUserEventPublisher, KafkaEventPublisher>();

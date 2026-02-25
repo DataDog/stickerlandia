@@ -4,10 +4,6 @@
  * Copyright 2025-Present Datadog, Inc.
  */
 
-// Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
-// This product includes software developed at Datadog (https://www.datadoghq.com/).
-// Copyright 2025 Datadog, Inc.
-
 // Catching generic exceptions is not recommended, but in this case we want to catch all exceptions so that a failure in outbox processing does not crash the application.
 #pragma warning disable CA1031
 
@@ -29,11 +25,14 @@ public class KafkaStickerPrintedWorker(
     ILogger<KafkaStickerPrintedWorker> logger,
     IServiceScopeFactory serviceScopeFactory,
     ConsumerConfig consumerConfig,
-    ProducerConfig producerConfig)
+    ProducerConfig producerConfig,
+    IKafkaConsumerFactory consumerFactory)
     : IMessagingWorker
 {
     private const string topic = "printJobs.completed.v1";
     private const string dlqTopic = "printJobs.completed.v1.dlq";
+
+    private IConsumer<string, string>? _consumer;
 
     [Channel("printJobs.completed.v1")]
     [SubscribeOperation(typeof(StickerPrintedEventV1))]
@@ -43,7 +42,7 @@ public class KafkaStickerPrintedWorker(
         using var processSpan = Tracer.Instance.StartActive($"printJobs.completed.v1");
 
         Log.ReceivedMessage(logger, "kafka");
-        
+
         var detailBytes = System.Text.Encoding.UTF8.GetBytes(consumeResult.Message.Value);
         var formatter = new JsonEventFormatter<StickerPrintedEventV1>();
         var cloudEvent = await formatter.DecodeStructuredModeMessageAsync(
@@ -87,66 +86,50 @@ public class KafkaStickerPrintedWorker(
     {
         Log.StartingMessageProcessor(logger, "kafka");
 
+        _consumer = consumerFactory.Create(consumerConfig);
+        _consumer.Subscribe(topic);
+
         return Task.CompletedTask;
     }
 
     public async Task PollAsync(CancellationToken stoppingToken)
     {
-        // Check for cancellation first
         if (stoppingToken.IsCancellationRequested)
             return;
 
-        using var scope = serviceScopeFactory.CreateScope();
-        var handler = scope.ServiceProvider.GetRequiredService<StickerPrintedHandler>();
-
         try
         {
-            using var consumer = new ConsumerBuilder<string, string>(consumerConfig)
-                .SetErrorHandler((_, e) => Log.MessageProcessingException(logger, e.Reason, null))
-                .Build();
+            var consumeResult = _consumer!.Consume(TimeSpan.FromSeconds(2));
 
-            consumer.Subscribe(topic);
+            if (consumeResult != null)
+            {
+                using var scope = serviceScopeFactory.CreateScope();
+                var handler = scope.ServiceProvider.GetRequiredService<StickerPrintedHandler>();
 
-            try
-            {
-                var consumeResult = consumer.Consume(TimeSpan.FromSeconds(2));
+                var processResult = await ProcessMessageAsync(handler, consumeResult);
 
-                if (consumeResult != null)
-                {
-                    var processResult = await ProcessMessageAsync(handler, consumeResult);
-
-                    if (processResult) consumer.Commit(consumeResult);
-                }
+                if (processResult) _consumer.Commit(consumeResult);
             }
-            catch (ConsumeException ex)
-            {
-                Log.MessageProcessingException(logger, "Error consuming message", ex);
-            }
-            catch (OperationCanceledException)
-            {
-                // This is expected when the token is canceled
-                Log.TokenCancelled(logger);
-            }
-            catch (Exception ex)
-            {
-                Log.MessageProcessingException(logger, "Error consuming message", ex);
-            }
-            finally
-            {
-                // Ensure consumer is closed even if an exception occurs
-                consumer.Close();
-            }
+        }
+        catch (ConsumeException ex)
+        {
+            Log.MessageProcessingException(logger, "Error consuming message", ex);
+        }
+        catch (OperationCanceledException)
+        {
+            Log.TokenCancelled(logger);
         }
         catch (Exception ex)
         {
-            Log.FailureStartingWorker(logger, "kafka", ex);
-            throw;
+            Log.MessageProcessingException(logger, "Error consuming message", ex);
         }
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
-        // NOOP
+        _consumer?.Close();
+        _consumer?.Dispose();
+        _consumer = null;
         return Task.CompletedTask;
     }
 }
