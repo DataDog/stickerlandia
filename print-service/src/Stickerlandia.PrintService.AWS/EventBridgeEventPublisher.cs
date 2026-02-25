@@ -158,7 +158,7 @@ public class EventBridgeEventPublisher(
                     new()
                     {
                         EventBusName = awsConfiguration.Value.EventBusName,
-                        Source = $"{Environment.GetEnvironmentVariable("ENV") ?? "dev"}.users",
+                        Source = $"{Environment.GetEnvironmentVariable("ENV") ?? "dev"}.print",
                         DetailType = cloudEvent.Type,
                         Detail = jsonString,
                     }
