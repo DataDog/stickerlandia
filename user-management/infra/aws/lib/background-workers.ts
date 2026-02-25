@@ -41,7 +41,9 @@ export interface BackgroundWorkersProps {
   serviceProps: ServiceProps;
   sharedEventBus: IEventBus;
   stickerClaimedQueue: IQueue;
+  stickerPrintedQueue: IQueue;
   stickerClaimedDLQ: IQueue;
+  stickerPrintedDLQ: IQueue;
   userRegisteredTopic: ITopic;
   useLambda: boolean;
 }
@@ -130,6 +132,50 @@ export class BackgroundWorkers extends Construct {
       });
       rule.addTarget(new SqsQueue(props.stickerClaimedQueue));
 
+      const stickerPrintedWorker = new InstrumentedLambdaFunction(
+        this,
+        "StickerPrintedWorkerFunction",
+        {
+          sharedProps: props.sharedProps,
+          handler:
+            "Stickerlandia.UserManagement.Lambda::Stickerlandia.UserManagement.Lambda.StickerPrintedSqsHandler_Handler_Generated::Handler",
+          buildDef: "../../src/Stickerlandia.UserManagement.Lambda/",
+          functionName: "sticker-printed-worker",
+          environment: environmentVariables,
+          memorySize: 1024,
+          timeout: Duration.seconds(25),
+          logLevel: props.sharedProps.environment === "prod" ? "WARN" : "INFO",
+          onFailure: new SqsDestination(props.stickerClaimedDLQ),
+          vpc: props.vpc,
+          vpcSubnets: vpcSubnets,
+          securityGroups: [lambdaSecurityGroup],
+        },
+      );
+
+      stickerPrintedWorker.function.addEventSource(
+        new SqsEventSource(props.stickerPrintedQueue, {
+          batchSize: 10,
+          reportBatchItemFailures: true,
+        }),
+      );
+
+      // Add dependencies for Lambda functions to ensure SSM parameters exist before deployment
+      if (props.serviceProps.serviceDependencies) {
+        for (const dependency of props.serviceProps.serviceDependencies) {
+          stickerPrintedWorker.function.node.addDependency(dependency);
+        }
+      }
+
+      const stickerPrintedRule = new Rule(this, "StickerPrintedEventRule", {
+        eventBus: props.sharedEventBus,
+        ruleName: `${props.sharedProps.serviceName}-${props.sharedProps.environment}-sticker-printed-rule`,
+        eventPattern: {
+          source: [`${props.sharedProps.environment}.print`],
+          detailType: ["printJobs.completed.v1"],
+        },
+      });
+      stickerPrintedRule.addTarget(new SqsQueue(props.stickerPrintedQueue));
+      
       const outboxWorker = new InstrumentedLambdaFunction(
         this,
         "OutboxWorkerFunction",
