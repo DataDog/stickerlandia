@@ -91,7 +91,8 @@ public static class ServiceExtensions
 
         // Register event publisher as singleton
         services.AddSingleton<IUserEventPublisher, KafkaEventPublisher>();
-        services.AddSingleton<IMessagingWorker, KafakStickerClaimedWorker>();
+        services.AddKeyedSingleton<IMessagingWorker, KafakStickerClaimedWorker>("stickerClaimed");
+        services.AddKeyedSingleton<IMessagingWorker, KafkaStickerPrintedWorker>("stickerPrinted");
 
         return services;
     }

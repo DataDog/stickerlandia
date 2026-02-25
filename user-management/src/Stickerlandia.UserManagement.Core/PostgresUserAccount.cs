@@ -17,6 +17,7 @@ public class PostgresUserAccount : IdentityUser
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     public int ClaimedStickerCount { get; set; }
+    public int PrintedStickerCount { get; set; }
     public DateTime DateCreated { get; set; }
     public AccountTier AccountTier { get; set; }
     public AccountType AccountType { get; set; }
@@ -54,5 +55,10 @@ public class PostgresUserAccount : IdentityUser
     public void StickerOrdered()
     {
         ClaimedStickerCount++;
+    }
+
+    public void StickerPrinted()
+    {
+        PrintedStickerCount++;
     }
 }

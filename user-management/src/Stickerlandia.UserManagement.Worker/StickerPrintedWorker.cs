@@ -18,9 +18,9 @@ using Stickerlandia.UserManagement.Core.Observability;
 
 namespace Stickerlandia.UserManagement.Worker;
 
-internal sealed class StickerClaimedWorker(
+internal sealed class StickerPrintedWorker(
     ILogger<OutboxWorker> logger,
-    [FromKeyedServices("stickerClaimed")] IMessagingWorker messagingWorker)
+    [FromKeyedServices("stickerPrinted")] IMessagingWorker messagingWorker)
     : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

@@ -9,6 +9,7 @@ using System.Text;
 using System.Text.Json;
 using System.Web;
 using Stickerlandia.UserManagement.Core.StickerClaimedEvent;
+using Stickerlandia.UserManagement.Core.StickerPrintedEvent;
 using Stickerlandia.UserManagement.IntegrationTest.ViewModels;
 using Xunit.Abstractions;
 
@@ -493,6 +494,19 @@ internal sealed class AccountDriver : IDisposable
         {
             AccountId = userId,
             StickerId = stickerId
+        });
+        
+        _testOutputHelper.WriteLine("Injected!");
+    }
+
+    public async Task InjectStickerPrintedMessage(string userId)
+    {
+        var messagingType = _messaging.GetType();
+        _testOutputHelper.WriteLine($"Injecting sticker printed messaging using {messagingType.FullName} messaging.");
+        
+        await _messaging.SendMessageAsync("printJobs.completed.v1", new StickerPrintedEventV1()
+        {
+            UserId = userId
         });
         
         _testOutputHelper.WriteLine("Injected!");

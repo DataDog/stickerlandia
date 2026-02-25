@@ -23,6 +23,7 @@ public record UserAccountDto
         FirstName = userAccount.FirstName;
         LastName = userAccount.LastName;
         ClaimedStickerCount = userAccount.ClaimedStickerCount;
+        PrintedStickerCount = userAccount.PrintedStickerCount;
         DateCreated = userAccount.DateCreated;
     }
 
@@ -40,6 +41,9 @@ public record UserAccountDto
 
     [JsonPropertyName("claimedStickerCount")]
     public int ClaimedStickerCount { get; set; }
+
+    [JsonPropertyName("claimedStickerCount")]
+    public int PrintedStickerCount { get; set; }
 
     [JsonPropertyName("dateCreated")]
     public DateTime DateCreated { get; set; }

@@ -142,7 +142,9 @@ internal static class AppBuilderExtensions
                 {
                     new() { Name = "users.stickerClaimed.v1", NumPartitions = 1, ReplicationFactor = 1 },
                     new() { Name = "users.stickerClaimed.v1.dlq", NumPartitions = 1, ReplicationFactor = 1 },
-                    new() { Name = "users.userRegistered.v1", NumPartitions = 1, ReplicationFactor = 1 }
+                    new() { Name = "users.userRegistered.v1", NumPartitions = 1, ReplicationFactor = 1 },
+                    new() { Name = "printJobs.completed.v1", NumPartitions = 1, ReplicationFactor = 1 },
+                    new() { Name = "printJobs.completed.v1.dlq", NumPartitions = 1, ReplicationFactor = 1 },
                 });
             }
             catch (CreateTopicsException e)
@@ -183,6 +185,24 @@ internal static class AppBuilderExtensions
                 {
                     accountId = TEST_COMMAND_ACCOUNT_ID,
                     stickerId = TEST_COMMAND_STICKER_ID
+                })
+            });
+
+            producer.Flush(TimeSpan.FromSeconds(10));
+
+            return new ExecuteCommandResult { Success = true };
+        }, new CommandOptions());
+
+        builder.WithCommand("SendStickerPrintedMessage", "Send Sticker Printed Message", async (c) =>
+        {
+            var config = c.ServiceProvider.GetRequiredService<ProducerConfig>();
+            using var producer = new ProducerBuilder<string, string>(config).Build();
+
+            await producer.ProduceAsync("printJobs.completed.v1", new Message<string, string>
+            {
+                Key = "", Value = JsonSerializer.Serialize(new
+                {
+                    userId = TEST_COMMAND_ACCOUNT_ID,
                 })
             });
 

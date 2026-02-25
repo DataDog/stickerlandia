@@ -59,7 +59,7 @@ public class AccountTests
 
         PostgresUserAccount? capturedAccount = null;
         var userAccountUnderTest = UserAccount.From(new AccountId(testAccountId), testEmailAddress,
-            "John", "Doe", 1, DateTime.UtcNow, AccountTier.Std, AccountType.User);
+            "John", "Doe", 1, 1, DateTime.UtcNow, AccountTier.Std, AccountType.User);
 
         using var userManager = CreateFakeUserManager();
         A.CallTo(() => userManager.FindByEmailAsync(A<string>.Ignored))
