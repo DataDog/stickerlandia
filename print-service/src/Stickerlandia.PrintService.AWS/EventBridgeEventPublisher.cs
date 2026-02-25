@@ -9,10 +9,12 @@
 // Copyright 2025 Datadog, Inc.
 
 using System.Diagnostics;
+using System.Text.Json.Nodes;
 using Amazon.EventBridge;
 using Amazon.EventBridge.Model;
 using CloudNative.CloudEvents;
 using CloudNative.CloudEvents.SystemTextJson;
+using Datadog.Trace;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Saunter.Attributes;
@@ -139,6 +141,16 @@ public class EventBridgeEventPublisher(
             var data = formatter.EncodeStructuredModeMessage(cloudEvent, out _);
             var jsonString = System.Text.Encoding.UTF8.GetString(data.Span);
 
+            if (Tracer.Instance.ActiveScope is not null)
+            {
+                new SpanContextInjector().InjectIncludingDsm(jsonString, SetHeader, Tracer.Instance.ActiveScope.Span.Context, "eventbridge", cloudEvent.Type!);   
+            }
+            else
+            {
+                Log.GenericWarning(logger, "Failure publishing event", null);
+                activity?.SetTag("dsm.injection_skipped", "no active scope");
+            }
+
             var response = await client.PutEventsAsync(new PutEventsRequest()
             {
                 Entries = new List<PutEventsRequestEntry>(1)
@@ -170,5 +182,13 @@ public class EventBridgeEventPublisher(
             activity?.SetTag("error.type", ex.GetType().Name);
             throw;
         }
+    }
+
+    private static void SetHeader(string eventJson, string key, string value)
+    {
+        var jsonNode = JsonNode.Parse(eventJson);
+        if (jsonNode?["_datadog"] == null) jsonNode!["_datadog"] = new JsonObject();
+
+        jsonNode!["_datadog"]![key] = value;
     }
 }
