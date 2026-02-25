@@ -8,7 +8,6 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
-using System.Text.Json;
 using CloudNative.CloudEvents;
 using CloudNative.CloudEvents.SystemTextJson;
 using Datadog.Trace;
@@ -31,8 +30,6 @@ public class GooglePubSubStickerPrintedWorker(
     [FromKeyedServices("printJobs.completed.v1")]
     SubscriberClient subscriber) : IMessagingWorker
 {
-    private readonly JsonSerializerOptions _jsonSerializerOptions = new() { PropertyNameCaseInsensitive = true };
-    
     private Task? _task;
     
     public Task StartAsync()
@@ -84,7 +81,7 @@ public class GooglePubSubStickerPrintedWorker(
         using var scope = serviceScopeFactory.CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<StickerPrintedHandler>();
         
-        var detailBytes = JsonSerializer.SerializeToUtf8Bytes(messageText, _jsonSerializerOptions);
+        var detailBytes = System.Text.Encoding.UTF8.GetBytes(messageText);
         var formatter = new JsonEventFormatter<StickerPrintedEventV1>();
         var cloudEvent = await formatter.DecodeStructuredModeMessageAsync(
             new MemoryStream(detailBytes), null, new List<CloudEventAttribute>());

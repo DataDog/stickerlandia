@@ -11,7 +11,6 @@
 // Catching generic exceptions is not recommended, but in this case we want to catch all exceptions so that a failure in outbox processing does not crash the application.
 #pragma warning disable CA1031
 
-using System.Text.Json;
 using CloudNative.CloudEvents;
 using CloudNative.CloudEvents.SystemTextJson;
 using Confluent.Kafka;
@@ -33,7 +32,6 @@ public class KafkaStickerPrintedWorker(
     ProducerConfig producerConfig)
     : IMessagingWorker
 {
-    private readonly JsonSerializerOptions _jsonSerializerOptions = new() { PropertyNameCaseInsensitive = true };
     private const string topic = "printJobs.completed.v1";
     private const string dlqTopic = "printJobs.completed.v1.dlq";
 
@@ -46,7 +44,7 @@ public class KafkaStickerPrintedWorker(
 
         Log.ReceivedMessage(logger, "kafka");
         
-        var detailBytes = JsonSerializer.SerializeToUtf8Bytes(consumeResult.Message.Value, _jsonSerializerOptions);
+        var detailBytes = System.Text.Encoding.UTF8.GetBytes(consumeResult.Message.Value);
         var formatter = new JsonEventFormatter<StickerPrintedEventV1>();
         var cloudEvent = await formatter.DecodeStructuredModeMessageAsync(
             new MemoryStream(detailBytes), null, new List<CloudEventAttribute>());

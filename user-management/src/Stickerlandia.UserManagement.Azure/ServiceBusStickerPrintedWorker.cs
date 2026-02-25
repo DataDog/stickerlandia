@@ -8,7 +8,6 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
-using System.Text.Json;
 using Azure.Messaging.ServiceBus;
 using CloudNative.CloudEvents;
 using CloudNative.CloudEvents.SystemTextJson;
@@ -26,7 +25,6 @@ namespace Stickerlandia.UserManagement.Azure;
 [AsyncApi]
 public class ServiceBusStickerPrintedWorker : IMessagingWorker
 {
-    private readonly JsonSerializerOptions _jsonSerializerOptions = new() { PropertyNameCaseInsensitive = true };
     private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly ILogger<ServiceBusStickerPrintedWorker> _logger;
     private readonly ServiceBusProcessor _processor;
@@ -59,7 +57,7 @@ public class ServiceBusStickerPrintedWorker : IMessagingWorker
         var messageBody = args.Message.Body.ToString();
         Log.ReceivedMessage(_logger, "ServiceBus");
 
-        var detailBytes = JsonSerializer.SerializeToUtf8Bytes(messageBody, _jsonSerializerOptions);
+        var detailBytes = System.Text.Encoding.UTF8.GetBytes(messageBody);
         var formatter = new JsonEventFormatter<StickerPrintedEventV1>();
         var cloudEvent = await formatter.DecodeStructuredModeMessageAsync(
             new MemoryStream(detailBytes), null, new List<CloudEventAttribute>());
