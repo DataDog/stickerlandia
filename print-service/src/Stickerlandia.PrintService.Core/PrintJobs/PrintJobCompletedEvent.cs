@@ -15,8 +15,10 @@ public record PrintJobCompletedEvent : DomainEvent
     {
         ArgumentNullException.ThrowIfNull(printJob);
 
+        UserId = printJob.UserId;
         PrintJobId = printJob.Id.Value;
         PrinterId = printJob.PrinterId.Value;
+        StickerId = printJob.StickerId.Value;
         CompletedAt = printJob.CompletedAt ?? DateTimeOffset.UtcNow;
     }
 
@@ -33,6 +35,12 @@ public record PrintJobCompletedEvent : DomainEvent
 
     [JsonPropertyName("printerId")]
     public string PrinterId { get; set; } = string.Empty;
+
+    [JsonPropertyName("userId")]
+    public string UserId { get; set; } = string.Empty;
+
+    [JsonPropertyName("stickerId")]
+    public string StickerId { get; set; } = string.Empty;
 
     [JsonPropertyName("completedAt")]
     public DateTimeOffset CompletedAt { get; set; }
