@@ -18,7 +18,7 @@ public record PrintJobCompletedEvent : DomainEvent
         UserId = printJob.UserId;
         PrintJobId = printJob.Id.Value;
         PrinterId = printJob.PrinterId.Value;
-        StickerId = printJob.StickerId.Value;
+        StickerId = printJob.StickerId;
         CompletedAt = printJob.CompletedAt ?? DateTimeOffset.UtcNow;
     }
 
