@@ -8,9 +8,10 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
-using System.Text;
 using System.Text.Json;
 using Azure.Messaging.ServiceBus;
+using CloudNative.CloudEvents;
+using CloudNative.CloudEvents.SystemTextJson;
 
 namespace Stickerlandia.UserManagement.IntegrationTest.Drivers;
 
@@ -21,12 +22,23 @@ internal sealed class AzureServiceBusMessaging(string connectionString) : IMessa
     public async Task SendMessageAsync(string queueName, object message)
     {
         var sender = _client.CreateSender(queueName);
-        var messageBody = JsonSerializer.Serialize(message);
-        var serviceBusMessage = new ServiceBusMessage(Encoding.UTF8.GetBytes(messageBody))
+
+        var cloudEvent = new CloudEvent(CloudEventsSpecVersion.V1_0)
         {
-            ContentType = "application/json"
+            Id = Guid.NewGuid().ToString(),
+            Source = new Uri("https://stickerlandia.com"),
+            Type = queueName,
+            Time = DateTime.UtcNow,
+            Data = JsonDocument.Parse(JsonSerializer.Serialize(message)).RootElement
         };
-            
+        var formatter = new JsonEventFormatter();
+        var encoded = formatter.EncodeStructuredModeMessage(cloudEvent, out _);
+
+        var serviceBusMessage = new ServiceBusMessage(encoded)
+        {
+            ContentType = "application/cloudevents+json"
+        };
+
         await sender.SendMessageAsync(serviceBusMessage);
     }
 

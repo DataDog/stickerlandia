@@ -10,20 +10,19 @@
 
 #pragma warning disable CA1812
 
+using System.Text.Json;
 using CloudNative.CloudEvents;
 using CloudNative.CloudEvents.SystemTextJson;
 using Google.Api.Gax;
 using Google.Cloud.PubSub.V1;
 using Google.Protobuf;
 using Grpc.Core;
-using Stickerlandia.UserManagement.Core.RegisterUser;
-using Stickerlandia.UserManagement.Core.StickerClaimedEvent;
 
 namespace Stickerlandia.UserManagement.IntegrationTest.Drivers;
 
 internal sealed class GooglePubSubMessaging : IMessaging, IAsyncDisposable
 {
-    private readonly PublisherClient _client;
+    private readonly Dictionary<string, PublisherClient> _clients = new();
 
     public GooglePubSubMessaging(string connectionString)
     {
@@ -31,65 +30,70 @@ internal sealed class GooglePubSubMessaging : IMessaging, IAsyncDisposable
             throw new ArgumentException("Connection string must be provided for Google Pub/Sub messaging.",
                 nameof(connectionString));
 
-        var topicName = new TopicName(connectionString, "users.userRegistered.v1");
-        var stickerClaimedTopic = new TopicName(connectionString, "users.stickerClaimed.v1");
-            
         var publisherApiClient = new PublisherServiceApiClientBuilder { EmulatorDetection = EmulatorDetection.EmulatorOrProduction }.Build();
-        
-        try
-        {
-            publisherApiClient.CreateTopic(topicName);
-            Console.WriteLine($"Topic {topicName} created.");
-        }
-        catch (RpcException e) when (e.Status.StatusCode == StatusCode.AlreadyExists)
-        {
-            Console.WriteLine($"Topic {topicName} already exists.");
-        }
-        
-        try
-        {
-            publisherApiClient.CreateTopic(stickerClaimedTopic);
-            Console.WriteLine($"Topic {stickerClaimedTopic} created.");
-        }
-        catch (RpcException e) when (e.Status.StatusCode == StatusCode.AlreadyExists)
-        {
-            Console.WriteLine($"Topic {stickerClaimedTopic} already exists.");
-        }
-        
-        var subscriber = new SubscriberServiceApiClientBuilder() { EmulatorDetection = EmulatorDetection.EmulatorOrProduction }.Build();
-        SubscriptionName subscriptionName = SubscriptionName.FromProjectSubscription(connectionString, "users.stickerClaimed.v1");
-        
-        try
-        {
-            subscriber.CreateSubscription(subscriptionName, stickerClaimedTopic, pushConfig: null, ackDeadlineSeconds: 60);
-        }
-        catch (RpcException e) when (e.Status.StatusCode == StatusCode.AlreadyExists)
-        {
-            // Already exists.  That's fine.
-        }
+        var subscriber = new SubscriberServiceApiClientBuilder { EmulatorDetection = EmulatorDetection.EmulatorOrProduction }.Build();
 
-        _client = new PublisherClientBuilder { TopicName = stickerClaimedTopic, EmulatorDetection = EmulatorDetection.EmulatorOrProduction}.Build();
+        var topics = new[]
+        {
+            "users.userRegistered.v1",
+            "users.stickerClaimed.v1",
+            "printJobs.completed.v1"
+        };
+
+        foreach (var topicId in topics)
+        {
+            var topicName = new TopicName(connectionString, topicId);
+
+            try
+            {
+                publisherApiClient.CreateTopic(topicName);
+                Console.WriteLine($"Topic {topicName} created.");
+            }
+            catch (RpcException e) when (e.Status.StatusCode == StatusCode.AlreadyExists)
+            {
+                Console.WriteLine($"Topic {topicName} already exists.");
+            }
+
+            var subscriptionName = SubscriptionName.FromProjectSubscription(connectionString, topicId);
+            try
+            {
+                subscriber.CreateSubscription(subscriptionName, topicName, pushConfig: null, ackDeadlineSeconds: 60);
+            }
+            catch (RpcException e) when (e.Status.StatusCode == StatusCode.AlreadyExists)
+            {
+                // Already exists. That's fine.
+            }
+
+            _clients[topicId] = new PublisherClientBuilder
+            {
+                TopicName = topicName,
+                EmulatorDetection = EmulatorDetection.EmulatorOrProduction
+            }.Build();
+        }
     }
 
     public async Task SendMessageAsync(string queueName, object message)
     {
+        if (!_clients.TryGetValue(queueName, out var client))
+            throw new InvalidOperationException($"No publisher client configured for topic '{queueName}'");
+
         var cloudEvent = new CloudEvent(CloudEventsSpecVersion.V1_0)
         {
             Id = Guid.NewGuid().ToString(),
             Source = new Uri("https://stickerlandia.com"),
             Type = queueName,
             Time = DateTime.UtcNow,
-            Data = message
+            Data = JsonDocument.Parse(JsonSerializer.Serialize(message)).RootElement
         };
+        var formatter = new JsonEventFormatter();
+        var encoded = formatter.EncodeStructuredModeMessage(cloudEvent, out _);
 
-        var formatter = new JsonEventFormatter<StickerClaimedEventV1>();
-        var data = formatter.EncodeStructuredModeMessage(cloudEvent, out _);
-
-        var publishResult = await _client.PublishAsync(ByteString.CopyFrom(data.Span));
+        await client.PublishAsync(ByteString.CopyFrom(encoded.Span));
     }
 
     public async ValueTask DisposeAsync()
     {
-        await _client.DisposeAsync();
+        foreach (var client in _clients.Values)
+            await client.DisposeAsync();
     }
 }
