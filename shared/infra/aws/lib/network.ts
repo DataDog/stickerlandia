@@ -23,6 +23,8 @@ import {
   AllowedMethods,
   CachePolicy,
   Distribution,
+  HeadersFrameOption,
+  HeadersReferrerPolicy,
   OriginAccessIdentity,
   OriginProtocolPolicy,
   OriginRequestPolicy,
@@ -43,6 +45,7 @@ import {
 } from "aws-cdk-lib/aws-cloudfront-origins";
 import { ICertificate } from "aws-cdk-lib/aws-certificatemanager";
 import { Dns } from "./dns";
+import { Duration } from "aws-cdk-lib";
 
 export interface NetworkProps {
   env: string;
@@ -161,7 +164,82 @@ export class Network extends Construct {
       comment: `OAI for stickerlandia web frontend ${props.env}`,
     });
     webFrontendBucket.grantRead(originIdentity);
-    
+
+    const corsWithTracingHeadersPolicy = new ResponseHeadersPolicy(
+      this,
+      "CorsWithTracingHeadersPolicy",
+      {
+        responseHeadersPolicyName: `Stickerlandia-CORS-Tracing-${props.env}`,
+        comment:
+          "CORS policy with W3C Trace Context and Datadog headers for RUM-APM correlation",
+        // Enable browser profiling for Datadog RUM
+        // See: https://docs.datadoghq.com/real_user_monitoring/correlate_with_other_telemetry/profiling/browser_profiling/
+        customHeadersBehavior: {
+          customHeaders: [
+            {
+              header: "Document-Policy",
+              value: "js-profiling",
+              override: true,
+            },
+          ],
+        },
+        corsBehavior: {
+          accessControlAllowCredentials: true,
+          accessControlAllowHeaders: [
+            "Content-Type",
+            "Authorization",
+            "Accept",
+            // W3C Trace Context headers for distributed tracing
+            "traceparent",
+            "tracestate",
+            // Datadog-specific headers for RUM-APM correlation
+            "x-datadog-trace-id",
+            "x-datadog-parent-id",
+            "x-datadog-origin",
+            "x-datadog-sampling-priority",
+          ],
+          accessControlAllowMethods: [
+            "GET",
+            "POST",
+            "PUT",
+            "DELETE",
+            "PATCH",
+            "OPTIONS",
+          ],
+          accessControlAllowOrigins: [
+            `https://${props.dns.getPrimaryDomainName(props.env)}`,
+          ],
+          accessControlExposeHeaders: [
+            // Allow browser to read trace headers from responses
+            "traceparent",
+            "tracestate",
+            "x-datadog-trace-id",
+            "x-datadog-parent-id",
+          ],
+          accessControlMaxAge: Duration.hours(1),
+          originOverride: true,
+        },
+        securityHeadersBehavior: {
+          contentTypeOptions: { override: true },
+          frameOptions: {
+            frameOption: HeadersFrameOption.SAMEORIGIN,
+            override: true,
+          },
+          referrerPolicy: {
+            referrerPolicy:
+              HeadersReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
+            override: true,
+          },
+          strictTransportSecurity: {
+            accessControlMaxAge: Duration.days(365),
+            includeSubdomains: true,
+            override: true,
+          },
+          xssProtection: { protection: true, modeBlock: true, override: true },
+        },
+      },
+    );
+
     this.distribution = new Distribution(this, `Stickerlandia-${props.env}`, {
       certificate: props.dns.certificate,
       domainNames: props.dns.getPrimaryDomainName(props.env)
@@ -188,6 +266,7 @@ export class Network extends Construct {
         origin: S3BucketOrigin.withOriginAccessIdentity(webFrontendBucket, {
           originAccessIdentity: originIdentity,
         }),
+        responseHeadersPolicy: corsWithTracingHeadersPolicy,
       },
     });
 
