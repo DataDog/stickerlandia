@@ -207,7 +207,7 @@ export class Network extends Construct {
             "OPTIONS",
           ],
           accessControlAllowOrigins: [
-            `https://${props.dns.getPrimaryDomainName(props.env)}`,
+            `*`, // Allow all origins for development
           ],
           accessControlExposeHeaders: [
             // Allow browser to read trace headers from responses
