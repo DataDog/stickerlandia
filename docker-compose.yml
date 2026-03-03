@@ -693,6 +693,10 @@ services:
       - "traefik.http.routers.web-frontend.rule=PathPrefix(`/`)"
       - "traefik.http.routers.web-frontend.priority=1"
       - "traefik.http.services.web-frontend.loadbalancer.server.port=80"
+      # Enable browser profiling for Datadog RUM
+      # See: https://docs.datadoghq.com/real_user_monitoring/correlate_with_other_telemetry/profiling/browser_profiling/
+      - "traefik.http.middlewares.document-policy.headers.customresponseheaders.Document-Policy=js-profiling"
+      - "traefik.http.routers.web-frontend.middlewares=document-policy"
 
   sticker-award:
     build:

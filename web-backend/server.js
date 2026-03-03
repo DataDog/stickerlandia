@@ -363,7 +363,8 @@ app.use('/api/app/proxy', requireAuth, async (req, res) => {
       headers: {
         'Authorization': `Bearer ${req.session.tokens.access_token}`,
         'Content-Type': req.headers['content-type'] || 'application/json',
-        'Accept': req.headers.accept || 'application/json'
+        'Accept': req.headers.accept || 'application/json',
+        'Document Policy': 'js-profiling'
       },
       body: req.method !== 'GET' && req.method !== 'HEAD' ? JSON.stringify(req.body) : undefined
     })

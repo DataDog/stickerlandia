@@ -23,6 +23,8 @@ import {
   AllowedMethods,
   CachePolicy,
   Distribution,
+  HeadersFrameOption,
+  HeadersReferrerPolicy,
   OriginAccessIdentity,
   OriginProtocolPolicy,
   OriginRequestPolicy,
@@ -43,6 +45,7 @@ import {
 } from "aws-cdk-lib/aws-cloudfront-origins";
 import { ICertificate } from "aws-cdk-lib/aws-certificatemanager";
 import { Dns } from "./dns";
+import { Duration } from "aws-cdk-lib";
 
 export interface NetworkProps {
   env: string;
@@ -161,7 +164,28 @@ export class Network extends Construct {
       comment: `OAI for stickerlandia web frontend ${props.env}`,
     });
     webFrontendBucket.grantRead(originIdentity);
-    
+
+    const documentPolicyHeader = new ResponseHeadersPolicy(
+      this,
+      "DocumentPolicyHeader",
+      {
+        responseHeadersPolicyName: `Stickerlandia-Document-Policy-${props.env}`,
+        comment:
+          "Add custom header to enable Datadog RUM browser profiling",
+        // Enable browser profiling for Datadog RUM
+        // See: https://docs.datadoghq.com/real_user_monitoring/correlate_with_other_telemetry/profiling/browser_profiling/
+        customHeadersBehavior: {
+          customHeaders: [
+            {
+              header: "Document-Policy",
+              value: "js-profiling",
+              override: true,
+            },
+          ],
+        }
+      },
+    );
+
     this.distribution = new Distribution(this, `Stickerlandia-${props.env}`, {
       certificate: props.dns.certificate,
       domainNames: props.dns.getPrimaryDomainName(props.env)
@@ -188,6 +212,7 @@ export class Network extends Construct {
         origin: S3BucketOrigin.withOriginAccessIdentity(webFrontendBucket, {
           originAccessIdentity: originIdentity,
         }),
+        responseHeadersPolicy: documentPolicyHeader,
       },
     });
 
