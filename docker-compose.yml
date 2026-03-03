@@ -780,6 +780,7 @@ services:
   # Load testing service - runs k6 load tests against the stack
   load-simulator:
     image: grafana/k6:latest
+    restart: always
     volumes:
       - ./load-tests:/scripts
     environment:
