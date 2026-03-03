@@ -12,23 +12,36 @@ using Microsoft.Extensions.Logging;
 
 namespace Stickerlandia.PrintService.Core.Observability;
 
-public class DatadogTransactionTracker(
-    IHttpClientFactory httpClientFactory,
-    IConfiguration configuration,
-    ILogger<DatadogTransactionTracker> logger)
+public class DatadogTransactionTracker
 {
-    private static readonly Uri PipelineStatsEndpoint =
-        new("https://trace.agent.datadoghq.com/api/v0.1/pipeline_stats");
+    private readonly string _apiKey;
+    private readonly string _service;
+    private readonly string _environment;
+    private readonly Uri _pipelineStatsEndpoint;
 
-    private readonly string _apiKey = configuration["DD_API_KEY"] ?? string.Empty;
-    private readonly string _service = configuration["DD_SERVICE"] ?? "print-service";
-    private readonly string _environment = configuration["DD_ENV"] ?? "local";
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ILogger<DatadogTransactionTracker> _logger;
+
+    public DatadogTransactionTracker(IHttpClientFactory httpClientFactory,
+        IConfiguration configuration,
+        ILogger<DatadogTransactionTracker> logger)
+    {
+        ArgumentNullException.ThrowIfNull(configuration);
+        
+        _httpClientFactory = httpClientFactory;
+        _logger = logger;
+        _apiKey = configuration["DD_API_KEY"] ?? string.Empty;
+        _service = configuration["DD_SERVICE"] ?? "print-service";
+        _environment = configuration["DD_ENV"] ?? "local";
+        var ddSite = configuration["DD_SITE"] ?? "datadoghq.com";
+        _pipelineStatsEndpoint = new Uri($"https://trace.agent.{ddSite}/api/v0.1/pipeline_stats");
+    }
 
     public async Task TrackTransactionAsync(string transactionId, string checkpoint)
     {
         if (string.IsNullOrEmpty(_apiKey))
         {
-            Log.TransactionTrackingSkipped(logger);
+            Log.TransactionTrackingSkipped(_logger);
             return;
         }
 
@@ -55,8 +68,8 @@ public class DatadogTransactionTracker(
             var json = JsonSerializer.Serialize(payload);
             var compressed = Gzip(Encoding.UTF8.GetBytes(json));
 
-            using var client = httpClientFactory.CreateClient();
-            using var request = new HttpRequestMessage(HttpMethod.Post, PipelineStatsEndpoint);
+            using var client = _httpClientFactory.CreateClient();
+            using var request = new HttpRequestMessage(HttpMethod.Post, _pipelineStatsEndpoint);
             request.Headers.Add("DD-API-KEY", _apiKey);
             request.Content = new ByteArrayContent(compressed);
             request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
@@ -66,14 +79,14 @@ public class DatadogTransactionTracker(
             response.EnsureSuccessStatusCode();
             
             #pragma warning disable
-            logger.LogInformation("Successfully tracked transaction {TransactionId} at checkpoint {Checkpoint} with status code {StatusCode}", transactionId, checkpoint, response.StatusCode);
+            _logger.LogInformation("Successfully tracked transaction {TransactionId} at checkpoint {Checkpoint} with status code {StatusCode}", transactionId, checkpoint, response.StatusCode);
             #pragma warning enable
         }
 #pragma warning disable CA1031
         catch (Exception ex)
 #pragma warning restore CA1031
         {
-            Log.TransactionTrackingFailed(logger, transactionId, checkpoint, ex);
+            Log.TransactionTrackingFailed(_logger, transactionId, checkpoint, ex);
         }
     }
 
