@@ -4,6 +4,7 @@
 
 #pragma warning disable
 
+using System.Diagnostics;
 using System.Globalization;
 using System.IO.Compression;
 using System.Net.Http.Headers;
@@ -47,6 +48,12 @@ internal class DatadogTransactionTracker
 
         try
         {
+            if (Activity.Current is not null)
+            {
+                Activity.Current.SetTag("dsm.transaction_id", transactionId);
+                Activity.Current.SetTag("dsm.transaction.checkpoint", checkpoint);
+            }
+            
             var timestampNanos = (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() * 1_000_000L)
                 .ToString(CultureInfo.InvariantCulture);
 

@@ -2,6 +2,7 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2026 Datadog, Inc.
 
+using System.Diagnostics;
 using System.Globalization;
 using System.IO.Compression;
 using System.Net.Http.Headers;
@@ -47,6 +48,12 @@ public class DatadogTransactionTracker
 
         try
         {
+            if (Activity.Current is not null)
+            {
+                Activity.Current.SetTag("dsm.transaction_id", transactionId);
+                Activity.Current.SetTag("dsm.transaction.checkpoint", checkpoint);
+            }
+            
             var timestampNanos = (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() * 1_000_000L)
                 .ToString(CultureInfo.InvariantCulture);
 

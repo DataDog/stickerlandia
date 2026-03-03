@@ -16,6 +16,7 @@ using Amazon.SQS;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Stickerlandia.PrintService.Core;
+using Stickerlandia.PrintService.Core.Observability;
 using Stickerlandia.PrintService.Core.Outbox;
 using Stickerlandia.PrintService.Core.PrintJobs;
 
@@ -60,6 +61,9 @@ public static class ServiceExtensions
         services.AddScoped<IOutbox, DynamoDbOutbox>();
 
         services.AddSingleton<IPrintServiceEventPublisher, EventBridgeEventPublisher>();
+
+        services.AddHttpClient();
+        services.AddSingleton<DatadogTransactionTracker>();
 
         return services;
     }
