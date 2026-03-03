@@ -143,7 +143,9 @@ public class EventBridgeEventPublisher(
 
             if (Tracer.Instance.ActiveScope is not null)
             {
-                new SpanContextInjector().InjectIncludingDsm(jsonString, SetHeader, Tracer.Instance.ActiveScope.Span.Context, "eventbridge", cloudEvent.Type!);   
+                var jsonNode = JsonNode.Parse(jsonString)!;
+                new SpanContextInjector().InjectIncludingDsm(jsonNode, SetHeader, Tracer.Instance.ActiveScope.Span.Context, "eventbridge", cloudEvent.Type!);
+                jsonString = jsonNode.ToJsonString();
             }
             else
             {
@@ -184,11 +186,10 @@ public class EventBridgeEventPublisher(
         }
     }
 
-    private static void SetHeader(string eventJson, string key, string value)
+    private static void SetHeader(JsonNode jsonNode, string key, string value)
     {
-        var jsonNode = JsonNode.Parse(eventJson);
-        if (jsonNode?["_datadog"] == null) jsonNode!["_datadog"] = new JsonObject();
+        if (jsonNode["_datadog"] == null) jsonNode["_datadog"] = new JsonObject();
 
-        jsonNode!["_datadog"]![key] = value;
+        jsonNode["_datadog"]![key] = value;
     }
 }
