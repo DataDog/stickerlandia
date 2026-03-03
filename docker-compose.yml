@@ -380,6 +380,7 @@ services:
     environment:
       # DataDog APM configuration
       DD_API_KEY: ${DD_API_KEY}
+      DD_SITE: ${DD_SITE:-datadoghq.com}
       DD_SERVICE: print-service
       DD_ENV: ${ENV:-development}
       DD_VERSION: ${COMMIT_SHA:-latest}
@@ -435,6 +436,7 @@ services:
     environment:
       # DataDog APM configuration
       DD_API_KEY: ${DD_API_KEY}
+      DD_SITE: ${DD_SITE:-datadoghq.com}
       DD_SERVICE: print-service
       DD_ENV: ${ENV:-development}
       DD_VERSION: ${COMMIT_SHA:-latest}
@@ -476,6 +478,8 @@ services:
       - "8086:8080"
     environment:
       # DataDog APM configuration
+      DD_API_KEY: ${DD_API_KEY}
+      DD_SITE: ${DD_SITE:-datadoghq.com}
       DD_SERVICE: print-service-client
       DD_ENV: ${ENV:-development}
       DD_VERSION: ${COMMIT_SHA:-latest}
