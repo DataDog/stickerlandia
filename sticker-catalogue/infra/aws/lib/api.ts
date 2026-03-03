@@ -95,6 +95,7 @@ export class Api extends Construct {
       serviceDiscoveryName: props.serviceDiscoveryName,
       deployInPrivateSubnet: props.deployInPrivateSubnet,
       serviceDependencies: props.serviceProps.serviceDependencies,
+      cpu: 1024,
       memoryLimitMiB: 1024,
     });
 

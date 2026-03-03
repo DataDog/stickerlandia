@@ -69,6 +69,7 @@ export class Api extends Construct {
       },
       path: "/api/app/{proxy+}",
       additionalPathMappings: [],
+      cpu: 512,
       healthCheckPath: "/api/app",
       serviceDiscoveryNamespace: props.serviceDiscoveryNamespace,
       serviceDiscoveryName: props.serviceDiscoveryName,

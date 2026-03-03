@@ -98,6 +98,7 @@ export class Api extends Construct {
       deployInPrivateSubnet: props.deployInPrivateSubnet,
       additionalPathMappings: [],
       serviceDependencies: props.serviceProps.serviceDependencies,
+      cpu: 512,
     });
 
     props.serviceProps.messagingConfiguration.grantPermissions(
