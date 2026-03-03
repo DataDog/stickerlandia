@@ -140,6 +140,7 @@ export class WebService extends Construct {
           `${props.sharedProps.serviceName}Definition`,
           {
             memoryLimitMiB,
+            cpu,
             runtimePlatform: {
               cpuArchitecture: ecs.CpuArchitecture.X86_64,
               operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
