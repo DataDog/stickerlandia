@@ -55,7 +55,18 @@ public class ServiceBusStickerClaimedWorker : IMessagingWorker
         var messageBody = args.Message.Body.ToString();
         Log.ReceivedMessage(_logger, "ServiceBus");
 
-        var evtData = JsonSerializer.Deserialize<StickerClaimedEventV1>(messageBody);
+        StickerClaimedEventV1? evtData;
+        if (string.Equals(args.Message.ContentType, "application/cloudevents+json", StringComparison.OrdinalIgnoreCase))
+        {
+            using var document = JsonDocument.Parse(messageBody);
+            evtData = document.RootElement.TryGetProperty("data", out var dataElement)
+                ? JsonSerializer.Deserialize<StickerClaimedEventV1>(dataElement.GetRawText())
+                : null;
+        }
+        else
+        {
+            evtData = JsonSerializer.Deserialize<StickerClaimedEventV1>(messageBody);
+        }
 
         if (evtData == null) await args.DeadLetterMessageAsync(args.Message, "Message body cannot be deserialized");
 
