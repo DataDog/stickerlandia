@@ -165,13 +165,13 @@ export class Network extends Construct {
     });
     webFrontendBucket.grantRead(originIdentity);
 
-    const corsWithTracingHeadersPolicy = new ResponseHeadersPolicy(
+    const documentPolicyHeader = new ResponseHeadersPolicy(
       this,
-      "CorsWithTracingHeadersPolicy",
+      "DocumentPolicyHeader",
       {
-        responseHeadersPolicyName: `Stickerlandia-CORS-Tracing-${props.env}`,
+        responseHeadersPolicyName: `Stickerlandia-Document-Policy-${props.env}`,
         comment:
-          "CORS policy with W3C Trace Context and Datadog headers for RUM-APM correlation",
+          "Add custom header to enable Datadog RUM browser profiling",
         // Enable browser profiling for Datadog RUM
         // See: https://docs.datadoghq.com/real_user_monitoring/correlate_with_other_telemetry/profiling/browser_profiling/
         customHeadersBehavior: {
@@ -182,61 +182,7 @@ export class Network extends Construct {
               override: true,
             },
           ],
-        },
-        corsBehavior: {
-          accessControlAllowCredentials: true,
-          accessControlAllowHeaders: [
-            "Content-Type",
-            "Authorization",
-            "Accept",
-            // W3C Trace Context headers for distributed tracing
-            "traceparent",
-            "tracestate",
-            // Datadog-specific headers for RUM-APM correlation
-            "x-datadog-trace-id",
-            "x-datadog-parent-id",
-            "x-datadog-origin",
-            "x-datadog-sampling-priority",
-          ],
-          accessControlAllowMethods: [
-            "GET",
-            "POST",
-            "PUT",
-            "DELETE",
-            "PATCH",
-            "OPTIONS",
-          ],
-          accessControlAllowOrigins: [
-            `*`, // Allow all origins for development
-          ],
-          accessControlExposeHeaders: [
-            // Allow browser to read trace headers from responses
-            "traceparent",
-            "tracestate",
-            "x-datadog-trace-id",
-            "x-datadog-parent-id",
-          ],
-          accessControlMaxAge: Duration.hours(1),
-          originOverride: true,
-        },
-        securityHeadersBehavior: {
-          contentTypeOptions: { override: true },
-          frameOptions: {
-            frameOption: HeadersFrameOption.SAMEORIGIN,
-            override: true,
-          },
-          referrerPolicy: {
-            referrerPolicy:
-              HeadersReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
-            override: true,
-          },
-          strictTransportSecurity: {
-            accessControlMaxAge: Duration.days(365),
-            includeSubdomains: true,
-            override: true,
-          },
-          xssProtection: { protection: true, modeBlock: true, override: true },
-        },
+        }
       },
     );
 
@@ -266,7 +212,7 @@ export class Network extends Construct {
         origin: S3BucketOrigin.withOriginAccessIdentity(webFrontendBucket, {
           originAccessIdentity: originIdentity,
         }),
-        responseHeadersPolicy: corsWithTracingHeadersPolicy,
+        responseHeadersPolicy: documentPolicyHeader,
       },
     });
 
