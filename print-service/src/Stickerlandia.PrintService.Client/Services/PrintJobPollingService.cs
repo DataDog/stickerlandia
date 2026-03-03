@@ -25,6 +25,7 @@ internal sealed class PrintJobPollingService : BackgroundService
     private readonly ClientStatusService _statusService;
     private readonly PrintClientInstrumentation _instrumentation;
     private readonly ILogger<PrintJobPollingService> _logger;
+    private readonly DatadogTransactionTracker _transactionTracker;
 
     public PrintJobPollingService(
         IPrintServiceApiClient apiClient,
@@ -32,7 +33,7 @@ internal sealed class PrintJobPollingService : BackgroundService
         IConfigurationService configService,
         ClientStatusService statusService,
         PrintClientInstrumentation instrumentation,
-        ILogger<PrintJobPollingService> logger)
+        ILogger<PrintJobPollingService> logger, DatadogTransactionTracker transactionTracker)
     {
         _apiClient = apiClient;
         _localStorage = localStorage;
@@ -40,6 +41,7 @@ internal sealed class PrintJobPollingService : BackgroundService
         _statusService = statusService;
         _instrumentation = instrumentation;
         _logger = logger;
+        _transactionTracker = transactionTracker;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -131,6 +133,7 @@ internal sealed class PrintJobPollingService : BackgroundService
         _logger.LogInformation("Processing job {JobId} for sticker {StickerId}", job.PrintJobId, job.StickerId);
 
         using var activity = PrintClientInstrumentation.StartProcessJobActivity(job);
+        await _transactionTracker.TrackTransactionAsync(job.PrintJobId, "print-received");
         var stopwatch = Stopwatch.StartNew();
 
         try
@@ -167,6 +170,7 @@ internal sealed class PrintJobPollingService : BackgroundService
                     GetHeader,
                     "queue",
                     "print_queue");
+                await _transactionTracker.TrackTransactionAsync(job.PrintJobId, "print-completed");
                 using var scope = Tracer.Instance.StartActive(
                     "processed print.job",
                     new SpanCreationSettings

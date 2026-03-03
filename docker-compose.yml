@@ -379,6 +379,7 @@ services:
         condition: service_healthy
     environment:
       # DataDog APM configuration
+      DD_API_KEY: ${DD_API_KEY}
       DD_SERVICE: print-service
       DD_ENV: ${ENV:-development}
       DD_VERSION: ${COMMIT_SHA:-latest}
@@ -433,6 +434,7 @@ services:
         condition: service_healthy
     environment:
       # DataDog APM configuration
+      DD_API_KEY: ${DD_API_KEY}
       DD_SERVICE: print-service
       DD_ENV: ${ENV:-development}
       DD_VERSION: ${COMMIT_SHA:-latest}

@@ -93,6 +93,19 @@ public static partial class Log
         ILogger logger, string message, Exception? exception);
 
     [LoggerMessage(
+        EventId = 11,
+        Level = LogLevel.Warning,
+        Message = "DD_API_KEY is not configured; skipping transaction tracking.")]
+    public static partial void TransactionTrackingSkipped(ILogger logger);
+
+    [LoggerMessage(
+        EventId = 12,
+        Level = LogLevel.Warning,
+        Message = "Failed to track Datadog transaction {TransactionId} at checkpoint {Checkpoint}")]
+    public static partial void TransactionTrackingFailed(
+        ILogger logger, string transactionId, string checkpoint, Exception exception);
+
+    [LoggerMessage(
         EventId = 5,
         Level = LogLevel.Trace,
         Message = "Stopping message processor for transport: {MessageTransport}")]

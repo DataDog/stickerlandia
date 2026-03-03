@@ -77,6 +77,7 @@ if (otlpEndpoint != null)
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+builder.Services.AddSingleton<DatadogTransactionTracker>();
 // Add configuration service (singleton - shared across app)
 builder.Services.AddSingleton<IConfigurationService, ConfigurationService>();
 
