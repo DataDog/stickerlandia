@@ -62,7 +62,7 @@ export class Api extends Construct {
       cluster: props.cluster,
       image: "ghcr.io/datadog/stickerlandia/user-management-service",
       imageTag: props.sharedProps.version,
-      cpu: 1025,
+      cpu: 1024,
       memoryLimitMiB: 1024,
       assetPath: path.resolve(__dirname, "../../.."),
       dockerfile: "src/Stickerlandia.UserManagement.Api/Dockerfile",

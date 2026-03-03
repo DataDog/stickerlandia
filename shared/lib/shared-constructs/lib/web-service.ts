@@ -204,10 +204,7 @@ export class WebService extends Construct {
         },
         capacityProviderStrategies: [
           {
-            capacityProvider:
-              props.sharedProps.environment !== "prod"
-                ? "FARGATE_SPOT"
-                : "FARGATE",
+            capacityProvider: props.sharedProps.useSpot ? "FARGATE_SPOT" : "FARGATE",
             weight: 1,
           },
         ],
