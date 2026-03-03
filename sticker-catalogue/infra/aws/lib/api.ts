@@ -89,14 +89,14 @@ export class Api extends Construct {
         interval: Duration.seconds(30),
         timeout: Duration.seconds(5),
         retries: 3,
-        startPeriod: Duration.seconds(60),
+        startPeriod: Duration.seconds(120),
       },
       serviceDiscoveryNamespace: props.serviceDiscoveryNamespace,
       serviceDiscoveryName: props.serviceDiscoveryName,
       deployInPrivateSubnet: props.deployInPrivateSubnet,
       serviceDependencies: props.serviceProps.serviceDependencies,
       cpu: 1024,
-      memoryLimitMiB: 1024,
+      memoryLimitMiB: 2048,
     });
 
     props.stickerImagesBucket.grantReadWrite(webService.taskRole);

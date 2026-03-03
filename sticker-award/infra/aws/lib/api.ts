@@ -99,6 +99,7 @@ export class Api extends Construct {
       additionalPathMappings: [],
       serviceDependencies: props.serviceProps.serviceDependencies,
       cpu: 512,
+      memoryLimitMiB: 1024,
     });
 
     props.serviceProps.messagingConfiguration.grantPermissions(
