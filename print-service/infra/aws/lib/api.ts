@@ -51,7 +51,7 @@ export class Api extends Construct {
       ddApiKey: props.sharedProps.datadog.apiKeyParameter,
       port: 8080,
       cpu: 512,
-      memoryLimitMiB: 512,
+      memoryLimitMiB: 1024,
       environmentVariables: {
         DD_DATA_STREAMS_ENABLED: "true",
         DD_TRACE_OTEL_ENABLED: "true",

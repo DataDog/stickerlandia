@@ -115,8 +115,11 @@ export class WebService extends Construct {
     let taskDefinition: ecs.FargateTaskDefinition | undefined = undefined;
 
     // Task Definition
-    const memoryLimitMiB = props.memoryLimitMiB ?? 512;
     const cpu = props.cpu ?? 256;
+    // Fargate valid CPU/memory combos: 256→(512-2048), 512→(1024-4096), 1024→(2048-8192), etc.
+    const minMemoryForCpu: Record<number, number> = { 256: 512, 512: 1024, 1024: 2048, 2048: 4096, 4096: 8192 };
+    const defaultMemory = minMemoryForCpu[cpu] ?? 512;
+    const memoryLimitMiB = props.memoryLimitMiB ?? defaultMemory;
 
     if (!props.sharedProps.enableDatadog) {
       taskDefinition = new ecs.FargateTaskDefinition(
