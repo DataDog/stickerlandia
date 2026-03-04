@@ -45,7 +45,9 @@ export const initializeDatadogRum = () => {
     trackResources: true,
     trackLongTasks: true,
     defaultPrivacyLevel: 'mask-user-input',
-    allowedTracingUrls: [(url) => true],
+    allowedTracingUrls: ['https://dev.stickerlandia.dev/',
+     /^https:\/\/[^\/]+\.dev.stickerlandia\.dev/,
+    ],
     // for RUM Profiling - currently feature flagged
     profilingSampleRate: 100,
     // TODO - turn this on if we start using the react router!
