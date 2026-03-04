@@ -24,6 +24,8 @@ export class SharedProps {
   version: string;
   commitSha: string;
   enableDatadog: boolean;
+  /** Whether to use FARGATE_SPOT capacity provider. In the future when we have a prod env, we can start using spot for lower envs. */
+  useSpot: boolean;
   datadog: {
     lambda: DatadogLambda;
     ecsFargate: DatadogECSFargate;
@@ -120,6 +122,7 @@ export class SharedProps {
     this.team = domain;
     this.domain = domain;
     this.enableDatadog = enableDatadog;
+    this.useSpot = false;
   }
 
   public generateDatadogLambdaConfigurationFor(

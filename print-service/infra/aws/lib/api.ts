@@ -50,7 +50,8 @@ export class Api extends Construct {
       dockerfile: "src/Stickerlandia.PrintService.Api/Dockerfile",
       ddApiKey: props.sharedProps.datadog.apiKeyParameter,
       port: 8080,
-      memoryLimitMiB: 512,
+      cpu: 512,
+      memoryLimitMiB: 1024,
       environmentVariables: {
         DD_DATA_STREAMS_ENABLED: "true",
         DD_TRACE_OTEL_ENABLED: "true",

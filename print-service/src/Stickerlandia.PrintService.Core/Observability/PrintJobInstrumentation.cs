@@ -16,7 +16,7 @@ public sealed class PrintJobInstrumentation : IDisposable
     /// <summary>
     /// The name used for the meter and activity source.
     /// </summary>
-    public const string ServiceName = "Stickerlandia.PrintService";
+    public const string ServiceName = "print-service";
 
     /// <summary>
     /// The version of the instrumentation.

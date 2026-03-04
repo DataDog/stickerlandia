@@ -24,7 +24,7 @@ export class UserServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    const serviceName = "user-service";
+    const serviceName = "user-management";
     const environment = process.env.ENV || "dev";
 
     const sharedResources = new SharedResources(this, "SharedResources", {

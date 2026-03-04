@@ -137,13 +137,13 @@ export class DatabaseCredentials extends Construct {
     const datadogLambda =
       props.sharedProps.generateDatadogLambdaConfigurationFor(
         this,
-        `${props.sharedProps.serviceName}-database-init`
+        "database-init"
       );
 
     datadogLambda.addLambdaFunctions([handler]);
     Tags.of(handler).add(
       "service",
-      `${props.sharedProps.serviceName}-database-init`
+      "database-init"
     );
     Tags.of(handler).add("env", props.sharedProps.environment);
     Tags.of(handler).add("version", props.sharedProps.version);

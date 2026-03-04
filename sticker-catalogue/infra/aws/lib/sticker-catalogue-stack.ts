@@ -27,7 +27,7 @@ export class StickerCatalogueServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    const serviceName = "sticker-service";
+    const serviceName = "sticker-catalogue";
     const environment = process.env.ENV || "dev";
 
     const sharedResources = new SharedResources(this, "SharedResources", {

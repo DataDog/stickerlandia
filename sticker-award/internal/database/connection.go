@@ -29,7 +29,7 @@ func Connect(cfg *config.DatabaseConfig) (*gorm.DB, error) {
 	}
 
 	// Register Datadog tracing plugin so that GORM queries emit database spans
-	if err := db.Use(gormtrace.NewTracePlugin(gormtrace.WithService("sticker-award-db"))); err != nil {
+	if err := db.Use(gormtrace.NewTracePlugin(gormtrace.WithService(cfg.Name))); err != nil {
 		return nil, fmt.Errorf("failed to register gorm tracing plugin: %w", err)
 	}
 
