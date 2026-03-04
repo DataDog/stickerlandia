@@ -189,7 +189,7 @@ func parseDatabaseURL(dbURL string) (*DatabaseConfig, error) {
 // setDefaults sets default configuration values
 func setDefaults() {
 	// Service name default
-	viper.SetDefault("service_name", "award-service")
+	viper.SetDefault("service_name", "sticker-award")
 
 	// Server defaults
 	viper.SetDefault("server.port", "8080")
