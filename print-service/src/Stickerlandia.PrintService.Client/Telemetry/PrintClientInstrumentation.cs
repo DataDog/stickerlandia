@@ -14,7 +14,7 @@ namespace Stickerlandia.PrintService.Client.Telemetry;
 /// </summary>
 internal sealed class PrintClientInstrumentation : IDisposable
 {
-    public const string ServiceName = "Stickerlandia.PrintService.Client";
+    public const string ServiceName = "print-service-client";
     public const string ServiceVersion = "1.0.0";
 
     private readonly Meter _meter;

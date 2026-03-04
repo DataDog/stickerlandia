@@ -134,7 +134,7 @@ export class MigrationTask extends Construct implements IDependable {
     const baseEnvironmentVariables: { [key: string]: string } = {
       ENV: props.sharedProps.environment,
       DD_ENV: props.sharedProps.environment,
-      DD_SERVICE: `${props.sharedProps.serviceName}-migration`,
+      DD_SERVICE: props.sharedProps.serviceName,
       DD_VERSION: props.imageTag,
       DD_GIT_COMMIT_SHA: props.sharedProps.commitSha,
       DD_GIT_REPOSITORY_URL: "https://github.com/Datadog/stickerlandia",
