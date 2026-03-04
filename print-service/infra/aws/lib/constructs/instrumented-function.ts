@@ -71,6 +71,7 @@ export class InstrumentedLambdaFunction extends Construct {
       },
       environment: {
         AWS_LAMBDA_EXEC_WRAPPER: "/opt/datadog_wrapper",
+        DD_SERVICE: props.sharedProps.serviceName,
         POWERTOOLS_SERVICE_NAME: props.sharedProps.serviceName,
         POWERTOOLS_LOG_LEVEL:
           (props.logLevel ?? props.sharedProps.environment === "prod")
