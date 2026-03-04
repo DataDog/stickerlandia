@@ -289,6 +289,30 @@ public class AuthorizationController(
             return SignIn(new ClaimsPrincipal(identity), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }
 
+        if (request.IsClientCredentialsGrantType())
+        {
+            // Client credentials flow: application-level authentication (no user context).
+            // Used for service-to-service calls such as Datadog Synthetics API testing.
+            var application = await applicationManager.FindByClientIdAsync(request.ClientId!) ??
+                throw new InvalidOperationException("The client application cannot be found.");
+
+            var identity = new ClaimsIdentity(
+                TokenValidationParameters.DefaultAuthenticationType,
+                OpenIddictConstants.Claims.Name,
+                OpenIddictConstants.Claims.Role);
+
+            identity.SetClaim(OpenIddictConstants.Claims.Subject, request.ClientId);
+            identity.SetClaim(OpenIddictConstants.Claims.Name, request.ClientId);
+            identity.SetClaims(OpenIddictConstants.Claims.Role, ["api-testing"]);
+
+            identity.SetScopes(request.GetScopes());
+            identity.SetResources(await scopeManager.ListResourcesAsync(identity.GetScopes()).ToListAsync());
+            identity.SetAudiences("stickerlandia");
+            identity.SetDestinations(GetDestinations);
+
+            return SignIn(new ClaimsPrincipal(identity), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+        }
+
         throw new InvalidOperationException("The specified grant type is not supported.");
     }
 

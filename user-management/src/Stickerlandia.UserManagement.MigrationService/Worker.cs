@@ -131,7 +131,40 @@ internal sealed class Worker(
             seedData?.SetTag("oauth.web-ui.redirectUri", redirectUri.ToString());
         }
 
-        // As soon as Stickerlandia services need to call other services under their own identities, add them here
+        // api-testing client: used for service-to-service calls (e.g. Datadog Synthetics API testing).
+        // Uses the client_credentials OAuth flow — no user context, no redirect URIs.
+        var apiTestingSecret = Environment.GetEnvironmentVariable("APITESTING_CLIENT_SECRET")
+            ?? "stickerlandia-api-testing-secret-2025";
+
+        var existingApiTestingClient = await manager.FindByClientIdAsync("api-testing", cancellationToken);
+        if (existingApiTestingClient is null)
+        {
+            await manager.CreateAsync(new OpenIddictApplicationDescriptor
+            {
+                ClientId = "api-testing",
+                ClientSecret = apiTestingSecret,
+                ClientType = OpenIddictConstants.ClientTypes.Confidential,
+                ConsentType = OpenIddictConstants.ConsentTypes.Implicit,
+                Permissions =
+                {
+                    OpenIddictConstants.Permissions.Endpoints.Token,
+                    OpenIddictConstants.Permissions.GrantTypes.ClientCredentials,
+                    OpenIddictConstants.Permissions.Scopes.Roles
+                }
+            }, cancellationToken);
+
+            seedData?.SetTag("oauth.api-testing.created", true);
+        }
+        else
+        {
+            // Update existing client to ensure secret matches (cloud-provided secret may have changed)
+            var descriptor = new OpenIddictApplicationDescriptor();
+            await manager.PopulateAsync(descriptor, existingApiTestingClient, cancellationToken);
+            descriptor.ClientSecret = apiTestingSecret;
+            await manager.UpdateAsync(existingApiTestingClient, descriptor, cancellationToken);
+
+            seedData?.SetTag("oauth.api-testing.updated", true);
+        }
 
         // Seed default user
         try

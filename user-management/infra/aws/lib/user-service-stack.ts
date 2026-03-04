@@ -15,6 +15,7 @@ import {
 import { MigrationTask } from "../../../../shared/lib/shared-constructs/lib/migration-task";
 import { Api } from "./api";
 import { Cluster, Secret } from "aws-cdk-lib/aws-ecs";
+import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as path from "path";
 import { BackgroundWorkers } from "./background-workers";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
@@ -73,6 +74,19 @@ export class UserServiceStack extends cdk.Stack {
       createSsmParameterReferences: false,
     });
 
+    // Secret for the api-testing OAuth client (used by Datadog Synthetics)
+    const apiTestingClientSecret = new secretsmanager.Secret(
+      this,
+      "ApiTestingClientSecret",
+      {
+        secretName: `/stickerlandia/${environment}/api-testing-client-secret`,
+        generateSecretString: {
+          excludePunctuation: true,
+          passwordLength: 48,
+        },
+      },
+    );
+
     // Run database migrations before starting services
     const migrationTask = new MigrationTask(this, "MigrationTask", {
       sharedProps: sharedProps,
@@ -98,6 +112,9 @@ export class UserServiceStack extends cdk.Stack {
       secrets: {
         ConnectionStrings__database:
           dbCredentials.getConnectionStringEcsSecret()!,
+        APITESTING_CLIENT_SECRET: Secret.fromSecretsManager(
+          apiTestingClientSecret,
+        ),
       },
       // Use the same security group as the API service for consistent network access
       securityGroupId: sharedResources.vpcLinkSecurityGroupId,
@@ -160,6 +177,12 @@ export class UserServiceStack extends cdk.Stack {
     new cdk.CfnOutput(this, "ServiceApiUrl", {
       value: `${sharedResources.domainName}/api/users/v1`,
       description: "User Management Service API URL",
+    });
+
+    new cdk.CfnOutput(this, "ApiTestingClientSecretArn", {
+      value: apiTestingClientSecret.secretArn,
+      description:
+        "ARN of the Secrets Manager secret for the api-testing OAuth client",
     });
   }
 }
