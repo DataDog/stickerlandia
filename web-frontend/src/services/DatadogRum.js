@@ -47,6 +47,7 @@ export const initializeDatadogRum = () => {
     defaultPrivacyLevel: 'mask-user-input',
     allowedTracingUrls: ['https://dev.stickerlandia.dev/',
      /^https:\/\/[^\/]+\.dev.stickerlandia\.dev/,
+     (url) => url.startsWith("https://dev.stickerlandia.dev/")
     ],
     // for RUM Profiling - currently feature flagged
     profilingSampleRate: 100,
