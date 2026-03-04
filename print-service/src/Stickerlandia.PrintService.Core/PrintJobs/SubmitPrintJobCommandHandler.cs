@@ -47,15 +47,16 @@ public class SubmitPrintJobCommandHandler(
             // Inject DSM context at submission time so it's persisted with the job
             if (activity != null)
             {
-                using var context = Tracer.Instance.StartActive("print_queue");
-
                 printJob.AddTraceParent($"00-{activity.Context.TraceId}-{activity.Context.SpanId}-01");
+            }
 
+            if (Tracer.Instance.ActiveScope is not null)
+            {
                 var injector = new SpanContextInjector();
                 injector.InjectIncludingDsm(printJob, (_, key, value) =>
                 {
                     printJob.AddHeader(key, value);
-                }, context.Span.Context, "print", "print_queue");
+                }, Tracer.Instance.ActiveScope.Span.Context, "queue", "print_queue");
             }
 
             await printJobRepository.AddAsync(printJob);

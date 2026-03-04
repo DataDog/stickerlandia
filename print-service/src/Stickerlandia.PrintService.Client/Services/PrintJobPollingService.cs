@@ -132,7 +132,18 @@ internal sealed class PrintJobPollingService : BackgroundService
     {
         _logger.LogInformation("Processing job {JobId} for sticker {StickerId}", job.PrintJobId, job.StickerId);
 
+        // Extract DSM context first so the consumer span wraps all processing work
+        var extractedContext = new SpanContextExtractor().ExtractIncludingDsm(
+            job,
+            GetHeader,
+            "queue",
+            "print_queue");
+
         using var activity = PrintClientInstrumentation.StartProcessJobActivity(job);
+        using var scope = Tracer.Instance.StartActive(
+            "process print.job",
+            new SpanCreationSettings { Parent = extractedContext });
+
         await _transactionTracker.TrackTransactionAsync(job.PrintJobId, "print-received");
         var stopwatch = Stopwatch.StartNew();
 
@@ -162,21 +173,7 @@ internal sealed class PrintJobPollingService : BackgroundService
                 _logger.LogInformation("Job {JobId} processed and acknowledged", job.PrintJobId);
                 ackActivity?.SetStatus(ActivityStatusCode.Ok);
                 _instrumentation.RecordAcknowledgementSucceeded();
-
-                // Mark consumption as complete
-                var propagator = new SpanContextExtractor();
-                var extractedContext = propagator.ExtractIncludingDsm(
-                    job,
-                    GetHeader,
-                    "queue",
-                    "print_queue");
                 await _transactionTracker.TrackTransactionAsync(job.PrintJobId, "print-completed");
-                using var scope = Tracer.Instance.StartActive(
-                    "processed print.job",
-                    new SpanCreationSettings
-                    {
-                        Parent = extractedContext
-                    });
             }
             else
             {

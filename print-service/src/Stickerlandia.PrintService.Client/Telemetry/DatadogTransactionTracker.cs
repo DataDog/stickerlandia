@@ -23,7 +23,7 @@ internal class DatadogTransactionTracker
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<DatadogTransactionTracker> _logger;
 
-    internal DatadogTransactionTracker(IHttpClientFactory httpClientFactory,
+    public DatadogTransactionTracker(IHttpClientFactory httpClientFactory,
         IConfiguration configuration,
         ILogger<DatadogTransactionTracker> logger)
     {
