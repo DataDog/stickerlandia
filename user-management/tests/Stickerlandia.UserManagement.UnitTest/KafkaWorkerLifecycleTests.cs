@@ -80,20 +80,20 @@ public class KafkaStickerPrintedWorkerTests
     }
 }
 
-public class KafakStickerClaimedWorkerTests
+public class KafkaStickerClaimedWorkerTests
 {
     private readonly IConsumer<string, string> _consumer;
     private readonly IKafkaConsumerFactory _factory;
-    private readonly KafakStickerClaimedWorker _worker;
+    private readonly KafkaStickerClaimedWorker _worker;
 
-    public KafakStickerClaimedWorkerTests()
+    public KafkaStickerClaimedWorkerTests()
     {
         _consumer = A.Fake<IConsumer<string, string>>();
         _factory = A.Fake<IKafkaConsumerFactory>();
         A.CallTo(() => _factory.Create(A<ConsumerConfig>.Ignored)).Returns(_consumer);
 
-        _worker = new KafakStickerClaimedWorker(
-            A.Fake<ILogger<KafakStickerClaimedWorker>>(),
+        _worker = new KafkaStickerClaimedWorker(
+            A.Fake<ILogger<KafkaStickerClaimedWorker>>(),
             A.Fake<IServiceScopeFactory>(),
             new ConsumerConfig { BootstrapServers = "localhost:9092", GroupId = "test" },
             new ProducerConfig { BootstrapServers = "localhost:9092" },

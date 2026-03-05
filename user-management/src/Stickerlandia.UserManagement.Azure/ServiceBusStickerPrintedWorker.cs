@@ -8,15 +8,13 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
+using System.Text.Json;
 using Azure.Messaging.ServiceBus;
-using CloudNative.CloudEvents;
-using CloudNative.CloudEvents.SystemTextJson;
 using Datadog.Trace;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Saunter.Attributes;
 using Stickerlandia.UserManagement.Core;
-using Stickerlandia.UserManagement.Core.StickerClaimedEvent;
 using Stickerlandia.UserManagement.Core.StickerPrintedEvent;
 using Log = Stickerlandia.UserManagement.Core.Observability.Log;
 
@@ -46,7 +44,7 @@ public class ServiceBusStickerPrintedWorker : IMessagingWorker
     }
 
     [Channel("printJobs.completed.v1")]
-    [SubscribeOperation(typeof(StickerClaimedEventV1))]
+    [SubscribeOperation(typeof(StickerPrintedEventV1))]
     private async Task ProcessMessageAsync(ProcessMessageEventArgs args)
     {
         using var processSpan = Tracer.Instance.StartActive($"process printJobs.completed.v1");
@@ -57,11 +55,18 @@ public class ServiceBusStickerPrintedWorker : IMessagingWorker
         var messageBody = args.Message.Body.ToString();
         Log.ReceivedMessage(_logger, "ServiceBus");
 
-        var detailBytes = System.Text.Encoding.UTF8.GetBytes(messageBody);
-        var formatter = new JsonEventFormatter<StickerPrintedEventV1>();
-        var cloudEvent = await formatter.DecodeStructuredModeMessageAsync(
-            new MemoryStream(detailBytes), null, new List<CloudEventAttribute>());
-        var stickerPrinted = (StickerPrintedEventV1?)cloudEvent.Data;
+        StickerPrintedEventV1? stickerPrinted;
+        if (string.Equals(args.Message.ContentType, "application/cloudevents+json", StringComparison.OrdinalIgnoreCase))
+        {
+            using var document = JsonDocument.Parse(messageBody);
+            stickerPrinted = document.RootElement.TryGetProperty("data", out var dataElement)
+                ? JsonSerializer.Deserialize<StickerPrintedEventV1>(dataElement.GetRawText())
+                : null;
+        }
+        else
+        {
+            stickerPrinted = JsonSerializer.Deserialize<StickerPrintedEventV1>(messageBody);
+        }
 
         if (stickerPrinted == null) await args.DeadLetterMessageAsync(args.Message, "Message body cannot be deserialized");
         

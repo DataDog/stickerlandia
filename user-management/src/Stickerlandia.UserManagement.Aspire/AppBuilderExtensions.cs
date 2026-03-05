@@ -253,6 +253,9 @@ internal static class AppBuilderExtensions
             .AddServiceBusQueue("users-stickerClaimed-v1", "users.stickerClaimed.v1")
             .WithServiceBusTestCommands();
 
+        serviceBus
+            .AddServiceBusQueue("printJobs-completed-v1", "printJobs.completed.v1");
+
         var topic = serviceBus
             .AddServiceBusTopic("users-userRegistered-v1", "users.userRegistered.v1");
         topic.AddServiceBusSubscription("noop");

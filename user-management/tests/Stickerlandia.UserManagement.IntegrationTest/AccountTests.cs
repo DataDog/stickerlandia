@@ -95,7 +95,7 @@ public sealed class AccountTests(ITestOutputHelper testOutputHelper, TestSetupFi
             
             var user = await _driver.GetUserAccount(loginResponse.AuthToken);
 
-            // Expect the claimed sticker count to be 1, break after completed.
+            // Expect the printed sticker count to be 1, break after completed.
             if (user!.PrintedStickerCount == 1)
             {
                 break;

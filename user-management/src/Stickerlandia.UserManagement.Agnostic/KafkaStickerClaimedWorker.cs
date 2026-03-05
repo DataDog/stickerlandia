@@ -20,8 +20,8 @@ using Stickerlandia.UserManagement.Core.StickerClaimedEvent;
 namespace Stickerlandia.UserManagement.Agnostic;
 
 [AsyncApi]
-public class KafakStickerClaimedWorker(
-    ILogger<KafakStickerClaimedWorker> logger,
+public class KafkaStickerClaimedWorker(
+    ILogger<KafkaStickerClaimedWorker> logger,
     IServiceScopeFactory serviceScopeFactory,
     ConsumerConfig consumerConfig,
     ProducerConfig producerConfig,

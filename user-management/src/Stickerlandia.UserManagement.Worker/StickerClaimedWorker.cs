@@ -61,10 +61,4 @@ internal sealed class StickerClaimedWorker(
             await messagingWorker.StopAsync(stoppingToken);
         }
     }
-    
-    public override async Task StopAsync(CancellationToken cancellationToken)
-    {
-        await messagingWorker.StopAsync(cancellationToken);
-        await base.StopAsync(cancellationToken);
-    }
 }

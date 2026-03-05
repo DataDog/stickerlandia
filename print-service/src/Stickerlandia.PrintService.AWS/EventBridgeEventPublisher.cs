@@ -31,7 +31,8 @@ namespace Stickerlandia.PrintService.AWS;
 public class EventBridgeEventPublisher(
     ILogger<EventBridgeEventPublisher> logger,
     IAmazonEventBridge client,
-    IOptions<AwsConfiguration> awsConfiguration) : IPrintServiceEventPublisher
+    IOptions<AwsConfiguration> awsConfiguration,
+    DatadogTransactionTracker transactionTracker) : IPrintServiceEventPublisher
 {
     [Channel("printJobs.queued.v1")]
     [PublishOperation(typeof(PrintJobQueuedEvent))]
@@ -49,6 +50,7 @@ public class EventBridgeEventPublisher(
         };
 
         await PublishCloudEventAsync(cloudEvent);
+        await transactionTracker.TrackTransactionAsync(printJobQueuedEvent.PrintJobId, "print-job-queued");
     }
 
     [Channel("printJobs.failed.v1")]

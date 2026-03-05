@@ -37,7 +37,7 @@ public class StickerPrintedHandler(UserManager<PostgresUserAccount> users)
         }
         catch (Exception ex)
         {
-            Activity.Current?.AddTag("stickerClaim.failed", true);
+            Activity.Current?.AddTag("stickerPrint.failed", true);
             Activity.Current?.AddTag("error.message", ex.Message);
 
             throw;

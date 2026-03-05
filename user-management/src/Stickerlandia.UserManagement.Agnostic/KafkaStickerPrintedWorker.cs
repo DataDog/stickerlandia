@@ -33,6 +33,7 @@ public class KafkaStickerPrintedWorker(
     private const string dlqTopic = "printJobs.completed.v1.dlq";
 
     private IConsumer<string, string>? _consumer;
+    private IProducer<string, string>? _dlqProducer;
 
     [Channel("printJobs.completed.v1")]
     [SubscribeOperation(typeof(StickerPrintedEventV1))]
@@ -67,9 +68,7 @@ public class KafkaStickerPrintedWorker(
 
     private void SendToDLQ(ConsumeResult<string, string> consumeResult, StickerPrintedEventV1 evtData)
     {
-        using var producer = new ProducerBuilder<string, string>(producerConfig).Build();
-
-        producer.Produce(dlqTopic,
+        _dlqProducer!.Produce(dlqTopic,
             new Message<string, string> { Key = evtData.UserId, Value = consumeResult.Message.Value },
             (deliveryReport) =>
             {
@@ -78,8 +77,6 @@ public class KafkaStickerPrintedWorker(
                 else
                     Log.MessageSentToDlq(logger, "", null);
             });
-
-        producer.Flush(TimeSpan.FromSeconds(10));
     }
 
     public Task StartAsync()
@@ -88,6 +85,8 @@ public class KafkaStickerPrintedWorker(
 
         _consumer = consumerFactory.Create(consumerConfig);
         _consumer.Subscribe(topic);
+
+        _dlqProducer = new ProducerBuilder<string, string>(producerConfig).Build();
 
         return Task.CompletedTask;
     }
@@ -130,6 +129,11 @@ public class KafkaStickerPrintedWorker(
         _consumer?.Close();
         _consumer?.Dispose();
         _consumer = null;
+
+        _dlqProducer?.Flush(TimeSpan.FromSeconds(10));
+        _dlqProducer?.Dispose();
+        _dlqProducer = null;
+
         return Task.CompletedTask;
     }
 }
