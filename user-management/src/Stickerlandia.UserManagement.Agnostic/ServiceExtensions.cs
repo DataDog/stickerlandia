@@ -88,10 +88,12 @@ public static class ServiceExtensions
 
         services.AddSingleton(producerConfig);
         services.AddSingleton(consumerConfig);
+        services.AddSingleton<IKafkaConsumerFactory, KafkaConsumerFactory>();
 
         // Register event publisher as singleton
         services.AddSingleton<IUserEventPublisher, KafkaEventPublisher>();
-        services.AddSingleton<IMessagingWorker, KafakStickerClaimedWorker>();
+        services.AddKeyedSingleton<IMessagingWorker, KafakStickerClaimedWorker>("stickerClaimed");
+        services.AddKeyedSingleton<IMessagingWorker, KafkaStickerPrintedWorker>("stickerPrinted");
 
         return services;
     }

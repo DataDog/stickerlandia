@@ -379,11 +379,14 @@ services:
         condition: service_healthy
     environment:
       # DataDog APM configuration
+      DD_API_KEY: ${DD_API_KEY}
+      DD_SITE: ${DD_SITE:-datadoghq.com}
       DD_SERVICE: print-service
       DD_ENV: ${ENV:-development}
       DD_VERSION: ${COMMIT_SHA:-latest}
       DD_AGENT_HOST: datadog-agent
       DD_DATA_STREAMS_ENABLED: "true"
+      DD_TRACE_REMOVE_INTEGRATION_SERVICE_NAMES_ENABLED: "true"
       DD_TRACE_OTEL_ENABLED: "true"
       DD_LOGS_INJECTION: "true"
       DD_RUNTIME_METRICS_ENABLED: "true"
@@ -433,11 +436,14 @@ services:
         condition: service_healthy
     environment:
       # DataDog APM configuration
+      DD_API_KEY: ${DD_API_KEY}
+      DD_SITE: ${DD_SITE:-datadoghq.com}
       DD_SERVICE: print-service
       DD_ENV: ${ENV:-development}
       DD_VERSION: ${COMMIT_SHA:-latest}
       DD_AGENT_HOST: datadog-agent
       DD_DATA_STREAMS_ENABLED: "true"
+      DD_TRACE_REMOVE_INTEGRATION_SERVICE_NAMES_ENABLED: "true"
       DD_TRACE_OTEL_ENABLED: "true"
       DD_LOGS_INJECTION: "true"
       DD_RUNTIME_METRICS_ENABLED: "true"
@@ -474,11 +480,14 @@ services:
       - "8086:8080"
     environment:
       # DataDog APM configuration
+      DD_API_KEY: ${DD_API_KEY}
+      DD_SITE: ${DD_SITE:-datadoghq.com}
       DD_SERVICE: print-service-client
       DD_ENV: ${ENV:-development}
       DD_VERSION: ${COMMIT_SHA:-latest}
       DD_AGENT_HOST: datadog-agent
       DD_DATA_STREAMS_ENABLED: "true"
+      DD_TRACE_REMOVE_INTEGRATION_SERVICE_NAMES_ENABLED: "true"
       DD_TRACE_OTEL_ENABLED: "true"
       DD_LOGS_INJECTION: "true"
       DD_RUNTIME_METRICS_ENABLED: "true"
@@ -538,7 +547,8 @@ services:
       DD_ENV: ${ENV:-development}
       DD_VERSION: ${COMMIT_SHA:-latest}
       DD_AGENT_HOST: datadog-agent
-      DD_DATA_STREAMS_ENABLED: true
+      DD_DATA_STREAMS_ENABLED: "true"
+      DD_TRACE_REMOVE_INTEGRATION_SERVICE_NAMES_ENABLED: "true"
       DD_TRACE_OTEL_ENABLED: "true"
       DD_LOGS_INJECTION: "true"
       DD_RUNTIME_METRICS_ENABLED: "true"
@@ -592,7 +602,8 @@ services:
       DD_ENV: ${ENV:-development}
       DD_VERSION: ${COMMIT_SHA:-latest}
       DD_AGENT_HOST: datadog-agent
-      DD_DATA_STREAMS_ENABLED: true
+      DD_DATA_STREAMS_ENABLED: "true"
+      DD_TRACE_REMOVE_INTEGRATION_SERVICE_NAMES_ENABLED: "true"
       DD_TRACE_OTEL_ENABLED: "true"
       DD_LOGS_INJECTION: "true"
       DD_RUNTIME_METRICS_ENABLED: "true"
@@ -716,7 +727,8 @@ services:
       DD_ENV: ${ENV:-development}
       DD_VERSION: ${COMMIT_SHA:-latest}
       DD_AGENT_HOST: datadog-agent
-      DD_DATA_STREAMS_ENABLED: true
+      DD_DATA_STREAMS_ENABLED: "true"
+      DD_TRACE_REMOVE_INTEGRATION_SERVICE_NAMES_ENABLED: "true"
       # Server configuration
       SERVER_PORT: 8080
 
@@ -768,6 +780,7 @@ services:
   # Load testing service - runs k6 load tests against the stack
   load-simulator:
     image: grafana/k6:latest
+    restart: always
     volumes:
       - ./load-tests:/scripts
     environment:

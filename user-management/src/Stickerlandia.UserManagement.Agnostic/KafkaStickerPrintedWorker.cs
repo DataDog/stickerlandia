@@ -7,7 +7,8 @@
 // Catching generic exceptions is not recommended, but in this case we want to catch all exceptions so that a failure in outbox processing does not crash the application.
 #pragma warning disable CA1031
 
-using System.Text.Json;
+using CloudNative.CloudEvents;
+using CloudNative.CloudEvents.SystemTextJson;
 using Confluent.Kafka;
 using Datadog.Trace;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,57 +16,61 @@ using Microsoft.Extensions.Logging;
 using Saunter.Attributes;
 using Stickerlandia.UserManagement.Core.Observability;
 using Stickerlandia.UserManagement.Core;
-using Stickerlandia.UserManagement.Core.StickerClaimedEvent;
+using Stickerlandia.UserManagement.Core.StickerPrintedEvent;
 
 namespace Stickerlandia.UserManagement.Agnostic;
 
 [AsyncApi]
-public class KafakStickerClaimedWorker(
-    ILogger<KafakStickerClaimedWorker> logger,
+public class KafkaStickerPrintedWorker(
+    ILogger<KafkaStickerPrintedWorker> logger,
     IServiceScopeFactory serviceScopeFactory,
     ConsumerConfig consumerConfig,
     ProducerConfig producerConfig,
     IKafkaConsumerFactory consumerFactory)
     : IMessagingWorker
 {
-    private const string topic = "users.stickerClaimed.v1";
-    private const string dlqTopic = "users.stickerClaimed.v1.dlq";
+    private const string topic = "printJobs.completed.v1";
+    private const string dlqTopic = "printJobs.completed.v1.dlq";
 
     private IConsumer<string, string>? _consumer;
 
-    [Channel("users.stickerClaimed.v1")]
-    [SubscribeOperation(typeof(StickerClaimedEventV1))]
-    private async Task<bool> ProcessMessageAsync(StickerClaimedHandler handler,
+    [Channel("printJobs.completed.v1")]
+    [SubscribeOperation(typeof(StickerPrintedEventV1))]
+    private async Task<bool> ProcessMessageAsync(StickerPrintedHandler handler,
         ConsumeResult<string, string> consumeResult)
     {
-        using var processSpan = Tracer.Instance.StartActive($"process users.stickerClaimed.v1");
+        using var processSpan = Tracer.Instance.StartActive($"printJobs.completed.v1");
 
         Log.ReceivedMessage(logger, "kafka");
 
-        var evtData = JsonSerializer.Deserialize<StickerClaimedEventV1>(consumeResult.Message.Value);
+        var detailBytes = System.Text.Encoding.UTF8.GetBytes(consumeResult.Message.Value);
+        var formatter = new JsonEventFormatter<StickerPrintedEventV1>();
+        var cloudEvent = await formatter.DecodeStructuredModeMessageAsync(
+            new MemoryStream(detailBytes), null, new List<CloudEventAttribute>());
+        var stickerPrinted = (StickerPrintedEventV1?)cloudEvent.Data;
 
-        if (evtData == null) return false;
+        if (stickerPrinted == null) return false;
 
         try
         {
-            await handler.Handle(evtData!);
+            await handler.Handle(stickerPrinted);
         }
         catch (InvalidUserException ex)
         {
             Log.InvalidUser(logger, ex);
 
-            SendToDLQ(consumeResult, evtData);
+            SendToDLQ(consumeResult, stickerPrinted);
         }
 
         return true;
     }
 
-    private void SendToDLQ(ConsumeResult<string, string> consumeResult, StickerClaimedEventV1 evtData)
+    private void SendToDLQ(ConsumeResult<string, string> consumeResult, StickerPrintedEventV1 evtData)
     {
         using var producer = new ProducerBuilder<string, string>(producerConfig).Build();
 
         producer.Produce(dlqTopic,
-            new Message<string, string> { Key = evtData.AccountId, Value = consumeResult.Message.Value },
+            new Message<string, string> { Key = evtData.UserId, Value = consumeResult.Message.Value },
             (deliveryReport) =>
             {
                 if (deliveryReport.Error.Code != ErrorCode.NoError)
@@ -99,7 +104,7 @@ public class KafakStickerClaimedWorker(
             if (consumeResult != null)
             {
                 using var scope = serviceScopeFactory.CreateScope();
-                var handler = scope.ServiceProvider.GetRequiredService<StickerClaimedHandler>();
+                var handler = scope.ServiceProvider.GetRequiredService<StickerPrintedHandler>();
 
                 var processResult = await ProcessMessageAsync(handler, consumeResult);
 

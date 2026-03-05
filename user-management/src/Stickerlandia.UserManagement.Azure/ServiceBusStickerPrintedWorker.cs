@@ -8,26 +8,28 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
-using System.Text.Json;
 using Azure.Messaging.ServiceBus;
+using CloudNative.CloudEvents;
+using CloudNative.CloudEvents.SystemTextJson;
 using Datadog.Trace;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Saunter.Attributes;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.StickerClaimedEvent;
+using Stickerlandia.UserManagement.Core.StickerPrintedEvent;
 using Log = Stickerlandia.UserManagement.Core.Observability.Log;
 
 namespace Stickerlandia.UserManagement.Azure;
 
 [AsyncApi]
-public class ServiceBusStickerClaimedWorker : IMessagingWorker
+public class ServiceBusStickerPrintedWorker : IMessagingWorker
 {
     private readonly IServiceScopeFactory _serviceScopeFactory;
-    private readonly ILogger<ServiceBusStickerClaimedWorker> _logger;
+    private readonly ILogger<ServiceBusStickerPrintedWorker> _logger;
     private readonly ServiceBusProcessor _processor;
 
-    public ServiceBusStickerClaimedWorker(ILogger<ServiceBusStickerClaimedWorker> logger,
+    public ServiceBusStickerPrintedWorker(ILogger<ServiceBusStickerPrintedWorker> logger,
         ServiceBusClient serviceBusClient, IServiceScopeFactory serviceScopeFactory)
     {
         ArgumentNullException.ThrowIfNull(serviceBusClient, nameof(serviceBusClient));
@@ -36,44 +38,36 @@ public class ServiceBusStickerClaimedWorker : IMessagingWorker
         _serviceScopeFactory = serviceScopeFactory;
 
         // Create the processor
-        _processor = serviceBusClient.CreateProcessor("users.stickerClaimed.v1");
+        _processor = serviceBusClient.CreateProcessor("printJobs.completed.v1");
 
         // Set up handlers
         _processor.ProcessMessageAsync += ProcessMessageAsync;
         _processor.ProcessErrorAsync += ProcessErrorAsync;
     }
 
-    [Channel("users.stickerClaimed.v1")]
+    [Channel("printJobs.completed.v1")]
     [SubscribeOperation(typeof(StickerClaimedEventV1))]
     private async Task ProcessMessageAsync(ProcessMessageEventArgs args)
     {
-        using var processSpan = Tracer.Instance.StartActive($"process users.stickerClaimed.v1");
+        using var processSpan = Tracer.Instance.StartActive($"process printJobs.completed.v1");
 
         using var scope = _serviceScopeFactory.CreateScope();
-        var handler = scope.ServiceProvider.GetRequiredService<StickerClaimedHandler>();
+        var handler = scope.ServiceProvider.GetRequiredService<StickerPrintedHandler>();
 
         var messageBody = args.Message.Body.ToString();
         Log.ReceivedMessage(_logger, "ServiceBus");
 
-        StickerClaimedEventV1? evtData;
-        if (string.Equals(args.Message.ContentType, "application/cloudevents+json", StringComparison.OrdinalIgnoreCase))
-        {
-            using var document = JsonDocument.Parse(messageBody);
-            evtData = document.RootElement.TryGetProperty("data", out var dataElement)
-                ? JsonSerializer.Deserialize<StickerClaimedEventV1>(dataElement.GetRawText())
-                : null;
-        }
-        else
-        {
-            evtData = JsonSerializer.Deserialize<StickerClaimedEventV1>(messageBody);
-        }
+        var detailBytes = System.Text.Encoding.UTF8.GetBytes(messageBody);
+        var formatter = new JsonEventFormatter<StickerPrintedEventV1>();
+        var cloudEvent = await formatter.DecodeStructuredModeMessageAsync(
+            new MemoryStream(detailBytes), null, new List<CloudEventAttribute>());
+        var stickerPrinted = (StickerPrintedEventV1?)cloudEvent.Data;
 
-        if (evtData == null) await args.DeadLetterMessageAsync(args.Message, "Message body cannot be deserialized");
-
-        // Process your message here
+        if (stickerPrinted == null) await args.DeadLetterMessageAsync(args.Message, "Message body cannot be deserialized");
+        
         try
         {
-            await handler.Handle(evtData!);
+            await handler.Handle(stickerPrinted!);
         }
         catch (InvalidUserException ex)
         {

@@ -17,7 +17,7 @@ using Stickerlandia.PrintService.Core.RegisterPrinter;
 
 namespace Stickerlandia.PrintService.Agnostic;
 
-public class KafkaEventPublisher(ProducerConfig config, ILogger<KafkaEventPublisher> logger) : IPrintServiceEventPublisher
+public class KafkaEventPublisher(ProducerConfig config, ILogger<KafkaEventPublisher> logger, DatadogTransactionTracker transactionTracker) : IPrintServiceEventPublisher
 {
     [Channel("printJobs.queued.v1")]
     [PublishOperation(typeof(PrintJobQueuedEvent))]
@@ -34,7 +34,8 @@ public class KafkaEventPublisher(ProducerConfig config, ILogger<KafkaEventPublis
             Data = printJobQueuedEvent
         };
 
-        await Publish<PrinterRegisteredEvent>(cloudEvent);
+        await Publish<PrintJobQueuedEvent>(cloudEvent);
+        await transactionTracker.TrackTransactionAsync(printJobQueuedEvent.PrintJobId, "print-job-queued");
     }
 
     [Channel("printJobs.failed.v1")]
@@ -52,7 +53,7 @@ public class KafkaEventPublisher(ProducerConfig config, ILogger<KafkaEventPublis
             Data = printJobFailedEvent
         };
 
-        await Publish<PrinterRegisteredEvent>(cloudEvent);
+        await Publish<PrintJobFailedEvent>(cloudEvent);
     }
 
     [Channel("print.printerRegistered.v1")]

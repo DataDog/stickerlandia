@@ -7,7 +7,7 @@
 
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
-    <NoWarn>$(NoWarn);CS0168;CA1031</NoWarn>
+    <NoWarn>$(NoWarn);CS0168;CA1031;CA1707</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,6 +31,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Stickerlandia.UserManagement.Core\Stickerlandia.UserManagement.Core.csproj" />
+    <ProjectReference Include="..\..\src\Stickerlandia.UserManagement.Agnostic\Stickerlandia.UserManagement.Agnostic.csproj" />
   </ItemGroup>
 
 </Project>

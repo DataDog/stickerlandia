@@ -30,7 +30,8 @@ public static class ServiceExtensions
         services.Configure<AwsConfiguration>(
             configuration.GetSection("Aws"));
 
-        services.AddSingleton<IMessagingWorker, SqsStickerClaimedWorker>();
+        services.AddKeyedSingleton<IMessagingWorker, SqsStickerClaimedWorker>("stickerClaimed");
+        services.AddKeyedSingleton<IMessagingWorker, SqsStickerPrintedWorker>("stickerPrinted");
         services.AddSingleton(sp => new AmazonSQSClient());
         services.AddSingleton(sp => new AmazonEventBridgeClient());
         services.AddSingleton(sp => new AmazonSimpleNotificationServiceClient());

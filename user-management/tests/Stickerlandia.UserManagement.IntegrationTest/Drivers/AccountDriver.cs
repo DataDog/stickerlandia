@@ -8,7 +8,10 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Web;
+using CloudNative.CloudEvents;
+using CloudNative.CloudEvents.SystemTextJson;
 using Stickerlandia.UserManagement.Core.StickerClaimedEvent;
+using Stickerlandia.UserManagement.Core.StickerPrintedEvent;
 using Stickerlandia.UserManagement.IntegrationTest.ViewModels;
 using Xunit.Abstractions;
 
@@ -488,13 +491,39 @@ internal sealed class AccountDriver : IDisposable
     {
         var messagingType = _messaging.GetType();
         _testOutputHelper.WriteLine($"Injecting sticker claimed messaging using {messagingType.FullName} messaging.");
-        
-        await _messaging.SendMessageAsync("users.stickerClaimed.v1", new StickerClaimedEventV1
+
+        var messageJson = JsonSerializer.Serialize(new StickerClaimedEventV1
         {
             AccountId = userId,
             StickerId = stickerId
         });
-        
+
+        await _messaging.SendMessageAsync("users.stickerClaimed.v1", messageJson);
+
+        _testOutputHelper.WriteLine("Injected!");
+    }
+
+    public async Task InjectStickerPrintedMessage(string userId)
+    {
+        var messagingType = _messaging.GetType();
+        _testOutputHelper.WriteLine($"Injecting sticker printed messaging using {messagingType.FullName} messaging.");
+
+        var payload = new StickerPrintedEventV1 { UserId = userId };
+        var cloudEvent = new CloudEvent(CloudEventsSpecVersion.V1_0)
+        {
+            Id = Guid.NewGuid().ToString(),
+            Source = new Uri("https://stickerlandia.com"),
+            Type = "printJobs.completed.v1",
+            Time = DateTime.UtcNow,
+            DataContentType = "application/json",
+            Data = JsonDocument.Parse(JsonSerializer.Serialize(payload)).RootElement
+        };
+        var formatter = new JsonEventFormatter();
+        var encoded = formatter.EncodeStructuredModeMessage(cloudEvent, out _);
+        var messageJson = Encoding.UTF8.GetString(encoded.Span);
+
+        await _messaging.SendMessageAsync("printJobs.completed.v1", messageJson);
+
         _testOutputHelper.WriteLine("Injected!");
     }
 
