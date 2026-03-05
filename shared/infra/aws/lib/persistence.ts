@@ -43,7 +43,7 @@ export class Persistence extends Construct {
 
     var secret = new DatabaseSecret(this, "SharedDBSecret", {
       username: "postgres",
-      excludeCharacters: '"@/\\',
+      excludeCharacters: '"@/\\;=\'',
     });
 
     // Use DESTROY for dev environments, RETAIN for production
