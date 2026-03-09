@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "dd-trace": "^5.62.0",
-    "express": "^5.1.0",
+    "express": "^5.2.1",
     "express-rate-limit": "^7.4.1",
     "express-session": "^1.18.1",
     "helmet": "^8.1.0",
