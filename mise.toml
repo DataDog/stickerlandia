@@ -280,3 +280,19 @@ docker compose --profile load-test run --rm load-simulator
 docker compose --profile load-test down -v
 """
 
+[tasks."aws:load-test:smoke"]
+description = "Run load tests against AWS deployment"
+dir = "e2e"
+depends = ["ui-test:install"]
+run = """
+BASE_URL=$(aws cloudformation describe-stacks \
+  --stack-name "StickerlandiaSharedResources-${ENV:-dev}" \
+  --query "Stacks[0].Outputs[?OutputKey=='BaseUrl'].OutputValue" \
+  --output text)
+DEPLOYMENT_HOST_URL=$(aws cloudformation describe-stacks \
+  --stack-name "StickerlandiaSharedResources-${ENV:-dev}" \
+  --query "Stacks[0].Outputs[?OutputKey=='BaseUrl'].OutputValue" \
+  --output text)
+echo "Running tests against: $BASE_URL"
+BASE_URL=$BASE_URL DEPLOYMENT_HOST_URL=$DEPLOYMENT_HOST_URL npx playwright test
+"""

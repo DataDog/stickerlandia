@@ -71,7 +71,20 @@ public class SnsEventPublisher(
             var data = formatter.EncodeStructuredModeMessage(cloudEvent, out _);
             var jsonString = System.Text.Encoding.UTF8.GetString(data.Span);
 
-            await client.PublishAsync(new PublishRequest(awsConfiguration.Value.UserRegisteredTopicArn, jsonString));
+            var publishRequest = new PublishRequest(awsConfiguration.Value.UserRegisteredTopicArn, jsonString);
+
+            if (Tracer.Instance.ActiveScope is not null)
+            {
+                publishRequest.MessageAttributes = new Dictionary<string, MessageAttributeValue>();
+                new SpanContextInjector().InjectIncludingDsm(
+                    publishRequest.MessageAttributes,
+                    (attrs, key, value) => attrs[key] = new MessageAttributeValue { DataType = "String", StringValue = value },
+                    Tracer.Instance.ActiveScope.Span.Context,
+                    "sns",
+                    awsConfiguration.Value.UserRegisteredTopicArn);
+            }
+
+            await client.PublishAsync(publishRequest);
         }
         catch (Exception ex)
         {

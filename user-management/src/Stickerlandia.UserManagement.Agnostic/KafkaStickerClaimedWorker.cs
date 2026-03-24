@@ -38,7 +38,19 @@ public class KafkaStickerClaimedWorker(
     private async Task<bool> ProcessMessageAsync(StickerClaimedHandler handler,
         ConsumeResult<string, string> consumeResult)
     {
-        using var processSpan = Tracer.Instance.StartActive($"process users.stickerClaimed.v1");
+        var extractedContext = new SpanContextExtractor().ExtractIncludingDsm(
+            consumeResult.Message.Headers,
+            static (headers, key) =>
+            {
+                if (headers is null || !headers.TryGetLastBytes(key, out var bytes) || bytes is null)
+                    return Enumerable.Empty<string>();
+                return new[] { System.Text.Encoding.UTF8.GetString(bytes) };
+            },
+            "kafka",
+            topic);
+
+        using var processSpan = Tracer.Instance.StartActive($"process users.stickerClaimed.v1",
+            new SpanCreationSettings { Parent = extractedContext });
 
         Log.ReceivedMessage(logger, "kafka");
 

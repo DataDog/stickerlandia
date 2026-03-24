@@ -71,10 +71,23 @@ public class GooglePubSubMessagingWorker(
         CancellationToken cancellationToken)
     {
         logger.LogInformation("GooglePubSubMessagingWorker processing message");
+
+        var extractedContext = new SpanContextExtractor().ExtractIncludingDsm(
+            message.Attributes,
+            static (attributes, key) =>
+            {
+                if (attributes.TryGetValue(key, out var value))
+                    return new[] { value };
+                return Enumerable.Empty<string>();
+            },
+            "googlepubsub",
+            "users.stickerClaimed.v1");
+
         // Process the message here
         var messageText = message.Data.ToStringUtf8();
 
-        using var processSpan = Tracer.Instance.StartActive($"process users.stickerClaimed.v1");
+        using var processSpan = Tracer.Instance.StartActive($"process users.stickerClaimed.v1",
+            new SpanCreationSettings { Parent = extractedContext });
 
         using var scope = serviceScopeFactory.CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<StickerClaimedHandler>();

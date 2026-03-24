@@ -45,7 +45,19 @@ public class SqsStickerPrintedWorker : IMessagingWorker
     [SubscribeOperation(typeof(StickerPrintedEventV1))]
     private async Task ProcessMessageAsync(Message message)
     {
-        using var processSpan = Tracer.Instance.StartActive($"process printJobs.completed.v1");
+        var extractedContext = new SpanContextExtractor().ExtractIncludingDsm(
+            message.MessageAttributes,
+            static (attributes, key) =>
+            {
+                if (attributes.TryGetValue(key, out var attr))
+                    return new[] { attr.StringValue };
+                return Enumerable.Empty<string>();
+            },
+            "sqs",
+            "printJobs.completed.v1");
+
+        using var processSpan = Tracer.Instance.StartActive($"process printJobs.completed.v1",
+            new SpanCreationSettings { Parent = extractedContext });
 
         using var scope = _serviceScopeFactory.CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<StickerPrintedHandler>();
@@ -85,8 +97,9 @@ public class SqsStickerPrintedWorker : IMessagingWorker
         var request = new ReceiveMessageRequest
         {
             QueueUrl = _awsConfiguration.Value.StickerPrintedQueueUrl,
-            WaitTimeSeconds = 20, // Enable long polling with a 20-second wait time
-            MaxNumberOfMessages = 10 // Fetch up to 10 messages per call
+            WaitTimeSeconds = 20,
+            MaxNumberOfMessages = 10,
+            MessageAttributeNames = new List<string> { "All" }
         };
 
         var messages = await _sqsClient.ReceiveMessageAsync(request, stoppingToken);

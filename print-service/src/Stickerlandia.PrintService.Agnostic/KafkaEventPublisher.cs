@@ -7,6 +7,7 @@ using System.Text;
 using CloudNative.CloudEvents;
 using CloudNative.CloudEvents.SystemTextJson;
 using Confluent.Kafka;
+using Datadog.Trace;
 using Microsoft.Extensions.Logging;
 using Saunter.Attributes;
 using Stickerlandia.PrintService.Core;
@@ -17,7 +18,7 @@ using Stickerlandia.PrintService.Core.RegisterPrinter;
 
 namespace Stickerlandia.PrintService.Agnostic;
 
-public class KafkaEventPublisher(ProducerConfig config, ILogger<KafkaEventPublisher> logger, DatadogTransactionTracker transactionTracker) : IPrintServiceEventPublisher
+public class KafkaEventPublisher(ProducerConfig config, ILogger<KafkaEventPublisher> logger, IDatadogTransactionTracker transactionTracker) : IPrintServiceEventPublisher
 {
     [Channel("printJobs.queued.v1")]
     [PublishOperation(typeof(PrintJobQueuedEvent))]
@@ -127,13 +128,33 @@ public class KafkaEventPublisher(ProducerConfig config, ILogger<KafkaEventPublis
             var formatter = new JsonEventFormatter<T>();
             var data = formatter.EncodeStructuredModeMessage(cloudEvent, out _);
 
+            var message = new Message<string, string>
+            {
+                Key = cloudEvent.Id!,
+                Value = Encoding.UTF8.GetString(data.Span)
+            };
+
+            if (Tracer.Instance.ActiveScope is not null)
+            {
+                message.Headers = new Headers();
+                new SpanContextInjector().InjectIncludingDsm(
+                    message.Headers,
+                    (headers, key, value) => headers.Add(key, Encoding.UTF8.GetBytes(value)),
+                    Tracer.Instance.ActiveScope.Span.Context,
+                    "kafka",
+                    cloudEvent.Type!);
+            }
+            else
+            {
+                Log.GenericWarning(logger, "DSM injection skipped for Kafka: no active Datadog scope", null);
+                activity?.SetTag("dsm.injection_skipped", "no active scope");
+            }
+
             using var producer = new ProducerBuilder<string, string>(config).Build();
 
             try
             {
-                var deliveryReport = await producer.ProduceAsync(cloudEvent.Type,
-                    new Message<string, string> { Key = cloudEvent.Id!, Value = Encoding.UTF8.GetString(data.Span) },
-                    default);
+                var deliveryReport = await producer.ProduceAsync(cloudEvent.Type, message, default);
 
                 if (deliveryReport.Status == PersistenceStatus.PossiblyPersisted)
                 {

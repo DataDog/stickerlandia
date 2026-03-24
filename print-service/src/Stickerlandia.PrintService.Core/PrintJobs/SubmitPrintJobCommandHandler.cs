@@ -44,19 +44,20 @@ public class SubmitPrintJobCommandHandler(
                 command.StickerId,
                 command.StickerUrl);
 
-            // Inject DSM context at submission time so it's persisted with the job
+            // Inject DSM context at submission time so it's persisted with the job.
+            // An explicit producer span is created to guarantee InjectIncludingDsm always fires,
+            // regardless of whether an outer Datadog scope happens to be active at this call site.
             if (activity != null)
             {
-                printJob.AddTraceParent($"00-{activity.Context.TraceId}-{activity.Context.SpanId}-01");
-            }
+                using var context = Tracer.Instance.StartActive("print_queue");
 
-            if (Tracer.Instance.ActiveScope is not null)
-            {
+                printJob.AddTraceParent($"00-{activity.Context.TraceId}-{activity.Context.SpanId}-01");
+
                 var injector = new SpanContextInjector();
                 injector.InjectIncludingDsm(printJob, (_, key, value) =>
                 {
                     printJob.AddHeader(key, value);
-                }, Tracer.Instance.ActiveScope.Span.Context, "queue", "print_queue");
+                }, context.Span.Context, "queue", "print_queue");
             }
 
             await printJobRepository.AddAsync(printJob);

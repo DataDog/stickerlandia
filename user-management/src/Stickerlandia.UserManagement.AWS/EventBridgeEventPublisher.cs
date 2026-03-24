@@ -9,6 +9,7 @@
 // Copyright 2025 Datadog, Inc.
 
 using System.Globalization;
+using System.Text.Json.Nodes;
 using Amazon.EventBridge;
 using Amazon.EventBridge.Model;
 using Amazon.SimpleNotificationService;
@@ -73,6 +74,14 @@ public class EventBridgeEventPublisher(
             var data = formatter.EncodeStructuredModeMessage(cloudEvent, out _);
             var jsonString = System.Text.Encoding.UTF8.GetString(data.Span);
 
+            if (Tracer.Instance.ActiveScope is not null)
+            {
+                var jsonNode = JsonNode.Parse(jsonString)!;
+                new SpanContextInjector().InjectIncludingDsm(
+                    jsonNode, SetDsmHeader, Tracer.Instance.ActiveScope.Span.Context, "eventbridge", cloudEvent.Type!);
+                jsonString = jsonNode.ToJsonString();
+            }
+
             await client.PutEventsAsync(new PutEventsRequest()
             {
                 Entries = new List<PutEventsRequestEntry>(1)
@@ -97,5 +106,11 @@ public class EventBridgeEventPublisher(
         {
             processScope?.Close();
         }
+    }
+
+    private static void SetDsmHeader(JsonNode jsonNode, string key, string value)
+    {
+        if (jsonNode["_datadog"] == null) jsonNode["_datadog"] = new JsonObject();
+        jsonNode["_datadog"]![key] = value;
     }
 }

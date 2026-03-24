@@ -16,7 +16,7 @@ public class AcknowledgePrintJobCommandHandler(
     IPrinterRepository printerRepository,
     IOutbox outbox,
     PrintJobInstrumentation instrumentation,
-    DatadogTransactionTracker transactionTracker)
+    IDatadogTransactionTracker transactionTracker)
     : ICommandHandler<AcknowledgePrintJobCommand, AcknowledgePrintJobResponse>
 {
     public async Task<AcknowledgePrintJobResponse> Handle(AcknowledgePrintJobCommand command, CancellationToken cancellationToken = default)

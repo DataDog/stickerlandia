@@ -13,11 +13,11 @@ using Microsoft.Extensions.Logging;
 
 namespace Stickerlandia.PrintService.Core.Observability;
 
-public class DatadogTransactionTracker
+public class DatadogTransactionTracker : IDatadogTransactionTracker
 {
-    private readonly string _apiKey;
     private readonly string _service;
     private readonly string _environment;
+    private readonly string _ddApiKey;
     private readonly Uri _pipelineStatsEndpoint;
 
     private readonly IHttpClientFactory _httpClientFactory;
@@ -28,24 +28,17 @@ public class DatadogTransactionTracker
         ILogger<DatadogTransactionTracker> logger)
     {
         ArgumentNullException.ThrowIfNull(configuration);
-        
+
         _httpClientFactory = httpClientFactory;
         _logger = logger;
-        _apiKey = configuration["DD_API_KEY"] ?? string.Empty;
         _service = configuration["DD_SERVICE"] ?? "print-service";
         _environment = configuration["DD_ENV"] ?? "local";
-        var ddSite = configuration["DD_SITE"] ?? "datadoghq.com";
-        _pipelineStatsEndpoint = new Uri($"https://trace.agent.{ddSite}/api/v0.1/pipeline_stats");
+        _ddApiKey = configuration["DD_API_KEY"] ?? "";
+        _pipelineStatsEndpoint = new Uri($"https://trace.agent.{configuration["DD_SITE"] ?? "datadoghq.com"}/api/v0.1/pipeline_stats");
     }
 
     public async Task TrackTransactionAsync(string transactionId, string checkpoint)
     {
-        if (string.IsNullOrEmpty(_apiKey))
-        {
-            Log.TransactionTrackingSkipped(_logger);
-            return;
-        }
-
         try
         {
             if (Activity.Current is not null)
@@ -77,10 +70,10 @@ public class DatadogTransactionTracker
 
             using var client = _httpClientFactory.CreateClient();
             using var request = new HttpRequestMessage(HttpMethod.Post, _pipelineStatsEndpoint);
-            request.Headers.Add("DD-API-KEY", _apiKey);
             request.Content = new ByteArrayContent(compressed);
             request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
             request.Content.Headers.ContentEncoding.Add("gzip");
+            request.Content.Headers.Add("DD-API-KEY", _ddApiKey);
 
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();

@@ -132,17 +132,19 @@ internal sealed class PrintJobPollingService : BackgroundService
     {
         _logger.LogInformation("Processing job {JobId} for sticker {StickerId}", job.PrintJobId, job.StickerId);
 
-        // Extract DSM context first so the consumer span wraps all processing work
+        // Extract DSM context and activate the Datadog scope before starting the OTel activity,
+        // so the activity is parented to the DSM-extracted context rather than the ambient poll span.
         var extractedContext = new SpanContextExtractor().ExtractIncludingDsm(
             job,
             GetHeader,
             "queue",
             "print_queue");
 
-        using var activity = PrintClientInstrumentation.StartProcessJobActivity(job);
         using var scope = Tracer.Instance.StartActive(
             "process print.job",
             new SpanCreationSettings { Parent = extractedContext });
+
+        using var activity = PrintClientInstrumentation.StartProcessJobActivity(job);
 
         await _transactionTracker.TrackTransactionAsync(job.PrintJobId, "print-received");
         var stopwatch = Stopwatch.StartNew();

@@ -36,4 +36,17 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="print-jobs\2026-03-24\415ea02f-bc10-4ef6-89e7-2f769009f87e.json" />
+    <_ContentIncludedByDefault Remove="print-jobs\2026-03-24\506dccea-4c39-4e96-95bf-6858e30d043e.json" />
+    <_ContentIncludedByDefault Remove="print-jobs\2026-03-24\5270f1d5-9e9a-45b7-91dc-9eb65e4b23cb.json" />
+    <_ContentIncludedByDefault Remove="print-jobs\2026-03-24\6868ccee-3ddf-4c36-813a-e51c130865c3.json" />
+    <_ContentIncludedByDefault Remove="print-jobs\2026-03-24\82a74161-0eca-4fe1-a3d5-bb3fd86f2afc.json" />
+    <_ContentIncludedByDefault Remove="print-jobs\2026-03-24\c1f03d74-0c92-429f-807c-e8e86dffa326.json" />
+    <_ContentIncludedByDefault Remove="print-jobs\2026-03-24\c64e482c-9200-4406-8501-56a17bc8ac7d.json" />
+    <_ContentIncludedByDefault Remove="print-jobs\2026-03-24\c72499f4-ce72-4169-be33-7b3eb918f614.json" />
+    <_ContentIncludedByDefault Remove="print-jobs\2026-03-24\d8e56c15-6e4c-4cb6-b9e4-3a277c0725b0.json" />
+    <_ContentIncludedByDefault Remove="print-jobs\2026-03-24\e03b614b-b23d-4ebb-a747-bfdaee9f67ee.json" />
+  </ItemGroup>
+
 </Project>

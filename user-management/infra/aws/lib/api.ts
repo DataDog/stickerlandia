@@ -133,6 +133,10 @@ export class Api extends Construct {
     this.stickerClaimedDLQ.grantSendMessages(webService.taskRole);
     this.stickerClaimedQueue.grantConsumeMessages(webService.taskRole);
     this.stickerClaimedDLQ.grantConsumeMessages(webService.taskRole);
+    this.stickerPrintedQueue.grantSendMessages(webService.taskRole);
+    this.stickerPrintedDLQ.grantSendMessages(webService.taskRole);
+    this.stickerPrintedQueue.grantConsumeMessages(webService.taskRole);
+    this.stickerPrintedDLQ.grantConsumeMessages(webService.taskRole);
 
     // Grant execution role permission to read the database connection string secret
     props.serviceProps.databaseCredentials.grantRead(webService.executionRole);

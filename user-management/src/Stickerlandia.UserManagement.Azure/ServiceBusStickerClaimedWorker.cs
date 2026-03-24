@@ -47,7 +47,19 @@ public class ServiceBusStickerClaimedWorker : IMessagingWorker
     [SubscribeOperation(typeof(StickerClaimedEventV1))]
     private async Task ProcessMessageAsync(ProcessMessageEventArgs args)
     {
-        using var processSpan = Tracer.Instance.StartActive($"process users.stickerClaimed.v1");
+        var extractedContext = new SpanContextExtractor().ExtractIncludingDsm(
+            args.Message.ApplicationProperties,
+            static (properties, key) =>
+            {
+                if (properties.TryGetValue(key, out var value))
+                    return new[] { value.ToString()! };
+                return Enumerable.Empty<string>();
+            },
+            "servicebus",
+            "users.stickerClaimed.v1");
+
+        using var processSpan = Tracer.Instance.StartActive($"process users.stickerClaimed.v1",
+            new SpanCreationSettings { Parent = extractedContext });
 
         using var scope = _serviceScopeFactory.CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<StickerClaimedHandler>();

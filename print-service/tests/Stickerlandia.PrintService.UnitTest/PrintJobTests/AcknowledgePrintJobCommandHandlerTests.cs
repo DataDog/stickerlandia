@@ -18,7 +18,7 @@ public class AcknowledgePrintJobCommandHandlerTests : IDisposable
     private readonly IPrintJobRepository _printJobRepository;
     private readonly IPrinterRepository _printerRepository;
     private readonly IOutbox _outbox;
-    private readonly DatadogTransactionTracker _transactionTracker;
+    private readonly IDatadogTransactionTracker _transactionTracker;
     private readonly PrintJobInstrumentation _instrumentation;
     private readonly AcknowledgePrintJobCommandHandler _handler;
 
@@ -27,7 +27,7 @@ public class AcknowledgePrintJobCommandHandlerTests : IDisposable
         _printJobRepository = A.Fake<IPrintJobRepository>();
         _printerRepository = A.Fake<IPrinterRepository>();
         _outbox = A.Fake<IOutbox>();
-        _transactionTracker = A.Fake<DatadogTransactionTracker>();
+        _transactionTracker = A.Fake<IDatadogTransactionTracker>();
         _instrumentation = new PrintJobInstrumentation();
         _handler = new AcknowledgePrintJobCommandHandler(_printJobRepository, _printerRepository, _outbox, _instrumentation, _transactionTracker);
     }

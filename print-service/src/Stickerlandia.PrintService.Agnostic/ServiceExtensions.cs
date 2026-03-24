@@ -124,7 +124,7 @@ public static class ServiceExtensions
         services.AddSingleton(consumerConfig);
 
         services.AddHttpClient();
-        services.AddSingleton<DatadogTransactionTracker>();
+        services.AddSingleton<IDatadogTransactionTracker, DatadogTransactionTracker>();
 
         // Register event publisher as singleton
         services.AddSingleton<IPrintServiceEventPublisher, KafkaEventPublisher>();

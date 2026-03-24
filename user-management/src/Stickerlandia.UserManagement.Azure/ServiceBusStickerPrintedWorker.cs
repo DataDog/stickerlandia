@@ -47,7 +47,19 @@ public class ServiceBusStickerPrintedWorker : IMessagingWorker
     [SubscribeOperation(typeof(StickerPrintedEventV1))]
     private async Task ProcessMessageAsync(ProcessMessageEventArgs args)
     {
-        using var processSpan = Tracer.Instance.StartActive($"process printJobs.completed.v1");
+        var extractedContext = new SpanContextExtractor().ExtractIncludingDsm(
+            args.Message.ApplicationProperties,
+            static (properties, key) =>
+            {
+                if (properties.TryGetValue(key, out var value))
+                    return new[] { value.ToString()! };
+                return Enumerable.Empty<string>();
+            },
+            "servicebus",
+            "printJobs.completed.v1");
+
+        using var processSpan = Tracer.Instance.StartActive($"process printJobs.completed.v1",
+            new SpanCreationSettings { Parent = extractedContext });
 
         using var scope = _serviceScopeFactory.CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<StickerPrintedHandler>();

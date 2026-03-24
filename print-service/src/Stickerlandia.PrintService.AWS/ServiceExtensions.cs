@@ -63,7 +63,7 @@ public static class ServiceExtensions
         services.AddSingleton<IPrintServiceEventPublisher, EventBridgeEventPublisher>();
 
         services.AddHttpClient();
-        services.AddSingleton<DatadogTransactionTracker>();
+        services.AddSingleton<IDatadogTransactionTracker, DatadogTransactionTracker>();
 
         return services;
     }

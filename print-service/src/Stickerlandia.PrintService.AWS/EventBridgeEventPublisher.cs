@@ -32,7 +32,7 @@ public class EventBridgeEventPublisher(
     ILogger<EventBridgeEventPublisher> logger,
     IAmazonEventBridge client,
     IOptions<AwsConfiguration> awsConfiguration,
-    DatadogTransactionTracker transactionTracker) : IPrintServiceEventPublisher
+    IDatadogTransactionTracker transactionTracker) : IPrintServiceEventPublisher
 {
     [Channel("printJobs.queued.v1")]
     [PublishOperation(typeof(PrintJobQueuedEvent))]
@@ -151,7 +151,7 @@ public class EventBridgeEventPublisher(
             }
             else
             {
-                Log.GenericWarning(logger, "Failure publishing event", null);
+                Log.GenericWarning(logger, "DSM injection skipped for EventBridge: no active Datadog scope", null);
                 activity?.SetTag("dsm.injection_skipped", "no active scope");
             }
 
