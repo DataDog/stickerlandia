@@ -642,6 +642,7 @@ services:
       KAFKA__SCHEMAREGISTRY: "http://kafka:8082"
       KAFKA__GROUPID: "stickerlandia-user-management"
       DEPLOYMENT_HOST_URL: ${DEPLOYMENT_HOST_URL}
+      APITESTING_CLIENT_SECRET: stickerlandia-api-testing-secret-2025
     command: ["migrations/Stickerlandia.UserManagement.MigrationService.dll"]
 
   web-backend:
