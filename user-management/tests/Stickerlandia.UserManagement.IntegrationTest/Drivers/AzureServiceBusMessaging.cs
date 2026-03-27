@@ -21,7 +21,10 @@ internal sealed class AzureServiceBusMessaging(string connectionString) : IMessa
     {
         var sender = _client.CreateSender(queueName);
 
-        var serviceBusMessage = new ServiceBusMessage(Encoding.UTF8.GetBytes(messageJson));
+        var serviceBusMessage = new ServiceBusMessage(Encoding.UTF8.GetBytes(messageJson))
+        {
+            ContentType = "application/cloudevents+json"
+        };
 
         await sender.SendMessageAsync(serviceBusMessage);
     }

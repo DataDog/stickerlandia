@@ -39,6 +39,12 @@ public class DatadogTransactionTracker : IDatadogTransactionTracker
 
     public async Task TrackTransactionAsync(string transactionId, string checkpoint)
     {
+        if (string.IsNullOrEmpty(_ddApiKey))
+        {
+            Log.TransactionTrackingSkipped(_logger);
+            return;
+        }
+
         try
         {
             if (Activity.Current is not null)
