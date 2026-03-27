@@ -11,6 +11,7 @@ using Datadog.Trace;
 using Stickerlandia.PrintService.Client.Configuration;
 using Stickerlandia.PrintService.Client.Models;
 using Stickerlandia.PrintService.Client.Telemetry;
+using CoreObs = Stickerlandia.PrintService.Core.Observability;
 
 namespace Stickerlandia.PrintService.Client.Services;
 
@@ -25,7 +26,7 @@ internal sealed class PrintJobPollingService : BackgroundService
     private readonly ClientStatusService _statusService;
     private readonly PrintClientInstrumentation _instrumentation;
     private readonly ILogger<PrintJobPollingService> _logger;
-    private readonly DatadogTransactionTracker _transactionTracker;
+    private readonly CoreObs.IDatadogTransactionTracker _transactionTracker;
 
     public PrintJobPollingService(
         IPrintServiceApiClient apiClient,
@@ -33,7 +34,7 @@ internal sealed class PrintJobPollingService : BackgroundService
         IConfigurationService configService,
         ClientStatusService statusService,
         PrintClientInstrumentation instrumentation,
-        ILogger<PrintJobPollingService> logger, DatadogTransactionTracker transactionTracker)
+        ILogger<PrintJobPollingService> logger, CoreObs.IDatadogTransactionTracker transactionTracker)
     {
         _apiClient = apiClient;
         _localStorage = localStorage;

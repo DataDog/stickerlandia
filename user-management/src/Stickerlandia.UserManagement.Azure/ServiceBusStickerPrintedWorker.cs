@@ -80,8 +80,12 @@ public class ServiceBusStickerPrintedWorker : IMessagingWorker
             stickerPrinted = JsonSerializer.Deserialize<StickerPrintedEventV1>(messageBody);
         }
 
-        if (stickerPrinted == null) await args.DeadLetterMessageAsync(args.Message, "Message body cannot be deserialized");
-        
+        if (stickerPrinted == null)
+        {
+            await args.DeadLetterMessageAsync(args.Message, "Message body cannot be deserialized");
+            return;
+        }
+
         try
         {
             await handler.Handle(stickerPrinted!);
@@ -90,6 +94,7 @@ public class ServiceBusStickerPrintedWorker : IMessagingWorker
         {
             Log.InvalidUser(_logger, ex);
             await args.DeadLetterMessageAsync(args.Message, "Invalid account id");
+            return;
         }
 
         // Complete the message

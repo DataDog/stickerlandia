@@ -9,8 +9,11 @@
 // Copyright 2025 Datadog, Inc.
 
 using System.Text.Json;
+using Amazon.Lambda.CloudWatchEvents;
 using Amazon.SQS;
 using Amazon.SQS.Model;
+using CloudNative.CloudEvents;
+using CloudNative.CloudEvents.SystemTextJson;
 using Datadog.Trace;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -18,7 +21,6 @@ using Microsoft.Extensions.Options;
 using Saunter.Attributes;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.Observability;
-using Stickerlandia.UserManagement.Core.StickerPrintedEvent;
 using Stickerlandia.UserManagement.Core.StickerPrintedEvent;
 
 namespace Stickerlandia.UserManagement.AWS;
@@ -30,6 +32,7 @@ public class SqsStickerPrintedWorker : IMessagingWorker
     private readonly ILogger<SqsStickerPrintedWorker> _logger;
     private readonly AmazonSQSClient _sqsClient;
     private readonly IOptions<AwsConfiguration> _awsConfiguration;
+    private readonly JsonSerializerOptions _jsonSerializerOptions = new() { PropertyNameCaseInsensitive = true };
 
     public SqsStickerPrintedWorker(ILogger<SqsStickerPrintedWorker> logger,
         AmazonSQSClient sqsClient, IServiceScopeFactory serviceScopeFactory,
@@ -62,7 +65,20 @@ public class SqsStickerPrintedWorker : IMessagingWorker
         using var scope = _serviceScopeFactory.CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<StickerPrintedHandler>();
 
-        var evtData = JsonSerializer.Deserialize<StickerPrintedEventV1>(message.Body);
+        var envelope = JsonSerializer.Deserialize<CloudWatchEvent<JsonElement>>(message.Body, _jsonSerializerOptions);
+
+        if (envelope == null)
+        {
+            await _sqsClient.SendMessageAsync(_awsConfiguration.Value.StickerPrintedDLQUrl, message.Body);
+            await _sqsClient.DeleteMessageAsync(_awsConfiguration.Value.StickerPrintedQueueUrl, message.ReceiptHandle);
+            return;
+        }
+
+        var detailBytes = JsonSerializer.SerializeToUtf8Bytes(envelope.Detail, _jsonSerializerOptions);
+        var formatter = new JsonEventFormatter<StickerPrintedEventV1>();
+        var cloudEvent = await formatter.DecodeStructuredModeMessageAsync(
+            new MemoryStream(detailBytes), null, new List<CloudEventAttribute>());
+        var evtData = (StickerPrintedEventV1?)cloudEvent.Data;
 
         if (evtData == null)
         {
@@ -71,10 +87,9 @@ public class SqsStickerPrintedWorker : IMessagingWorker
             return;
         }
 
-        // Process your message here
         try
         {
-            await handler.Handle(evtData!);
+            await handler.Handle(evtData);
         }
         catch (InvalidUserException ex)
         {
