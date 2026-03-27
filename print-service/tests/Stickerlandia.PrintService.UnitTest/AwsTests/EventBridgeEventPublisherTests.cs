@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Stickerlandia.PrintService.AWS;
 using Stickerlandia.PrintService.Core;
+using Stickerlandia.PrintService.Core.Observability;
 using Stickerlandia.PrintService.Core.PrintJobs;
 using Stickerlandia.PrintService.Core.RegisterPrinter;
 
@@ -24,8 +25,9 @@ public class EventBridgeEventPublisherTests
         var logger = A.Fake<ILogger<EventBridgeEventPublisher>>();
         var options = A.Fake<IOptions<AwsConfiguration>>();
         A.CallTo(() => options.Value).Returns(new AwsConfiguration { EventBusName = "test-bus" });
+        var transactionTracker = A.Fake<IDatadogTransactionTracker>();
 
-        _publisher = new EventBridgeEventPublisher(logger, _eventBridgeClient, options);
+        _publisher = new EventBridgeEventPublisher(logger, _eventBridgeClient, options, transactionTracker);
     }
 
     [Fact]

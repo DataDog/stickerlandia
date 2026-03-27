@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Stickerlandia.PrintService.Core\Stickerlandia.PrintService.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="Stickerlandia.PrintService.Client.Tests" />
     <!-- Required for FakeItEasy to mock internal types -->
     <InternalsVisibleTo Include="DynamicProxyGenAssembly2, PublicKey=0024000004800000940000000602000000240000525341310004000001000100c547cac37abd99c8db225ef2f6c8a3602f3b3606cc9891605d02baa56104f4cfc0734aa39b93bf7852f7d9266654753cc297e7d2edfe0bac1cdcf9f717241550e0a7b191195b7667bb4f64bcb8e2121380fd1d9d46ad2d92d2d15605093924cceaf74c4861eff62abf69b9291ed0a340e113be11e6a7d3113e92484cf7045cc7" />
@@ -34,6 +38,19 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="print-jobs\2026-03-24\415ea02f-bc10-4ef6-89e7-2f769009f87e.json" />
+    <_ContentIncludedByDefault Remove="print-jobs\2026-03-24\506dccea-4c39-4e96-95bf-6858e30d043e.json" />
+    <_ContentIncludedByDefault Remove="print-jobs\2026-03-24\5270f1d5-9e9a-45b7-91dc-9eb65e4b23cb.json" />
+    <_ContentIncludedByDefault Remove="print-jobs\2026-03-24\6868ccee-3ddf-4c36-813a-e51c130865c3.json" />
+    <_ContentIncludedByDefault Remove="print-jobs\2026-03-24\82a74161-0eca-4fe1-a3d5-bb3fd86f2afc.json" />
+    <_ContentIncludedByDefault Remove="print-jobs\2026-03-24\c1f03d74-0c92-429f-807c-e8e86dffa326.json" />
+    <_ContentIncludedByDefault Remove="print-jobs\2026-03-24\c64e482c-9200-4406-8501-56a17bc8ac7d.json" />
+    <_ContentIncludedByDefault Remove="print-jobs\2026-03-24\c72499f4-ce72-4169-be33-7b3eb918f614.json" />
+    <_ContentIncludedByDefault Remove="print-jobs\2026-03-24\d8e56c15-6e4c-4cb6-b9e4-3a277c0725b0.json" />
+    <_ContentIncludedByDefault Remove="print-jobs\2026-03-24\e03b614b-b23d-4ebb-a747-bfdaee9f67ee.json" />
   </ItemGroup>
 
 </Project>

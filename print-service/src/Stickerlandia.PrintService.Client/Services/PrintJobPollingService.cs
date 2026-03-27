@@ -11,6 +11,7 @@ using Datadog.Trace;
 using Stickerlandia.PrintService.Client.Configuration;
 using Stickerlandia.PrintService.Client.Models;
 using Stickerlandia.PrintService.Client.Telemetry;
+using CoreObs = Stickerlandia.PrintService.Core.Observability;
 
 namespace Stickerlandia.PrintService.Client.Services;
 
@@ -25,6 +26,7 @@ internal sealed class PrintJobPollingService : BackgroundService
     private readonly ClientStatusService _statusService;
     private readonly PrintClientInstrumentation _instrumentation;
     private readonly ILogger<PrintJobPollingService> _logger;
+    private readonly CoreObs.IDatadogTransactionTracker _transactionTracker;
 
     public PrintJobPollingService(
         IPrintServiceApiClient apiClient,
@@ -32,7 +34,7 @@ internal sealed class PrintJobPollingService : BackgroundService
         IConfigurationService configService,
         ClientStatusService statusService,
         PrintClientInstrumentation instrumentation,
-        ILogger<PrintJobPollingService> logger)
+        ILogger<PrintJobPollingService> logger, CoreObs.IDatadogTransactionTracker transactionTracker)
     {
         _apiClient = apiClient;
         _localStorage = localStorage;
@@ -40,6 +42,7 @@ internal sealed class PrintJobPollingService : BackgroundService
         _statusService = statusService;
         _instrumentation = instrumentation;
         _logger = logger;
+        _transactionTracker = transactionTracker;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -130,7 +133,21 @@ internal sealed class PrintJobPollingService : BackgroundService
     {
         _logger.LogInformation("Processing job {JobId} for sticker {StickerId}", job.PrintJobId, job.StickerId);
 
+        // Extract DSM context and activate the Datadog scope before starting the OTel activity,
+        // so the activity is parented to the DSM-extracted context rather than the ambient poll span.
+        var extractedContext = new SpanContextExtractor().ExtractIncludingDsm(
+            job,
+            GetHeader,
+            "queue",
+            "print_queue");
+
+        using var scope = Tracer.Instance.StartActive(
+            "process print.job",
+            new SpanCreationSettings { Parent = extractedContext });
+
         using var activity = PrintClientInstrumentation.StartProcessJobActivity(job);
+
+        await _transactionTracker.TrackTransactionAsync(job.PrintJobId, "print-received");
         var stopwatch = Stopwatch.StartNew();
 
         try
@@ -159,20 +176,7 @@ internal sealed class PrintJobPollingService : BackgroundService
                 _logger.LogInformation("Job {JobId} processed and acknowledged", job.PrintJobId);
                 ackActivity?.SetStatus(ActivityStatusCode.Ok);
                 _instrumentation.RecordAcknowledgementSucceeded();
-
-                // Mark consumption as complete
-                var propagator = new SpanContextExtractor();
-                var extractedContext = propagator.ExtractIncludingDsm(
-                    job,
-                    GetHeader,
-                    "queue",
-                    "print_queue");
-                using var scope = Tracer.Instance.StartActive(
-                    "processed print.job",
-                    new SpanCreationSettings
-                    {
-                        Parent = extractedContext
-                    });
+                await _transactionTracker.TrackTransactionAsync(job.PrintJobId, "print-completed");
             }
             else
             {

@@ -41,7 +41,9 @@ export interface BackgroundWorkersProps {
   serviceProps: ServiceProps;
   sharedEventBus: IEventBus;
   stickerClaimedQueue: IQueue;
+  stickerPrintedQueue: IQueue;
   stickerClaimedDLQ: IQueue;
+  stickerPrintedDLQ: IQueue;
   userRegisteredTopic: ITopic;
   useLambda: boolean;
 }
@@ -52,13 +54,14 @@ export class BackgroundWorkers extends Construct {
 
     if (props.useLambda) {
       // Get connection string value from CustomResource output, resolved at deploy time
-      const connectionString = props.serviceProps.databaseCredentials.getConnectionStringForLambda();
+      const connectionString =
+        props.serviceProps.databaseCredentials.getConnectionStringForLambda();
 
       // Reference the VPC link security group for Lambda functions that need database access
       const lambdaSecurityGroup = SecurityGroup.fromSecurityGroupId(
         this,
         "LambdaSecurityGroup",
-        props.vpcLinkSecurityGroupId
+        props.vpcLinkSecurityGroupId,
       );
 
       // Lambda functions need to be in private subnets to access RDS
@@ -80,6 +83,8 @@ export class BackgroundWorkers extends Construct {
         Aws__UserRegisteredTopicArn: props.userRegisteredTopic.topicArn,
         Aws__StickerClaimedQueueUrl: props.stickerClaimedQueue.queueUrl,
         Aws__StickerClaimedDLQUrl: props.stickerClaimedDLQ.queueUrl,
+        Aws__StickerPrintedQueueUrl: props.stickerPrintedQueue.queueUrl,
+        Aws__StickerPrintedDLQUrl: props.stickerPrintedDLQ.queueUrl,
         DRIVING: "ASPNET",
         DRIVEN: "AWS",
         DISABLE_SSL: "true",
@@ -103,14 +108,14 @@ export class BackgroundWorkers extends Construct {
           vpc: props.vpc,
           vpcSubnets: vpcSubnets,
           securityGroups: [lambdaSecurityGroup],
-        }
+        },
       );
 
       stickerClaimedWorker.function.addEventSource(
         new SqsEventSource(props.stickerClaimedQueue, {
           batchSize: 10,
           reportBatchItemFailures: true,
-        })
+        }),
       );
 
       // Add dependencies for Lambda functions to ensure SSM parameters exist before deployment
@@ -130,6 +135,50 @@ export class BackgroundWorkers extends Construct {
       });
       rule.addTarget(new SqsQueue(props.stickerClaimedQueue));
 
+      const stickerPrintedWorker = new InstrumentedLambdaFunction(
+        this,
+        "StickerPrintedWorkerFunction",
+        {
+          sharedProps: props.sharedProps,
+          handler:
+            "Stickerlandia.UserManagement.Lambda::Stickerlandia.UserManagement.Lambda.StickerPrintedSqsHandler_Handler_Generated::Handler",
+          buildDef: "../../src/Stickerlandia.UserManagement.Lambda/",
+          functionName: "sticker-printed-worker",
+          environment: environmentVariables,
+          memorySize: 1024,
+          timeout: Duration.seconds(25),
+          logLevel: props.sharedProps.environment === "prod" ? "WARN" : "INFO",
+          onFailure: new SqsDestination(props.stickerPrintedDLQ),
+          vpc: props.vpc,
+          vpcSubnets: vpcSubnets,
+          securityGroups: [lambdaSecurityGroup],
+        },
+      );
+
+      stickerPrintedWorker.function.addEventSource(
+        new SqsEventSource(props.stickerPrintedQueue, {
+          batchSize: 10,
+          reportBatchItemFailures: true,
+        }),
+      );
+
+      // Add dependencies for Lambda functions to ensure SSM parameters exist before deployment
+      if (props.serviceProps.serviceDependencies) {
+        for (const dependency of props.serviceProps.serviceDependencies) {
+          stickerPrintedWorker.function.node.addDependency(dependency);
+        }
+      }
+
+      const stickerPrintedRule = new Rule(this, "StickerPrintedEventRule", {
+        eventBus: props.sharedEventBus,
+        ruleName: `${props.sharedProps.serviceName}-${props.sharedProps.environment}-sticker-printed-rule`,
+        eventPattern: {
+          source: [`${props.sharedProps.environment}.print`],
+          detailType: ["printJobs.completed.v1"],
+        },
+      });
+      stickerPrintedRule.addTarget(new SqsQueue(props.stickerPrintedQueue));
+
       const outboxWorker = new InstrumentedLambdaFunction(
         this,
         "OutboxWorkerFunction",
@@ -147,7 +196,7 @@ export class BackgroundWorkers extends Construct {
           vpc: props.vpc,
           vpcSubnets: vpcSubnets,
           securityGroups: [lambdaSecurityGroup],
-        }
+        },
       );
       props.sharedEventBus.grantPutEventsTo(outboxWorker.function);
 
@@ -170,7 +219,7 @@ export class BackgroundWorkers extends Construct {
           event: RuleTargetInput.fromObject({
             run: true,
           }),
-        })
+        }),
       );
     } else {
       const workerService = new WorkerService(
@@ -223,6 +272,9 @@ export class BackgroundWorkers extends Construct {
           serviceDependencies: props.serviceProps.serviceDependencies,
         },
       );
+
+      props.stickerClaimedQueue.grantConsumeMessages(workerService.taskRole);
+      props.stickerPrintedQueue.grantConsumeMessages(workerService.taskRole);
     }
   }
 }

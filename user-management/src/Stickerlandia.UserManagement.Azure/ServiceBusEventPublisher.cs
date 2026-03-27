@@ -73,6 +73,16 @@ public class ServiceBusEventPublisher(ILogger<ServiceBusEventPublisher> logger, 
                 ContentType = "application/json"
             };
 
+            if (Tracer.Instance.ActiveScope is not null)
+            {
+                new SpanContextInjector().InjectIncludingDsm(
+                    serviceBusMessage.ApplicationProperties,
+                    (properties, key, value) => properties[key] = value,
+                    Tracer.Instance.ActiveScope.Span.Context,
+                    "servicebus",
+                    cloudEvent.Type!);
+            }
+
             await sender.SendMessageAsync(serviceBusMessage);
         }
         catch (Exception ex)

@@ -65,6 +65,51 @@ public sealed class AccountTests(ITestOutputHelper testOutputHelper, TestSetupFi
     }
 
     [Fact]
+    public async Task WhenStickerIsPrintedThenAUsersPrintedCountShouldIncrement()
+    {
+        // Arrange
+        var emailAddress = $"{Guid.NewGuid()}@test.com";
+        var password = $"{Guid.NewGuid()}!A23";
+
+        // Act
+        var registerResult = await _driver.RegisterUser(emailAddress, password);
+
+        if (registerResult is null) throw new ArgumentException("Registration failed");
+
+        var loginResponse = await _driver.Login(emailAddress, password);
+
+        if (loginResponse is null) throw new ArgumentException("Login response is null");
+        
+        var userAccount = await _driver.GetUserAccount(loginResponse.AuthToken);
+        
+        await _driver.InjectStickerPrintedMessage(userAccount.AccountId);
+
+        await Task.Delay(TimeSpan.FromSeconds(5));
+
+        var retryCount = 1;
+        var maxRetries = 5;
+
+        while (retryCount <= maxRetries)
+        {
+            testOutputHelper.WriteLine($"Retry {retryCount} of {maxRetries} to check sticker count...");
+            
+            var user = await _driver.GetUserAccount(loginResponse.AuthToken);
+
+            // Expect the printed sticker count to be 1, break after completed.
+            if (user!.PrintedStickerCount == 1)
+            {
+                break;
+            }
+            
+            retryCount++;
+
+            if (retryCount == maxRetries) Assert.Fail("Failed to increment sticker count after maximum retries.");
+
+            await Task.Delay(TimeSpan.FromSeconds(3));
+        }
+    }
+
+    [Fact]
     public async Task WhenAUserRegistersTheyShouldBeAbleToUpdateTheirDetails()
     {
         // Arrange

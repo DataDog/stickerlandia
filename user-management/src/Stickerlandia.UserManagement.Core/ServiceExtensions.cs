@@ -13,6 +13,7 @@ using Stickerlandia.UserManagement.Core.GetUserDetails;
 using Stickerlandia.UserManagement.Core.Outbox;
 using Stickerlandia.UserManagement.Core.RegisterUser;
 using Stickerlandia.UserManagement.Core.StickerClaimedEvent;
+using Stickerlandia.UserManagement.Core.StickerPrintedEvent;
 using Stickerlandia.UserManagement.Core.UpdateUserDetails;
 
 namespace Stickerlandia.UserManagement.Core;
@@ -25,6 +26,7 @@ public static class ServiceExtensions
         services.AddTransient<UpdateUserDetailsHandler>();
         services.AddTransient<GetUserDetailsQueryHandler>();
         services.AddTransient<StickerClaimedHandler>();
+        services.AddTransient<StickerPrintedHandler>();
         
         services.AddTransient<OutboxProcessor>();
         

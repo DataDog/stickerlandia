@@ -50,7 +50,22 @@ public class GooglePubSubEventPublisher([FromKeyedServices("users.userRegistered
         
         var formatter = new JsonEventFormatter<UserRegisteredEvent>();
         var data = formatter.EncodeStructuredModeMessage(cloudEvent, out _);
-        
-        await publisherClient.PublishAsync(ByteString.CopyFrom(data.Span));
+
+        var pubsubMessage = new PubsubMessage
+        {
+            Data = ByteString.CopyFrom(data.Span)
+        };
+
+        if (Tracer.Instance.ActiveScope is not null)
+        {
+            new SpanContextInjector().InjectIncludingDsm(
+                pubsubMessage.Attributes,
+                (attrs, key, value) => attrs[key] = value,
+                Tracer.Instance.ActiveScope.Span.Context,
+                "googlepubsub",
+                cloudEvent.Type!);
+        }
+
+        await publisherClient.PublishAsync(pubsubMessage);
     }
 }

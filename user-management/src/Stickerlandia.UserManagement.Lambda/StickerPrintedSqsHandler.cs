@@ -14,24 +14,25 @@ using Datadog.Trace;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Stickerlandia.UserManagement.Core;
-using Stickerlandia.UserManagement.Core.StickerClaimedEvent;
+using Stickerlandia.UserManagement.Core.RegisterUser;
 using Stickerlandia.UserManagement.Core.StickerPrintedEvent;
 using Log = Stickerlandia.UserManagement.Core.Observability.Log;
 
 namespace Stickerlandia.UserManagement.Lambda;
 
-public class SqsHandler(ILogger<SqsHandler> logger, IServiceScopeFactory serviceScopeFactory)
+public class StickerPrintedSqsHandler(
+    ILogger<StickerPrintedSqsHandler> logger,
+    IServiceScopeFactory serviceScopeFactory)
 {
     private readonly JsonSerializerOptions _jsonSerializerOptions = new() { PropertyNameCaseInsensitive = true };
+
     [LambdaFunction]
-    public async Task<SQSBatchResponse> StickerClaimed(SQSEvent sqsEvent)
+    public async Task<SQSBatchResponse> Handler(SQSEvent sqsEvent)
     {
-        using var processSpan = Tracer.Instance.StartActive($"process users.stickerClaimed.v1");
-        
         ArgumentNullException.ThrowIfNull(sqsEvent, nameof(sqsEvent));
 
         using var scope = serviceScopeFactory.CreateScope();
-        var handler = scope.ServiceProvider.GetRequiredService<StickerClaimedHandler>();
+        var handler = scope.ServiceProvider.GetRequiredService<StickerPrintedHandler>();
 
         var failedMessages = new List<SQSBatchResponse.BatchItemFailure>();
 
@@ -42,7 +43,7 @@ public class SqsHandler(ILogger<SqsHandler> logger, IServiceScopeFactory service
 
     private async Task ProcessMessage(SQSEvent.SQSMessage message,
         List<SQSBatchResponse.BatchItemFailure> failedMessages,
-        StickerClaimedHandler handler)
+        StickerPrintedHandler handler)
     {
         var evtData = JsonSerializer.Deserialize<CloudWatchEvent<JsonElement>>(message.Body, _jsonSerializerOptions);
 
@@ -51,16 +52,47 @@ public class SqsHandler(ILogger<SqsHandler> logger, IServiceScopeFactory service
             failedMessages.Add(new SQSBatchResponse.BatchItemFailure { ItemIdentifier = message.MessageId });
             return;
         }
-        
+
+        // The detail field contains the CloudEvent in structured mode format.
+        // Re-serialize it to bytes so the CloudEvents formatter can decode it.
         var detailBytes = JsonSerializer.SerializeToUtf8Bytes(evtData.Detail, _jsonSerializerOptions);
-        var formatter = new JsonEventFormatter<StickerClaimedEventV1>();
+        var formatter = new JsonEventFormatter<StickerPrintedEventV1>();
         var cloudEvent = await formatter.DecodeStructuredModeMessageAsync(
             new MemoryStream(detailBytes), null, new List<CloudEventAttribute>());
-        var stickerClaimed = (StickerClaimedEventV1?)cloudEvent.Data;
+        var stickerPrinted = (StickerPrintedEventV1?)cloudEvent.Data;
+
+        if (stickerPrinted == null)
+        {
+            failedMessages.Add(new SQSBatchResponse.BatchItemFailure { ItemIdentifier = message.MessageId });
+            return;
+        }
+
+        // Extract trace context injected by the publisher.
+        // Datadog headers (x-datadog-trace-id, etc.) are in the _datadog object at the root of the
+        // CloudEvent JSON. W3C traceparent is set as a CloudEvent extension attribute.
+        var propagatedContext = new SpanContextExtractor().ExtractIncludingDsm(
+            (cloudEvent, evtData.Detail),
+            static (carrier, key) =>
+            {
+                var (ce, detail) = carrier;
+                if (detail.TryGetProperty("_datadog", out var ddObj) &&
+                    ddObj.TryGetProperty(key, out var ddVal))
+                {
+                    return [ddVal.GetString()];
+                }
+                var ceVal = ce[key]?.ToString();
+                return ceVal is null ? [] : (IEnumerable<string?>)[ceVal];
+            },
+            "eventbridge",
+            cloudEvent.Type!);
+
+        using var processSpan = Tracer.Instance.StartActive(
+            $"process {cloudEvent.Type}",
+            new SpanCreationSettings { Parent = propagatedContext });
 
         try
         {
-            await handler.Handle(stickerClaimed!);
+            await handler.Handle(stickerPrinted);
         }
         catch (InvalidUserException ex)
         {

@@ -8,7 +8,8 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
-using System.Text.Json;
+using CloudNative.CloudEvents;
+using CloudNative.CloudEvents.SystemTextJson;
 using Datadog.Trace;
 using Microsoft.Extensions.Logging;
 using Stickerlandia.UserManagement.Core;
@@ -17,22 +18,23 @@ using Microsoft.Extensions.DependencyInjection;
 using Saunter.Attributes;
 using Stickerlandia.UserManagement.Core.Observability;
 using Stickerlandia.UserManagement.Core.StickerClaimedEvent;
+using Stickerlandia.UserManagement.Core.StickerPrintedEvent;
 
 #pragma warning disable CA1848
 
 namespace Stickerlandia.UserManagement.GCP;
 
-public class GooglePubSubMessagingWorker(
-    ILogger<GooglePubSubMessagingWorker> logger,
+public class GooglePubSubStickerPrintedWorker(
+    ILogger<GooglePubSubStickerPrintedWorker> logger,
     IServiceScopeFactory serviceScopeFactory,
-    [FromKeyedServices("users.stickerClaimed.v1")]
+    [FromKeyedServices("printJobs.completed.v1")]
     SubscriberClient subscriber) : IMessagingWorker
 {
     private Task? _task;
     
     public Task StartAsync()
     {
-        logger.LogInformation("GooglePubSubMessagingWorker started");
+        logger.LogInformation("GooglePubSubStickerPrintedWorker started");
         
         _task = subscriber.StartAsync(ProcessMessageAsync);
         
@@ -54,23 +56,23 @@ public class GooglePubSubMessagingWorker(
 #pragma warning disable CA1031
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "GooglePubSubMessagingWorker failed");
+            logger.LogWarning(ex, "GooglePubSubStickerPrintedWorker failed");
         }
     }
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
-        logger.LogInformation("GooglePubSubMessagingWorker stopping");
+        logger.LogInformation("GooglePubSubStickerPrintedWorker stopping");
 
         await subscriber.StopAsync(cancellationToken);
     }
 
-    [Channel("users.stickerClaimed.v1")]
-    [SubscribeOperation(typeof(StickerClaimedEventV1))]
+    [Channel("printJobs.completed.v1")]
+    [SubscribeOperation(typeof(StickerPrintedEventV1))]
     private async Task<SubscriberClient.Reply> ProcessMessageAsync(PubsubMessage message,
         CancellationToken cancellationToken)
     {
-        logger.LogInformation("GooglePubSubMessagingWorker processing message");
+        logger.LogInformation("GooglePubSubStickerPrintedWorker processing message");
 
         var extractedContext = new SpanContextExtractor().ExtractIncludingDsm(
             message.Attributes,
@@ -81,20 +83,24 @@ public class GooglePubSubMessagingWorker(
                 return Enumerable.Empty<string>();
             },
             "googlepubsub",
-            "users.stickerClaimed.v1");
+            "printJobs.completed.v1");
 
         // Process the message here
         var messageText = message.Data.ToStringUtf8();
 
-        using var processSpan = Tracer.Instance.StartActive($"process users.stickerClaimed.v1",
+        using var processSpan = Tracer.Instance.StartActive($"process printJobs.completed.v1",
             new SpanCreationSettings { Parent = extractedContext });
 
         using var scope = serviceScopeFactory.CreateScope();
-        var handler = scope.ServiceProvider.GetRequiredService<StickerClaimedHandler>();
+        var handler = scope.ServiceProvider.GetRequiredService<StickerPrintedHandler>();
+        
+        var detailBytes = System.Text.Encoding.UTF8.GetBytes(messageText);
+        var formatter = new JsonEventFormatter<StickerPrintedEventV1>();
+        var cloudEvent = await formatter.DecodeStructuredModeMessageAsync(
+            new MemoryStream(detailBytes), null, new List<CloudEventAttribute>());
+        var stickerPrinted = (StickerPrintedEventV1?)cloudEvent.Data;
 
-        var evtData = JsonSerializer.Deserialize<StickerClaimedEventV1>(messageText);
-
-        if (evtData == null)
+        if (stickerPrinted == null)
         {
             processSpan.Span.SetTag("error.message", "Invalid message format");
             return SubscriberClient.Reply.Ack;
@@ -102,7 +108,7 @@ public class GooglePubSubMessagingWorker(
 
         try
         {
-            await handler.Handle(evtData!);
+            await handler.Handle(stickerPrinted!);
         }
         catch (InvalidUserException ex)
         {

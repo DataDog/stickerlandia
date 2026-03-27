@@ -17,7 +17,7 @@ public static partial class Log
     
     [LoggerMessage(
         EventId = 0,
-        Level = LogLevel.Critical,
+        Level = LogLevel.Information,
         Message = "Received message from transport: {MessageTransport}")]
     public static partial void ReceivedMessage(
         ILogger logger, string messageTransport);

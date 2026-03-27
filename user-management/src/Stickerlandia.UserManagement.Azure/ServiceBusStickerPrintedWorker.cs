@@ -15,19 +15,19 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Saunter.Attributes;
 using Stickerlandia.UserManagement.Core;
-using Stickerlandia.UserManagement.Core.StickerClaimedEvent;
+using Stickerlandia.UserManagement.Core.StickerPrintedEvent;
 using Log = Stickerlandia.UserManagement.Core.Observability.Log;
 
 namespace Stickerlandia.UserManagement.Azure;
 
 [AsyncApi]
-public class ServiceBusStickerClaimedWorker : IMessagingWorker
+public class ServiceBusStickerPrintedWorker : IMessagingWorker
 {
     private readonly IServiceScopeFactory _serviceScopeFactory;
-    private readonly ILogger<ServiceBusStickerClaimedWorker> _logger;
+    private readonly ILogger<ServiceBusStickerPrintedWorker> _logger;
     private readonly ServiceBusProcessor _processor;
 
-    public ServiceBusStickerClaimedWorker(ILogger<ServiceBusStickerClaimedWorker> logger,
+    public ServiceBusStickerPrintedWorker(ILogger<ServiceBusStickerPrintedWorker> logger,
         ServiceBusClient serviceBusClient, IServiceScopeFactory serviceScopeFactory)
     {
         ArgumentNullException.ThrowIfNull(serviceBusClient, nameof(serviceBusClient));
@@ -36,15 +36,15 @@ public class ServiceBusStickerClaimedWorker : IMessagingWorker
         _serviceScopeFactory = serviceScopeFactory;
 
         // Create the processor
-        _processor = serviceBusClient.CreateProcessor("users.stickerClaimed.v1");
+        _processor = serviceBusClient.CreateProcessor("printJobs.completed.v1");
 
         // Set up handlers
         _processor.ProcessMessageAsync += ProcessMessageAsync;
         _processor.ProcessErrorAsync += ProcessErrorAsync;
     }
 
-    [Channel("users.stickerClaimed.v1")]
-    [SubscribeOperation(typeof(StickerClaimedEventV1))]
+    [Channel("printJobs.completed.v1")]
+    [SubscribeOperation(typeof(StickerPrintedEventV1))]
     private async Task ProcessMessageAsync(ProcessMessageEventArgs args)
     {
         var extractedContext = new SpanContextExtractor().ExtractIncludingDsm(
@@ -56,41 +56,45 @@ public class ServiceBusStickerClaimedWorker : IMessagingWorker
                 return Enumerable.Empty<string>();
             },
             "servicebus",
-            "users.stickerClaimed.v1");
+            "printJobs.completed.v1");
 
-        using var processSpan = Tracer.Instance.StartActive($"process users.stickerClaimed.v1",
+        using var processSpan = Tracer.Instance.StartActive($"process printJobs.completed.v1",
             new SpanCreationSettings { Parent = extractedContext });
 
         using var scope = _serviceScopeFactory.CreateScope();
-        var handler = scope.ServiceProvider.GetRequiredService<StickerClaimedHandler>();
+        var handler = scope.ServiceProvider.GetRequiredService<StickerPrintedHandler>();
 
         var messageBody = args.Message.Body.ToString();
         Log.ReceivedMessage(_logger, "ServiceBus");
 
-        StickerClaimedEventV1? evtData;
+        StickerPrintedEventV1? stickerPrinted;
         if (string.Equals(args.Message.ContentType, "application/cloudevents+json", StringComparison.OrdinalIgnoreCase))
         {
             using var document = JsonDocument.Parse(messageBody);
-            evtData = document.RootElement.TryGetProperty("data", out var dataElement)
-                ? JsonSerializer.Deserialize<StickerClaimedEventV1>(dataElement.GetRawText())
+            stickerPrinted = document.RootElement.TryGetProperty("data", out var dataElement)
+                ? JsonSerializer.Deserialize<StickerPrintedEventV1>(dataElement.GetRawText())
                 : null;
         }
         else
         {
-            evtData = JsonSerializer.Deserialize<StickerClaimedEventV1>(messageBody);
+            stickerPrinted = JsonSerializer.Deserialize<StickerPrintedEventV1>(messageBody);
         }
 
-        if (evtData == null) await args.DeadLetterMessageAsync(args.Message, "Message body cannot be deserialized");
+        if (stickerPrinted == null)
+        {
+            await args.DeadLetterMessageAsync(args.Message, "Message body cannot be deserialized");
+            return;
+        }
 
-        // Process your message here
         try
         {
-            await handler.Handle(evtData!);
+            await handler.Handle(stickerPrinted!);
         }
         catch (InvalidUserException ex)
         {
             Log.InvalidUser(_logger, ex);
             await args.DeadLetterMessageAsync(args.Message, "Invalid account id");
+            return;
         }
 
         // Complete the message
