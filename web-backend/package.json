@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "dd-trace": "^5.87.0",
+    "dd-trace": "^5.97.0",
     "express": "^5.1.0",
     "express-rate-limit": "^7.4.1",
     "express-session": "^1.19.0",
