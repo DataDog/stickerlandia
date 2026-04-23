@@ -2,6 +2,8 @@ module github.com/datadog/stickerlandia/sticker-award
 
 go 1.25.0
 
+toolchain go1.26.2
+
 require (
 	github.com/DataDog/dd-trace-go/contrib/IBM/sarama/v2 v2.6.0
 	github.com/DataDog/dd-trace-go/contrib/gin-gonic/gin/v2 v2.6.0

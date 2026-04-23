@@ -2,7 +2,7 @@
 # Provides hot-reload via Air and debugging via Delve
 # Use docker-compose.dev.yml in the stickerlandia root to use this!
 
-FROM golang:1.25-alpine
+FROM golang:1.26-alpine
 
 ARG GIT_COMMIT_SHA
 ARG GIT_REPOSITORY_URL
