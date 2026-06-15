@@ -23,5 +23,26 @@
     "aws-cdk-lib": "2.234.1",
     "constructs": "^10.4.4",
     "datadog-cdk-constructs-v2": "^3.6.0"
+  },
+  "overrides": {
+    "aws-cdk-lib": {
+      "ajv": "^8.20.0",
+      "fast-uri": "^3.1.2",
+      "minimatch": "^3.1.5",
+      "yaml": "^1.10.3"
+    },
+    "jest": {
+      "brace-expansion": "^2.0.3",
+      "picomatch": "^2.3.2"
+    },
+    "ts-jest": {
+      "picomatch": "^2.3.2"
+    },
+    "test-exclude": {
+      "minimatch": "^3.1.5"
+    },
+    "@types/jest": {
+      "picomatch": "^2.3.2"
+    }
   }
 }
