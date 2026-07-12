@@ -17,7 +17,7 @@ public static partial class Log
 
     [LoggerMessage(
         EventId = 0,
-        Level = LogLevel.Critical,
+        Level = LogLevel.Information,
         Message = "Received message from transport: {MessageTransport}")]
     public static partial void ReceivedMessage(
         ILogger logger, string messageTransport);
@@ -87,13 +87,26 @@ public static partial class Log
 
     [LoggerMessage(
         EventId = 10,
-        Level = LogLevel.Error,
+        Level = LogLevel.Warning,
         Message = "{Message}")]
     public static partial void GenericWarning(
         ILogger logger, string message, Exception? exception);
 
     [LoggerMessage(
-        EventId = 5,
+        EventId = 11,
+        Level = LogLevel.Warning,
+        Message = "DD_API_KEY is not configured; skipping transaction tracking.")]
+    public static partial void TransactionTrackingSkipped(ILogger logger);
+
+    [LoggerMessage(
+        EventId = 12,
+        Level = LogLevel.Warning,
+        Message = "Failed to track Datadog transaction {TransactionId} at checkpoint {Checkpoint}")]
+    public static partial void TransactionTrackingFailed(
+        ILogger logger, string transactionId, string checkpoint, Exception exception);
+
+    [LoggerMessage(
+        EventId = 13,
         Level = LogLevel.Trace,
         Message = "Stopping message processor for transport: {MessageTransport}")]
     public static partial void StoppingMessageProcessor(

@@ -15,7 +15,8 @@ public class AcknowledgePrintJobCommandHandler(
     IPrintJobRepository printJobRepository,
     IPrinterRepository printerRepository,
     IOutbox outbox,
-    PrintJobInstrumentation instrumentation)
+    PrintJobInstrumentation instrumentation,
+    IDatadogTransactionTracker transactionTracker)
     : ICommandHandler<AcknowledgePrintJobCommand, AcknowledgePrintJobResponse>
 {
     public async Task<AcknowledgePrintJobResponse> Handle(AcknowledgePrintJobCommand command, CancellationToken cancellationToken = default)
@@ -62,6 +63,7 @@ public class AcknowledgePrintJobCommandHandler(
             if (command.Success)
             {
                 printJob.Complete();
+                await transactionTracker.TrackTransactionAsync(printJob.Id.Value, "print-job-acknowledged");
                 await outbox.StoreEventFor(new PrintJobCompletedEvent(printJob));
 
                 // Record completion metrics

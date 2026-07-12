@@ -33,6 +33,8 @@ export class ApiProps {
 export class Api extends Construct {
   stickerClaimedQueue: Queue;
   stickerClaimedDLQ: Queue;
+  stickerPrintedQueue: Queue;
+  stickerPrintedDLQ: Queue;
   userRegisteredTopic: Topic;
   constructor(scope: Construct, id: string, props: ApiProps) {
     super(scope, id);
@@ -44,11 +46,21 @@ export class Api extends Construct {
       queueName: `${props.sharedProps.serviceName}-${props.sharedProps.environment}-sticker-claimed-dlq`,
     });
 
-    //TODO: Add EventBridge rule mapping to subscribe to sticker claimed events published to the shared EventBus.
+    this.stickerPrintedDLQ = new Queue(this, "StickerPrintedDLQ", {
+      queueName: `${props.sharedProps.serviceName}-${props.sharedProps.environment}-sticker-printed-dlq`,
+    });
+
     this.stickerClaimedQueue = new Queue(this, "StickerClaimedQueue", {
       queueName: `${props.sharedProps.serviceName}-${props.sharedProps.environment}-sticker-claimed`,
       deadLetterQueue: {
         queue: this.stickerClaimedDLQ,
+        maxReceiveCount: 5, // Messages will be sent to DLQ after 5 failed attempts
+      },
+    });
+    this.stickerPrintedQueue = new Queue(this, "StickerPrintedQueue", {
+      queueName: `${props.sharedProps.serviceName}-${props.sharedProps.environment}-sticker-printed`,
+      deadLetterQueue: {
+        queue: this.stickerPrintedDLQ,
         maxReceiveCount: 5, // Messages will be sent to DLQ after 5 failed attempts
       },
     });
@@ -121,6 +133,10 @@ export class Api extends Construct {
     this.stickerClaimedDLQ.grantSendMessages(webService.taskRole);
     this.stickerClaimedQueue.grantConsumeMessages(webService.taskRole);
     this.stickerClaimedDLQ.grantConsumeMessages(webService.taskRole);
+    this.stickerPrintedQueue.grantSendMessages(webService.taskRole);
+    this.stickerPrintedDLQ.grantSendMessages(webService.taskRole);
+    this.stickerPrintedQueue.grantConsumeMessages(webService.taskRole);
+    this.stickerPrintedDLQ.grantConsumeMessages(webService.taskRole);
 
     // Grant execution role permission to read the database connection string secret
     props.serviceProps.databaseCredentials.grantRead(webService.executionRole);

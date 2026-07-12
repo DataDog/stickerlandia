@@ -9,8 +9,11 @@
 // Copyright 2025 Datadog, Inc.
 
 using System.Text.Json;
+using Amazon.Lambda.CloudWatchEvents;
 using Amazon.SQS;
 using Amazon.SQS.Model;
+using CloudNative.CloudEvents;
+using CloudNative.CloudEvents.SystemTextJson;
 using Datadog.Trace;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -18,19 +21,20 @@ using Microsoft.Extensions.Options;
 using Saunter.Attributes;
 using Stickerlandia.UserManagement.Core;
 using Stickerlandia.UserManagement.Core.Observability;
-using Stickerlandia.UserManagement.Core.StickerClaimedEvent;
+using Stickerlandia.UserManagement.Core.StickerPrintedEvent;
 
 namespace Stickerlandia.UserManagement.AWS;
 
 [AsyncApi]
-public class SqsStickerClaimedWorker : IMessagingWorker
+public class SqsStickerPrintedWorker : IMessagingWorker
 {
     private readonly IServiceScopeFactory _serviceScopeFactory;
-    private readonly ILogger<SqsStickerClaimedWorker> _logger;
+    private readonly ILogger<SqsStickerPrintedWorker> _logger;
     private readonly AmazonSQSClient _sqsClient;
     private readonly IOptions<AwsConfiguration> _awsConfiguration;
+    private readonly JsonSerializerOptions _jsonSerializerOptions = new() { PropertyNameCaseInsensitive = true };
 
-    public SqsStickerClaimedWorker(ILogger<SqsStickerClaimedWorker> logger,
+    public SqsStickerPrintedWorker(ILogger<SqsStickerPrintedWorker> logger,
         AmazonSQSClient sqsClient, IServiceScopeFactory serviceScopeFactory,
         IOptions<AwsConfiguration> awsConfiguration)
     {
@@ -40,8 +44,8 @@ public class SqsStickerClaimedWorker : IMessagingWorker
         _awsConfiguration = awsConfiguration;
     }
 
-    [Channel("users.stickerClaimed.v1")]
-    [SubscribeOperation(typeof(StickerClaimedEventV1))]
+    [Channel("printJobs.completed.v1")]
+    [SubscribeOperation(typeof(StickerPrintedEventV1))]
     private async Task ProcessMessageAsync(Message message)
     {
         var extractedContext = new SpanContextExtractor().ExtractIncludingDsm(
@@ -53,36 +57,48 @@ public class SqsStickerClaimedWorker : IMessagingWorker
                 return Enumerable.Empty<string>();
             },
             "sqs",
-            "users.stickerClaimed.v1");
+            "printJobs.completed.v1");
 
-        using var processSpan = Tracer.Instance.StartActive($"process users.stickerClaimed.v1",
+        using var processSpan = Tracer.Instance.StartActive($"process printJobs.completed.v1",
             new SpanCreationSettings { Parent = extractedContext });
 
         using var scope = _serviceScopeFactory.CreateScope();
-        var handler = scope.ServiceProvider.GetRequiredService<StickerClaimedHandler>();
+        var handler = scope.ServiceProvider.GetRequiredService<StickerPrintedHandler>();
 
-        var evtData = JsonSerializer.Deserialize<StickerClaimedEventV1>(message.Body);
+        var envelope = JsonSerializer.Deserialize<CloudWatchEvent<JsonElement>>(message.Body, _jsonSerializerOptions);
 
-        if (evtData == null)
+        if (envelope == null)
         {
-            await _sqsClient.SendMessageAsync(_awsConfiguration.Value.StickerClaimedDLQUrl, message.Body);
-            await _sqsClient.DeleteMessageAsync(_awsConfiguration.Value.StickerClaimedQueueUrl, message.ReceiptHandle);
+            await _sqsClient.SendMessageAsync(_awsConfiguration.Value.StickerPrintedDLQUrl, message.Body);
+            await _sqsClient.DeleteMessageAsync(_awsConfiguration.Value.StickerPrintedQueueUrl, message.ReceiptHandle);
             return;
         }
 
-        // Process your message here
+        var detailBytes = JsonSerializer.SerializeToUtf8Bytes(envelope.Detail, _jsonSerializerOptions);
+        var formatter = new JsonEventFormatter<StickerPrintedEventV1>();
+        var cloudEvent = await formatter.DecodeStructuredModeMessageAsync(
+            new MemoryStream(detailBytes), null, new List<CloudEventAttribute>());
+        var evtData = (StickerPrintedEventV1?)cloudEvent.Data;
+
+        if (evtData == null)
+        {
+            await _sqsClient.SendMessageAsync(_awsConfiguration.Value.StickerPrintedDLQUrl, message.Body);
+            await _sqsClient.DeleteMessageAsync(_awsConfiguration.Value.StickerPrintedQueueUrl, message.ReceiptHandle);
+            return;
+        }
+
         try
         {
-            await handler.Handle(evtData!);
+            await handler.Handle(evtData);
         }
         catch (InvalidUserException ex)
         {
             Log.InvalidUser(_logger, ex);
             
-            await _sqsClient.SendMessageAsync(_awsConfiguration.Value.StickerClaimedDLQUrl, message.Body);
+            await _sqsClient.SendMessageAsync(_awsConfiguration.Value.StickerPrintedDLQUrl, message.Body);
         }
         
-        await _sqsClient.DeleteMessageAsync(_awsConfiguration.Value.StickerClaimedQueueUrl, message.ReceiptHandle);
+        await _sqsClient.DeleteMessageAsync(_awsConfiguration.Value.StickerPrintedQueueUrl, message.ReceiptHandle);
     }
 
     public Task StartAsync()
@@ -95,7 +111,7 @@ public class SqsStickerClaimedWorker : IMessagingWorker
     {
         var request = new ReceiveMessageRequest
         {
-            QueueUrl = _awsConfiguration.Value.StickerClaimedQueueUrl,
+            QueueUrl = _awsConfiguration.Value.StickerPrintedQueueUrl,
             WaitTimeSeconds = 20,
             MaxNumberOfMessages = 10,
             MessageAttributeNames = new List<string> { "All" }

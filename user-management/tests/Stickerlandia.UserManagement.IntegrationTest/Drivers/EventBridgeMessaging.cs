@@ -8,7 +8,6 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
-using System.Text.Json;
 using Amazon.EventBridge;
 using Amazon.EventBridge.Model;
 
@@ -18,7 +17,7 @@ internal sealed class EventBridgeMessaging(string environment) : IMessaging, IAs
 {
     private readonly AmazonEventBridgeClient _client = new();
 
-    public async Task SendMessageAsync(string queueName, object message)
+    public async Task SendMessageAsync(string queueName, string messageJson)
     {
         await _client.PutEventsAsync(new PutEventsRequest
         {
@@ -29,7 +28,7 @@ internal sealed class EventBridgeMessaging(string environment) : IMessaging, IAs
                     EventBusName = $"Stickerlandia-Shared-{environment}",
                     Source = $"{environment}.stickers",
                     DetailType = queueName,
-                    Detail = JsonSerializer.Serialize(message)
+                    Detail = messageJson
                 }
             }
         });

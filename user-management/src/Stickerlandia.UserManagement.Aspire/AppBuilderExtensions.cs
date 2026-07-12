@@ -10,8 +10,11 @@
 
 #pragma warning disable CA2012 // Accessing ValueTasks directly is ok in the Aspire project
 
+using System.Text;
 using System.Text.Json;
 using Aspire.Hosting.AWS.Lambda;
+using CloudNative.CloudEvents;
+using CloudNative.CloudEvents.SystemTextJson;
 using Aspire.Hosting.Azure;
 using Azure.Messaging.ServiceBus;
 using Confluent.Kafka;
@@ -142,7 +145,9 @@ internal static class AppBuilderExtensions
                 {
                     new() { Name = "users.stickerClaimed.v1", NumPartitions = 1, ReplicationFactor = 1 },
                     new() { Name = "users.stickerClaimed.v1.dlq", NumPartitions = 1, ReplicationFactor = 1 },
-                    new() { Name = "users.userRegistered.v1", NumPartitions = 1, ReplicationFactor = 1 }
+                    new() { Name = "users.userRegistered.v1", NumPartitions = 1, ReplicationFactor = 1 },
+                    new() { Name = "printJobs.completed.v1", NumPartitions = 1, ReplicationFactor = 1 },
+                    new() { Name = "printJobs.completed.v1.dlq", NumPartitions = 1, ReplicationFactor = 1 },
                 });
             }
             catch (CreateTopicsException e)
@@ -177,13 +182,53 @@ internal static class AppBuilderExtensions
             var config = c.ServiceProvider.GetRequiredService<ProducerConfig>();
             using var producer = new ProducerBuilder<string, string>(config).Build();
 
-            await producer.ProduceAsync("users.stickerClaimed.v1", new Message<string, string>
+            var cloudEvent = new CloudEvent(CloudEventsSpecVersion.V1_0)
             {
-                Key = "", Value = JsonSerializer.Serialize(new
+                Id = Guid.NewGuid().ToString(),
+                Source = new Uri("https://stickerlandia.com"),
+                Type = "users.stickerClaimed.v1",
+                Time = DateTime.UtcNow,
+                Data = JsonDocument.Parse(JsonSerializer.Serialize(new
                 {
                     accountId = TEST_COMMAND_ACCOUNT_ID,
                     stickerId = TEST_COMMAND_STICKER_ID
-                })
+                })).RootElement
+            };
+            var formatter = new JsonEventFormatter();
+            var encoded = formatter.EncodeStructuredModeMessage(cloudEvent, out _);
+
+            await producer.ProduceAsync("users.stickerClaimed.v1", new Message<string, string>
+            {
+                Key = "", Value = Encoding.UTF8.GetString(encoded.Span)
+            });
+
+            producer.Flush(TimeSpan.FromSeconds(10));
+
+            return new ExecuteCommandResult { Success = true };
+        }, new CommandOptions());
+
+        builder.WithCommand("SendStickerPrintedMessage", "Send Sticker Printed Message", async (c) =>
+        {
+            var config = c.ServiceProvider.GetRequiredService<ProducerConfig>();
+            using var producer = new ProducerBuilder<string, string>(config).Build();
+
+            var cloudEvent = new CloudEvent(CloudEventsSpecVersion.V1_0)
+            {
+                Id = Guid.NewGuid().ToString(),
+                Source = new Uri("https://stickerlandia.com"),
+                Type = "printJobs.completed.v1",
+                Time = DateTime.UtcNow,
+                Data = JsonDocument.Parse(JsonSerializer.Serialize(new
+                {
+                    userId = TEST_COMMAND_ACCOUNT_ID,
+                })).RootElement
+            };
+            var formatter = new JsonEventFormatter();
+            var encoded = formatter.EncodeStructuredModeMessage(cloudEvent, out _);
+
+            await producer.ProduceAsync("printJobs.completed.v1", new Message<string, string>
+            {
+                Key = "", Value = Encoding.UTF8.GetString(encoded.Span)
             });
 
             producer.Flush(TimeSpan.FromSeconds(10));
@@ -207,6 +252,9 @@ internal static class AppBuilderExtensions
         serviceBus
             .AddServiceBusQueue("users-stickerClaimed-v1", "users.stickerClaimed.v1")
             .WithServiceBusTestCommands();
+
+        serviceBus
+            .AddServiceBusQueue("printJobs-completed-v1", "printJobs.completed.v1");
 
         var topic = serviceBus
             .AddServiceBusTopic("users-userRegistered-v1", "users.userRegistered.v1");
@@ -243,12 +291,27 @@ internal static class AppBuilderExtensions
         builder.WithCommand("SendSbMessage", "Send Service Bus message", async (c) =>
         {
             var sbClient = c.ServiceProvider.GetRequiredService<ServiceBusClient>();
-            await sbClient.CreateSender(builder.Resource.QueueName)
-                .SendMessageAsync(new ServiceBusMessage(JsonSerializer.Serialize(new
+
+            var cloudEvent = new CloudEvent(CloudEventsSpecVersion.V1_0)
+            {
+                Id = Guid.NewGuid().ToString(),
+                Source = new Uri("https://stickerlandia.com"),
+                Type = builder.Resource.QueueName,
+                Time = DateTime.UtcNow,
+                Data = JsonDocument.Parse(JsonSerializer.Serialize(new
                 {
                     accountId = TEST_COMMAND_ACCOUNT_ID,
                     stickerId = TEST_COMMAND_STICKER_ID
-                })));
+                })).RootElement
+            };
+            var formatter = new JsonEventFormatter();
+            var encoded = formatter.EncodeStructuredModeMessage(cloudEvent, out _);
+
+            await sbClient.CreateSender(builder.Resource.QueueName)
+                .SendMessageAsync(new ServiceBusMessage(encoded)
+                {
+                    ContentType = "application/cloudevents+json"
+                });
 
             return new ExecuteCommandResult { Success = true };
         }, new CommandOptions());

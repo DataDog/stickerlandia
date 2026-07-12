@@ -14,5 +14,5 @@ namespace Stickerlandia.UserManagement.IntegrationTest.Drivers;
 
 public interface IMessaging
 {
-    Task SendMessageAsync(string queueName, object message);
+    Task SendMessageAsync(string queueName, string messageJson);
 }

@@ -8,7 +8,6 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
-using System.Text.Json;
 using Confluent.Kafka;
 
 namespace Stickerlandia.UserManagement.IntegrationTest.Drivers;
@@ -27,12 +26,15 @@ internal sealed class KafkaMessaging : IMessaging, IAsyncDisposable
             Acks             = Acks.All
         };
     }
-    public async Task SendMessageAsync(string queueName, object message)
+    public async Task SendMessageAsync(string queueName, string messageJson)
     {
         using var producer = new ProducerBuilder<string, string>(config).Build();
-            
-        await producer.ProduceAsync(queueName, new Message<string, string> { Key = "", Value = JsonSerializer.Serialize(message) });
-                
+
+        await producer.ProduceAsync(queueName, new Message<string, string>
+        {
+            Key = "", Value = messageJson
+        });
+
         producer.Flush(TimeSpan.FromSeconds(10));
     }
 

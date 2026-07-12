@@ -30,4 +30,7 @@ internal sealed record UserAccountDTO
 
     [JsonPropertyName("claimedStickerCount")]
     public int ClaimedStickerCount { get; set; }
+
+    [JsonPropertyName("printedStickerCount")]
+    public int PrintedStickerCount { get; set; }
 }

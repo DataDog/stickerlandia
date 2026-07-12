@@ -15,6 +15,7 @@ using Stickerlandia.PrintService.Client.Components;
 using Stickerlandia.PrintService.Client.Configuration;
 using Stickerlandia.PrintService.Client.Services;
 using Stickerlandia.PrintService.Client.Telemetry;
+using CoreObs = Stickerlandia.PrintService.Core.Observability;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
@@ -77,6 +78,7 @@ if (otlpEndpoint != null)
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+builder.Services.AddSingleton<CoreObs.IDatadogTransactionTracker, CoreObs.DatadogTransactionTracker>();
 // Add configuration service (singleton - shared across app)
 builder.Services.AddSingleton<IConfigurationService, ConfigurationService>();
 

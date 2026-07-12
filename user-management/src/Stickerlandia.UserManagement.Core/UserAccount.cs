@@ -60,7 +60,9 @@ public class UserAccount
             DateCreated = DateTime.UtcNow,
             AccountTier = AccountTier.Std,
             FirstName = firstName,
-            LastName = lastName
+            LastName = lastName,
+            ClaimedStickerCount = 0,
+            PrintedStickerCount = 0
         };
 
         userAccount._domainEvents.Add(new UserRegisteredEvent(userAccount));
@@ -74,6 +76,7 @@ public class UserAccount
         string firstName,
         string lastName,
         int claimedStickerCount,
+        int printedStickerCount,
         DateTime dateCreated,
         AccountTier accountTier,
         AccountType accountType)
@@ -87,7 +90,8 @@ public class UserAccount
             AccountType = accountType,
             FirstName = firstName,
             LastName = lastName,
-            ClaimedStickerCount = claimedStickerCount
+            ClaimedStickerCount = claimedStickerCount,
+            PrintedStickerCount = printedStickerCount
         };
     }
 
@@ -112,8 +116,22 @@ public class UserAccount
     public IReadOnlyCollection<DomainEvent> DomainEvents => _domainEvents;
 
     public int ClaimedStickerCount { get; private set; }
+    
+    public int PrintedStickerCount { get; private set; }
 
     internal bool Changed { get; private set; }
+
+    internal void StickerPrinted()
+    {
+        PrintedStickerCount++;
+        Changed = true;
+    }
+
+    internal void StickerClaimed()
+    {
+        ClaimedStickerCount++;
+        Changed = true;
+    }
 
     internal static bool IsValidEmail(string email)
     {

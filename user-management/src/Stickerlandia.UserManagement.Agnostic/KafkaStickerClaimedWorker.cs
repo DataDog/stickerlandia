@@ -4,10 +4,6 @@
  * Copyright 2025-Present Datadog, Inc.
  */
 
-// Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
-// This product includes software developed at Datadog (https://www.datadoghq.com/).
-// Copyright 2025 Datadog, Inc.
-
 // Catching generic exceptions is not recommended, but in this case we want to catch all exceptions so that a failure in outbox processing does not crash the application.
 #pragma warning disable CA1031
 
@@ -24,22 +20,37 @@ using Stickerlandia.UserManagement.Core.StickerClaimedEvent;
 namespace Stickerlandia.UserManagement.Agnostic;
 
 [AsyncApi]
-public class KafakStickerClaimedWorker(
-    ILogger<KafakStickerClaimedWorker> logger,
+public class KafkaStickerClaimedWorker(
+    ILogger<KafkaStickerClaimedWorker> logger,
     IServiceScopeFactory serviceScopeFactory,
     ConsumerConfig consumerConfig,
-    ProducerConfig producerConfig)
+    ProducerConfig producerConfig,
+    IKafkaConsumerFactory consumerFactory)
     : IMessagingWorker
 {
     private const string topic = "users.stickerClaimed.v1";
     private const string dlqTopic = "users.stickerClaimed.v1.dlq";
+
+    private IConsumer<string, string>? _consumer;
 
     [Channel("users.stickerClaimed.v1")]
     [SubscribeOperation(typeof(StickerClaimedEventV1))]
     private async Task<bool> ProcessMessageAsync(StickerClaimedHandler handler,
         ConsumeResult<string, string> consumeResult)
     {
-        using var processSpan = Tracer.Instance.StartActive($"process users.stickerClaimed.v1");
+        var extractedContext = new SpanContextExtractor().ExtractIncludingDsm(
+            consumeResult.Message.Headers,
+            static (headers, key) =>
+            {
+                if (headers is null || !headers.TryGetLastBytes(key, out var bytes) || bytes is null)
+                    return Enumerable.Empty<string>();
+                return new[] { System.Text.Encoding.UTF8.GetString(bytes) };
+            },
+            "kafka",
+            topic);
+
+        using var processSpan = Tracer.Instance.StartActive($"process users.stickerClaimed.v1",
+            new SpanCreationSettings { Parent = extractedContext });
 
         Log.ReceivedMessage(logger, "kafka");
 
@@ -82,66 +93,50 @@ public class KafakStickerClaimedWorker(
     {
         Log.StartingMessageProcessor(logger, "kafka");
 
+        _consumer = consumerFactory.Create(consumerConfig);
+        _consumer.Subscribe(topic);
+
         return Task.CompletedTask;
     }
 
     public async Task PollAsync(CancellationToken stoppingToken)
     {
-        // Check for cancellation first
         if (stoppingToken.IsCancellationRequested)
             return;
 
-        using var scope = serviceScopeFactory.CreateScope();
-        var handler = scope.ServiceProvider.GetRequiredService<StickerClaimedHandler>();
-
         try
         {
-            using var consumer = new ConsumerBuilder<string, string>(consumerConfig)
-                .SetErrorHandler((_, e) => Log.MessageProcessingException(logger, e.Reason, null))
-                .Build();
+            var consumeResult = _consumer!.Consume(TimeSpan.FromSeconds(2));
 
-            consumer.Subscribe(topic);
+            if (consumeResult != null)
+            {
+                using var scope = serviceScopeFactory.CreateScope();
+                var handler = scope.ServiceProvider.GetRequiredService<StickerClaimedHandler>();
 
-            try
-            {
-                var consumeResult = consumer.Consume(TimeSpan.FromSeconds(2));
+                var processResult = await ProcessMessageAsync(handler, consumeResult);
 
-                if (consumeResult != null)
-                {
-                    var processResult = await ProcessMessageAsync(handler, consumeResult);
-
-                    if (processResult) consumer.Commit(consumeResult);
-                }
+                if (processResult) _consumer.Commit(consumeResult);
             }
-            catch (ConsumeException ex)
-            {
-                Log.MessageProcessingException(logger, "Error consuming message", ex);
-            }
-            catch (OperationCanceledException)
-            {
-                // This is expected when the token is canceled
-                Log.TokenCancelled(logger);
-            }
-            catch (Exception ex)
-            {
-                Log.MessageProcessingException(logger, "Error consuming message", ex);
-            }
-            finally
-            {
-                // Ensure consumer is closed even if an exception occurs
-                consumer.Close();
-            }
+        }
+        catch (ConsumeException ex)
+        {
+            Log.MessageProcessingException(logger, "Error consuming message", ex);
+        }
+        catch (OperationCanceledException)
+        {
+            Log.TokenCancelled(logger);
         }
         catch (Exception ex)
         {
-            Log.FailureStartingWorker(logger, "kafka", ex);
-            throw;
+            Log.MessageProcessingException(logger, "Error consuming message", ex);
         }
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
-        // NOOP
+        _consumer?.Close();
+        _consumer?.Dispose();
+        _consumer = null;
         return Task.CompletedTask;
     }
 }

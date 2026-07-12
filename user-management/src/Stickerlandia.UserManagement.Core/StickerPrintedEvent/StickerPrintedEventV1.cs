@@ -8,13 +8,12 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2025 Datadog, Inc.
 
-namespace Stickerlandia.UserManagement.IntegrationTest.Drivers;
+using System.Text.Json.Serialization;
 
-internal sealed class MockMessaging : IMessaging
+namespace Stickerlandia.UserManagement.Core.StickerPrintedEvent;
+
+public record StickerPrintedEventV1
 {
-    public Task SendMessageAsync(string queueName, string messageJson)
-    {
-        // Mock implementation - just simulate successful message sending
-        return Task.CompletedTask;
-    }
+    [JsonPropertyName("userId")] 
+    public string UserId {get;init;} = "";
 }

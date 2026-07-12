@@ -66,13 +66,28 @@ public class KafkaEventPublisher(ProducerConfig config, ILogger<KafkaEventPublis
             var formatter = new JsonEventFormatter<UserRegisteredEvent>();
             var data = formatter.EncodeStructuredModeMessage(cloudEvent, out _);
 
+            var message = new Message<string, string>
+            {
+                Key = cloudEvent.Id!,
+                Value = Encoding.UTF8.GetString(data.Span)
+            };
+
+            if (Tracer.Instance.ActiveScope is not null)
+            {
+                message.Headers = new Headers();
+                new SpanContextInjector().InjectIncludingDsm(
+                    message.Headers,
+                    (headers, key, value) => headers.Add(key, Encoding.UTF8.GetBytes(value)),
+                    Tracer.Instance.ActiveScope.Span.Context,
+                    "kafka",
+                    cloudEvent.Type!);
+            }
+
             using var producer = new ProducerBuilder<string, string>(config).Build();
 
             try
             {
-                var deliveryReport = await producer.ProduceAsync(cloudEvent.Type,
-                    new Message<string, string> { Key = cloudEvent.Id!, Value = Encoding.UTF8.GetString(data.Span) },
-                    default);
+                var deliveryReport = await producer.ProduceAsync(cloudEvent.Type, message, default);
             
                 if (deliveryReport.Status == PersistenceStatus.PossiblyPersisted) {
                     // Handle potential timeout errors

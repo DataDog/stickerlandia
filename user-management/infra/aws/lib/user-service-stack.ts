@@ -152,6 +152,8 @@ export class UserServiceStack extends cdk.Stack {
       serviceDiscoveryNamespace: sharedResources.serviceDiscoveryNamespace,
       stickerClaimedQueue: api.stickerClaimedQueue,
       stickerClaimedDLQ: api.stickerClaimedDLQ,
+      stickerPrintedQueue: api.stickerPrintedQueue,
+      stickerPrintedDLQ: api.stickerPrintedDLQ,
       userRegisteredTopic: api.userRegisteredTopic,
       deployInPrivateSubnet: true,
     });

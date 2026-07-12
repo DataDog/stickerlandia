@@ -47,7 +47,8 @@ public sealed class OutboxFunctionsTests : IDisposable
         var eventPublisher = new EventBridgeEventPublisher(
             A.Fake<ILogger<EventBridgeEventPublisher>>(),
             _eventBridgeClient,
-            _awsConfiguration);
+            _awsConfiguration,
+            A.Fake<IDatadogTransactionTracker>());
 
         _sut = new OutboxFunctions(_logger, outboxProcessor, eventPublisher);
     }

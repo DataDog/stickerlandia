@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Stickerlandia.PrintService.Agnostic.Data;
 using Stickerlandia.PrintService.Agnostic.Repositories;
 using Stickerlandia.PrintService.Core;
+using Stickerlandia.PrintService.Core.Observability;
 using Stickerlandia.PrintService.Core.Outbox;
 using Stickerlandia.PrintService.Core.PrintJobs;
 
@@ -121,6 +122,9 @@ public static class ServiceExtensions
 
         services.AddSingleton(producerConfig);
         services.AddSingleton(consumerConfig);
+
+        services.AddHttpClient();
+        services.AddSingleton<IDatadogTransactionTracker, DatadogTransactionTracker>();
 
         // Register event publisher as singleton
         services.AddSingleton<IPrintServiceEventPublisher, KafkaEventPublisher>();

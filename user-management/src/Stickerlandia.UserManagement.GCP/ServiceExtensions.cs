@@ -31,7 +31,8 @@ public static class ServiceExtensions
         var projectId = configuration["ConnectionStrings:messaging"];
         if (string.IsNullOrEmpty(projectId)) throw new InvalidOperationException("Google ProjectId is not configured.");
 
-        services.AddSingleton<IMessagingWorker, GooglePubSubMessagingWorker>();
+        services.AddKeyedSingleton<IMessagingWorker, GooglePubSubMessagingWorker>("stickerClaimed");
+        services.AddKeyedSingleton<IMessagingWorker, GooglePubSubStickerPrintedWorker>("stickerPrinted");
 
         services.AddKeyedSingleton<PublisherClient>("users.userRegistered.v1",
             new PublisherClientBuilder()
@@ -43,6 +44,12 @@ public static class ServiceExtensions
             new SubscriberClientBuilder
             {
                 SubscriptionName = new SubscriptionName(projectId, "users.stickerClaimed.v1"),
+                EmulatorDetection = EmulatorDetection.EmulatorOrProduction
+            }.Build());
+        services.AddKeyedSingleton<SubscriberClient>("printJobs.completed.v1",
+            new SubscriberClientBuilder
+            {
+                SubscriptionName = new SubscriptionName(projectId, "printJobs.completed.v1"),
                 EmulatorDetection = EmulatorDetection.EmulatorOrProduction
             }.Build());
 

@@ -22,4 +22,8 @@ public class AwsConfiguration
     public string StickerClaimedQueueUrl { get; set; } = string.Empty;
     
     public string StickerClaimedDLQUrl { get; set; } = string.Empty;
+    
+    public string StickerPrintedQueueUrl { get; set; } = string.Empty;
+    
+    public string StickerPrintedDLQUrl { get; set; } = string.Empty;
 }

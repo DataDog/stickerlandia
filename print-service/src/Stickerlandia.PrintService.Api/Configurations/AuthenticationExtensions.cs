@@ -10,7 +10,7 @@ using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 
-#pragma warning disable CA5400
+#pragma warning disable CA5400, CA2000
 
 namespace Stickerlandia.PrintService.Api.Configurations;
 

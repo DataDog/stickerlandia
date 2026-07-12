@@ -9,10 +9,12 @@
 // Copyright 2025 Datadog, Inc.
 
 using System.Diagnostics;
+using System.Text.Json.Nodes;
 using Amazon.EventBridge;
 using Amazon.EventBridge.Model;
 using CloudNative.CloudEvents;
 using CloudNative.CloudEvents.SystemTextJson;
+using Datadog.Trace;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Saunter.Attributes;
@@ -29,7 +31,8 @@ namespace Stickerlandia.PrintService.AWS;
 public class EventBridgeEventPublisher(
     ILogger<EventBridgeEventPublisher> logger,
     IAmazonEventBridge client,
-    IOptions<AwsConfiguration> awsConfiguration) : IPrintServiceEventPublisher
+    IOptions<AwsConfiguration> awsConfiguration,
+    IDatadogTransactionTracker transactionTracker) : IPrintServiceEventPublisher
 {
     [Channel("printJobs.queued.v1")]
     [PublishOperation(typeof(PrintJobQueuedEvent))]
@@ -47,6 +50,7 @@ public class EventBridgeEventPublisher(
         };
 
         await PublishCloudEventAsync(cloudEvent);
+        await transactionTracker.TrackTransactionAsync(printJobQueuedEvent.PrintJobId, "print-job-queued");
     }
 
     [Channel("printJobs.failed.v1")]
@@ -139,6 +143,18 @@ public class EventBridgeEventPublisher(
             var data = formatter.EncodeStructuredModeMessage(cloudEvent, out _);
             var jsonString = System.Text.Encoding.UTF8.GetString(data.Span);
 
+            if (Tracer.Instance.ActiveScope is not null)
+            {
+                var jsonNode = JsonNode.Parse(jsonString)!;
+                new SpanContextInjector().InjectIncludingDsm(jsonNode, SetHeader, Tracer.Instance.ActiveScope.Span.Context, "eventbridge", cloudEvent.Type!);
+                jsonString = jsonNode.ToJsonString();
+            }
+            else
+            {
+                Log.GenericWarning(logger, "DSM injection skipped for EventBridge: no active Datadog scope", null);
+                activity?.SetTag("dsm.injection_skipped", "no active scope");
+            }
+
             var response = await client.PutEventsAsync(new PutEventsRequest()
             {
                 Entries = new List<PutEventsRequestEntry>(1)
@@ -146,7 +162,7 @@ public class EventBridgeEventPublisher(
                     new()
                     {
                         EventBusName = awsConfiguration.Value.EventBusName,
-                        Source = $"{Environment.GetEnvironmentVariable("ENV") ?? "dev"}.users",
+                        Source = $"{Environment.GetEnvironmentVariable("ENV") ?? "dev"}.print",
                         DetailType = cloudEvent.Type,
                         Detail = jsonString,
                     }
@@ -170,5 +186,12 @@ public class EventBridgeEventPublisher(
             activity?.SetTag("error.type", ex.GetType().Name);
             throw;
         }
+    }
+
+    private static void SetHeader(JsonNode jsonNode, string key, string value)
+    {
+        if (jsonNode["_datadog"] == null) jsonNode["_datadog"] = new JsonObject();
+
+        jsonNode["_datadog"]![key] = value;
     }
 }

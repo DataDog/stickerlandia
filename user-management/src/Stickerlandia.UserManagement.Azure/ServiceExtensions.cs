@@ -24,7 +24,8 @@ public static class ServiceExtensions
         
         services.AddPostgresAuthServices(configuration, enableDefaultUi);
 
-        services.AddSingleton<IMessagingWorker, ServiceBusStickerClaimedWorker>();
+        services.AddKeyedSingleton<IMessagingWorker, ServiceBusStickerClaimedWorker>("stickerClaimed");
+        services.AddKeyedSingleton<IMessagingWorker, ServiceBusStickerPrintedWorker>("stickerPrinted");
         
         services.AddSingleton<ServiceBusClient>(sp =>
             new ServiceBusClient(configuration["ConnectionStrings:messaging"]));
