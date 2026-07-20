@@ -21,8 +21,28 @@
   },
   "dependencies": {
     "@aws-cdk/aws-lambda-dotnet": "^0.0.6",
-    "aws-cdk-lib": "2.234.1",
+    "aws-cdk-lib": "2.261.0",
     "constructs": "^10.4.4",
     "datadog-cdk-constructs-v2": "^3.6.0"
+  },
+  "overrides": {
+    "aws-cdk-lib": {
+      "brace-expansion": "^1.1.16",
+      "minimatch": "^3.1.5"
+    },
+    "jest": {
+      "glob": "^10.5.0",
+      "picomatch": "^2.3.2"
+    },
+    "test-exclude": {
+      "brace-expansion": "^1.1.16",
+      "minimatch": "^3.1.5"
+    },
+    "ts-jest": {
+      "picomatch": "^2.3.2"
+    },
+    "@types/jest": {
+      "picomatch": "^2.3.2"
+    }
   }
 }
