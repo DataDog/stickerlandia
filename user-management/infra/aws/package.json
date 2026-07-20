@@ -21,8 +21,23 @@
   },
   "dependencies": {
     "@aws-cdk/aws-lambda-dotnet": "^0.0.6",
-    "aws-cdk-lib": "2.240.0",
+    "aws-cdk-lib": "2.261.0",
     "constructs": "^10.4.5",
     "datadog-cdk-constructs-v2": "^3.9.0"
+  },
+  "overrides": {
+    "jest": {
+      "picomatch": "^2.3.2"
+    },
+    "ts-jest": {
+      "picomatch": "^2.3.2"
+    },
+    "aws-cdk-lib": {
+      "brace-expansion": "^5.0.7",
+      "minimatch": "^10.2.5"
+    },
+    "@types/jest": {
+      "picomatch": "^2.3.2"
+    }
   }
 }
