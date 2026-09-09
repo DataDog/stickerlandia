@@ -3,11 +3,11 @@ module github.com/datadog/stickerlandia/sticker-award
 go 1.25.0
 
 require (
-	github.com/DataDog/dd-trace-go/contrib/IBM/sarama/v2 v2.6.0
-	github.com/DataDog/dd-trace-go/contrib/gin-gonic/gin/v2 v2.6.0
-	github.com/DataDog/dd-trace-go/contrib/gorm.io/gorm.v1/v2 v2.6.0
-	github.com/DataDog/dd-trace-go/contrib/net/http/v2 v2.6.0
-	github.com/DataDog/dd-trace-go/contrib/sirupsen/logrus/v2 v2.6.0
+	github.com/DataDog/dd-trace-go/contrib/IBM/sarama/v2 v2.10.1
+	github.com/DataDog/dd-trace-go/contrib/gin-gonic/gin/v2 v2.10.1
+	github.com/DataDog/dd-trace-go/contrib/gorm.io/gorm.v1/v2 v2.10.1
+	github.com/DataDog/dd-trace-go/contrib/net/http/v2 v2.10.1
+	github.com/DataDog/dd-trace-go/contrib/sirupsen/logrus/v2 v2.10.1
 	github.com/DataDog/dd-trace-go/v2 v2.10.1
 	github.com/IBM/sarama v1.45.2
 	github.com/MicahParks/keyfunc/v3 v3.8.0
@@ -95,10 +95,10 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
-	github.com/goccy/go-json v0.10.2 // indirect
+	github.com/goccy/go-json v0.10.4 // indirect
 	github.com/goccy/go-yaml v1.18.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/snappy v0.0.4 // indirect
+	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/pprof v0.0.0-20250403155104-27863c87afa6 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
@@ -106,7 +106,7 @@ require (
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
-	github.com/jackc/pgx/v5 v5.7.5 // indirect
+	github.com/jackc/pgx/v5 v5.9.0 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
@@ -119,7 +119,7 @@ require (
 	github.com/klauspost/compress v1.18.6 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
-	github.com/lib/pq v1.10.9 // indirect
+	github.com/lib/pq v1.11.1 // indirect
 	github.com/linkdata/deadlock v0.5.5 // indirect
 	github.com/lufia/plan9stats v0.0.0-20260330125221-c963978e514e // indirect
 	github.com/magiconair/properties v1.8.10 // indirect
