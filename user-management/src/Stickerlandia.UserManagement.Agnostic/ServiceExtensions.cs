@@ -9,6 +9,7 @@
 // Copyright 2025 Datadog, Inc.
 
 using Confluent.Kafka;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -134,6 +135,12 @@ public static class ServiceExtensions
         services.AddScoped<IAuthService, MicrosoftIdentityAuthService>();
 
         services.AddScoped<IOutbox, PostgresOutbox>();
+
+        // Configure Data Protection to persist keys in the database
+        // This ensures keys are shared across all instances and persist across restarts
+        services.AddDataProtection()
+            .SetApplicationName("stickerlandia-user-management")
+            .PersistKeysToDbContext<UserManagementDbContext>();
 
         return services;
     }

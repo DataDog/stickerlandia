@@ -1,0 +1,17 @@
+# User Management Service - Ephemeral/Test Environment
+# Creates all shared infrastructure inline (no dependency on shared stack)
+
+subscription_id = "YOUR_SUBSCRIPTION_ID"
+env             = "test-feature-xyz"  # Use a unique name for your ephemeral environment
+location        = "uksouth"
+
+# Application
+app_version              = "latest"
+container_image_registry = "ghcr.io/datadog/stickerlandia"
+
+# Datadog
+dd_site    = "datadoghq.com"
+dd_api_key = "YOUR_DATADOG_API_KEY"  # Required for ephemeral environments
+
+# Shared infrastructure mode
+use_shared_infrastructure = false  # Creates all resources inline
