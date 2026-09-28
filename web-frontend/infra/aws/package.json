@@ -16,8 +16,16 @@
     "typescript": "~5.9.3"
   },
   "dependencies": {
-    "aws-cdk-lib": "2.234.1",
+    "aws-cdk-lib": "2.271.0",
     "constructs": "^10.4.4",
     "source-map-support": "^0.5.21"
+  },
+  "overrides": {
+    "aws-cdk-lib": {
+      "minimatch": {
+        "brace-expansion": "^1.1.21",
+        ".": "^3.1.5"
+      }
+    }
   }
 }
