@@ -1,14 +1,14 @@
 module github.com/datadog/stickerlandia/sticker-award
 
-go 1.25.0
+go 1.26.0
 
 require (
-	github.com/DataDog/dd-trace-go/contrib/IBM/sarama/v2 v2.10.1
-	github.com/DataDog/dd-trace-go/contrib/gin-gonic/gin/v2 v2.10.1
-	github.com/DataDog/dd-trace-go/contrib/gorm.io/gorm.v1/v2 v2.10.1
-	github.com/DataDog/dd-trace-go/contrib/net/http/v2 v2.10.1
-	github.com/DataDog/dd-trace-go/contrib/sirupsen/logrus/v2 v2.10.1
-	github.com/DataDog/dd-trace-go/v2 v2.10.1
+	github.com/DataDog/dd-trace-go/contrib/IBM/sarama/v2 v2.11.2
+	github.com/DataDog/dd-trace-go/contrib/gin-gonic/gin/v2 v2.11.2
+	github.com/DataDog/dd-trace-go/contrib/gorm.io/gorm.v1/v2 v2.11.2
+	github.com/DataDog/dd-trace-go/contrib/net/http/v2 v2.11.2
+	github.com/DataDog/dd-trace-go/contrib/sirupsen/logrus/v2 v2.11.2
+	github.com/DataDog/dd-trace-go/v2 v2.11.2
 	github.com/IBM/sarama v1.45.2
 	github.com/MicahParks/keyfunc/v3 v3.8.0
 	github.com/aws/aws-sdk-go-v2 v1.41.2
@@ -145,7 +145,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
-	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
+	github.com/puzpuzpuz/xsync/v4 v4.5.0 // indirect
 	github.com/quic-go/qpack v0.5.1 // indirect
 	github.com/quic-go/quic-go v0.54.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
@@ -177,23 +177,23 @@ require (
 	go.opentelemetry.io/otel/sdk v1.46.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.46.0 // indirect
 	go.opentelemetry.io/otel/trace v1.46.0 // indirect
-	go.opentelemetry.io/proto/otlp v1.10.0 // indirect
+	go.opentelemetry.io/proto/otlp v1.11.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/mock v0.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.28.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/arch v0.20.0 // indirect
-	golang.org/x/crypto v0.55.0 // indirect
+	golang.org/x/crypto v0.57.0 // indirect
 	golang.org/x/exp v0.0.0-20260529124908-c761662dc8c9 // indirect
-	golang.org/x/mod v0.40.0 // indirect
-	golang.org/x/net v0.58.0 // indirect
-	golang.org/x/sync v0.22.0 // indirect
-	golang.org/x/sys v0.47.0 // indirect
-	golang.org/x/text v0.41.0 // indirect
+	golang.org/x/mod v0.41.0 // indirect
+	golang.org/x/net v0.60.0 // indirect
+	golang.org/x/sync v0.23.0 // indirect
+	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/text v0.42.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
-	golang.org/x/tools v0.49.0 // indirect
+	golang.org/x/tools v0.51.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260618152121-87f3d3e198d3 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260803160001-6ac0973c030d // indirect
 	google.golang.org/protobuf v1.36.12-0.20260116114154-8c4c4ae446ca // indirect
 )
