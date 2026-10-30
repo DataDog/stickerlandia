@@ -279,7 +279,9 @@ services:
       retries: 5
 
   minio:
-    image: minio/minio:latest
+    # MinIO no longer publishes images to Docker Hub; Chainguard builds them from upstream source.
+    # The -dev variants include a shell and wget, which the healthcheck and minio-init need.
+    image: cgr.dev/chainguard/minio:latest-dev
     container_name: stickerlandia-minio
     ports:
       - "9000:9000"
@@ -291,13 +293,13 @@ services:
     volumes:
       - minio-data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9000/minio/health/live"]
       interval: 1s
       timeout: 10s
       retries: 3
 
   minio-init:
-    image: minio/mc:latest
+    image: cgr.dev/chainguard/minio-client:latest-dev
     container_name: minio-init
     depends_on:
       minio:
