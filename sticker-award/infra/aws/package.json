@@ -21,8 +21,139 @@
   },
   "dependencies": {
     "@aws-cdk/aws-lambda-dotnet": "^0.0.6",
-    "aws-cdk-lib": "2.240.0",
+    "aws-cdk-lib": "2.274.0",
     "constructs": "^10.4.5",
     "datadog-cdk-constructs-v2": "^3.9.0"
+  },
+  "overrides": {
+    "jest": {
+      "@jest/core": {
+        "@jest/reporters": {
+          "glob": {
+            "minimatch": {
+              "brace-expansion": "^2.1.7"
+            }
+          }
+        },
+        "jest-config": {
+          "glob": {
+            "minimatch": {
+              "brace-expansion": "^2.1.7"
+            }
+          },
+          "jest-circus": {
+            "jest-runtime": {
+              "glob": {
+                "minimatch": {
+                  "brace-expansion": "^2.1.7"
+                }
+              }
+            }
+          },
+          "jest-runner": {
+            "jest-runtime": {
+              "glob": {
+                "minimatch": {
+                  "brace-expansion": "^2.1.7"
+                }
+              }
+            }
+          }
+        },
+        "jest-runner": {
+          "jest-runtime": {
+            "glob": {
+              "minimatch": {
+                "brace-expansion": "^2.1.7"
+              }
+            }
+          }
+        },
+        "jest-runtime": {
+          "glob": {
+            "minimatch": {
+              "brace-expansion": "^2.1.7"
+            }
+          }
+        }
+      },
+      "jest-cli": {
+        "@jest/core": {
+          "@jest/reporters": {
+            "glob": {
+              "minimatch": {
+                "brace-expansion": "^2.1.7"
+              }
+            }
+          },
+          "jest-config": {
+            "glob": {
+              "minimatch": {
+                "brace-expansion": "^2.1.7"
+              }
+            },
+            "jest-circus": {
+              "jest-runtime": {
+                "glob": {
+                  "minimatch": {
+                    "brace-expansion": "^2.1.7"
+                  }
+                }
+              }
+            },
+            "jest-runner": {
+              "jest-runtime": {
+                "glob": {
+                  "minimatch": {
+                    "brace-expansion": "^2.1.7"
+                  }
+                }
+              }
+            }
+          },
+          "jest-runner": {
+            "jest-runtime": {
+              "glob": {
+                "minimatch": {
+                  "brace-expansion": "^2.1.7"
+                }
+              }
+            }
+          },
+          "jest-runtime": {
+            "glob": {
+              "minimatch": {
+                "brace-expansion": "^2.1.7"
+              }
+            }
+          }
+        },
+        "jest-config": {
+          "glob": {
+            "minimatch": {
+              "brace-expansion": "^2.1.7"
+            }
+          },
+          "jest-circus": {
+            "jest-runtime": {
+              "glob": {
+                "minimatch": {
+                  "brace-expansion": "^2.1.7"
+                }
+              }
+            }
+          },
+          "jest-runner": {
+            "jest-runtime": {
+              "glob": {
+                "minimatch": {
+                  "brace-expansion": "^2.1.7"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
