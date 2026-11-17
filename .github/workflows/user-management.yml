@@ -79,7 +79,7 @@ jobs:
   #         cd user-management/tests/Stickerlandia.UserManagement.IntegrationTest && dotnet test --logger:"console;verbosity=detailed"
 
   integration-test-agnostic:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: unit-test
     strategy:
       matrix:
