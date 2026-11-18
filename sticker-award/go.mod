@@ -3,12 +3,12 @@ module github.com/datadog/stickerlandia/sticker-award
 go 1.26.0
 
 require (
-	github.com/DataDog/dd-trace-go/contrib/IBM/sarama/v2 v2.11.2
-	github.com/DataDog/dd-trace-go/contrib/gin-gonic/gin/v2 v2.11.2
-	github.com/DataDog/dd-trace-go/contrib/gorm.io/gorm.v1/v2 v2.11.2
-	github.com/DataDog/dd-trace-go/contrib/net/http/v2 v2.11.2
-	github.com/DataDog/dd-trace-go/contrib/sirupsen/logrus/v2 v2.11.2
-	github.com/DataDog/dd-trace-go/v2 v2.11.2
+	github.com/DataDog/dd-trace-go/contrib/IBM/sarama/v2 v2.12.0
+	github.com/DataDog/dd-trace-go/contrib/gin-gonic/gin/v2 v2.12.0
+	github.com/DataDog/dd-trace-go/contrib/gorm.io/gorm.v1/v2 v2.12.0
+	github.com/DataDog/dd-trace-go/contrib/net/http/v2 v2.12.0
+	github.com/DataDog/dd-trace-go/contrib/sirupsen/logrus/v2 v2.12.0
+	github.com/DataDog/dd-trace-go/v2 v2.12.0
 	github.com/IBM/sarama v1.45.2
 	github.com/MicahParks/keyfunc/v3 v3.8.0
 	github.com/aws/aws-sdk-go-v2 v1.41.2
